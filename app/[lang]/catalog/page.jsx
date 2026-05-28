@@ -1,6 +1,6 @@
 // app/[lang]/catalog/page.jsx
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getProducts } from "@/lib/supabase";
@@ -11,7 +11,17 @@ import Icon from "@/components/shared/Icon";
 
 const BADGES = ["NEW", "TOP", "SALE"];
 
+export const dynamic = "force-dynamic";
+
 export default function CatalogPage({ params }) {
+  return (
+    <Suspense fallback={<div className="container-x py-20 text-center text-ink-muted">Loading…</div>}>
+      <CatalogInner params={params} />
+    </Suspense>
+  );
+}
+
+function CatalogInner({ params }) {
   const { lang } = params;
   const t = getTranslations(lang);
   const searchParams = useSearchParams();
