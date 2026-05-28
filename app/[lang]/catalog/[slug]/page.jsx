@@ -13,6 +13,8 @@ import StickyQuotePanel from "@/components/product/StickyQuotePanel";
 import CompareDrawer from "@/components/catalog/CompareDrawer";
 import Icon from "@/components/shared/Icon";
 
+export const dynamic = "force-dynamic";
+
 const BADGE_STYLE = {
   SALE: "bg-accent-pink text-white",
   NEW:  "bg-primary text-white",
