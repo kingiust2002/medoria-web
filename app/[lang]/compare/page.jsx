@@ -8,6 +8,8 @@ import { getTranslations, getCategoryName } from "@/lib/i18n";
 import { waLink, tgLink, productInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 
+export const dynamic = "force-dynamic";
+
 export default function ComparePage({ params }) {
   const { lang } = params;
   const t = getTranslations(lang);
