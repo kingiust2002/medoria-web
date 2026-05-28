@@ -1,0 +1,35 @@
+// components/home/WhyMedoria.jsx
+import { getTranslations } from "@/lib/i18n";
+import Icon from "@/components/shared/Icon";
+
+const ICON_MAP = ["bolt", "package", "dollar", "refresh", "handshake", "globe"];
+
+export default function WhyMedoria({ lang }) {
+  const t = getTranslations(lang);
+
+  return (
+    <section className="py-14 md:py-20 bg-white">
+      <div className="container-x">
+        <div className="text-center mb-10 md:mb-14 max-w-2xl mx-auto">
+          <div className="section-tag mb-3">{t.home.whyTag}</div>
+          <h2 className="section-h-lg">{t.home.whyH}</h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+          {t.home.whyItems.map(([_, title, desc], i) => (
+            <div
+              key={i}
+              className="card p-7 hover:shadow-hover hover:border-primary/20 transition-all duration-300 group"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-tint-blue text-primary flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-colors">
+                <Icon name={ICON_MAP[i]} size={24} strokeWidth={1.75} />
+              </div>
+              <h3 className="font-display font-bold text-[16px] text-ink mb-2">{title}</h3>
+              <p className="text-[13px] text-ink-muted leading-[1.7]">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}

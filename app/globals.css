@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    @apply bg-white text-ink antialiased;
+    font-feature-settings: "cv11", "ss01", "ss03";
+  }
+  ::selection { @apply bg-primary/15 text-ink; }
+
+  /* Persian RTL */
+  html[lang="fa"] body { @apply font-farsi; }
+  html[lang="fa"] { direction: rtl; }
+
+  /* Tabular nums for prices */
+  .tabular { font-feature-settings: "tnum"; }
+}
+
+@layer components {
+  .container-x  { @apply mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl; }
+
+  /* Buttons */
+  .btn          { @apply inline-flex items-center justify-center gap-2 font-semibold transition-all duration-200 whitespace-nowrap select-none; }
+  .btn-primary  { @apply btn bg-brand-gradient text-white shadow-brand hover:shadow-[0_12px_28px_rgba(37,99,235,0.30)] hover:-translate-y-px active:translate-y-0; }
+  .btn-solid    { @apply btn bg-primary text-white hover:bg-primary-700 active:bg-primary-800; }
+  .btn-ghost    { @apply btn bg-white text-ink-soft border border-line hover:border-primary/40 hover:text-primary; }
+  .btn-outline  { @apply btn bg-transparent text-primary border-2 border-primary hover:bg-primary hover:text-white; }
+  .btn-wa       { @apply btn bg-[#22C55E] text-white shadow-[0_4px_14px_rgba(34,197,94,0.30)] hover:opacity-90 hover:shadow-[0_8px_20px_rgba(34,197,94,0.40)]; }
+  .btn-tg       { @apply btn bg-[#229ED9] text-white shadow-[0_4px_14px_rgba(34,158,217,0.30)] hover:opacity-90 hover:shadow-[0_8px_20px_rgba(34,158,217,0.40)]; }
+
+  .size-xs      { @apply h-8 px-3 text-[11px] rounded-lg; }
+  .size-sm      { @apply h-9 px-4 text-xs rounded-lg; }
+  .size-md      { @apply h-11 px-5 text-sm rounded-xl; }
+  .size-lg      { @apply h-12 px-7 text-sm rounded-xl; }
+  .size-xl      { @apply h-14 px-8 text-[15px] rounded-2xl; }
+
+  /* Cards */
+  .card         { @apply bg-white border border-line rounded-2xl shadow-soft; }
+  .card-flat    { @apply bg-white border border-line rounded-2xl; }
+  .card-hover   { @apply hover:shadow-hover hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-300; }
+
+  /* Inputs */
+  .input        { @apply h-11 px-4 bg-white border border-line rounded-xl text-sm text-ink placeholder:text-ink-faint outline-none transition-all focus:border-primary focus:shadow-ring; }
+
+  /* Pills & tags */
+  .pill         { @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium; }
+  .tag          { @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold tracking-[0.14em] uppercase; }
+  .tag-new      { @apply tag bg-primary text-white; }
+  .tag-top      { @apply tag bg-cyan-600 text-white; }
+  .tag-sale     { @apply tag bg-accent-pink text-white; }
+
+  /* Skeleton */
+  .skeleton     { background: linear-gradient(90deg, #F1F5F9 25%, #EFF6FF 50%, #F1F5F9 75%); background-size: 200% 100%; @apply animate-shimmer rounded-lg; }
+
+  /* Section headers */
+  .section-tag  { @apply text-[10px] font-bold tracking-[0.18em] uppercase text-primary; }
+  .section-h    { @apply text-2xl md:text-3xl font-bold text-ink tracking-tight font-display; }
+  .section-h-lg { @apply text-3xl md:text-4xl lg:text-5xl font-extrabold text-ink tracking-tight font-display leading-[1.1]; }
+  .section-sub  { @apply text-[14px] text-ink-muted mt-2 max-w-xl; }
+
+  /* Gradient text — used very sparingly */
+  .gradient-text { @apply bg-brand-gradient bg-clip-text text-transparent; }
+
+  /* Helpers */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Subtle hairline */
+  .hairline { @apply border-t border-line; }
+
+  /* Medical hatched accent */
+  .medical-stripe {
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(37, 99, 235, 0.04) 0,
+      rgba(37, 99, 235, 0.04) 8px,
+      transparent 8px,
+      transparent 16px
+    );
+  }
+}
