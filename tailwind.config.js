@@ -83,11 +83,13 @@ module.exports = {
         shimmer:  "shimmer 1.6s linear infinite",
         "fade-up":"fadeUp 0.7s cubic-bezier(0.2,0.8,0.2,1) forwards",
         "fade-in":"fadeIn 0.5s ease forwards",
+        marquee:  "marquee 35s linear infinite",
       },
       keyframes: {
         shimmer:{ "0%":{ backgroundPosition:"200% 0"}, "100%":{ backgroundPosition:"-200% 0"} },
         fadeUp: { "0%":{ opacity:0, transform:"translateY(16px)"}, "100%":{ opacity:1, transform:"translateY(0)"} },
         fadeIn: { "0%":{ opacity:0}, "100%":{ opacity:1} },
+        marquee:{ "0%":{ transform:"translateX(0)"}, "100%":{ transform:"translateX(-50%)"} },
       },
     },
   },

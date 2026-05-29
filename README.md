@@ -1,126 +1,176 @@
-# Medoria v2 — Phase 2
+# 🏥 Medoria — کاتالوگ B2B مصرفی پزشکی تاجیکستان
 
-سایت کاتالوگ پزشکی B2B با Next.js + Supabase + Tailwind CSS.
+سایت کاتالوگی پزشکی حرفه‌ای با Next.js 14 + Supabase + Tailwind CSS.
 
-## ✨ ویژگی‌های فاز ۲ (جدید)
+## ✨ ویژگی‌ها
 
-- 🔄 **مقایسه محصولات** — تا ۴ محصول کنار هم، با هایلایت بهترین قیمت
-- 🏷️ **فیلتر برند** در کاتالوگ
-- 📂 **صفحه دسته‌بندی‌ها** (`/categories`) — مرور کامل ۶ دسته
-- 📧 **فرم تماس واقعی** — ارسال خودکار به واتساپ یا تلگرام
-- 🖼️ **گالری چند عکس** برای محصول با Lightbox
-- 📄 **محتوای کامل About** — معرفی، ماموریت، ارزش‌ها، مشتریان
-- 📞 **محتوای کامل Contact** — کارت‌های تماس، ساعات کاری، فرم حرفه‌ای
+### چندزبانه واقعی
+- 🇷🇺 روسی · 🇹🇯 تاجیکی · 🇬🇧 انگلیسی · 🇮🇷 فارسی (RTL)
+- ذخیره زبان انتخابی در localStorage
+- متادیتای SEO جدا برای هر زبان
 
-## ساختار
+### کاتالوگ کامل
+- جستجو + Mega search با dropdown
+- فیلتر دسته‌بندی، برند، Badge (NEW/TOP/SALE)
+- نمای Grid / List
+- مرتب‌سازی بر اساس قیمت/نام
+- اسکلت بارگذاری حرفه‌ای
 
-```
-app/
-  [lang]/                ← ۴ زبان: ru, tg, en, fa
-    page.jsx             ← Home
-    catalog/
-      page.jsx           ← کاتالوگ + فیلتر برند + Compare
-      [slug]/page.jsx    ← محصول + گالری + Compare
-    compare/page.jsx     ← 🆕 مقایسه side-by-side
-    categories/page.jsx  ← 🆕 مرور دسته‌بندی‌ها
-    about/page.jsx       ← 🆕 محتوای کامل
-    contact/page.jsx     ← 🆕 فرم واقعی
-    layout.jsx
+### صفحه محصول
+- گالری چند عکس با Lightbox و کیبورد
+- Specs (JSONB)، بروشور PDF
+- Sticky Quote Panel هنگام scroll
+- محصولات مشابه
+- آیکون categoryهای پیش‌فرض هنگام نبود عکس
 
-components/
-  layout/                ← Header (با لینک Categories), Footer, TopBar, Logo
-  home/                  ← Hero, Stats, CategoryGrid, Featured, ...
-  catalog/               ← ProductCard (با Compare), CompareDrawer 🆕
-  product/               ← QuoteModal, ProductGallery 🆕
-  shared/                ← FloatingWhatsApp
+### مقایسه محصولات
+- تا ۴ محصول کنار هم
+- نوار شناور پایین صفحه
+- هایلایت ارزان‌ترین قیمت
+- ذخیره در localStorage
 
-lib/
-  i18n.js                ← همه ترجمه‌ها (فاز ۲ کامل)
-  supabase.js
-  whatsapp.js
-  compare.js             ← 🆕 localStorage hook
+### استعلام B2B
+- WhatsApp & Telegram با پیام آماده ۴ زبانه
+- فرم Request Quote
+- فرم Contact ذخیره در Supabase
+- بخش "ارسال لیست خرید" برای خرید عمده
 
-public/
-  logo.png, logo-text.png
-```
+### بخش‌های Home (۱۱ بخش)
+۱. Hero با نمایش لوگو
+۲. Stats با تعداد واقعی محصولات
+۳. ۶ دسته‌بندی با تعداد live
+۴. محصولات منتخب
+۵. مارکی برندها
+۶. چرا مدوریا (۶ مزیت)
+۷. روند ۴ مرحله‌ای خرید
+۸. ۳ مخاطب اصلی
+۹. ⭐ نظر مشتریان (Testimonials)
+۱۰. 📋 فرم لیست خرید عمده
+۱۱. CTA نهایی
 
 ---
 
-## مراحل استقرار
+## 🚀 مراحل Deploy
 
 ### مرحله ۱ — Supabase SQL
 
-در **SQL Editor** اجرا کن (به ترتیب):
+تو **SQL Editor** Supabase، **به ترتیب** این ۳ فایل رو RUN کن:
 
-1. `supabase-migration.sql` (اگه قبلاً اجرا نشده)
-2. `supabase-migration-phase2.sql` ← جدید
+1. `supabase-migration.sql` — جدول‌های اصلی
+2. `supabase-migration-phase2.sql` — جدول contact_inquiries
+3. `supabase-seed-data.sql` — **۲۴ محصول واقعی** ✨
+
+> ⚠️ اگه قبلاً migration رو زدی، فقط فایل ۳ (seed) رو اجرا کن.
 
 ### مرحله ۲ — Environment Variables (Vercel)
 
-این متغیرها باید باشن (احتمالاً قبلاً تنظیم شدن):
-
 ```
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-NEXT_PUBLIC_WA_NUMBER
-NEXT_PUBLIC_TG_USERNAME
-NEXT_PUBLIC_EMAIL
-NEXT_PUBLIC_PHONE
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_xxx
+NEXT_PUBLIC_WA_NUMBER=992XXXXXXXXX
+NEXT_PUBLIC_TG_USERNAME=YourTelegramUser
+NEXT_PUBLIC_EMAIL=sales@medoria.tj
+NEXT_PUBLIC_PHONE=+992XXXXXXXXX
 ```
 
-### مرحله ۳ — GitHub
+### مرحله ۳ — GitHub & Vercel
 
-تمام فایل‌های قدیمی repo را پاک کن، فایل‌های این پوشه را آپلود کن.
-
-Vercel خودکار build می‌کنه.
+1. همه فایل‌های قدیمی repo رو پاک کن
+2. محتویات این پوشه (همه فایل‌ها و پوشه‌ها) رو آپلود کن
+3. Vercel خودکار build می‌کنه (۲-۳ دقیقه)
 
 ---
 
-## استفاده
+## 🎨 لوگوها
 
-### مقایسه محصولات
+سه نسخه در `/public`:
+- `logo.png` — فقط آیکون (هدر، compact)
+- `logo-full.png` — آیکون + متن "Medoria" (Hero، Footer)
+- `logo-text.png` — فقط typography
 
-- روی ⇆ (گوشه بالا راست کارت) کلیک کن
-- یک نوار شناور پایین صفحه ظاهر می‌شه
-- تا ۴ محصول می‌تونی اضافه کنی (پنجمی، اولی رو جایگزین می‌کنه)
-- روی نوار کلیک → صفحه `/compare`
-- ارزان‌ترین قیمت "BEST" نشون داده میشه
-
-### گالری محصول
-
-- ستون اصلی: `image_url`
-- ستون گالری: `gallery_urls` (آرایه از URLها)
-
-مثال در Supabase:
-```json
-{
-  "image_url": "products/glv-001-main.jpg",
-  "gallery_urls": ["products/glv-001-2.jpg", "products/glv-001-3.jpg"]
-}
+استفاده در کد:
+```jsx
+<Logo variant="icon" />          // فقط آیکون
+<Logo variant="icon" showText /> // آیکون + متن (Header)
+<Logo variant="full" />          // لوگو کامل (Footer)
+<Logo variant="text" />          // فقط typography
 ```
-
-تا ۵ thumbnail نشون داده میشه. کلیک روی عکس → Lightbox.
-
-### فیلتر برند
-
-- در Supabase، ستون `brand` رو پر کن
-- خودکار به صفحه کاتالوگ اضافه میشه
-
-### Specs و بروشور
-
-- `specs` (JSONB): `{"Размер": "M", "Материал": "Нитрил"}`
-- `brochure_url`: لینک PDF
 
 ---
 
-## URLها
+## 📦 افزودن محصولات
 
-| صفحه       | روسی              | فارسی             |
-|------------|-------------------|-------------------|
-| Home       | `/ru`             | `/fa`             |
-| Catalog    | `/ru/catalog`     | `/fa/catalog`     |
-| Product    | `/ru/catalog/123` | `/fa/catalog/123` |
-| Categories | `/ru/categories`  | `/fa/categories`  |
-| Compare    | `/ru/compare`     | `/fa/compare`     |
-| About      | `/ru/about`       | `/fa/about`       |
-| Contact    | `/ru/contact`     | `/fa/contact`     |
+### روش ۱: SQL Editor
+از `supabase-seed-data.sql` به‌عنوان الگو استفاده کن. هر محصول نیاز داره:
+- 4 زبان: `name_ru`, `name_tg`, `name_en`, `name_fa`
+- توضیحات: `description_ru/tg/en/fa`
+- پایه: `sku`, `category`, `brand`, `price`, `unit`
+- اختیاری: `badge` (NEW/TOP/SALE), `is_featured`, `image_url`, `gallery_urls`
+
+### روش ۲: Table Editor (UI)
+Supabase → Table Editor → products → Insert row
+
+### عکس محصول
+آپلود به Supabase Storage (bucket: `product-images`) → URL یا path رو در `image_url` ذخیره کن. می‌تونی آرایه‌ای از URLها در `gallery_urls` بذاری.
+
+---
+
+## 🛠️ ساختار
+
+```
+app/
+  [lang]/
+    page.jsx              ← Home (11 بخش)
+    catalog/
+      page.jsx            ← لیست با فیلتر/سرچ/Compare
+      [slug]/page.jsx     ← صفحه محصول
+    compare/page.jsx      ← مقایسه side-by-side
+    categories/page.jsx
+    about/page.jsx
+    contact/page.jsx
+    layout.jsx
+  page.jsx                ← localStorage lang redirect
+  layout.jsx
+  globals.css
+
+components/
+  layout/    Header, Footer, TopBar, Logo, LanguageSwitcher
+  home/      Hero, StatsBar, CategoryGrid, FeaturedProducts,
+             Brands, WhyMedoria, Process, Audience,
+             Trust 🆕, Procurement 🆕, FinalCTA
+  catalog/   ProductCard, CompareDrawer
+  product/   ProductGallery, QuoteModal, StickyQuotePanel
+  shared/    Icon (40+ SVG), FloatingWhatsApp
+
+lib/
+  i18n.js       4-language translations
+  supabase.js   getProducts, getProduct, getRelated, imageUrl
+  whatsapp.js   waLink, tgLink, message builders
+  compare.js    useCompare hook with localStorage
+  categories.js Supabase categories fetcher
+
+public/
+  logo.png, logo-full.png, logo-text.png
+```
+
+---
+
+## 🔧 طراحی
+
+پالت رنگ B2B پزشکی (آبی محور، الهام از Medline/McKesson):
+- **Primary**: #2563EB (آبی اصلی)
+- **Cyan**: #06B6D4 (accent)
+- **Navy**: #0F172A (متن، footer)
+- **Tint Blue/Cyan**: پس‌زمینه‌های ملایم
+- لوگو رنگارنگ خودش حفظ شده (gradient اصلی)
+
+---
+
+## 📱 پیشرفت پروژه
+
+✅ **فاز ۱**: ساخت اولیه
+✅ **فاز ۲**: Compare, Brand filter, Categories page, Contact form, Gallery
+✅ **فاز ۳**: Redesign B2B (آبی), SVG icons, Sticky panel, localStorage, Grid/List, Badge filter
+✅ **فاز ۴**: لوگوهای کامل, Testimonials, Procurement section, Brands marquee, Live counts, Seed data واقعی
+
+**پروژه ۱۰۰٪ آماده استفاده در محیط واقعی.**

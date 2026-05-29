@@ -1,20 +1,37 @@
 // components/home/StatsBar.jsx
+"use client";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import { getTranslations } from "@/lib/i18n";
+import Icon from "@/components/shared/Icon";
 
 export default function StatsBar({ lang }) {
   const t = getTranslations(lang);
+  const [productCount, setProductCount] = useState(null);
+
+  useEffect(() => {
+    supabase
+      .from("products")
+      .select("*", { count: "exact", head: true })
+      .then(({ count }) => setProductCount(count));
+  }, []);
+
+  // Use real count if available, else show default
+  const stats = [...t.home.stats];
+  if (productCount !== null && productCount > 0) {
+    stats[0] = [`${productCount}+`, t.home.stats[0][1]];
+  }
 
   return (
     <section className="py-10 md:py-14 bg-white">
       <div className="container-x">
         <div className="relative bg-navy rounded-3xl px-6 py-8 md:px-12 md:py-10 grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-4 overflow-hidden">
-          {/* Decorative glow */}
           <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full pointer-events-none"
                style={{ background: "radial-gradient(circle, rgba(37,99,235,0.25) 0%, transparent 70%)" }} />
           <div className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full pointer-events-none"
                style={{ background: "radial-gradient(circle, rgba(6,182,212,0.18) 0%, transparent 70%)" }} />
 
-          {t.home.stats.map(([val, label], i) => (
+          {stats.map(([val, label], i) => (
             <div key={i} className={`relative ${i < 3 ? "md:border-r md:border-white/10" : ""} md:px-4`}>
               <div className="text-4xl md:text-5xl font-display font-extrabold leading-none mb-2 gradient-text tabular">
                 {val}

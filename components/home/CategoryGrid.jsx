@@ -1,10 +1,40 @@
 // components/home/CategoryGrid.jsx
+"use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getTranslations, CATEGORIES, getCategoryName, getCategoryCount } from "@/lib/i18n";
+import { supabase } from "@/lib/supabase";
+import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
 import Icon from "@/components/shared/Icon";
 
 export default function CategoryGrid({ lang }) {
   const t = getTranslations(lang);
+  const [counts, setCounts] = useState({});
+
+  useEffect(() => {
+    // Get real counts per category
+    Promise.all(
+      CATEGORIES.map((c) =>
+        supabase
+          .from("products")
+          .select("*", { count: "exact", head: true })
+          .eq("category", c.slug)
+          .then(({ count }) => [c.slug, count || 0])
+      )
+    ).then((entries) => setCounts(Object.fromEntries(entries)));
+  }, []);
+
+  const labelFor = (slug) => {
+    const n = counts[slug];
+    if (n === undefined) return "…";
+    if (n === 0) return lang === "fa" ? "به‌زودی" : lang === "tg" ? "ба зудӣ" : lang === "en" ? "coming soon" : "скоро";
+    const noun = {
+      ru: n === 1 ? "товар" : "товаров",
+      tg: "мол",
+      en: n === 1 ? "product" : "products",
+      fa: "محصول",
+    };
+    return `${n} ${noun[lang] || noun.en}`;
+  };
 
   return (
     <section className="py-14 md:py-20 bg-canvas-soft border-y border-line">
@@ -34,7 +64,7 @@ export default function CategoryGrid({ lang }) {
                 {getCategoryName(c.slug, lang)}
               </div>
               <div className="text-[11px] text-ink-faint">
-                {getCategoryCount(c.slug, lang)}
+                {labelFor(c.slug)}
               </div>
             </Link>
           ))}

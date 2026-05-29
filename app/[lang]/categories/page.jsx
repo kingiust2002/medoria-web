@@ -1,24 +1,45 @@
 // app/[lang]/categories/page.jsx
+"use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getTranslations, CATEGORIES, getCategoryName, getCategoryCount } from "@/lib/i18n";
+import { supabase } from "@/lib/supabase";
+import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
 import Icon from "@/components/shared/Icon";
 
-export async function generateMetadata({ params }) {
-  const { lang } = params;
-  const t = getTranslations(lang);
-  return {
-    title: `${t.categories.title} — Medoria`,
-    description: t.categories.subtitle,
-  };
-}
+export const dynamic = "force-dynamic";
 
 export default function CategoriesPage({ params }) {
   const { lang } = params;
   const t = getTranslations(lang);
+  const [counts, setCounts] = useState({});
+
+  useEffect(() => {
+    Promise.all(
+      CATEGORIES.map((c) =>
+        supabase
+          .from("products")
+          .select("*", { count: "exact", head: true })
+          .eq("category", c.slug)
+          .then(({ count }) => [c.slug, count || 0])
+      )
+    ).then((entries) => setCounts(Object.fromEntries(entries)));
+  }, []);
+
+  const labelFor = (slug) => {
+    const n = counts[slug];
+    if (n === undefined) return "…";
+    if (n === 0) return lang === "fa" ? "به‌زودی" : lang === "tg" ? "ба зудӣ" : lang === "en" ? "coming soon" : "скоро";
+    const noun = {
+      ru: n === 1 ? "товар" : "товаров",
+      tg: "мол",
+      en: n === 1 ? "product" : "products",
+      fa: "محصول",
+    };
+    return `${n} ${noun[lang] || noun.en}`;
+  };
 
   return (
     <div className="bg-canvas-soft min-h-screen">
-      {/* Hero */}
       <div className="bg-white border-b border-line relative overflow-hidden">
         <div className="absolute -top-1/2 right-0 w-[40vw] h-[40vw] rounded-full pointer-events-none"
              style={{ background: "radial-gradient(circle, rgba(37,99,235,0.05) 0%, transparent 70%)" }} />
@@ -34,7 +55,6 @@ export default function CategoriesPage({ params }) {
         </div>
       </div>
 
-      {/* Categories list */}
       <div className="container-x py-10 md:py-14">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {CATEGORIES.map((c) => (
@@ -52,7 +72,7 @@ export default function CategoriesPage({ params }) {
                   <h2 className="font-display text-lg md:text-xl font-bold text-ink group-hover:text-primary transition-colors">
                     {getCategoryName(c.slug, lang)}
                   </h2>
-                  <span className="text-[11px] text-ink-faint shrink-0">{getCategoryCount(c.slug, lang)}</span>
+                  <span className="text-[11px] text-ink-faint shrink-0">{labelFor(c.slug)}</span>
                 </div>
                 <p className="text-[13px] text-ink-muted leading-relaxed mb-4 flex-1">
                   {t.categories.details[c.slug]}

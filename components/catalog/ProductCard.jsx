@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { imageUrl } from "@/lib/supabase";
-import { getTranslations, getCategoryName } from "@/lib/i18n";
+import { getTranslations, getCategoryName, CATEGORIES } from "@/lib/i18n";
 import { waLink, tgLink, quickInquiryMessage } from "@/lib/whatsapp";
 import { useCompare } from "@/lib/compare";
 import QuoteModal from "@/components/product/QuoteModal";
@@ -48,7 +48,9 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
             {img ? (
               <img src={img} alt={name} className="w-full h-full object-cover" loading="lazy" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center"><Icon name="package" size={28} className="text-primary/40" /></div>
+              <div className="w-full h-full bg-gradient-to-br from-tint-blue to-tint-cyan flex items-center justify-center">
+                <Icon name={CATEGORIES.find((c) => c.slug === p.category)?.icon || "package"} size={40} className="text-primary/30" strokeWidth={1.2} />
+              </div>
             )}
             {p.badge && (
               <span className={`absolute top-2 left-2 ${BADGE_STYLE[p.badge]} tag`}>{p.badge}</span>
@@ -111,8 +113,14 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
               loading="lazy"
             />
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 opacity-50">
-              <Icon name="package" size={36} className="text-primary" strokeWidth={1.2} />
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-tint-blue via-white to-tint-cyan">
+              <Icon
+                name={CATEGORIES.find((c) => c.slug === p.category)?.icon || "package"}
+                size={56}
+                className="text-primary/30"
+                strokeWidth={1.1}
+              />
+              <span className="text-[10px] text-ink-faint uppercase tracking-wider">{p.sku || p.brand || "Medoria"}</span>
             </div>
           )}
 

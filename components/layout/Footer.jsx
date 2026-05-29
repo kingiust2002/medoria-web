@@ -18,7 +18,7 @@ export default function Footer({ lang }) {
         <div className="grid gap-10 md:grid-cols-12 pb-10 border-b border-white/10">
           {/* Brand */}
           <div className="md:col-span-5">
-            <Logo size={32} white />
+            <Logo size={40} variant="full" white />
             <p className="mt-4 text-[13px] leading-relaxed max-w-xs text-white/60">{t.footer.desc}</p>
             <div className="mt-5 flex flex-wrap gap-2">
               <a href={waLink(bulkInquiryMessage(lang))} target="_blank" rel="noopener noreferrer"

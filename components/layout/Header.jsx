@@ -45,7 +45,7 @@ export default function Header({ lang }) {
       >
         <div className="container-x flex h-16 items-center justify-between">
           <Link href={`/${lang}`} className="shrink-0">
-            <Logo size={34} />
+            <Logo size={36} variant="icon" showText />
           </Link>
 
           {/* Desktop nav */}

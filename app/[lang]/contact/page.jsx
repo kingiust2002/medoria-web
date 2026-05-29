@@ -133,7 +133,7 @@ function ContactForm({ lang, t }) {
 
   const update = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const msg = [
       lang === "fa" ? "📝 پیام از وب‌سایت" :
@@ -150,6 +150,22 @@ function ContactForm({ lang, t }) {
       `💬 ${c.form.message}:`,
       form.message || "—",
     ].filter(Boolean).join("\n");
+
+    // Try to save to Supabase (non-blocking — failure won't stop WA send)
+    try {
+      const { supabase } = await import("@/lib/supabase");
+      await supabase.from("contact_inquiries").insert({
+        name: form.name,
+        organization: form.org || null,
+        phone: form.phone || null,
+        email: form.email || null,
+        subject: form.subject || null,
+        message: form.message,
+        language: lang,
+      });
+    } catch (err) {
+      console.warn("Failed to save inquiry to DB:", err);
+    }
 
     const url = via === "telegram" ? tgLink(msg) : waLink(msg);
     window.open(url, "_blank");

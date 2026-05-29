@@ -2,6 +2,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { imageUrl } from "@/lib/supabase";
+import { CATEGORIES } from "@/lib/i18n";
 import Icon from "@/components/shared/Icon";
 
 export default function ProductGallery({ product }) {
@@ -27,11 +28,12 @@ export default function ProductGallery({ product }) {
   }, [zoom, all.length]);
 
   if (all.length === 0) {
+    const catIcon = CATEGORIES.find((c) => c.slug === product.category)?.icon || "package";
     return (
-      <div className="card overflow-hidden aspect-square bg-gradient-to-br from-tint-blue to-tint-cyan">
-        <div className="w-full h-full flex flex-col items-center justify-center gap-2 opacity-60">
-          <div className="text-primary/40"><Icon name="package" size={64} strokeWidth={1.1} /></div>
-          <span className="text-sm text-ink-faint">No image</span>
+      <div className="card overflow-hidden aspect-square bg-gradient-to-br from-tint-blue via-white to-tint-cyan">
+        <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+          <div className="text-primary/30"><Icon name={catIcon} size={96} strokeWidth={1} /></div>
+          <span className="text-xs text-ink-faint uppercase tracking-widest">{product.sku || "Medoria"}</span>
         </div>
       </div>
     );
