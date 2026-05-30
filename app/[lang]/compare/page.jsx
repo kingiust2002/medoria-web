@@ -6,6 +6,7 @@ import { useCompare } from "@/lib/compare";
 import { supabase, imageUrl } from "@/lib/supabase";
 import { getTranslations, getCategoryName } from "@/lib/i18n";
 import { waLink, tgLink, productInquiryMessage } from "@/lib/whatsapp";
+import { priceLabel, isOnRequest } from "@/lib/price";
 import Icon from "@/components/shared/Icon";
 
 export const dynamic = "force-dynamic";
@@ -60,7 +61,7 @@ export default function ComparePage({ params }) {
     },
     {
       label: t.common.price,
-      values: products.map((p) => `$${p.price}`),
+      values: products.map((p) => priceLabel(p, lang)),
       highlight: "min",
     },
     {
@@ -81,8 +82,10 @@ export default function ComparePage({ params }) {
     },
   ] : [];
 
-  // Find min price index
-  const minPriceIdx = products.reduce((min, p, i) => p.price < products[min].price ? i : min, 0);
+  // Find min price index (on-request items never win "best price")
+  const priceOf = (p) => (isOnRequest(p) ? Infinity : Number(p.price));
+  const hasAnyPriced = products.some((p) => !isOnRequest(p));
+  const minPriceIdx = products.reduce((min, p, i) => (priceOf(p) < priceOf(products[min]) ? i : min), 0);
 
   return (
     <div className="bg-canvas-soft min-h-screen">
@@ -142,7 +145,7 @@ export default function ComparePage({ params }) {
                       aria-label="Remove"
                     ><Icon name="close" size={15} /></button>
 
-                    <Link href={`/${lang}/catalog/${p.id}`} className="block">
+                    <Link href={`/${lang}/catalog/${p.slug || p.id}`} className="block">
                       <div className="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-tint-blue to-tint-cyan mb-3">
                         {p.image_url ? (
                           <img src={imageUrl(p.image_url)} alt={name} className="w-full h-full object-cover" />
@@ -177,7 +180,7 @@ export default function ComparePage({ params }) {
                     {row.label}
                   </div>
                   {row.values.map((val, i) => {
-                    const isMin = row.highlight === "min" && i === minPriceIdx && products.length > 1;
+                    const isMin = row.highlight === "min" && i === minPriceIdx && products.length > 1 && hasAnyPriced && !isOnRequest(products[i]);
                     return (
                       <div
                         key={i}

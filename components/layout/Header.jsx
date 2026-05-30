@@ -79,7 +79,7 @@ export default function Header({ lang }) {
 
             <button
               onClick={() => setOpen(!open)}
-              className="lg:hidden -mr-1 p-2 text-ink"
+              className="lg:hidden -me-1 p-2 text-ink"
               aria-label="Menu"
             >
               <Icon name={open ? "close" : "list"} size={22} strokeWidth={2} />

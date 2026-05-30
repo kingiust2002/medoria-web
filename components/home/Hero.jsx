@@ -70,14 +70,14 @@ export default function Hero({ lang }) {
           <div className="mt-7 relative animate-fade-up" style={{ animationDelay: "300ms" }}>
             <form onSubmit={submit} className="flex flex-col sm:flex-row gap-2.5 max-w-2xl">
               <div className="relative flex-1">
-                <Icon name="search" size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
+                <Icon name="search" size={18} className="absolute start-4 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
                 <input
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   onFocus={() => setSearchFocus(true)}
                   onBlur={() => setTimeout(() => setSearchFocus(false), 200)}
                   placeholder={t.home.heroSearch}
-                  className="input h-14 pl-12 w-full rounded-2xl shadow-soft text-[14px] border-line focus:border-primary"
+                  className="input h-14 ps-12 w-full rounded-2xl shadow-soft text-[14px] border-line focus:border-primary"
                 />
               </div>
               <button type="submit" className="btn-primary h-14 px-7 rounded-2xl text-[14px]">
@@ -100,7 +100,7 @@ export default function Hero({ lang }) {
                       <Icon name={c.icon} size={18} strokeWidth={1.75} />
                     </div>
                     <span className="text-[13px] font-medium text-ink">{getCategoryName(c.slug, lang)}</span>
-                    <Icon name="arrow" size={13} className="ml-auto text-ink-faint" />
+                    <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={13} className="ms-auto text-ink-faint" />
                   </Link>
                 ))}
               </div>
@@ -109,7 +109,7 @@ export default function Hero({ lang }) {
 
           {/* Quick category chips */}
           <div className="mt-5 flex flex-wrap gap-1.5 items-center animate-fade-up" style={{ animationDelay: "400ms" }}>
-            <span className="text-[11px] text-ink-faint mr-2">{t.common.categories}:</span>
+            <span className="text-[11px] text-ink-faint me-2">{t.common.categories}:</span>
             {CATEGORIES.slice(0, 4).map((c) => (
               <Link
                 key={c.slug}

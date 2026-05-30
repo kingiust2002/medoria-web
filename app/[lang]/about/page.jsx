@@ -1,11 +1,25 @@
 // app/[lang]/about/page.jsx
 import Link from "next/link";
-import { getTranslations } from "@/lib/i18n";
+import { LOCALES, getTranslations } from "@/lib/i18n";
 import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 
 const VALUE_ICONS = ["shield", "bolt", "check", "handshake"];
 const OFFER_ICONS = ["gloves", "stethoscope", "bandage", "thermometer", "flask", "pill"];
+
+export async function generateMetadata({ params }) {
+  const { lang } = params;
+  if (!LOCALES.includes(lang)) return {};
+  const t = getTranslations(lang);
+  return {
+    title: `${t.about.hero.title} — ${t.common.brand}`,
+    description: t.about.hero.sub,
+    alternates: {
+      canonical: `/${lang}/about`,
+      languages: Object.fromEntries(LOCALES.map((l) => [l, `/${l}/about`])),
+    },
+  };
+}
 
 export default function AboutPage({ params }) {
   const { lang } = params;

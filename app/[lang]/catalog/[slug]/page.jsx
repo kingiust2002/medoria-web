@@ -1,269 +1,83 @@
-// app/[lang]/catalog/[slug]/page.jsx
-"use client";
-import { useState, useEffect } from "react";
+// app/[lang]/catalog/[slug]/page.jsx — server wrapper: SEO + JSON-LD + client.
 import Link from "next/link";
-import { getProduct, getRelated } from "@/lib/supabase";
-import { getTranslations, getCategoryName } from "@/lib/i18n";
-import { waLink, tgLink, productInquiryMessage } from "@/lib/whatsapp";
-import { useCompare } from "@/lib/compare";
-import ProductCard from "@/components/catalog/ProductCard";
-import QuoteModal from "@/components/product/QuoteModal";
-import ProductGallery from "@/components/product/ProductGallery";
-import StickyQuotePanel from "@/components/product/StickyQuotePanel";
-import CompareDrawer from "@/components/catalog/CompareDrawer";
+import { getProductBySlug, imageUrl } from "@/lib/supabase";
+import { LOCALES, getTranslations, getCategoryName } from "@/lib/i18n";
+import { isOnRequest } from "@/lib/price";
 import Icon from "@/components/shared/Icon";
+import ProductDetailClient from "./ProductDetailClient";
 
 export const dynamic = "force-dynamic";
 
-const BADGE_STYLE = {
-  SALE: "bg-accent-pink text-white",
-  NEW:  "bg-primary text-white",
-  TOP:  "bg-cyan-600 text-white",
-};
-
-export default function ProductDetailPage({ params }) {
-  const { lang, slug: id } = params;
+export async function generateMetadata({ params }) {
+  const { lang, slug } = params;
   const t = getTranslations(lang);
-  const [product, setProduct] = useState(null);
-  const [related, setRelated] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [quoteOpen, setQuoteOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const { has, toggle } = useCompare();
+  const p = await getProductBySlug(slug);
+  if (!p) return { title: `${t.common.brand}` };
 
-  useEffect(() => {
-    setLoading(true);
-    getProduct(id).then((p) => {
-      if (!p) { setNotFound(true); setLoading(false); return; }
-      setProduct(p);
-      getRelated(p).then(setRelated);
-      setLoading(false);
-    });
-  }, [id]);
+  const name = p[`name_${lang}`] || p.name_en;
+  const desc = (p[`description_${lang}`] || p.description_en || t.product.metaFallback || "").slice(0, 160);
+  const path = `/catalog/${p.slug || p.id}`;
+  const og = p.image_url ? imageUrl(p.image_url) : "/logo.png";
 
-  if (loading) return <ProductSkeleton />;
+  return {
+    title: `${name}${p.sku ? ` — ${p.sku}` : ""} — ${t.common.brand}`,
+    description: desc,
+    alternates: {
+      canonical: `/${lang}${path}`,
+      languages: Object.fromEntries(LOCALES.map((l) => [l, `/${l}${path}`])),
+    },
+    openGraph: {
+      title: name,
+      description: desc,
+      type: "website",
+      images: [{ url: og }],
+    },
+  };
+}
 
-  if (notFound || !product) {
+export default async function ProductPage({ params }) {
+  const { lang, slug } = params;
+  const t = getTranslations(lang);
+  const product = await getProductBySlug(slug);
+
+  if (!product) {
     return (
       <div className="container-x py-20 text-center">
         <Icon name="package" size={48} className="text-ink-faint mx-auto mb-4" strokeWidth={1.2} />
         <p className="text-ink-muted">{t.common.noResults}</p>
         <Link href={`/${lang}/catalog`} className="btn-primary size-md mt-6 inline-flex">
-          {t.product.backToCatalog}
+          {t.product.backToCatalog.replace(/[←→]/g, "").trim()}
         </Link>
       </div>
     );
   }
 
   const name = product[`name_${lang}`] || product.name_en;
-  const desc = product[`description_${lang}`] || product.description_en;
-  const pageUrl = typeof window !== "undefined" ? window.location.href : "";
-  const isCompared = has(product.id);
-
-  const handleCopy = () => {
-    navigator.clipboard?.writeText(`${name} — $${product.price} / ${product.unit}\n${pageUrl}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+  const desc = product[`description_${lang}`] || product.description_en || "";
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name,
+    ...(product.sku ? { sku: product.sku } : {}),
+    ...(product.brand ? { brand: { "@type": "Brand", name: product.brand } } : {}),
+    ...(desc ? { description: desc } : {}),
+    category: getCategoryName(product.category, lang),
+    offers: {
+      "@type": "Offer",
+      availability: product.in_stock
+        ? "https://schema.org/InStock"
+        : "https://schema.org/PreOrder",
+      ...(isOnRequest(product) ? {} : { price: Number(product.price), priceCurrency: "USD" }),
+    },
   };
-
-  const specs = product.specs && typeof product.specs === "object" ? product.specs : null;
 
   return (
     <>
-      {quoteOpen && <QuoteModal product={product} lang={lang} onClose={() => setQuoteOpen(false)} />}
-
-      <div className="bg-canvas-soft min-h-screen">
-        {/* Breadcrumb */}
-        <div className="bg-white border-b border-line">
-          <div className="container-x py-3 flex items-center gap-2 text-[11px] text-ink-muted overflow-x-auto no-scrollbar">
-            <Link href={`/${lang}`} className="hover:text-primary whitespace-nowrap">{t.common.home}</Link>
-            <span className="text-line">/</span>
-            <Link href={`/${lang}/catalog`} className="hover:text-primary whitespace-nowrap">{t.common.catalog}</Link>
-            <span className="text-line">/</span>
-            <Link href={`/${lang}/catalog?category=${product.category}`} className="hover:text-primary whitespace-nowrap">
-              {getCategoryName(product.category, lang)}
-            </Link>
-            <span className="text-line">/</span>
-            <span className="text-ink font-semibold truncate">{name}</span>
-          </div>
-        </div>
-
-        <div className="container-x py-8 md:py-12">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-            {/* Gallery */}
-            <ProductGallery product={product} />
-
-            {/* Info */}
-            <div>
-              <div className="flex items-center gap-3 mb-3 flex-wrap">
-                <Link
-                  href={`/${lang}/catalog?category=${product.category}`}
-                  className="text-[10px] font-bold tracking-[0.16em] text-primary uppercase hover:opacity-70"
-                >
-                  {getCategoryName(product.category, lang)}
-                </Link>
-                {product.brand && (
-                  <>
-                    <span className="text-ink-faint text-xs">·</span>
-                    <Link href={`/${lang}/catalog?brand=${encodeURIComponent(product.brand)}`}
-                      className="text-[12px] font-semibold text-ink-muted hover:text-primary">
-                      {product.brand}
-                    </Link>
-                  </>
-                )}
-                {product.badge && (
-                  <span className={`ml-auto ${BADGE_STYLE[product.badge] || "bg-primary text-white"} tag`}>
-                    {product.badge}
-                  </span>
-                )}
-              </div>
-
-              <h1 className="font-display text-3xl md:text-4xl font-extrabold text-ink tracking-tight leading-tight mb-3">
-                {name}
-              </h1>
-
-              {desc && <p className="text-[15px] text-ink-muted leading-relaxed mb-5">{desc}</p>}
-
-              {/* Price card */}
-              <div className="card p-5 mb-5">
-                <div className="flex items-end justify-between gap-4 mb-4">
-                  <div>
-                    <div className="text-[11px] text-ink-faint mb-1">{t.common.price}</div>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="font-display text-4xl font-extrabold text-ink leading-none tabular">${product.price}</span>
-                      <span className="text-[13px] text-ink-faint">/ {product.unit}</span>
-                    </div>
-                  </div>
-                  <span className={`pill ${product.in_stock ? "bg-ok/10 text-ok border border-ok/20" : "bg-warn/10 text-warn border border-warn/20"}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${product.in_stock ? "bg-ok" : "bg-warn"}`} />
-                    {product.in_stock ? t.common.inStock : t.common.onOrder}
-                  </span>
-                </div>
-
-                <button onClick={() => setQuoteOpen(true)} className="btn-primary size-xl w-full mb-2">
-                  <Icon name="invoice" size={18} />
-                  {t.product.requestQuoteFull}
-                </button>
-                <div className="grid grid-cols-2 gap-2">
-                  <a href={waLink(productInquiryMessage(product, lang, { url: pageUrl }))} target="_blank" rel="noopener noreferrer" className="btn-wa size-md">
-                    <Icon name="chat" size={15} />
-                    {t.product.askWhatsApp}
-                  </a>
-                  <a href={tgLink(productInquiryMessage(product, lang, { url: pageUrl }))} target="_blank" rel="noopener noreferrer" className="btn-tg size-md">
-                    <Icon name="send" size={15} />
-                    {t.product.askTelegram}
-                  </a>
-                </div>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  <button onClick={handleCopy} className="btn-ghost size-sm">
-                    <Icon name={copied ? "check" : "copy"} size={13} />
-                    {copied ? t.common.copied : t.common.copy}
-                  </button>
-                  <button
-                    onClick={() => toggle(product.id)}
-                    className={[
-                      "btn size-sm transition-colors",
-                      isCompared
-                        ? "bg-primary text-white border border-primary"
-                        : "bg-white text-ink-muted border border-line hover:border-primary/40 hover:text-primary",
-                    ].join(" ")}
-                  >
-                    <Icon name={isCompared ? "check" : "switchH"} size={13} />
-                    {isCompared ? t.product.inCompare : t.product.addToCompare}
-                  </button>
-                </div>
-              </div>
-
-              {/* Meta */}
-              <dl className="grid grid-cols-2 gap-3 text-[13px]">
-                <Meta label={t.product.sku}      value={product.sku || "—"} />
-                <Meta label={t.common.unit}      value={product.unit || "—"} />
-                <Meta label={t.product.minOrder} value={product.min_order_qty || 1} />
-                <Meta label={t.product.category} value={getCategoryName(product.category, lang)} />
-              </dl>
-
-              {/* Specifications */}
-              {specs && Object.keys(specs).length > 0 && (
-                <div className="mt-6">
-                  <h2 className="font-display text-lg font-bold text-ink mb-3">{t.product.specs}</h2>
-                  <div className="card overflow-hidden">
-                    <dl className="divide-y divide-line">
-                      {Object.entries(specs).map(([k, v]) => (
-                        <div key={k} className="flex justify-between px-4 py-2.5 text-[13px]">
-                          <dt className="text-ink-muted">{k}</dt>
-                          <dd className="font-semibold text-ink">{v}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </div>
-                </div>
-              )}
-
-              {/* Brochure */}
-              {product.brochure_url && (
-                <a
-                  href={product.brochure_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-ghost size-md w-full mt-4"
-                >
-                  <Icon name="download" size={15} />
-                  {t.product.brochure}
-                </a>
-              )}
-            </div>
-          </div>
-
-          {/* Related */}
-          {related.length > 0 && (
-            <div className="mt-16">
-              <h2 className="section-h mb-6">{t.product.related}</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                {related.map((p) => (
-                  <ProductCard key={p.id} product={p} lang={lang} compact />
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-12">
-            <Link href={`/${lang}/catalog`} className="text-[13px] font-semibold text-primary hover:opacity-80 inline-flex items-center gap-1">
-              <Icon name="arrowL" size={14} />
-              {lang === "fa" ? "بازگشت به کاتالوگ" : t.product.backToCatalog.replace(/[←→]/g, "").trim()}
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Sticky panel + drawer */}
-      <StickyQuotePanel product={product} lang={lang} onQuoteClick={() => setQuoteOpen(true)} />
-      <CompareDrawer lang={lang} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ProductDetailClient product={product} lang={lang} />
     </>
-  );
-}
-
-function Meta({ label, value }) {
-  return (
-    <div className="card p-3 flex flex-col">
-      <span className="text-[10px] text-ink-faint uppercase tracking-wide mb-0.5">{label}</span>
-      <span className="text-[13px] font-semibold text-ink">{value}</span>
-    </div>
-  );
-}
-
-function ProductSkeleton() {
-  return (
-    <div className="container-x py-12">
-      <div className="grid lg:grid-cols-2 gap-12">
-        <div className="aspect-square skeleton rounded-2xl" />
-        <div className="space-y-4">
-          <div className="h-3 skeleton w-1/4" />
-          <div className="h-9 skeleton" />
-          <div className="h-4 skeleton w-3/4" />
-          <div className="h-32 skeleton mt-6" />
-        </div>
-      </div>
-    </div>
   );
 }
