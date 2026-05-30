@@ -39,10 +39,12 @@ export default function Header({ lang }) {
         className={[
           "sticky top-0 z-[60] transition-all backdrop-blur-xl",
           scrolled
-            ? "bg-white/95 border-b border-line shadow-soft"
-            : "bg-white/90 border-b border-transparent",
+            ? "bg-white/80 border-b border-line/80 shadow-soft"
+            : "bg-white/60 border-b border-transparent",
         ].join(" ")}
       >
+        {/* gradient hairline */}
+        <div className={`absolute inset-x-0 top-0 h-[2px] bg-brand-gradient transition-opacity ${scrolled ? "opacity-100" : "opacity-0"}`} />
         <div className="container-x flex h-16 items-center justify-between">
           <Link href={`/${lang}`} className="shrink-0">
             <Logo size={36} variant="icon" showText />
@@ -54,7 +56,7 @@ export default function Header({ lang }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className="px-3.5 py-2 text-[13px] font-medium text-ink-muted rounded-lg hover:text-primary hover:bg-tint-blue transition-colors"
+                className="px-3.5 py-2 text-[13px] font-medium text-ink-muted rounded-lg hover:text-brand-violet hover:bg-brand-violet/[0.06] transition-colors"
               >
                 {item.label}
               </Link>

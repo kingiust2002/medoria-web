@@ -124,12 +124,16 @@ export default function CatalogInner({ params }) {
       )}
 
       {/* Page header */}
-      <div className="bg-white border-b border-line">
-        <div className="container-x py-8 md:py-12">
+      <div className="relative overflow-hidden bg-canvas-soft border-b border-line">
+        <div className="blob w-[40vw] h-[40vw] -top-1/3 -end-[6%] animate-aurora"
+             style={{ background: "radial-gradient(circle, rgba(139,47,247,0.12) 0%, transparent 70%)" }} />
+        <div className="blob w-[30vw] h-[30vw] top-0 start-[6%] animate-aurora"
+             style={{ background: "radial-gradient(circle, rgba(6,182,212,0.10) 0%, transparent 70%)", animationDelay: "5s" }} />
+        <div className="container-x py-8 md:py-12 relative">
           <nav className="text-[11px] text-ink-muted mb-3 flex items-center gap-2">
-            <Link href={`/${lang}`} className="hover:text-primary">{t.common.home}</Link>
+            <Link href={`/${lang}`} className="hover:text-brand-violet">{t.common.home}</Link>
             <span className="text-line">/</span>
-            <span className="text-primary font-semibold">{t.catalog.title}</span>
+            <span className="text-brand-violet font-semibold">{t.catalog.title}</span>
           </nav>
           <h1 className="font-display text-3xl md:text-4xl font-extrabold text-ink tracking-tight mb-2">
             {t.catalog.title}

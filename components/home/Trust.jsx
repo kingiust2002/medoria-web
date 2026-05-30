@@ -47,15 +47,16 @@ export default function Trust({ lang }) {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
           {items.map((item, i) => (
-            <div key={i} className="card p-6 hover:shadow-hover transition-all">
+            <div key={i} className="relative card card-hover p-6 overflow-hidden">
+              <Icon name="quote" size={56} className="absolute -top-2 end-3 text-brand-violet/[0.06]" fill="currentColor" strokeWidth={0} />
               {/* 5 stars */}
-              <div className="flex gap-0.5 mb-4 text-accent-gold">
+              <div className="relative flex gap-0.5 mb-4 text-accent-gold">
                 {[1,2,3,4,5].map((s) => (
                   <Icon key={s} name="star" size={14} fill="currentColor" strokeWidth={0} />
                 ))}
               </div>
 
-              <p className="text-[14px] text-ink leading-relaxed mb-5">
+              <p className="relative text-[14px] text-ink leading-relaxed mb-5">
                 "{item.text}"
               </p>
 

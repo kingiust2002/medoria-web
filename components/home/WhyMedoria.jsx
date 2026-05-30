@@ -19,10 +19,11 @@ export default function WhyMedoria({ lang }) {
           {t.home.whyItems.map(([_, title, desc], i) => (
             <div
               key={i}
-              className="card p-7 hover:shadow-hover hover:border-primary/20 transition-all duration-300 group"
+              className="card card-hover p-7 group"
             >
-              <div className="w-12 h-12 rounded-2xl bg-tint-blue text-primary flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-colors">
-                <Icon name={ICON_MAP[i]} size={24} strokeWidth={1.75} />
+              <div className="relative w-12 h-12 rounded-2xl bg-brand-violet/[0.08] text-brand-violet flex items-center justify-center mb-4 transition-all duration-300 group-hover:text-white group-hover:shadow-brand">
+                <span className="absolute inset-0 rounded-2xl bg-brand-gradient opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Icon name={ICON_MAP[i]} size={24} strokeWidth={1.75} className="relative" />
               </div>
               <h3 className="font-display font-bold text-[16px] text-ink mb-2">{title}</h3>
               <p className="text-[13px] text-ink-muted leading-[1.7]">{desc}</p>
