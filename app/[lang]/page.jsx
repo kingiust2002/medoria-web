@@ -1,4 +1,5 @@
 // app/[lang]/page.jsx — Home
+import { LOCALES, getTranslations } from "@/lib/i18n";
 import Hero from "@/components/home/Hero";
 import StatsBar from "@/components/home/StatsBar";
 import CategoryGrid from "@/components/home/CategoryGrid";
@@ -10,6 +11,26 @@ import Audience from "@/components/home/Audience";
 import Trust from "@/components/home/Trust";
 import Procurement from "@/components/home/Procurement";
 import FinalCTA from "@/components/home/FinalCTA";
+
+export async function generateMetadata({ params }) {
+  const { lang } = params;
+  if (!LOCALES.includes(lang)) return {};
+  const t = getTranslations(lang);
+  return {
+    title: `${t.common.brand} — ${t.home.heroH1Pre} ${t.home.heroH1Accent}`,
+    description: t.home.heroSub,
+    alternates: {
+      canonical: `/${lang}`,
+      languages: Object.fromEntries(LOCALES.map((l) => [l, `/${l}`])),
+    },
+    openGraph: {
+      title: `${t.common.brand} — ${t.home.heroH1Pre} ${t.home.heroH1Accent}`,
+      description: t.home.heroSub,
+      type: "website",
+      images: [{ url: "/logo.png", width: 512, height: 512, alt: t.common.brand }],
+    },
+  };
+}
 
 export default function HomePage({ params }) {
   const { lang } = params;

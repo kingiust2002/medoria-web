@@ -1,4 +1,5 @@
-// app/page.jsx — Reads localStorage and redirects to the user's saved language
+// app/page.jsx — root entry. Sends visitors to the Persian (default) showcase,
+// while respecting a returning visitor's explicitly saved language.
 "use client";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -8,16 +9,10 @@ export default function Root() {
   const router = useRouter();
 
   useEffect(() => {
-    let lang = DEFAULT_LOCALE;
+    let lang = DEFAULT_LOCALE; // fa — primary showcase for new visitors
     try {
       const saved = localStorage.getItem("lang");
-      if (saved && LOCALES.includes(saved)) {
-        lang = saved;
-      } else {
-        // Detect browser language
-        const browser = (navigator.language || "").slice(0, 2);
-        if (LOCALES.includes(browser)) lang = browser;
-      }
+      if (saved && LOCALES.includes(saved)) lang = saved;
     } catch {}
     router.replace(`/${lang}`);
   }, [router]);

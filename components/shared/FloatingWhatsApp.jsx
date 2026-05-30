@@ -18,7 +18,7 @@ export default function FloatingWhatsApp({ lang }) {
     <>
       {/* Desktop floating button — only when scrolled */}
       {scrolled && (
-        <div className="hidden md:flex fixed bottom-6 right-6 z-50 flex-col items-end gap-3 animate-fade-up">
+        <div className="hidden md:flex fixed bottom-6 end-6 z-50 flex-col items-end gap-3 animate-fade-up">
           {open && (
             <div className="card p-2 flex flex-col gap-1.5">
               <a href={waLink(bulkInquiryMessage(lang))} target="_blank" rel="noopener noreferrer"

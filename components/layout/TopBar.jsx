@@ -11,7 +11,7 @@ export default function TopBar({ lang }) {
   return (
     <div className="hidden md:block bg-navy text-white/70 text-[11px]">
       <div className="container-x flex h-9 items-center justify-between">
-        <span className="truncate pr-4 flex items-center gap-2">
+        <span className="truncate pe-4 flex items-center gap-2">
           <Icon name="shield" size={12} className="text-cyan-400 shrink-0" />
           {t.topBar}
         </span>

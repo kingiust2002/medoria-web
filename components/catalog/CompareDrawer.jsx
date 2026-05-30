@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCompare } from "@/lib/compare";
 import { supabase, imageUrl } from "@/lib/supabase";
 import { getTranslations } from "@/lib/i18n";
+import { priceLabel, isOnRequest } from "@/lib/price";
 import Icon from "@/components/shared/Icon";
 
 export default function CompareDrawer({ lang }) {
@@ -36,7 +37,7 @@ export default function CompareDrawer({ lang }) {
         {!open && (
           <button
             onClick={() => setOpen(true)}
-            className="bg-brand-gradient text-white shadow-brand rounded-full pl-2 pr-4 py-2 flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform"
+            className="bg-brand-gradient text-white shadow-brand rounded-full ps-2 pe-4 py-2 flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform"
           >
             <div className="flex -space-x-1.5">
               {products.slice(0, 3).map((p) => (
@@ -99,7 +100,7 @@ export default function CompareDrawer({ lang }) {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="text-[11px] font-semibold text-ink truncate">{name}</div>
-                        <div className="text-[10px] text-ink-faint tabular">${p.price}/{p.unit}</div>
+                        <div className="text-[10px] text-ink-faint tabular">{isOnRequest(p) ? priceLabel(p, lang) : `$${p.price}/${p.unit}`}</div>
                       </div>
                       <button onClick={() => remove(p.id)} className="text-ink-faint hover:text-warn w-6 h-6 flex items-center justify-center shrink-0">
                         <Icon name="close" size={14} />
