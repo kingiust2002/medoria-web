@@ -99,7 +99,7 @@ export default function Hero({ lang }) {
       <Aurora variant="dark" className="-z-10 hidden dark:block opacity-70" />
       {/* 3D snow/dew particle field that morphs into words — both themes, capable
           desktops only (CSS aurora stays the fallback on mobile/reduced-motion). */}
-      {mounted && canRender3D && <HeroScene key={isDark ? "dark" : "light"} dark={isDark} />}
+      {mounted && canRender3D && <HeroScene key={isDark ? "dark" : "light"} dark={isDark} rtl={lang === "fa"} />}
 
       {/* dark contrast overlay (keeps text crisp over shader/photo) */}
       <div className="absolute inset-0 -z-10 hidden dark:block bg-gradient-to-t from-navy via-navy/55 to-navy/25" />
@@ -121,10 +121,10 @@ export default function Hero({ lang }) {
             <span className="text-[10px] font-bold tracking-[0.18em] uppercase">{t.home.heroTag}</span>
           </motion.div>
 
-          <motion.h1 variants={item} className="font-display text-[40px] sm:text-[50px] md:text-[58px] lg:text-[66px] leading-[1.02] font-extrabold tracking-tight">
+          <motion.h1 variants={item} className="font-display text-[40px] sm:text-[50px] md:text-[58px] lg:text-[66px] leading-[1.1] font-extrabold tracking-tight">
             <span className="block">{t.home.heroH1Pre}</span>
             <span className="block">{t.home.heroH1Mid}</span>
-            <span className="block gradient-text-animated">{t.home.heroH1Accent}</span>
+            <span className="block gradient-text-animated leading-[1.18] pb-2">{t.home.heroH1Accent}</span>
           </motion.h1>
 
           <motion.p variants={item} className="mt-6 text-[15px] md:text-[17px] text-ink-muted dark:text-white/70 leading-[1.75] max-w-xl">
