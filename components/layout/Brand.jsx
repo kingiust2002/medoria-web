@@ -26,6 +26,7 @@ export default function Brand({ height = 28, symbol = true, onDark = false, clas
       aria-label="Medoria"
       className={`inline-flex items-center gap-2.5 select-none group ${className}`}
     >
+      {Mark}
       {onDark ? (
         <img src="/brand/wordmark-white.png" alt="Medoria" style={{ height }} className="w-auto object-contain" />
       ) : (
@@ -34,7 +35,6 @@ export default function Brand({ height = 28, symbol = true, onDark = false, clas
           <img src="/brand/wordmark-white.png" alt="" aria-hidden="true" style={{ height }} className="hidden dark:block w-auto object-contain" />
         </>
       )}
-      {Mark}
     </span>
   );
 }
