@@ -1,11 +1,12 @@
 // app/layout.jsx
 import "./globals.css";
+import { Providers } from "./providers";
 
 export const metadata = {
   metadataBase: new URL("https://medoria.tj"),
   title: { default: "Medoria — Medical Catalog", template: "%s | Medoria" },
   description: "Professional B2B catalog of medical consumables for clinics, pharmacies and hospitals in Tajikistan.",
-  icons: { icon: "/logo.png", apple: "/logo.png" },
+  icons: { icon: "/logo-mark.png", apple: "/logo-mark.png" },
 };
 
 export default function RootLayout({ children }) {
@@ -19,7 +20,9 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

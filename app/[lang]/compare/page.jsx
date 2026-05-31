@@ -178,7 +178,7 @@ export default function ComparePage({ params }) {
               {rows.map((row, ri) => (
                 <div
                   key={ri}
-                  className={`grid gap-3 px-3 py-3 min-w-fit ${ri % 2 === 0 ? "bg-canvas-soft/60" : "bg-white"} ${ri > 0 ? "border-t border-line" : ""}`}
+                  className={`grid gap-3 px-3 py-3 min-w-fit ${ri % 2 === 0 ? "bg-canvas-soft/60" : "bg-surface"} ${ri > 0 ? "border-t border-line" : ""}`}
                   style={{ gridTemplateColumns: `140px repeat(${products.length}, minmax(200px, 1fr))` }}
                 >
                   <div className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide self-center">

@@ -2,22 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────────
+   THEME TOKENS — semantic colours as RGB triplets so Tailwind's
+   `rgb(var(--x) / <alpha>)` opacity modifiers keep working.
+   Brand spectrum (pink→violet→blue→cyan) is fixed; only neutrals swap.
+   ──────────────────────────────────────────────────────────────────────── */
+:root {
+  --canvas:       255 255 255;   /* page base            */
+  --canvas-soft:  247 249 253;   /* alternating sections */
+  --surface:      255 255 255;   /* cards                */
+  --surface-2:    247 249 253;   /* nested surface       */
+  --ink:          11 17 32;      /* primary text         */
+  --ink-soft:     30 41 59;
+  --ink-muted:    74 85 104;
+  --ink-faint:    148 163 184;
+  --line:         230 234 242;   /* borders              */
+  --line-soft:    241 245 249;
+  --img-ph-1:     244 241 254;   /* image-slot gradient  */
+  --img-ph-2:     239 244 255;
+  --img-ph-3:     236 254 255;
+  color-scheme: light;
+}
+
+.dark {
+  --canvas:       8 11 23;       /* #080B17 deep navy    */
+  --canvas-soft:  13 17 32;
+  --surface:      18 23 41;      /* lifted card          */
+  --surface-2:    24 30 50;
+  --ink:          236 240 248;
+  --ink-soft:     214 222 235;
+  --ink-muted:    158 170 191;
+  --ink-faint:    112 124 146;
+  --line:         38 46 67;
+  --line-soft:    28 35 54;
+  --img-ph-1:     32 24 56;
+  --img-ph-2:     18 26 52;
+  --img-ph-3:     12 30 46;
+  color-scheme: dark;
+}
+
 @layer base {
   html { scroll-behavior: smooth; }
   body {
-    @apply bg-white text-ink antialiased;
+    @apply bg-canvas text-ink antialiased;
     font-feature-settings: "cv11", "ss01", "ss03";
+    transition: background-color 0.35s ease, color 0.25s ease;
   }
-  ::selection { @apply bg-brand-violet/20 text-ink; }
+  ::selection { @apply bg-brand-violet/25 text-ink; }
 
   /* Persian RTL */
   html[lang="fa"] body { @apply font-farsi; }
   html[lang="fa"] { direction: rtl; }
 
-  /* Tabular nums for prices */
   .tabular { font-feature-settings: "tnum"; }
-
-  /* Nicer focus ring */
   :focus-visible { outline: 2px solid theme("colors.brand.violet"); outline-offset: 2px; }
 }
 
@@ -27,7 +64,6 @@
   /* ── Buttons ─────────────────────────────────────────────────────────── */
   .btn          { @apply relative inline-flex items-center justify-center gap-2 font-semibold transition-all duration-300 whitespace-nowrap select-none; }
 
-  /* Vivid full-spectrum gradient — the signature button */
   .btn-primary  {
     @apply btn text-white shadow-brand hover:-translate-y-0.5 active:translate-y-0;
     background-image: linear-gradient(120deg,#EC1E95 0%,#8B2FF7 38%,#2563EB 72%,#06B6D4 100%);
@@ -37,7 +73,7 @@
   .btn-primary:hover { background-position: 100% 50%; box-shadow: 0 16px 38px -10px rgba(124,58,237,0.6); }
 
   .btn-solid    { @apply btn bg-primary text-white hover:bg-primary-700 active:bg-primary-800; }
-  .btn-ghost    { @apply btn bg-white text-ink-soft border border-line hover:border-brand-violet/40 hover:text-brand-violet hover:shadow-soft; }
+  .btn-ghost    { @apply btn bg-surface text-ink-soft border border-line hover:border-brand-violet/40 hover:text-brand-violet hover:shadow-soft; }
   .btn-outline  { @apply btn bg-transparent text-brand-violet border-2 border-brand-violet/60 hover:bg-brand-violet hover:text-white; }
   .btn-wa       { @apply btn bg-[#22C55E] text-white shadow-[0_4px_14px_rgba(34,197,94,0.30)] hover:opacity-95 hover:shadow-[0_10px_24px_rgba(34,197,94,0.42)] hover:-translate-y-0.5; }
   .btn-tg       { @apply btn bg-[#229ED9] text-white shadow-[0_4px_14px_rgba(34,158,217,0.30)] hover:opacity-95 hover:shadow-[0_10px_24px_rgba(34,158,217,0.42)] hover:-translate-y-0.5; }
@@ -49,25 +85,25 @@
   .size-xl      { @apply h-14 px-8 text-[15px] rounded-2xl; }
 
   /* ── Cards ───────────────────────────────────────────────────────────── */
-  .card         { @apply bg-white border border-line rounded-2xl shadow-soft; }
-  .card-flat    { @apply bg-white border border-line rounded-2xl; }
+  .card         { @apply bg-surface border border-line rounded-2xl shadow-soft; }
+  .card-flat    { @apply bg-surface border border-line rounded-2xl; }
   .card-hover   { @apply transition-all duration-300 hover:shadow-hover hover:border-brand-violet/25 hover:-translate-y-1; }
 
-  /* ── Glassmorphism ───────────────────────────────────────────────────── */
-  .glass        { @apply bg-white/70 backdrop-blur-xl border border-white/70 shadow-card; }
-  .glass-soft   { @apply bg-white/55 backdrop-blur-xl border border-white/60; }
+  /* ── Glassmorphism (adaptive) ────────────────────────────────────────── */
+  .glass        { @apply bg-surface/70 backdrop-blur-xl border border-line shadow-card; }
+  .glass-soft   { @apply bg-surface/55 backdrop-blur-xl border border-line; }
   .glass-dark   { @apply bg-white/[0.07] backdrop-blur-xl border border-white/15 text-white; }
 
   /* ── Gradient border wrapper ─────────────────────────────────────────── */
   .gradient-border {
     position: relative;
-    background: linear-gradient(#fff,#fff) padding-box,
+    background: linear-gradient(rgb(var(--surface)),rgb(var(--surface))) padding-box,
                 linear-gradient(120deg,#EC1E95,#8B2FF7,#2563EB,#06B6D4) border-box;
     border: 1.5px solid transparent;
   }
 
   /* ── Inputs ──────────────────────────────────────────────────────────── */
-  .input        { @apply h-11 px-4 bg-white border border-line rounded-xl text-sm text-ink placeholder:text-ink-faint outline-none transition-all focus:border-brand-violet/60 focus:shadow-ring; }
+  .input        { @apply h-11 px-4 bg-surface border border-line rounded-xl text-sm text-ink placeholder:text-ink-faint outline-none transition-all focus:border-brand-violet/60 focus:shadow-ring; }
 
   /* ── Pills & tags ────────────────────────────────────────────────────── */
   .pill         { @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium; }
@@ -76,14 +112,13 @@
   .tag-top      { @apply tag bg-cyan-600 text-white; }
   .tag-sale     { @apply tag bg-brand-pink text-white; }
 
-  /* Eyebrow / section tag — gradient-tinted chip */
   .eyebrow {
-    @apply inline-flex items-center gap-2 rounded-full border border-line bg-white/80 backdrop-blur
+    @apply inline-flex items-center gap-2 rounded-full border border-line bg-surface/80 backdrop-blur
            px-3.5 py-1.5 text-[10px] font-bold tracking-[0.18em] uppercase shadow-soft;
   }
 
-  /* ── Skeleton ────────────────────────────────────────────────────────── */
-  .skeleton     { background: linear-gradient(90deg,#F1F5F9 25%,#EFF4FF 50%,#F1F5F9 75%); background-size: 200% 100%; @apply animate-shimmer rounded-lg; }
+  /* ── Skeleton (adaptive) ─────────────────────────────────────────────── */
+  .skeleton     { background: linear-gradient(90deg, rgb(var(--canvas-soft)) 25%, rgb(var(--surface-2)) 50%, rgb(var(--canvas-soft)) 75%); background-size: 200% 100%; @apply animate-shimmer rounded-lg; }
 
   /* ── Section headers ─────────────────────────────────────────────────── */
   .section-tag  { @apply text-[10px] font-bold tracking-[0.18em] uppercase text-brand-violet; }
@@ -102,16 +137,15 @@
     @apply bg-clip-text text-transparent animate-gradient-pan;
   }
 
-  /* ── Decorative blob (aurora) ────────────────────────────────────────── */
   .blob         { @apply absolute rounded-full blur-3xl pointer-events-none; }
 
-  /* ── Image placeholder surface ───────────────────────────────────────── */
+  /* ── Image placeholder surface (adaptive) ────────────────────────────── */
   .img-ph {
     @apply relative overflow-hidden;
     background:
-      radial-gradient(120% 120% at 0% 0%, rgba(236,30,149,0.10) 0%, transparent 45%),
-      radial-gradient(120% 120% at 100% 100%, rgba(6,182,212,0.12) 0%, transparent 45%),
-      linear-gradient(135deg,#F4F1FE 0%,#EFF4FF 50%,#ECFEFF 100%);
+      radial-gradient(120% 120% at 0% 0%, rgba(236,30,149,0.12) 0%, transparent 45%),
+      radial-gradient(120% 120% at 100% 100%, rgba(6,182,212,0.14) 0%, transparent 45%),
+      linear-gradient(135deg, rgb(var(--img-ph-1)) 0%, rgb(var(--img-ph-2)) 50%, rgb(var(--img-ph-3)) 100%);
   }
 
   /* ── Helpers ─────────────────────────────────────────────────────────── */
@@ -119,7 +153,6 @@
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .hairline { @apply border-t border-line; }
 
-  /* Subtle film-grain overlay for premium depth (apply to a positioned parent) */
   .noise::after {
     content: "";
     position: absolute; inset: 0;

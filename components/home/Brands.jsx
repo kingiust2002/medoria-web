@@ -18,7 +18,7 @@ export default function Brands({ lang }) {
   const L = LABELS[lang] || LABELS.en;
 
   return (
-    <section className="py-12 md:py-16 bg-white border-y border-line overflow-hidden">
+    <section className="py-12 md:py-16 bg-canvas border-y border-line overflow-hidden">
       <div className="container-x mb-8">
         <div className="text-center">
           <div className="section-tag mb-2">{L.tag}</div>
@@ -40,8 +40,8 @@ export default function Brands({ lang }) {
           ))}
         </div>
         {/* Edge fades */}
-        <div className="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-white to-transparent pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-white to-transparent pointer-events-none" />
+        <div className="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-canvas to-transparent pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-canvas to-transparent pointer-events-none" />
       </div>
     </section>
   );

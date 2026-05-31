@@ -1,6 +1,7 @@
 // components/product/QuoteModal.jsx
 "use client";
 import { useState, useEffect } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { getTranslations, LANG_META } from "@/lib/i18n";
 import { waLink, tgLink } from "@/lib/whatsapp";
 import { createQuoteRequest } from "@/lib/supabase";
@@ -18,6 +19,7 @@ const CHANNELS = [
 export default function QuoteModal({ product, lang, onClose }) {
   const t = getTranslations(lang);
   const dir = LANG_META[lang]?.dir || "ltr";
+  const reduce = useReducedMotion();
   const [name, setName] = useState("");
   const [org, setOrg]   = useState("");
   const [phone, setPhone] = useState("");
@@ -89,9 +91,12 @@ export default function QuoteModal({ product, lang, onClose }) {
       dir={dir}
       className="fixed inset-0 z-[100] bg-navy/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
     >
-      <div
+      <motion.div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-3xl w-full max-w-md shadow-hover max-h-[92vh] overflow-y-auto"
+        initial={reduce ? false : { opacity: 0, scale: 0.96, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}
+        className="bg-surface rounded-3xl w-full max-w-md shadow-hover max-h-[92vh] overflow-y-auto"
       >
         {sent ? (
           <div className="p-8 text-center">
@@ -119,8 +124,8 @@ export default function QuoteModal({ product, lang, onClose }) {
             </div>
             <p className="text-xs text-ink-muted mb-5">{t.quoteModal.sub}</p>
 
-            <div className="bg-tint-blue rounded-xl p-3 mb-5 border border-primary/10 flex items-start gap-3">
-              <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center shrink-0 text-primary">
+            <div className="bg-brand-violet/[0.06] rounded-xl p-3 mb-5 border border-brand-violet/15 flex items-start gap-3">
+              <div className="w-12 h-12 rounded-lg bg-surface flex items-center justify-center shrink-0 text-brand-violet">
                 <Icon name="package" size={20} />
               </div>
               <div className="flex-1 min-w-0">
@@ -166,7 +171,7 @@ export default function QuoteModal({ product, lang, onClose }) {
                         "h-10 rounded-xl text-[12px] font-semibold border transition-colors flex items-center justify-center gap-1.5",
                         via === v
                           ? "bg-primary text-white border-primary"
-                          : "bg-white text-ink-muted border-line hover:border-ink-faint",
+                          : "bg-surface text-ink-muted border-line hover:border-ink-faint",
                       ].join(" ")}
                     >
                       <Icon name={icon} size={14} />
@@ -186,7 +191,7 @@ export default function QuoteModal({ product, lang, onClose }) {
             </button>
           </form>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

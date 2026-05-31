@@ -7,6 +7,7 @@ import LanguageSwitcher from "./LanguageSwitcher";
 import { getTranslations } from "@/lib/i18n";
 import { bulkInquiryMessage, waLink } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
+import ThemeToggle from "@/components/shared/ThemeToggle";
 
 export default function Header({ lang }) {
   const t = getTranslations(lang);
@@ -39,8 +40,8 @@ export default function Header({ lang }) {
         className={[
           "sticky top-0 z-[60] transition-all backdrop-blur-xl",
           scrolled
-            ? "bg-white/80 border-b border-line/80 shadow-soft"
-            : "bg-white/60 border-b border-transparent",
+            ? "bg-canvas/80 border-b border-line/80 shadow-soft"
+            : "bg-canvas/60 border-b border-transparent",
         ].join(" ")}
       >
         {/* gradient hairline */}
@@ -64,7 +65,8 @@ export default function Header({ lang }) {
           </nav>
 
           {/* Right side */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <ThemeToggle lang={lang} />
             <div className="hidden md:block">
               <LanguageSwitcher lang={lang} />
             </div>
@@ -92,7 +94,7 @@ export default function Header({ lang }) {
 
       {/* Mobile menu */}
       {open && (
-        <div className="fixed inset-0 top-16 z-50 lg:hidden bg-white overflow-y-auto">
+        <div className="fixed inset-0 top-16 z-50 lg:hidden bg-canvas overflow-y-auto">
           <div className="container-x py-6">
             <nav className="flex flex-col">
               {nav.map((item) => (
@@ -107,8 +109,9 @@ export default function Header({ lang }) {
               ))}
             </nav>
 
-            <div className="mt-6">
+            <div className="mt-6 flex items-center gap-3">
               <LanguageSwitcher lang={lang} />
+              <ThemeToggle lang={lang} withLabel />
             </div>
 
             <a

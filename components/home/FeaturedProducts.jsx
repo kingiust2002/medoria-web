@@ -6,6 +6,7 @@ import { getProducts } from "@/lib/supabase";
 import { getTranslations } from "@/lib/i18n";
 import ProductCard from "@/components/catalog/ProductCard";
 import Icon from "@/components/shared/Icon";
+import { Reveal } from "@/components/shared/Reveal";
 
 export default function FeaturedProducts({ lang }) {
   const t = getTranslations(lang);
@@ -19,18 +20,18 @@ export default function FeaturedProducts({ lang }) {
   }, []);
 
   return (
-    <section className="py-14 md:py-20 bg-white border-y border-line">
+    <section className="py-14 md:py-20 bg-canvas border-y border-line">
       <div className="container-x">
-        <div className="flex items-end justify-between mb-8 md:mb-10 gap-4">
+        <Reveal className="flex items-end justify-between mb-8 md:mb-10 gap-4">
           <div>
             <div className="section-tag text-cyan-600 mb-2.5">{t.home.featTag}</div>
             <h2 className="section-h">{t.home.featH}</h2>
             <p className="section-sub">{t.home.featSub}</p>
           </div>
-          <Link href={`/${lang}/catalog`} className="hidden sm:inline-flex items-center gap-1 text-[13px] font-semibold text-primary hover:opacity-80 whitespace-nowrap">
-            {t.home.featAll} <Icon name="arrow" size={14} />
+          <Link href={`/${lang}/catalog`} className="hidden sm:inline-flex items-center gap-1 text-[13px] font-semibold text-brand-violet hover:opacity-80 whitespace-nowrap">
+            {t.home.featAll} <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={14} />
           </Link>
-        </div>
+        </Reveal>
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

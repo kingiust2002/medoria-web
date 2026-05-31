@@ -1,6 +1,7 @@
 // components/home/Trust.jsx
 import { getTranslations } from "@/lib/i18n";
 import Icon from "@/components/shared/Icon";
+import { Reveal, Stagger, StaggerItem } from "@/components/shared/Reveal";
 
 const TESTIMONIALS = {
   ru: [
@@ -38,16 +39,17 @@ export default function Trust({ lang }) {
   const labels = TRUST_LABELS[lang] || TRUST_LABELS.en;
 
   return (
-    <section className="py-14 md:py-20 bg-white">
+    <section className="py-14 md:py-20 bg-canvas">
       <div className="container-x">
-        <div className="text-center mb-10 md:mb-12 max-w-2xl mx-auto">
+        <Reveal className="text-center mb-10 md:mb-12 max-w-2xl mx-auto">
           <div className="section-tag mb-3">{labels.tag}</div>
           <h2 className="section-h">{labels.title}</h2>
-        </div>
+        </Reveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+        <Stagger className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
           {items.map((item, i) => (
-            <div key={i} className="relative card card-hover p-6 overflow-hidden">
+            <StaggerItem key={i} className="h-full">
+            <div className="relative card card-hover p-6 overflow-hidden h-full">
               <Icon name="quote" size={56} className="absolute -top-2 end-3 text-brand-violet/[0.06]" fill="currentColor" strokeWidth={0} />
               {/* 5 stars */}
               <div className="relative flex gap-0.5 mb-4 text-accent-gold">
@@ -70,8 +72,9 @@ export default function Trust({ lang }) {
                 </div>
               </div>
             </div>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </div>
     </section>
   );
