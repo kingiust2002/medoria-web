@@ -1,6 +1,7 @@
 // app/[lang]/catalog/CatalogInner.jsx — interactive catalog (client).
 "use client";
 import { useState, useEffect, useMemo } from "react";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getProducts, getCategories } from "@/lib/supabase";
@@ -35,6 +36,7 @@ export default function CatalogInner({ params }) {
   const [visible, setVisible]     = useState(12);
   const [quickView, setQuickView] = useState(null);
   const [quoteFor, setQuoteFor]   = useState(null);
+  const [gridParent]              = useAutoAnimate();
 
   useEffect(() => {
     const q = searchParams?.get("q");
@@ -290,7 +292,7 @@ export default function CatalogInner({ params }) {
         {/* Grid/List */}
         {!loading && filtered.length > 0 && (
           <>
-            <div className={view === "grid"
+            <div ref={gridParent} className={view === "grid"
               ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5"
               : "space-y-3"}>
               {filtered.slice(0, visible).map((p) => (

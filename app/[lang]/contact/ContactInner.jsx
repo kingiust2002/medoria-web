@@ -6,6 +6,7 @@ import { getTranslations } from "@/lib/i18n";
 import { WA_NUMBER, TG_USER, waLink, tgLink } from "@/lib/whatsapp";
 import { createQuoteRequest } from "@/lib/supabase";
 import Icon from "@/components/shared/Icon";
+import TiltCard from "@/components/shared/TiltCard";
 
 const PHONE = process.env.NEXT_PUBLIC_PHONE || "+992900000000";
 
@@ -127,12 +128,16 @@ function MethodCard({ icon, iconBg, iconHover = "", label, value, desc, href }) 
   );
 
   return href ? (
+    <TiltCard className="rounded-2xl" max={6}>
     <a href={href} target="_blank" rel="noopener noreferrer"
        className={`card p-5 flex items-start gap-4 hover:shadow-hover transition-all ${iconHover}`}>
       {inner}
     </a>
+    </TiltCard>
   ) : (
+    <TiltCard className="rounded-2xl" max={6}>
     <div className="card p-5 flex items-start gap-4">{inner}</div>
+    </TiltCard>
   );
 }
 

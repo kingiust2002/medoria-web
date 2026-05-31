@@ -15,7 +15,7 @@ import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
 import Brand from "@/components/layout/Brand";
 
-const HeroShader = dynamic(() => import("@/components/home/HeroShader"), { ssr: false });
+const HeroScene = dynamic(() => import("@/components/home/HeroScene"), { ssr: false });
 const EASE = [0.2, 0.8, 0.2, 1];
 
 export default function Hero({ lang }) {
@@ -26,17 +26,28 @@ export default function Hero({ lang }) {
   const [mounted, setMounted] = useState(false);
   const [q, setQ] = useState("");
   const [searchFocus, setSearchFocus] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const [canRender3D, setCanRender3D] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const desktop = window.matchMedia("(min-width: 1024px)").matches;
+      const ok = desktop
+        && !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        && (navigator.hardwareConcurrency || 4) >= 4
+        && !(navigator.connection && navigator.connection.saveData);
+      setCanRender3D(ok);
+    } catch { /* keep CSS fallback */ }
+  }, []);
   const isDark = mounted && resolvedTheme === "dark";
 
   // ── subtle mouse parallax for the hero card (desktop, motion-safe) ──
   const mx = useMotionValue(0), my = useMotionValue(0);
-  const sx = useSpring(mx, { stiffness: 60, damping: 18 });
-  const sy = useSpring(my, { stiffness: 60, damping: 18 });
-  const cardX = useTransform(sx, [-0.5, 0.5], [14, -14]);
-  const cardY = useTransform(sy, [-0.5, 0.5], [10, -10]);
-  const rotY = useTransform(sx, [-0.5, 0.5], [-6, 6]);
-  const rotX = useTransform(sy, [-0.5, 0.5], [4, -4]);
+  const sx = useSpring(mx, { stiffness: 38, damping: 26 });
+  const sy = useSpring(my, { stiffness: 38, damping: 26 });
+  const cardX = useTransform(sx, [-0.5, 0.5], [8, -8]);
+  const cardY = useTransform(sy, [-0.5, 0.5], [6, -6]);
+  const rotY = useTransform(sx, [-0.5, 0.5], [-3, 3]);
+  const rotX = useTransform(sy, [-0.5, 0.5], [2, -2]);
   const onMove = (e) => {
     if (reduce) return;
     const r = e.currentTarget.getBoundingClientRect();
@@ -86,8 +97,8 @@ export default function Hero({ lang }) {
       {/* auroras — soft on light, neon on dark */}
       <Aurora variant="light" className="-z-10 dark:hidden opacity-90" />
       <Aurora variant="dark" className="-z-10 hidden dark:block opacity-70" />
-      {/* WebGL flowing aurora — DARK theme only, self-gated to desktop */}
-      {isDark && <HeroShader />}
+      {/* 3D particle field — DARK theme, capable desktops only (CSS aurora is the fallback) */}
+      {isDark && canRender3D && <HeroScene />}
 
       {/* dark contrast overlay (keeps text crisp over shader/photo) */}
       <div className="absolute inset-0 -z-10 hidden dark:block bg-gradient-to-t from-navy via-navy/55 to-navy/25" />
@@ -169,7 +180,7 @@ export default function Hero({ lang }) {
               {t.home.heroCta}
               <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={16} className="transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
             </Link>
-            <a href={waLink(bulkInquiryMessage(lang))} target="_blank" rel="noopener noreferrer" className="btn-wa size-xl">
+            <a href={waLink(bulkInquiryMessage(lang))} target="_blank" rel="noopener noreferrer" className="btn-contact size-xl">
               <Icon name="chat" size={16} />
               {t.common.contactUs}
             </a>
@@ -188,7 +199,7 @@ export default function Hero({ lang }) {
 
         {/* ── Floating brand card (lg+), with parallax tilt ───────── */}
         <motion.div variants={item} className="relative hidden lg:flex items-center justify-center" style={{ perspective: 1200 }}>
-          <motion.div style={reduce ? undefined : { x: cardX, y: cardY, rotateX: rotX, rotateY: rotY }} className="relative w-full max-w-sm will-change-transform">
+          <motion.div style={reduce ? undefined : { x: cardX, y: cardY, rotateX: rotX, rotateY: rotY }} className="relative w-full max-w-md will-change-transform">
             <div className="absolute inset-0 rounded-[2rem] bg-brand-conic blur-[64px] opacity-20 dark:opacity-30 animate-spin-slow" />
             <div className="relative rounded-[2rem] p-7 border bg-white/70 border-line shadow-card backdrop-blur-xl dark:bg-white/[0.07] dark:border-white/15 dark:shadow-brand-lg">
               <div className="flex items-center justify-between gap-3 mb-5">
