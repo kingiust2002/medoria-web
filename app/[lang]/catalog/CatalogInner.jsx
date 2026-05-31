@@ -232,7 +232,7 @@ export default function CatalogInner({ params }) {
               onClick={() => setView("grid")}
               className={[
                 "w-9 h-8 rounded-md flex items-center justify-center transition-colors",
-                view === "grid" ? "bg-white text-primary shadow-soft" : "text-ink-muted hover:text-ink",
+                view === "grid" ? "bg-surface text-primary shadow-soft" : "text-ink-muted hover:text-ink",
               ].join(" ")}
               title={t.catalog.viewGrid}
             >
@@ -242,7 +242,7 @@ export default function CatalogInner({ params }) {
               onClick={() => setView("list")}
               className={[
                 "w-9 h-8 rounded-md flex items-center justify-center transition-colors",
-                view === "list" ? "bg-white text-primary shadow-soft" : "text-ink-muted hover:text-ink",
+                view === "list" ? "bg-surface text-primary shadow-soft" : "text-ink-muted hover:text-ink",
               ].join(" ")}
               title={t.catalog.viewList}
             >
@@ -322,7 +322,7 @@ function Pill({ active, onClick, children, icon }) {
         "shrink-0 px-3.5 h-9 rounded-full text-[12px] font-semibold transition-all whitespace-nowrap flex items-center gap-1.5",
         active
           ? "bg-primary text-white border border-primary shadow-[0_4px_14px_rgba(37,99,235,0.22)]"
-          : "bg-white text-ink-muted border border-line hover:border-primary/40 hover:text-primary",
+          : "bg-surface text-ink-muted border border-line hover:border-brand-violet/40 hover:text-brand-violet",
       ].join(" ")}
     >
       {icon && <Icon name={icon} size={13} strokeWidth={2} />}
@@ -345,8 +345,8 @@ function BadgePill({ active, onClick, label, variant }) {
         variant
           ? variantClass[variant]
           : active
-            ? "bg-ink text-white border-ink"
-            : "bg-white text-ink-muted border-line hover:border-ink-muted",
+            ? "bg-brand-violet text-white border-brand-violet"
+            : "bg-surface text-ink-muted border-line hover:border-ink-muted",
       ].join(" ")}
     >
       {label}

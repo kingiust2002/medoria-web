@@ -276,7 +276,7 @@ function ContactForm({ lang, t }) {
                 "h-11 rounded-xl text-[13px] font-semibold border transition-colors flex items-center justify-center gap-2",
                 via === v
                   ? "bg-primary text-white border-primary"
-                  : "bg-white text-ink-muted border-line hover:border-ink-faint",
+                  : "bg-surface text-ink-muted border-line hover:border-ink-faint",
               ].join(" ")}
             >
               <Icon name={icon} size={15} />

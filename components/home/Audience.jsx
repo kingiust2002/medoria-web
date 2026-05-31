@@ -8,7 +8,7 @@ export default function Audience({ lang }) {
   const t = getTranslations(lang);
 
   return (
-    <section className="py-14 md:py-20 bg-white">
+    <section className="py-14 md:py-20 bg-canvas">
       <div className="container-x">
         <div className="text-center mb-10">
           <div className="section-tag mb-3">{t.home.audienceTag}</div>

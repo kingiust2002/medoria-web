@@ -6,6 +6,7 @@ import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
 import { WA_NUMBER, TG_USER, waLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
+import ThemeToggle from "@/components/shared/ThemeToggle";
 
 export default function Footer({ lang }) {
   const t = getTranslations(lang);
@@ -34,8 +35,9 @@ export default function Footer({ lang }) {
                 {t.common.telegram}
               </a>
             </div>
-            <div className="mt-5">
+            <div className="mt-5 flex items-center gap-3">
               <LanguageSwitcher lang={lang} white />
+              <ThemeToggle lang={lang} onDark />
             </div>
           </div>
 

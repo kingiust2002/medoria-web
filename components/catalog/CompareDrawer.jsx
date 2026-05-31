@@ -69,7 +69,7 @@ export default function CompareDrawer({ lang }) {
       {open && (
         <>
           <div onClick={() => setOpen(false)} className="fixed inset-0 bg-navy/40 backdrop-blur-sm z-[50]" />
-          <div className="fixed bottom-0 inset-x-0 z-[56] bg-white rounded-t-3xl border-t border-line shadow-hover p-4 md:p-6 max-h-[80vh] overflow-y-auto">
+          <div className="fixed bottom-0 inset-x-0 z-[56] bg-surface rounded-t-3xl border-t border-line shadow-hover p-4 md:p-6 max-h-[80vh] overflow-y-auto">
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -91,11 +91,11 @@ export default function CompareDrawer({ lang }) {
                   const name = p[`name_${lang}`] || p.name_en;
                   return (
                     <div key={p.id} className="card p-2.5 flex items-center gap-2.5 relative">
-                      <div className="w-10 h-10 rounded-lg bg-tint-blue overflow-hidden shrink-0">
+                      <div className="w-10 h-10 rounded-lg img-ph overflow-hidden shrink-0">
                         {p.image_url ? (
                           <img src={imageUrl(p.image_url)} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-primary"><Icon name="package" size={16} /></div>
+                          <div className="w-full h-full flex items-center justify-center text-brand-violet"><Icon name="package" size={16} /></div>
                         )}
                       </div>
                       <div className="min-w-0 flex-1">

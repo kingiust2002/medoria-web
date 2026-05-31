@@ -94,7 +94,7 @@ export default function Hero({ lang }) {
             </form>
 
             {searchFocus && filteredCats.length > 0 && (
-              <div className="absolute top-[60px] inset-x-0 sm:end-auto sm:w-[calc(100%-9rem)] bg-white rounded-2xl shadow-hover border border-line p-2 z-30 animate-fade-up">
+              <div className="absolute top-[60px] inset-x-0 sm:end-auto sm:w-[calc(100%-9rem)] bg-surface rounded-2xl shadow-hover border border-line p-2 z-30 animate-fade-up">
                 <div className="text-[10px] font-bold tracking-wider text-ink-faint uppercase px-3 pt-1.5 pb-1">{t.common.categories}</div>
                 {filteredCats.map((c) => (
                   <Link key={c.slug} href={`/${lang}/catalog?category=${c.slug}`}
@@ -180,7 +180,7 @@ export default function Hero({ lang }) {
       </div>
 
       {/* fade into light body */}
-      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-white pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-canvas pointer-events-none" />
     </section>
   );
 }

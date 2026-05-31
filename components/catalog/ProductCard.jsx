@@ -148,7 +148,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
               "absolute top-3 end-3 w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-soft backdrop-blur",
               isCompared
                 ? "bg-brand-gradient text-white scale-105"
-                : "bg-white/90 text-ink-muted hover:bg-white hover:text-brand-violet opacity-0 group-hover:opacity-100",
+                : "bg-surface/90 text-ink-muted hover:bg-surface hover:text-brand-violet opacity-0 group-hover:opacity-100",
             ].join(" ")}
             title={isCompared ? t.product.inCompare : t.product.addToCompare}
             aria-label="Compare"
@@ -160,7 +160,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
           {onQuickView && (
             <button
               onClick={handleQuickView}
-              className="absolute top-[52px] end-3 w-9 h-9 rounded-full flex items-center justify-center bg-white/90 text-ink-muted hover:bg-white hover:text-brand-violet shadow-soft backdrop-blur opacity-0 group-hover:opacity-100 transition-all"
+              className="absolute top-[52px] end-3 w-9 h-9 rounded-full flex items-center justify-center bg-surface/90 text-ink-muted hover:bg-surface hover:text-brand-violet shadow-soft backdrop-blur opacity-0 group-hover:opacity-100 transition-all"
               title={t.catalog.quickView}
               aria-label={t.catalog.quickView}
             >
@@ -170,8 +170,8 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
 
           {/* Out of stock overlay */}
           {!p.in_stock && (
-            <div className="absolute inset-0 bg-white/65 flex items-center justify-center backdrop-blur-[2px]">
-              <span className="bg-white text-[11px] font-bold text-warn px-3 py-1.5 rounded-full border border-warn/30 shadow-soft">
+            <div className="absolute inset-0 bg-canvas/70 flex items-center justify-center backdrop-blur-[2px]">
+              <span className="bg-surface text-[11px] font-bold text-warn px-3 py-1.5 rounded-full border border-warn/30 shadow-soft">
                 {t.common.onOrder}
               </span>
             </div>
@@ -179,7 +179,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
 
           {/* SKU */}
           {p.sku && (
-            <span className="absolute bottom-3 end-3 bg-white/95 backdrop-blur text-[10px] font-mono font-semibold text-ink-muted px-2 py-0.5 rounded-md border border-line tabular">
+            <span className="absolute bottom-3 end-3 bg-surface/95 backdrop-blur text-[10px] font-mono font-semibold text-ink-muted px-2 py-0.5 rounded-md border border-line tabular">
               {p.sku}
             </span>
           )}

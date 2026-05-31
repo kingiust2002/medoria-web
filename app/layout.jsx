@@ -1,5 +1,6 @@
 // app/layout.jsx
 import "./globals.css";
+import { Providers } from "./providers";
 
 export const metadata = {
   metadataBase: new URL("https://medoria.tj"),
@@ -19,7 +20,9 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

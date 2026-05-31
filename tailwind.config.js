@@ -5,6 +5,7 @@ module.exports = {
     "./components/**/*.{js,jsx}",
     "./lib/**/*.{js,jsx}",
   ],
+  darkMode: "class",
   theme: {
     extend: {
       fontFamily: {
@@ -62,10 +63,26 @@ module.exports = {
           pink:   "#EC1E95",
           gold:   "#F59E0B",
         },
-        // ── Neutrals — clean & deep so the colour pops ──────────────────────
-        ink:     { DEFAULT: "#0B1120", soft: "#1E293B", muted: "#4A5568", faint: "#94A3B8" },
-        line:    { DEFAULT: "#E6EAF2", soft: "#F1F5F9" },
-        canvas:  { DEFAULT: "#FFFFFF", soft: "#F7F9FD", tint: "#EEF2FB" },
+        // ── Neutrals — token-backed so they swap per theme (see globals.css) ─
+        ink: {
+          DEFAULT: "rgb(var(--ink) / <alpha-value>)",
+          soft:    "rgb(var(--ink-soft) / <alpha-value>)",
+          muted:   "rgb(var(--ink-muted) / <alpha-value>)",
+          faint:   "rgb(var(--ink-faint) / <alpha-value>)",
+        },
+        line: {
+          DEFAULT: "rgb(var(--line) / <alpha-value>)",
+          soft:    "rgb(var(--line-soft) / <alpha-value>)",
+        },
+        canvas: {
+          DEFAULT: "rgb(var(--canvas) / <alpha-value>)",
+          soft:    "rgb(var(--canvas-soft) / <alpha-value>)",
+          tint:    "#EEF2FB",
+        },
+        surface: {
+          DEFAULT: "rgb(var(--surface) / <alpha-value>)",
+          soft:    "rgb(var(--surface-2) / <alpha-value>)",
+        },
         ok:      "#16A34A",
         warn:    "#EA580C",
         navy:    "#080B17",

@@ -36,13 +36,13 @@ export default function QuickViewModal({ product, lang, onClose, onRequestQuote 
     <div onClick={onClose} role="dialog" aria-modal="true" aria-label={name} dir={dir}
       className="fixed inset-0 z-[100] bg-navy/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
       <div onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-3xl w-full max-w-3xl shadow-hover max-h-[92vh] overflow-y-auto grid md:grid-cols-2">
+        className="bg-surface rounded-3xl w-full max-w-3xl shadow-hover max-h-[92vh] overflow-y-auto grid md:grid-cols-2">
         {/* Gallery */}
-        <div className="relative bg-gradient-to-br from-tint-blue via-white to-tint-cyan flex items-center justify-center p-6 md:p-8 min-h-[220px] md:min-h-[300px]">
+        <div className="relative img-ph flex items-center justify-center p-6 md:p-8 min-h-[220px] md:min-h-[300px]">
           {img ? (
             <img src={img} alt={name} className="w-full h-full object-contain" loading="lazy" />
           ) : (
-            <div className="flex flex-col items-center gap-2 text-primary/30">
+            <div className="flex flex-col items-center gap-2 text-brand-violet/30">
               <Icon name="package" size={88} strokeWidth={0.9} />
               <span className="text-[10px] text-ink-faint uppercase tracking-wider">{product.sku || product.brand || "Medoria"}</span>
             </div>
@@ -51,7 +51,7 @@ export default function QuickViewModal({ product, lang, onClose, onRequestQuote 
             <span className="absolute top-4 start-4 tag bg-primary text-white">{product.badge}</span>
           )}
           <button onClick={onClose} aria-label="Close"
-            className="absolute top-4 end-4 w-9 h-9 rounded-full bg-white/90 flex items-center justify-center text-ink-muted hover:text-ink shadow-soft md:hidden">
+            className="absolute top-4 end-4 w-9 h-9 rounded-full bg-surface/90 flex items-center justify-center text-ink-muted hover:text-ink shadow-soft md:hidden">
             <Icon name="close" size={18} />
           </button>
         </div>
@@ -107,7 +107,7 @@ export default function QuickViewModal({ product, lang, onClose, onRequestQuote 
               <button onClick={() => inquire("telegram")} className="btn-tg size-md"><Icon name="send" size={15} />Telegram</button>
             </div>
             <Link href={`/${lang}/catalog/${product.slug || product.id}`} onClick={onClose}
-              className="flex items-center justify-center gap-1 text-[12px] font-semibold text-primary py-2 rounded-lg border border-primary/20 hover:bg-tint-blue transition-colors">
+              className="flex items-center justify-center gap-1 text-[12px] font-semibold text-brand-violet py-2 rounded-lg border border-brand-violet/20 hover:bg-brand-violet/10 transition-colors">
               {t.common.details} <Icon name={dir === "rtl" ? "arrowL" : "arrow"} size={13} />
             </Link>
           </div>

@@ -34,7 +34,7 @@ export default function ImagePlaceholder({
           {/* dotted frame */}
           <div className="absolute inset-3 rounded-[inherit] border-2 border-dashed border-brand-violet/15 pointer-events-none" />
 
-          <div className="relative w-14 h-14 rounded-2xl bg-white/70 backdrop-blur flex items-center justify-center shadow-soft mb-3 transition-transform duration-300 group-hover:scale-105">
+          <div className="relative w-14 h-14 rounded-2xl bg-surface/70 backdrop-blur flex items-center justify-center shadow-soft mb-3 transition-transform duration-300 group-hover:scale-105">
             <span className="absolute inset-0 rounded-2xl bg-brand-gradient opacity-15" />
             <Icon name={icon} size={26} className="relative text-brand-violet" strokeWidth={1.6} />
           </div>

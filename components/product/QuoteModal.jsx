@@ -91,7 +91,7 @@ export default function QuoteModal({ product, lang, onClose }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-3xl w-full max-w-md shadow-hover max-h-[92vh] overflow-y-auto"
+        className="bg-surface rounded-3xl w-full max-w-md shadow-hover max-h-[92vh] overflow-y-auto"
       >
         {sent ? (
           <div className="p-8 text-center">
@@ -119,8 +119,8 @@ export default function QuoteModal({ product, lang, onClose }) {
             </div>
             <p className="text-xs text-ink-muted mb-5">{t.quoteModal.sub}</p>
 
-            <div className="bg-tint-blue rounded-xl p-3 mb-5 border border-primary/10 flex items-start gap-3">
-              <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center shrink-0 text-primary">
+            <div className="bg-brand-violet/[0.06] rounded-xl p-3 mb-5 border border-brand-violet/15 flex items-start gap-3">
+              <div className="w-12 h-12 rounded-lg bg-surface flex items-center justify-center shrink-0 text-brand-violet">
                 <Icon name="package" size={20} />
               </div>
               <div className="flex-1 min-w-0">
@@ -166,7 +166,7 @@ export default function QuoteModal({ product, lang, onClose }) {
                         "h-10 rounded-xl text-[12px] font-semibold border transition-colors flex items-center justify-center gap-1.5",
                         via === v
                           ? "bg-primary text-white border-primary"
-                          : "bg-white text-ink-muted border-line hover:border-ink-faint",
+                          : "bg-surface text-ink-muted border-line hover:border-ink-faint",
                       ].join(" ")}
                     >
                       <Icon name={icon} size={14} />

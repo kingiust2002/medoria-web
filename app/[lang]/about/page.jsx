@@ -76,7 +76,7 @@ export default function AboutPage({ params }) {
       </section>
 
       {/* Values */}
-      <section className="py-14 md:py-20 bg-white">
+      <section className="py-14 md:py-20 bg-canvas">
         <div className="container-x">
           <div className="text-center mb-10 md:mb-12">
             <div className="section-tag mb-3">{a.values.tag}</div>
@@ -117,7 +117,7 @@ export default function AboutPage({ params }) {
       </section>
 
       {/* Who we serve */}
-      <section className="py-14 md:py-20 bg-white">
+      <section className="py-14 md:py-20 bg-canvas">
         <div className="container-x">
           <div className="text-center mb-10">
             <div className="section-tag mb-3">{a.whoWeServe.tag}</div>

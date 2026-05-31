@@ -38,7 +38,7 @@ export default function Trust({ lang }) {
   const labels = TRUST_LABELS[lang] || TRUST_LABELS.en;
 
   return (
-    <section className="py-14 md:py-20 bg-white">
+    <section className="py-14 md:py-20 bg-canvas">
       <div className="container-x">
         <div className="text-center mb-10 md:mb-12 max-w-2xl mx-auto">
           <div className="section-tag mb-3">{labels.tag}</div>

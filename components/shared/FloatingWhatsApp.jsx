@@ -44,7 +44,7 @@ export default function FloatingWhatsApp({ lang }) {
       )}
 
       {/* Mobile bottom bar — always visible on mobile */}
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur-xl border-t border-line px-4 py-2.5 flex gap-2 shadow-[0_-2px_12px_rgba(15,23,42,0.04)]">
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-surface/95 backdrop-blur-xl border-t border-line px-4 py-2.5 flex gap-2 shadow-[0_-2px_12px_rgba(15,23,42,0.04)]">
         <a href={waLink(bulkInquiryMessage(lang))} target="_blank" rel="noopener noreferrer"
            className="btn-wa size-md flex-1">
           <Icon name="chat" size={15} />

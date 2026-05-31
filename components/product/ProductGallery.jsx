@@ -47,10 +47,10 @@ export default function ProductGallery({ product }) {
         {/* Main image */}
         <div
           onClick={() => setZoom(true)}
-          className="card overflow-hidden aspect-square bg-gradient-to-br from-tint-blue to-tint-cyan cursor-zoom-in group relative"
+          className="card overflow-hidden aspect-square img-ph cursor-zoom-in group relative"
         >
           <img src={activeSrc} alt="" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-          <span className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur text-ink-muted text-lg flex items-center justify-center shadow-soft opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="absolute top-3 right-3 w-9 h-9 rounded-full bg-surface/90 backdrop-blur text-ink-muted text-lg flex items-center justify-center shadow-soft opacity-0 group-hover:opacity-100 transition-opacity">
             ⤢
           </span>
 
@@ -59,12 +59,12 @@ export default function ProductGallery({ product }) {
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); setActive((a) => (a - 1 + all.length) % all.length); }}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 backdrop-blur text-ink shadow-soft flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-surface/90 backdrop-blur text-ink shadow-soft flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
                 aria-label="Previous"
               >‹</button>
               <button
                 onClick={(e) => { e.stopPropagation(); setActive((a) => (a + 1) % all.length); }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 backdrop-blur text-ink shadow-soft flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-surface/90 backdrop-blur text-ink shadow-soft flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
                 aria-label="Next"
               >›</button>
             </>

@@ -31,7 +31,7 @@ export default function StickyQuotePanel({ product, lang, onQuoteClick }) {
 
   return (
     <div className="hidden md:block fixed bottom-6 left-1/2 -translate-x-1/2 z-40 animate-fade-up">
-      <div className="card flex items-center gap-3 px-4 py-3 shadow-hover backdrop-blur-xl bg-white/95 border-primary/10">
+      <div className="card flex items-center gap-3 px-4 py-3 shadow-hover backdrop-blur-xl bg-surface/95 border-brand-violet/10">
         {/* Product mini */}
         <div className="flex items-center gap-3 pe-3 border-e border-line min-w-0 max-w-[280px]">
           <div className="w-10 h-10 rounded-lg img-ph flex items-center justify-center shrink-0 overflow-hidden">

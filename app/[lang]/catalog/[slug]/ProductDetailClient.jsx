@@ -54,7 +54,7 @@ export default function ProductDetailClient({ product, lang }) {
 
       <div className="bg-canvas-soft min-h-screen">
         {/* Breadcrumb */}
-        <div className="bg-white border-b border-line">
+        <div className="bg-canvas border-b border-line">
           <div className="container-x py-3 flex items-center gap-2 text-[11px] text-ink-muted overflow-x-auto no-scrollbar">
             <Link href={`/${lang}`} className="hover:text-brand-violet whitespace-nowrap">{t.common.home}</Link>
             <span className="text-line">/</span>
@@ -150,8 +150,8 @@ export default function ProductDetailClient({ product, lang }) {
                     className={[
                       "btn size-sm transition-colors",
                       isCompared
-                        ? "bg-primary text-white border border-primary"
-                        : "bg-white text-ink-muted border border-line hover:border-primary/40 hover:text-primary",
+                        ? "bg-brand-gradient text-white border border-transparent"
+                        : "bg-surface text-ink-muted border border-line hover:border-brand-violet/40 hover:text-brand-violet",
                     ].join(" ")}
                   >
                     <Icon name={isCompared ? "check" : "switchH"} size={13} />

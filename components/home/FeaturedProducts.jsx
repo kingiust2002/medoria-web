@@ -19,7 +19,7 @@ export default function FeaturedProducts({ lang }) {
   }, []);
 
   return (
-    <section className="py-14 md:py-20 bg-white border-y border-line">
+    <section className="py-14 md:py-20 bg-canvas border-y border-line">
       <div className="container-x">
         <div className="flex items-end justify-between mb-8 md:mb-10 gap-4">
           <div>

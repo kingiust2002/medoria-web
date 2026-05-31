@@ -23,7 +23,7 @@ export default function StatsBar({ lang }) {
   }
 
   return (
-    <section className="py-10 md:py-14 bg-white">
+    <section className="py-10 md:py-14 bg-canvas">
       <div className="container-x">
         <div className="relative bg-navy rounded-[2rem] px-6 py-9 md:px-12 md:py-12 grid grid-cols-2 md:grid-cols-4 gap-y-7 gap-x-4 overflow-hidden noise">
           <Aurora variant="dark" className="opacity-60" />
