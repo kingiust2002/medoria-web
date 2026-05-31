@@ -16,7 +16,7 @@ const STOPS = [
 const lerp = (a, b, t) => a + (b - a) * t;
 const WORDS = ["MEDORIA", "MEDICAL", "QUALITY", "CARE", "TRUST"];
 
-export default function HeroScene({ dark = true }) {
+export default function HeroScene({ dark = true, rtl = false }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -88,11 +88,14 @@ export default function HeroScene({ dark = true }) {
       for (let y = 0; y < tc.height; y += 2) for (let x = 0; x < tc.width; x += 2) {
         if (d[(y * tc.width + x) * 4 + 3] > 130) pts.push([x, y]);
       }
-      const SX = 11, SY = 11 * (tc.height / tc.width);
+      // word sits in the empty UPPER band (right for LTR, left for RTL) — clear of
+      // the headline and the floating card.
+      const SX = 7.5, SY = 7.5 * (tc.height / tc.width);
+      const OX = rtl ? -3.2 : 3.2, OY = 5.8;
       for (let i = 0; i < N; i++) {
         const p = pts.length ? pts[(Math.random() * pts.length) | 0] : [tc.width / 2, tc.height / 2];
-        target[i * 3] = (p[0] / tc.width - 0.5) * SX;
-        target[i * 3 + 1] = -(p[1] / tc.height - 0.5) * SY;
+        target[i * 3] = (p[0] / tc.width - 0.5) * SX + OX;
+        target[i * 3 + 1] = -(p[1] / tc.height - 0.5) * SY + OY;
         target[i * 3 + 2] = (Math.random() - 0.5) * 0.7;
       }
     }
@@ -109,21 +112,21 @@ export default function HeroScene({ dark = true }) {
       const dt = Math.min(clock.getDelta(), 0.05);
       const t = clock.elapsedTime;
       phase += dt;
-      if (inWord && phase > 3.6) { inWord = false; phase = 0; toCloud(); }
-      else if (!inWord && phase > 2.8) { inWord = true; phase = 0; wi = (wi + 1) % WORDS.length; setWord(WORDS[wi]); }
+      if (inWord && phase > 4.6) { inWord = false; phase = 0; toCloud(); }
+      else if (!inWord && phase > 3.0) { inWord = true; phase = 0; wi = (wi + 1) % WORDS.length; setWord(WORDS[wi]); }
 
       // grow + brighten the dew when it assembles into a word
       mat.size += (((inWord ? (dark ? 0.09 : 0.11) : (dark ? 0.05 : 0.07))) - mat.size) * 0.08;
       mat.opacity += (((inWord ? (dark ? 1.0 : 0.9) : (dark ? 0.85 : 0.55))) - mat.opacity) * 0.08;
 
-      const k = inWord ? 0.1 : 0.045;
+      const k = inWord ? 0.05 : 0.03; // slower, smoother, more uniform gathering
       const arr = geo.attributes.position.array;
       for (let i = 0; i < N; i++) {
         const j = i * 3;
         let txp = target[j], typ = target[j + 1], tzp = target[j + 2];
         if (!inWord) { // gentle dew drift while resting
-          txp += Math.sin(t * 0.5 + seed[i]) * 0.18;
-          typ += Math.cos(t * 0.4 + seed[i]) * 0.18;
+          txp += Math.sin(t * 0.5 + seed[i]) * 0.12;
+          typ += Math.cos(t * 0.4 + seed[i]) * 0.12;
         }
         arr[j] += (txp - arr[j]) * k;
         arr[j + 1] += (typ - arr[j + 1]) * k;
@@ -160,7 +163,7 @@ export default function HeroScene({ dark = true }) {
       if (io) io.disconnect();
       geo.dispose(); mat.dispose(); renderer.dispose();
     };
-  }, [dark]);
+  }, [dark, rtl]);
 
   return <canvas ref={ref} aria-hidden="true" className="absolute inset-0 w-full h-full -z-10 pointer-events-none" style={{ opacity: dark ? 0.95 : 0.85 }} />;
 }
