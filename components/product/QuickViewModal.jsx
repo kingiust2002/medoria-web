@@ -3,6 +3,7 @@
 // without navigating to the detail page. RTL-aware via logical classes.
 "use client";
 import { useEffect } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { getTranslations, getCategoryName, LANG_META } from "@/lib/i18n";
 import { imageUrl } from "@/lib/supabase";
@@ -13,6 +14,7 @@ import Icon from "@/components/shared/Icon";
 export default function QuickViewModal({ product, lang, onClose, onRequestQuote }) {
   const t = getTranslations(lang);
   const dir = LANG_META[lang]?.dir || "ltr";
+  const reduce = useReducedMotion();
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -35,7 +37,10 @@ export default function QuickViewModal({ product, lang, onClose, onRequestQuote 
   return (
     <div onClick={onClose} role="dialog" aria-modal="true" aria-label={name} dir={dir}
       className="fixed inset-0 z-[100] bg-navy/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div onClick={(e) => e.stopPropagation()}
+      <motion.div onClick={(e) => e.stopPropagation()}
+        initial={reduce ? false : { opacity: 0, scale: 0.96, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}
         className="bg-surface rounded-3xl w-full max-w-3xl shadow-hover max-h-[92vh] overflow-y-auto grid md:grid-cols-2">
         {/* Gallery */}
         <div className="relative img-ph flex items-center justify-center p-6 md:p-8 min-h-[220px] md:min-h-[300px]">
@@ -112,7 +117,7 @@ export default function QuickViewModal({ product, lang, onClose, onRequestQuote 
             </Link>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

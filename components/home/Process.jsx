@@ -1,5 +1,6 @@
 // components/home/Process.jsx
 import { getTranslations } from "@/lib/i18n";
+import { Reveal } from "@/components/shared/Reveal";
 
 export default function Process({ lang }) {
   const t = getTranslations(lang);
@@ -7,10 +8,10 @@ export default function Process({ lang }) {
   return (
     <section className="py-14 md:py-20 bg-canvas-soft border-y border-line">
       <div className="container-x">
-        <div className="text-center mb-12">
+        <Reveal className="text-center mb-12">
           <div className="section-tag text-cyan-600 mb-3">{t.home.processTag}</div>
           <h2 className="section-h">{t.home.processH}</h2>
-        </div>
+        </Reveal>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 relative">
           {/* Connecting gradient line */}

@@ -1,6 +1,7 @@
 // components/product/QuoteModal.jsx
 "use client";
 import { useState, useEffect } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { getTranslations, LANG_META } from "@/lib/i18n";
 import { waLink, tgLink } from "@/lib/whatsapp";
 import { createQuoteRequest } from "@/lib/supabase";
@@ -18,6 +19,7 @@ const CHANNELS = [
 export default function QuoteModal({ product, lang, onClose }) {
   const t = getTranslations(lang);
   const dir = LANG_META[lang]?.dir || "ltr";
+  const reduce = useReducedMotion();
   const [name, setName] = useState("");
   const [org, setOrg]   = useState("");
   const [phone, setPhone] = useState("");
@@ -89,8 +91,11 @@ export default function QuoteModal({ product, lang, onClose }) {
       dir={dir}
       className="fixed inset-0 z-[100] bg-navy/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
     >
-      <div
+      <motion.div
         onClick={(e) => e.stopPropagation()}
+        initial={reduce ? false : { opacity: 0, scale: 0.96, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.28, ease: [0.2, 0.8, 0.2, 1] }}
         className="bg-surface rounded-3xl w-full max-w-md shadow-hover max-h-[92vh] overflow-y-auto"
       >
         {sent ? (
@@ -186,7 +191,7 @@ export default function QuoteModal({ product, lang, onClose }) {
             </button>
           </form>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

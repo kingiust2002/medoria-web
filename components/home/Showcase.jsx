@@ -2,6 +2,7 @@
 import { getTranslations } from "@/lib/i18n";
 import ImagePlaceholder from "@/components/shared/ImagePlaceholder";
 import Icon from "@/components/shared/Icon";
+import { Reveal } from "@/components/shared/Reveal";
 
 const LABELS = {
   fa: {
@@ -42,14 +43,14 @@ export default function Showcase({ lang }) {
   return (
     <section className="py-14 md:py-20 bg-canvas-soft border-y border-line">
       <div className="container-x">
-        <div className="text-center mb-10 md:mb-12 max-w-2xl mx-auto">
+        <Reveal className="text-center mb-10 md:mb-12 max-w-2xl mx-auto">
           <div className="eyebrow mb-4 mx-auto"><span className="gradient-text">{L.tag}</span></div>
           <h2 className="section-h-lg">{L.title}</h2>
           <p className="section-sub mx-auto">{L.sub}</p>
-        </div>
+        </Reveal>
 
         {/* Bento grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 auto-rows-[150px] md:auto-rows-[170px]">
+        <Reveal delay={0.1} className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 auto-rows-[150px] md:auto-rows-[170px]">
           {/* Large feature tile */}
           <div className="col-span-2 row-span-2 relative">
             <ImagePlaceholder src="/images/showcase-warehouse.jpg" alt={L.tiles[0]} icon={TILE_ICONS[0]} label={L.tiles[0]} className="w-full h-full" rounded="rounded-3xl" />
@@ -65,7 +66,7 @@ export default function Showcase({ lang }) {
           <ImagePlaceholder src="/images/showcase-products.jpg" alt={L.tiles[1]} icon={TILE_ICONS[1]} label={L.tiles[1]} className="col-span-1 w-full h-full" rounded="rounded-3xl" />
           <ImagePlaceholder src="/images/showcase-qc.jpg" alt={L.tiles[2]} icon={TILE_ICONS[2]} label={L.tiles[2]} className="col-span-1 w-full h-full" rounded="rounded-3xl" />
           <ImagePlaceholder src="/images/showcase-team.jpg" alt={L.tiles[3]} icon={TILE_ICONS[3]} label={L.tiles[3]} className="col-span-2 w-full h-full" rounded="rounded-3xl" />
-        </div>
+        </Reveal>
       </div>
     </section>
   );

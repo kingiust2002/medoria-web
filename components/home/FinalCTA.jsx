@@ -2,6 +2,7 @@
 import { getTranslations } from "@/lib/i18n";
 import { waLink, tgLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
+import { Reveal } from "@/components/shared/Reveal";
 
 export default function FinalCTA({ lang }) {
   const t = getTranslations(lang);
@@ -9,6 +10,7 @@ export default function FinalCTA({ lang }) {
   return (
     <section className="py-14 md:py-20 bg-canvas-soft">
       <div className="container-x">
+        <Reveal>
         <div className="relative bg-brand-gradient-vivid bg-[length:200%_200%] animate-gradient-pan rounded-[2rem] p-8 md:p-14 shadow-brand-lg overflow-hidden noise">
           {/* Decorative grid pattern */}
           <div className="absolute inset-0 opacity-[0.14] pointer-events-none">
@@ -53,6 +55,7 @@ export default function FinalCTA({ lang }) {
             </div>
           </div>
         </div>
+        </Reveal>
       </div>
     </section>
   );
