@@ -15,7 +15,7 @@ import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
 import Brand from "@/components/layout/Brand";
 
-const HeroShader = dynamic(() => import("@/components/home/HeroShader"), { ssr: false });
+const HeroScene = dynamic(() => import("@/components/home/HeroScene"), { ssr: false });
 const EASE = [0.2, 0.8, 0.2, 1];
 
 export default function Hero({ lang }) {
@@ -26,7 +26,18 @@ export default function Hero({ lang }) {
   const [mounted, setMounted] = useState(false);
   const [q, setQ] = useState("");
   const [searchFocus, setSearchFocus] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const [canRender3D, setCanRender3D] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const desktop = window.matchMedia("(min-width: 1024px)").matches;
+      const ok = desktop
+        && !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        && (navigator.hardwareConcurrency || 4) >= 4
+        && !(navigator.connection && navigator.connection.saveData);
+      setCanRender3D(ok);
+    } catch { /* keep CSS fallback */ }
+  }, []);
   const isDark = mounted && resolvedTheme === "dark";
 
   // ── subtle mouse parallax for the hero card (desktop, motion-safe) ──
@@ -86,8 +97,8 @@ export default function Hero({ lang }) {
       {/* auroras — soft on light, neon on dark */}
       <Aurora variant="light" className="-z-10 dark:hidden opacity-90" />
       <Aurora variant="dark" className="-z-10 hidden dark:block opacity-70" />
-      {/* WebGL flowing aurora — DARK theme only, self-gated to desktop */}
-      {isDark && <HeroShader />}
+      {/* 3D particle field — DARK theme, capable desktops only (CSS aurora is the fallback) */}
+      {isDark && canRender3D && <HeroScene />}
 
       {/* dark contrast overlay (keeps text crisp over shader/photo) */}
       <div className="absolute inset-0 -z-10 hidden dark:block bg-gradient-to-t from-navy via-navy/55 to-navy/25" />

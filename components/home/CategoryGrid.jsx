@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
 import Icon from "@/components/shared/Icon";
 import { Reveal, Stagger, StaggerItem } from "@/components/shared/Reveal";
+import TiltCard from "@/components/shared/TiltCard";
 
 export default function CategoryGrid({ lang }) {
   const t = getTranslations(lang);
@@ -54,6 +55,7 @@ export default function CategoryGrid({ lang }) {
         <Stagger className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
           {CATEGORIES.map((c) => (
             <StaggerItem key={c.slug}>
+            <TiltCard className="h-full rounded-2xl" max={8}>
             <Link
               href={`/${lang}/catalog?category=${c.slug}`}
               className="card card-hover overflow-hidden group p-5 text-center block h-full"
@@ -69,6 +71,7 @@ export default function CategoryGrid({ lang }) {
                 {labelFor(c.slug)}
               </div>
             </Link>
+            </TiltCard>
             </StaggerItem>
           ))}
         </Stagger>
