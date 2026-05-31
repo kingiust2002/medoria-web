@@ -2,6 +2,7 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import { Drawer } from "vaul";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getProducts, getCategories } from "@/lib/supabase";
@@ -112,6 +113,8 @@ export default function CatalogInner({ params }) {
   const reset = () => setVisible(12);
   const clearAll = () => { setSearch(""); setCat("all"); setBrand("all"); setBadge("all"); setStockOnly(false); reset(); };
   const hasFilters = search || cat !== "all" || brand !== "all" || badge !== "all" || stockOnly;
+  const activeCount = (cat !== "all" ? 1 : 0) + (brand !== "all" ? 1 : 0) + (badge !== "all" ? 1 : 0) + (stockOnly ? 1 : 0) + (sortIdx ? 1 : 0);
+  const filtersLabel = lang === "fa" ? "فیلترها" : lang === "ru" ? "Фильтры" : lang === "tg" ? "Филтрҳо" : "Filters";
 
   return (
     <div className="bg-canvas-soft min-h-screen">
@@ -163,6 +166,7 @@ export default function CatalogInner({ params }) {
             )}
           </div>
 
+          <div className="hidden md:flex gap-3">
           {brands.length > 0 && (
             <select
               value={brand}
@@ -186,8 +190,89 @@ export default function CatalogInner({ params }) {
             <option value={4}>{t.catalog.sortPopular}</option>
             <option value={5}>{t.catalog.sortName}</option>
           </select>
+          </div>
         </div>
 
+        {/* Mobile filter bar — opens a Vaul bottom-sheet */}
+        <div className="md:hidden flex gap-2 mb-5">
+          <Drawer.Root>
+            <Drawer.Trigger className="relative flex-1 input h-12 flex items-center justify-center gap-2 font-semibold text-ink">
+              <Icon name="list" size={16} />
+              {filtersLabel}
+              {activeCount > 0 && (
+                <span className="ms-1 min-w-[20px] h-5 px-1.5 rounded-full bg-brand-gradient text-white text-[11px] font-bold flex items-center justify-center">{activeCount}</span>
+              )}
+            </Drawer.Trigger>
+            <Drawer.Portal>
+              <Drawer.Overlay className="fixed inset-0 bg-navy/50 backdrop-blur-sm z-[90]" />
+              <Drawer.Content className="fixed bottom-0 inset-x-0 z-[91] bg-surface rounded-t-3xl border-t border-line p-5 pb-8 max-h-[86vh] overflow-y-auto focus:outline-none">
+                <div className="mx-auto w-10 h-1.5 rounded-full bg-line mb-4" />
+                <Drawer.Title className="font-display text-lg font-bold text-ink mb-4">{filtersLabel}</Drawer.Title>
+
+                <div className="text-[11px] font-bold uppercase tracking-wide text-ink-faint mb-2">{t.common.categories}</div>
+                <div className="flex flex-wrap gap-2 mb-5">
+                  <Pill active={cat === "all"} onClick={() => { setCat("all"); reset(); }}>{t.common.all}</Pill>
+                  {CATEGORIES.map((c) => (
+                    <Pill key={c.slug} active={cat === c.slug} icon={c.icon} onClick={() => { setCat(c.slug); reset(); }}>
+                      {getCategoryName(c.slug, lang)}
+                    </Pill>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-5">
+                  {brands.length > 0 && (
+                    <select value={brand} onChange={(e) => { setBrand(e.target.value); reset(); }} className="input h-11 px-3 cursor-pointer">
+                      <option value="all">{t.common.allBrands}</option>
+                      {brands.map((b) => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                  )}
+                  <select value={sortIdx} onChange={(e) => { setSortIdx(+e.target.value); reset(); }} className="input h-11 px-3 cursor-pointer">
+                    <option value={0}>{t.catalog.sortDefault}</option>
+                    <option value={1}>{t.catalog.sortNewest}</option>
+                    <option value={2}>{t.catalog.sortPriceAsc}</option>
+                    <option value={3}>{t.catalog.sortPriceDesc}</option>
+                    <option value={4}>{t.catalog.sortPopular}</option>
+                    <option value={5}>{t.catalog.sortName}</option>
+                  </select>
+                </div>
+
+                <div className="text-[11px] font-bold uppercase tracking-wide text-ink-faint mb-2">{t.catalog.filterBadge}</div>
+                <div className="flex flex-wrap gap-2 mb-5">
+                  <BadgePill active={badge === "all"} onClick={() => { setBadge("all"); reset(); }} label={t.common.all} />
+                  {BADGES.map((b) => (
+                    <BadgePill key={b} active={badge === b} onClick={() => { setBadge(b); reset(); }} label={b} variant={b} />
+                  ))}
+                  <BadgePill active={badge === "none"} onClick={() => { setBadge("none"); reset(); }} label={t.catalog.noBadge} />
+                </div>
+
+                <label className="flex items-center gap-2 cursor-pointer select-none mb-6">
+                  <div onClick={() => { setStockOnly(!stockOnly); reset(); }}
+                    className={["relative w-10 h-6 rounded-full transition-colors shrink-0", stockOnly ? "bg-brand-gradient" : "bg-line"].join(" ")}>
+                    <div className={["absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all", stockOnly ? "start-[18px]" : "start-0.5"].join(" ")} />
+                  </div>
+                  <span className="text-[13px] text-ink-muted">{t.catalog.stockOnly}</span>
+                </label>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={clearAll} className="btn-ghost size-lg">{t.catalog.clearFilters}</button>
+                  <Drawer.Close className="btn-primary size-lg">{t.catalog.found(filtered.length)}</Drawer.Close>
+                </div>
+              </Drawer.Content>
+            </Drawer.Portal>
+          </Drawer.Root>
+
+          <div className="flex items-center bg-canvas-soft rounded-lg border border-line p-0.5 shrink-0">
+            <button onClick={() => setView("grid")} className={["w-10 h-10 rounded-md flex items-center justify-center transition-colors", view === "grid" ? "bg-surface text-primary shadow-soft" : "text-ink-muted"].join(" ")} title={t.catalog.viewGrid}>
+              <Icon name="grid" size={16} />
+            </button>
+            <button onClick={() => setView("list")} className={["w-10 h-10 rounded-md flex items-center justify-center transition-colors", view === "list" ? "bg-surface text-primary shadow-soft" : "text-ink-muted"].join(" ")} title={t.catalog.viewList}>
+              <Icon name="list" size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop filters (inline) */}
+        <div className="hidden md:block">
         {/* Pills row: category */}
         <div className="flex gap-2 mb-3 overflow-x-auto pb-2 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible">
           <Pill active={cat === "all"} onClick={() => { setCat("all"); reset(); }}>{t.common.all}</Pill>
@@ -251,6 +336,7 @@ export default function CatalogInner({ params }) {
               <Icon name="list" size={15} />
             </button>
           </div>
+        </div>
         </div>
 
         {/* Results count + clear */}
