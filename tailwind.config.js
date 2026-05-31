@@ -17,16 +17,16 @@ module.exports = {
         // ── Brand spectrum — straight from the logo ─────────────────────────
         // pink/magenta → violet → blue → cyan. This IS the visual identity now.
         brand: {
-          pink:    "#EC1E95",
-          fuchsia: "#D6249F",
-          magenta: "#FF2D9E",
+          pink:    "#F0289E",
+          fuchsia: "#E0359E",
+          magenta: "#FF3DAE",
           violet:  "#8B2FF7",
-          purple:  "#7C3AED",
-          indigo:  "#4F46E5",
-          blue:    "#2563EB",
-          sky:     "#3B82F6",
-          cyan:    "#06B6D4",
-          aqua:    "#22D3EE",
+          purple:  "#9333EA",
+          indigo:  "#5B5BF0",
+          blue:    "#3B82F6",
+          sky:     "#60A5FA",
+          cyan:    "#22D3EE",
+          aqua:    "#67E8F9",
         },
         // Kept for the raster logo / legacy halos
         logo: {
@@ -60,7 +60,7 @@ module.exports = {
         // Accents now point at the brand spectrum
         accent: {
           violet: "#7C3AED",
-          pink:   "#EC1E95",
+          pink:   "#F0289E",
           gold:   "#F59E0B",
         },
         // ── Neutrals — token-backed so they swap per theme (see globals.css) ─
@@ -96,10 +96,10 @@ module.exports = {
       },
       backgroundImage: {
         // Full-spectrum brand gradient (the logo flow) — used everywhere now
-        "brand-gradient":      "linear-gradient(120deg,#EC1E95 0%,#8B2FF7 38%,#2563EB 72%,#06B6D4 100%)",
-        "brand-gradient-vivid":"linear-gradient(115deg,#FF2D9E 0%,#9333EA 40%,#2563EB 74%,#10C9E8 100%)",
+        "brand-gradient":      "linear-gradient(120deg,#F0289E 0%,#A634E8 38%,#3B82F6 72%,#22D3EE 100%)",
+        "brand-gradient-vivid":"linear-gradient(115deg,#FF3DAE 0%,#A634E8 40%,#3B82F6 74%,#3DDCEE 100%)",
         "brand-gradient-soft": "linear-gradient(135deg,#FDF1F8 0%,#F1F0FF 46%,#ECFEFF 100%)",
-        "brand-conic":         "conic-gradient(from 180deg at 50% 50%,#EC1E95,#8B2FF7,#2563EB,#06B6D4,#EC1E95)",
+        "brand-conic":         "conic-gradient(from 180deg at 50% 50%,#F0289E,#A634E8,#3B82F6,#22D3EE,#F0289E)",
         "brand-sheen":         "linear-gradient(120deg,transparent 25%,rgba(255,255,255,0.38) 50%,transparent 75%)",
         "logo-gradient":       "linear-gradient(135deg,#E8188A 0%,#7B2FF7 52%,#3B5BDB 100%)",
         "hero-radial":         "radial-gradient(circle at 30% 20%,rgba(124,58,237,0.10) 0%,rgba(6,182,212,0.05) 50%,transparent 80%)",
@@ -112,9 +112,9 @@ module.exports = {
         hover:     "0 8px 24px rgba(124,58,237,0.10), 0 24px 60px rgba(37,99,235,0.12)",
         brand:     "0 10px 30px -6px rgba(124,58,237,0.45)",
         "brand-lg":"0 24px 70px -14px rgba(124,58,237,0.55)",
-        "glow-pink":"0 0 44px -8px rgba(236,30,149,0.6)",
-        "glow-blue":"0 0 44px -8px rgba(37,99,235,0.55)",
-        "glow-cyan":"0 0 44px -8px rgba(6,182,212,0.55)",
+        "glow-pink":"0 0 44px -8px rgba(240,40,158,0.6)",
+        "glow-blue":"0 0 44px -8px rgba(59,130,246,0.55)",
+        "glow-cyan":"0 0 44px -8px rgba(34,211,238,0.55)",
         ring:      "0 0 0 4px rgba(37,99,235,0.12)",
       },
       animation: {

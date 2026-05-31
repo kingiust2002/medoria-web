@@ -2,7 +2,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Logo from "./Logo";
+import Brand from "./Brand";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { getTranslations } from "@/lib/i18n";
 import { bulkInquiryMessage, waLink } from "@/lib/whatsapp";
@@ -47,8 +47,8 @@ export default function Header({ lang }) {
         {/* gradient hairline */}
         <div className={`absolute inset-x-0 top-0 h-[2px] bg-brand-gradient transition-opacity ${scrolled ? "opacity-100" : "opacity-0"}`} />
         <div className="container-x flex h-16 items-center justify-between">
-          <Link href={`/${lang}`} className="shrink-0">
-            <Logo size={36} variant="icon" showText />
+          <Link href={`/${lang}`} className="shrink-0" aria-label="Medoria home">
+            <Brand height={26} />
           </Link>
 
           {/* Desktop nav */}

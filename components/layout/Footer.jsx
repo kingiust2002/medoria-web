@@ -1,6 +1,6 @@
 // components/layout/Footer.jsx
 import Link from "next/link";
-import Logo from "./Logo";
+import Brand from "./Brand";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
 import { WA_NUMBER, TG_USER, waLink, bulkInquiryMessage } from "@/lib/whatsapp";
@@ -21,7 +21,7 @@ export default function Footer({ lang }) {
         <div className="grid gap-10 md:grid-cols-12 pb-10 border-b border-white/10">
           {/* Brand */}
           <div className="md:col-span-5">
-            <Logo size={40} variant="full" white />
+            <Brand height={32} onDark />
             <p className="mt-4 text-[13px] leading-relaxed max-w-xs text-white/60">{t.footer.desc}</p>
             <div className="mt-5 flex flex-wrap gap-2">
               <a href={waLink(bulkInquiryMessage(lang))} target="_blank" rel="noopener noreferrer"

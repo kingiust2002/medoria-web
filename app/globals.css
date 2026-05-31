@@ -65,12 +65,19 @@
   .btn          { @apply relative inline-flex items-center justify-center gap-2 font-semibold transition-all duration-300 whitespace-nowrap select-none; }
 
   .btn-primary  {
-    @apply btn text-white shadow-brand hover:-translate-y-0.5 active:translate-y-0;
-    background-image: linear-gradient(120deg,#EC1E95 0%,#8B2FF7 38%,#2563EB 72%,#06B6D4 100%);
+    @apply btn text-white shadow-brand hover:-translate-y-0.5 active:translate-y-0 overflow-hidden;
+    background-image: linear-gradient(120deg,#F0289E 0%,#A634E8 38%,#3B82F6 72%,#22D3EE 100%);
     background-size: 180% 100%;
     background-position: 0% 50%;
   }
+  .btn-primary::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.40) 50%, transparent 65%);
+    transform: translateX(-130%); transition: transform 0.6s cubic-bezier(0.2,0.8,0.2,1);
+    pointer-events: none;
+  }
   .btn-primary:hover { background-position: 100% 50%; box-shadow: 0 16px 38px -10px rgba(124,58,237,0.6); }
+  .btn-primary:hover::after { transform: translateX(130%); }
 
   .btn-solid    { @apply btn bg-primary text-white hover:bg-primary-700 active:bg-primary-800; }
   .btn-ghost    { @apply btn bg-surface text-ink-soft border border-line hover:border-brand-violet/40 hover:text-brand-violet hover:shadow-soft; }
@@ -98,7 +105,7 @@
   .gradient-border {
     position: relative;
     background: linear-gradient(rgb(var(--surface)),rgb(var(--surface))) padding-box,
-                linear-gradient(120deg,#EC1E95,#8B2FF7,#2563EB,#06B6D4) border-box;
+                linear-gradient(120deg,#F0289E,#A634E8,#3B82F6,#22D3EE) border-box;
     border: 1.5px solid transparent;
   }
 
@@ -128,11 +135,11 @@
 
   /* ── Gradient text ───────────────────────────────────────────────────── */
   .gradient-text {
-    background-image: linear-gradient(120deg,#EC1E95,#8B2FF7,#2563EB,#06B6D4);
+    background-image: linear-gradient(120deg,#F0289E,#A634E8,#3B82F6,#22D3EE);
     @apply bg-clip-text text-transparent;
   }
   .gradient-text-animated {
-    background-image: linear-gradient(120deg,#EC1E95,#8B2FF7,#2563EB,#06B6D4,#EC1E95);
+    background-image: linear-gradient(120deg,#F0289E,#A634E8,#3B82F6,#22D3EE,#F0289E);
     background-size: 220% 100%;
     @apply bg-clip-text text-transparent animate-gradient-pan;
   }
