@@ -74,29 +74,30 @@ export default function HeroScene({ dark = true, rtl = false }) {
 
     // sample a word into N target positions via an offscreen text canvas
     const tc = document.createElement("canvas");
-    tc.width = 320; tc.height = 120;
+    tc.width = 440; tc.height = 150;
     const tctx = tc.getContext("2d");
     function setWord(word) {
       tctx.clearRect(0, 0, tc.width, tc.height);
       tctx.fillStyle = "#fff";
       tctx.textAlign = "center"; tctx.textBaseline = "middle";
-      let fs = 92; tctx.font = `800 ${fs}px Arial, sans-serif`;
-      while (tctx.measureText(word).width > tc.width - 24 && fs > 24) { fs -= 4; tctx.font = `800 ${fs}px Arial, sans-serif`; }
+      let fs = 120; tctx.font = `800 ${fs}px Arial, sans-serif`;
+      while (tctx.measureText(word).width > tc.width - 30 && fs > 24) { fs -= 3; tctx.font = `800 ${fs}px Arial, sans-serif`; }
       tctx.fillText(word, tc.width / 2, tc.height / 2 + 2);
       const d = tctx.getImageData(0, 0, tc.width, tc.height).data;
       const pts = [];
-      for (let y = 0; y < tc.height; y += 2) for (let x = 0; x < tc.width; x += 2) {
-        if (d[(y * tc.width + x) * 4 + 3] > 130) pts.push([x, y]);
+      for (let y = 0; y < tc.height; y += 1) for (let x = 0; x < tc.width; x += 1) {
+        if (d[(y * tc.width + x) * 4 + 3] > 140) pts.push([x, y]);
       }
-      // word sits in the empty UPPER band (right for LTR, left for RTL) — clear of
-      // the headline and the floating card.
-      const SX = 7.5, SY = 7.5 * (tc.height / tc.width);
+      // even coverage → crisp, legible letters: shuffle then round-robin assign
+      for (let i = pts.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; const tmp = pts[i]; pts[i] = pts[j]; pts[j] = tmp; }
+      // word sits in the empty UPPER band (right for LTR, left for RTL)
+      const SX = 8, SY = 8 * (tc.height / tc.width);
       const OX = rtl ? -3.2 : 3.2, OY = 5.8;
       for (let i = 0; i < N; i++) {
-        const p = pts.length ? pts[(Math.random() * pts.length) | 0] : [tc.width / 2, tc.height / 2];
-        target[i * 3] = (p[0] / tc.width - 0.5) * SX + OX;
-        target[i * 3 + 1] = -(p[1] / tc.height - 0.5) * SY + OY;
-        target[i * 3 + 2] = (Math.random() - 0.5) * 0.7;
+        const p = pts.length ? pts[i % pts.length] : [tc.width / 2, tc.height / 2];
+        target[i * 3] = (p[0] / tc.width - 0.5) * SX + OX + (Math.random() - 0.5) * 0.035;
+        target[i * 3 + 1] = -(p[1] / tc.height - 0.5) * SY + OY + (Math.random() - 0.5) * 0.035;
+        target[i * 3 + 2] = (Math.random() - 0.5) * 0.16; // flatter → sharper letters
       }
     }
     const toCloud = () => { for (let i = 0; i < N * 3; i++) target[i] = cloud[i]; };
@@ -115,11 +116,11 @@ export default function HeroScene({ dark = true, rtl = false }) {
       if (inWord && phase > 4.6) { inWord = false; phase = 0; toCloud(); }
       else if (!inWord && phase > 3.0) { inWord = true; phase = 0; wi = (wi + 1) % WORDS.length; setWord(WORDS[wi]); }
 
-      // grow + brighten the dew when it assembles into a word
-      mat.size += (((inWord ? (dark ? 0.09 : 0.11) : (dark ? 0.05 : 0.07))) - mat.size) * 0.08;
-      mat.opacity += (((inWord ? (dark ? 1.0 : 0.9) : (dark ? 0.85 : 0.55))) - mat.opacity) * 0.08;
+      // crisp + brighten the dew when it assembles into a word (smaller, denser)
+      mat.size += (((inWord ? (dark ? 0.07 : 0.085) : (dark ? 0.05 : 0.07))) - mat.size) * 0.08;
+      mat.opacity += (((inWord ? (dark ? 1.0 : 0.98) : (dark ? 0.85 : 0.5))) - mat.opacity) * 0.08;
 
-      const k = inWord ? 0.05 : 0.03; // slower, smoother, more uniform gathering
+      const k = inWord ? 0.07 : 0.03; // settle a touch faster when forming, smooth drift otherwise
       const arr = geo.attributes.position.array;
       for (let i = 0; i < N; i++) {
         const j = i * 3;
