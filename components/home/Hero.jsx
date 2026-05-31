@@ -97,8 +97,9 @@ export default function Hero({ lang }) {
       {/* auroras — soft on light, neon on dark */}
       <Aurora variant="light" className="-z-10 dark:hidden opacity-90" />
       <Aurora variant="dark" className="-z-10 hidden dark:block opacity-70" />
-      {/* 3D particle field — DARK theme, capable desktops only (CSS aurora is the fallback) */}
-      {isDark && canRender3D && <HeroScene />}
+      {/* 3D snow/dew particle field that morphs into words — both themes, capable
+          desktops only (CSS aurora stays the fallback on mobile/reduced-motion). */}
+      {mounted && canRender3D && <HeroScene key={isDark ? "dark" : "light"} dark={isDark} />}
 
       {/* dark contrast overlay (keeps text crisp over shader/photo) */}
       <div className="absolute inset-0 -z-10 hidden dark:block bg-gradient-to-t from-navy via-navy/55 to-navy/25" />
