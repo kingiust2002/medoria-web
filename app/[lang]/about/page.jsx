@@ -4,6 +4,7 @@ import { LOCALES, getTranslations } from "@/lib/i18n";
 import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
+import ImagePlaceholder from "@/components/shared/ImagePlaceholder";
 
 const VALUE_ICONS = ["shield", "bolt", "check", "handshake"];
 const OFFER_ICONS = ["gloves", "stethoscope", "bandage", "thermometer", "flask", "pill"];
@@ -52,14 +53,25 @@ export default function AboutPage({ params }) {
 
       {/* Mission */}
       <section className="py-14 md:py-20 bg-canvas-soft border-b border-line">
-        <div className="container-x max-w-4xl">
-          <div className="section-tag mb-3">{a.mission.tag}</div>
-          <h2 className="font-display text-2xl md:text-4xl font-extrabold text-ink tracking-tight mb-5 leading-tight">
-            {a.mission.title}
-          </h2>
-          <p className="text-base md:text-lg text-ink-muted leading-[1.85]">
-            {a.mission.body}
-          </p>
+        <div className="container-x grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          <div>
+            <div className="eyebrow mb-4"><span className="gradient-text">{a.mission.tag}</span></div>
+            <h2 className="font-display text-2xl md:text-4xl font-extrabold text-ink tracking-tight mb-5 leading-tight">
+              {a.mission.title}
+            </h2>
+            <p className="text-base md:text-lg text-ink-muted leading-[1.85]">
+              {a.mission.body}
+            </p>
+          </div>
+          {/* Company / team photo slot → /public/images/about-medical-team.jpg */}
+          <ImagePlaceholder
+            src="/images/about-medical-team.jpg"
+            alt={a.mission.title}
+            icon="hospital"
+            label={a.mission.tag}
+            className="aspect-[16/11] w-full shadow-card"
+            rounded="rounded-[2rem]"
+          />
         </div>
       </section>
 

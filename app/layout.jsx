@@ -5,7 +5,7 @@ export const metadata = {
   metadataBase: new URL("https://medoria.tj"),
   title: { default: "Medoria — Medical Catalog", template: "%s | Medoria" },
   description: "Professional B2B catalog of medical consumables for clinics, pharmacies and hospitals in Tajikistan.",
-  icons: { icon: "/logo.png", apple: "/logo.png" },
+  icons: { icon: "/logo-mark.png", apple: "/logo-mark.png" },
 };
 
 export default function RootLayout({ children }) {
