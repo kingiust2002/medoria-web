@@ -180,7 +180,7 @@ export default function Hero({ lang }) {
               {t.home.heroCta}
               <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={16} className="transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
             </Link>
-            <a href={waLink(bulkInquiryMessage(lang))} target="_blank" rel="noopener noreferrer" className="btn-wa size-xl">
+            <a href={waLink(bulkInquiryMessage(lang))} target="_blank" rel="noopener noreferrer" className="btn-contact size-xl">
               <Icon name="chat" size={16} />
               {t.common.contactUs}
             </a>

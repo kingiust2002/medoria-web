@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
 import Icon from "@/components/shared/Icon";
+import TiltCard from "@/components/shared/TiltCard";
 
 export const dynamic = "force-dynamic";
 
@@ -60,10 +61,10 @@ export default function CategoriesPage({ params }) {
       <div className="container-x py-10 md:py-14">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {CATEGORIES.map((c) => (
+            <TiltCard key={c.slug} className="h-full rounded-2xl" max={5}>
             <Link
-              key={c.slug}
               href={`/${lang}/catalog?category=${c.slug}`}
-              className="card card-hover overflow-hidden group flex"
+              className="card card-hover overflow-hidden group flex h-full"
             >
               <div className="w-32 md:w-40 shrink-0 img-ph flex items-center justify-center text-brand-violet group-hover:bg-brand-gradient group-hover:text-white transition-colors">
                 <Icon name={c.icon} size={56} strokeWidth={1.3} className="relative" />
@@ -84,6 +85,7 @@ export default function CategoriesPage({ params }) {
                 </span>
               </div>
             </Link>
+            </TiltCard>
           ))}
         </div>
 

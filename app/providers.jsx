@@ -8,7 +8,7 @@ export function Providers({ children }) {
     <ThemeProvider
       attribute="class"
       defaultTheme="light"
-      enableSystem
+      enableSystem={false}
       disableTransitionOnChange
     >
       <SmoothScroll />

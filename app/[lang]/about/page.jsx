@@ -5,6 +5,7 @@ import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
 import ImagePlaceholder from "@/components/shared/ImagePlaceholder";
+import TiltCard from "@/components/shared/TiltCard";
 
 const VALUE_ICONS = ["shield", "bolt", "check", "handshake"];
 const OFFER_ICONS = ["gloves", "stethoscope", "bandage", "thermometer", "flask", "pill"];
@@ -83,13 +84,15 @@ export default function AboutPage({ params }) {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
             {a.values.items.map(([_, title, desc], i) => (
-              <div key={i} className="card p-7 hover:shadow-hover hover:border-brand-violet/20 transition-all group">
+              <TiltCard key={i} className="h-full rounded-2xl" max={6}>
+              <div className="card p-7 hover:shadow-hover hover:border-brand-violet/20 transition-all group h-full">
                 <div className="w-12 h-12 rounded-2xl bg-brand-violet/[0.08] text-brand-violet flex items-center justify-center mb-4 transition-all duration-300 group-hover:bg-brand-gradient group-hover:text-white group-hover:shadow-brand">
                   <Icon name={VALUE_ICONS[i]} size={22} strokeWidth={1.75} />
                 </div>
                 <h3 className="font-bold text-[16px] text-ink mb-2">{title}</h3>
                 <p className="text-[13px] text-ink-muted leading-relaxed">{desc}</p>
               </div>
+              </TiltCard>
             ))}
           </div>
         </div>
@@ -104,13 +107,15 @@ export default function AboutPage({ params }) {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {a.offer.items.map(([_, title, desc], i) => (
-              <div key={i} className="card p-7 hover:shadow-hover transition-all group">
+              <TiltCard key={i} className="h-full rounded-2xl" max={6}>
+              <div className="card p-7 hover:shadow-hover transition-all group h-full">
                 <div className="w-12 h-12 rounded-2xl bg-brand-violet/[0.08] text-brand-violet flex items-center justify-center mb-4 transition-all duration-300 group-hover:bg-brand-gradient group-hover:text-white group-hover:shadow-brand">
                   <Icon name={OFFER_ICONS[i]} size={24} strokeWidth={1.6} />
                 </div>
                 <h3 className="font-semibold text-[15px] text-ink mb-1.5">{title}</h3>
                 <p className="text-[13px] text-ink-muted leading-relaxed">{desc}</p>
               </div>
+              </TiltCard>
             ))}
           </div>
         </div>
@@ -124,10 +129,12 @@ export default function AboutPage({ params }) {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {a.whoWeServe.items.map(([title, desc], i) => (
-              <div key={i} className="card p-5 hover:shadow-hover hover:border-brand-violet/20 transition-all">
+              <TiltCard key={i} className="h-full rounded-2xl" max={6}>
+              <div className="card p-5 hover:shadow-hover hover:border-brand-violet/20 transition-all h-full">
                 <h3 className="font-semibold text-[15px] text-ink mb-1.5">{title}</h3>
                 <p className="text-[13px] text-ink-muted leading-relaxed">{desc}</p>
               </div>
+              </TiltCard>
             ))}
           </div>
         </div>
@@ -158,7 +165,7 @@ export default function AboutPage({ params }) {
                   <Icon name="arrow" size={15} />
                 </Link>
                 <a href={waLink(bulkInquiryMessage(lang))} target="_blank" rel="noopener noreferrer"
-                   className="btn-wa size-xl">
+                   className="btn h-12 px-7 rounded-2xl text-sm bg-white/15 hover:bg-white/25 text-white border border-white/30 backdrop-blur transition-colors">
                   <Icon name="chat" size={18} />
                   {t.common.contactUs}
                 </a>

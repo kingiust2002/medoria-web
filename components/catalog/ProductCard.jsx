@@ -9,6 +9,7 @@ import { priceLabel, isOnRequest, formatPrice } from "@/lib/price";
 import { useCompare } from "@/lib/compare";
 import QuoteModal from "@/components/product/QuoteModal";
 import Icon from "@/components/shared/Icon";
+import TiltCard from "@/components/shared/TiltCard";
 
 const BADGE_STYLE = {
   SALE: "bg-brand-pink text-white",
@@ -117,7 +118,8 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
     <>
       {quoteOpen && <QuoteModal product={p} lang={lang} onClose={() => setQuoteOpen(false)} />}
 
-      <article className="card card-hover overflow-hidden flex flex-col group">
+      <TiltCard className="h-full rounded-2xl" max={5}>
+      <article className="card card-hover overflow-hidden flex flex-col group h-full">
         {/* Image */}
         <Link href={`/${lang}/catalog/${p.slug || p.id}`} className="block relative aspect-[4/3] img-ph overflow-hidden">
           {img ? (
@@ -258,6 +260,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
           </Link>
         </div>
       </article>
+      </TiltCard>
     </>
   );
 }
