@@ -24,10 +24,10 @@ void main(){
   float t = u_time * 0.035;
   vec2 q = vec2(fbm(p*1.4 + vec2(0.0, t)), fbm(p*1.4 + vec2(5.2, -t)));
   float n = fbm(p*1.9 + q*1.4 + vec2(t*0.5, t*0.3));
-  vec3 pink   = vec3(0.925, 0.118, 0.584);
-  vec3 violet = vec3(0.545, 0.184, 0.969);
-  vec3 blue   = vec3(0.145, 0.388, 0.922);
-  vec3 cyan   = vec3(0.024, 0.714, 0.831);
+  vec3 pink   = vec3(0.941, 0.157, 0.620);
+  vec3 violet = vec3(0.651, 0.204, 0.910);
+  vec3 blue   = vec3(0.231, 0.510, 0.965);
+  vec3 cyan   = vec3(0.133, 0.827, 0.933);
   vec3 col = mix(violet, blue, smoothstep(0.2, 0.62, n));
   col = mix(col, cyan, smoothstep(0.55, 0.92, n));
   col = mix(col, pink, smoothstep(0.0, 0.22, n) * 0.7);
