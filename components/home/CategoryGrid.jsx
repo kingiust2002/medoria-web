@@ -57,10 +57,11 @@ export default function CategoryGrid({ lang }) {
               href={`/${lang}/catalog?category=${c.slug}`}
               className="card card-hover overflow-hidden group p-5 text-center"
             >
-              <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-tint-blue group-hover:bg-primary group-hover:text-white text-primary flex items-center justify-center transition-colors">
-                <Icon name={c.icon} size={28} strokeWidth={1.6} />
+              <div className="relative w-14 h-14 mx-auto mb-3 rounded-2xl bg-brand-violet/[0.08] text-brand-violet flex items-center justify-center transition-all duration-300 group-hover:text-white group-hover:shadow-brand group-hover:-translate-y-0.5">
+                <span className="absolute inset-0 rounded-2xl bg-brand-gradient opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Icon name={c.icon} size={28} strokeWidth={1.6} className="relative" />
               </div>
-              <div className="font-semibold text-[13px] md:text-sm text-ink leading-tight mb-1">
+              <div className="font-semibold text-[13px] md:text-sm text-ink leading-tight mb-1 group-hover:text-brand-violet transition-colors">
                 {getCategoryName(c.slug, lang)}
               </div>
               <div className="text-[11px] text-ink-faint">

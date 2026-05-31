@@ -9,9 +9,9 @@ export default function FinalCTA({ lang }) {
   return (
     <section className="py-14 md:py-20 bg-canvas-soft">
       <div className="container-x">
-        <div className="relative bg-brand-gradient rounded-3xl p-8 md:p-14 shadow-brand overflow-hidden">
+        <div className="relative bg-brand-gradient-vivid bg-[length:200%_200%] animate-gradient-pan rounded-[2rem] p-8 md:p-14 shadow-brand-lg overflow-hidden noise">
           {/* Decorative grid pattern */}
-          <div className="absolute inset-0 opacity-[0.12] pointer-events-none">
+          <div className="absolute inset-0 opacity-[0.14] pointer-events-none">
             <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <pattern id="ctaPattern" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">

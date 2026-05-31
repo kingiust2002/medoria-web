@@ -11,8 +11,8 @@ import QuoteModal from "@/components/product/QuoteModal";
 import Icon from "@/components/shared/Icon";
 
 const BADGE_STYLE = {
-  SALE: "bg-accent-pink text-white",
-  NEW:  "bg-primary text-white",
+  SALE: "bg-brand-pink text-white",
+  NEW:  "bg-brand-gradient text-white",
   TOP:  "bg-cyan-600 text-white",
 };
 
@@ -49,12 +49,12 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
         {quoteOpen && <QuoteModal product={p} lang={lang} onClose={() => setQuoteOpen(false)} />}
         <article className="card card-hover overflow-hidden flex gap-4 p-3 group">
           <Link href={`/${lang}/catalog/${p.slug || p.id}`}
-                className="block relative w-32 h-32 md:w-40 md:h-40 rounded-xl bg-tint-blue overflow-hidden shrink-0">
+                className="block relative w-32 h-32 md:w-40 md:h-40 rounded-xl img-ph overflow-hidden shrink-0">
             {img ? (
               <img src={img} alt={name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-tint-blue to-tint-cyan flex items-center justify-center">
-                <Icon name={catIcon} size={40} className="text-primary/30" strokeWidth={1.2} />
+              <div className="w-full h-full flex items-center justify-center">
+                <Icon name={catIcon} size={40} className="text-brand-violet/25" strokeWidth={1.2} />
               </div>
             )}
             {p.badge && (
@@ -64,19 +64,19 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
 
           <div className="flex-1 min-w-0 flex flex-col">
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="text-[9px] font-bold tracking-[0.14em] text-primary uppercase">{getCategoryName(p.category, lang)}</span>
+              <span className="text-[9px] font-bold tracking-[0.14em] gradient-text uppercase">{getCategoryName(p.category, lang)}</span>
               {p.brand && (<><span className="text-ink-faint">·</span><span className="text-[10px] text-ink-muted">{p.brand}</span></>)}
               {p.sku && (<><span className="text-ink-faint">·</span><span className="text-[10px] font-mono text-ink-muted tabular">{p.sku}</span></>)}
             </div>
             <Link href={`/${lang}/catalog/${p.slug || p.id}`}>
-              <h3 className="font-semibold text-[15px] text-ink leading-snug mb-1 hover:text-primary transition-colors">{name}</h3>
+              <h3 className="font-semibold text-[15px] text-ink leading-snug mb-1 hover:text-brand-violet transition-colors">{name}</h3>
             </Link>
             <p className="text-[12px] text-ink-muted leading-relaxed line-clamp-2 mb-3">{desc}</p>
 
             <div className="flex items-center justify-between mt-auto flex-wrap gap-2">
               <div className="flex items-baseline gap-1">
                 {onRequest ? (
-                  <span className="font-display text-[15px] font-bold text-primary">{priceLabel(p, lang)}</span>
+                  <span className="font-display text-[15px] font-bold gradient-text">{priceLabel(p, lang)}</span>
                 ) : (
                   <>
                     <span className="font-display text-xl font-extrabold text-ink leading-none tabular">{formatPrice(p.price)}</span>
@@ -87,7 +87,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
               <div className="flex items-center gap-1.5">
                 {onQuickView && (
                   <button onClick={handleQuickView}
-                    className="w-9 h-9 rounded-lg flex items-center justify-center bg-canvas-soft hover:bg-tint-blue text-ink-muted hover:text-primary transition-colors"
+                    className="w-9 h-9 rounded-lg flex items-center justify-center bg-canvas-soft hover:bg-brand-violet/10 text-ink-muted hover:text-brand-violet transition-colors"
                     title={t.catalog.quickView} aria-label={t.catalog.quickView}>
                     <Icon name="eye" size={16} />
                   </button>
@@ -95,7 +95,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
                 <button onClick={handleCompare}
                   className={[
                     "w-9 h-9 rounded-lg flex items-center justify-center transition-colors",
-                    isCompared ? "bg-primary text-white" : "bg-canvas-soft hover:bg-tint-blue text-ink-muted hover:text-primary",
+                    isCompared ? "bg-brand-gradient text-white" : "bg-canvas-soft hover:bg-brand-violet/10 text-ink-muted hover:text-brand-violet",
                   ].join(" ")}
                   title={isCompared ? t.product.inCompare : t.product.addToCompare}>
                   <Icon name={isCompared ? "check" : "switchH"} size={16} />
@@ -119,7 +119,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
 
       <article className="card card-hover overflow-hidden flex flex-col group">
         {/* Image */}
-        <Link href={`/${lang}/catalog/${p.slug || p.id}`} className="block relative aspect-[4/3] bg-tint-blue overflow-hidden">
+        <Link href={`/${lang}/catalog/${p.slug || p.id}`} className="block relative aspect-[4/3] img-ph overflow-hidden">
           {img ? (
             <img
               src={img}
@@ -128,15 +128,15 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
               loading="lazy"
             />
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-tint-blue via-white to-tint-cyan">
-              <Icon name={catIcon} size={56} className="text-primary/30" strokeWidth={1.1} />
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+              <Icon name={catIcon} size={56} className="text-brand-violet/25 transition-transform duration-500 group-hover:scale-110" strokeWidth={1.1} />
               <span className="text-[10px] text-ink-faint uppercase tracking-wider">{p.sku || p.brand || "Medoria"}</span>
             </div>
           )}
 
           {/* Badge (start) */}
           {p.badge && (
-            <span className={`absolute top-3 start-3 ${BADGE_STYLE[p.badge] || "bg-primary text-white"} tag`}>
+            <span className={`absolute top-3 start-3 ${BADGE_STYLE[p.badge] || "bg-brand-gradient text-white"} tag shadow-soft`}>
               {p.badge}
             </span>
           )}
@@ -147,8 +147,8 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
             className={[
               "absolute top-3 end-3 w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-soft backdrop-blur",
               isCompared
-                ? "bg-primary text-white scale-105"
-                : "bg-white/90 text-ink-muted hover:bg-white hover:text-primary opacity-0 group-hover:opacity-100",
+                ? "bg-brand-gradient text-white scale-105"
+                : "bg-white/90 text-ink-muted hover:bg-white hover:text-brand-violet opacity-0 group-hover:opacity-100",
             ].join(" ")}
             title={isCompared ? t.product.inCompare : t.product.addToCompare}
             aria-label="Compare"
@@ -160,7 +160,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
           {onQuickView && (
             <button
               onClick={handleQuickView}
-              className="absolute top-[52px] end-3 w-9 h-9 rounded-full flex items-center justify-center bg-white/90 text-ink-muted hover:bg-white hover:text-primary shadow-soft backdrop-blur opacity-0 group-hover:opacity-100 transition-all"
+              className="absolute top-[52px] end-3 w-9 h-9 rounded-full flex items-center justify-center bg-white/90 text-ink-muted hover:bg-white hover:text-brand-violet shadow-soft backdrop-blur opacity-0 group-hover:opacity-100 transition-all"
               title={t.catalog.quickView}
               aria-label={t.catalog.quickView}
             >
@@ -188,7 +188,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
         {/* Content */}
         <div className="p-4 flex-1 flex flex-col">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <span className="text-[9px] font-bold tracking-[0.14em] text-primary uppercase">
+            <span className="text-[9px] font-bold tracking-[0.14em] gradient-text uppercase">
               {getCategoryName(p.category, lang)}
             </span>
             {p.brand && (
@@ -200,7 +200,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
           </div>
 
           <Link href={`/${lang}/catalog/${p.slug || p.id}`}>
-            <h3 className="font-semibold text-[14px] text-ink leading-snug mb-1 hover:text-primary transition-colors">
+            <h3 className="font-semibold text-[14px] text-ink leading-snug mb-1 hover:text-brand-violet transition-colors">
               {name}
             </h3>
           </Link>
@@ -213,7 +213,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
           <div className="flex items-center justify-between mt-auto mb-3 gap-2">
             <div className="flex items-baseline gap-1 min-w-0">
               {onRequest ? (
-                <span className="font-display text-[15px] font-bold text-primary truncate">{priceLabel(p, lang)}</span>
+                <span className="font-display text-[15px] font-bold gradient-text truncate">{priceLabel(p, lang)}</span>
               ) : (
                 <>
                   <span className="font-display text-[22px] font-extrabold text-ink leading-none tabular">{formatPrice(p.price)}</span>
@@ -244,7 +244,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
               {copied ? t.common.copied : t.common.copy}
             </button>
             <button onClick={() => setQuoteOpen(true)}
-              className="btn h-9 text-[10px] rounded-lg bg-tint-blue text-primary border border-primary/20 hover:bg-primary/10">
+              className="btn h-9 text-[10px] rounded-lg bg-brand-violet/[0.07] text-brand-violet border border-brand-violet/20 hover:bg-brand-violet/10">
               <Icon name="invoice" size={12} />
               {t.common.requestQuote}
             </button>
@@ -252,7 +252,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
 
           <Link
             href={`/${lang}/catalog/${p.slug || p.id}`}
-            className="mt-2 flex items-center justify-center gap-1 text-[11px] font-semibold text-primary py-2 rounded-lg border border-primary/20 hover:bg-tint-blue transition-colors"
+            className="mt-2 flex items-center justify-center gap-1 text-[11px] font-semibold text-brand-violet py-2 rounded-lg border border-brand-violet/20 hover:bg-brand-violet/[0.06] transition-colors"
           >
             {t.common.details} <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={12} />
           </Link>

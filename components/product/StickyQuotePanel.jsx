@@ -34,21 +34,21 @@ export default function StickyQuotePanel({ product, lang, onQuoteClick }) {
       <div className="card flex items-center gap-3 px-4 py-3 shadow-hover backdrop-blur-xl bg-white/95 border-primary/10">
         {/* Product mini */}
         <div className="flex items-center gap-3 pe-3 border-e border-line min-w-0 max-w-[280px]">
-          <div className="w-10 h-10 rounded-lg bg-tint-blue flex items-center justify-center shrink-0 overflow-hidden">
+          <div className="w-10 h-10 rounded-lg img-ph flex items-center justify-center shrink-0 overflow-hidden">
             {img ? (
               <img src={img} alt="" className="w-full h-full object-cover" />
             ) : (
-              <Icon name="package" size={20} className="text-primary" />
+              <Icon name="package" size={20} className="text-brand-violet" />
             )}
           </div>
           <div className="min-w-0">
             <div className="text-[12px] font-semibold text-ink truncate">{name}</div>
             <div className="text-[11px] text-ink-muted tabular">
               {isOnRequest(product) ? (
-                <span className="font-bold text-primary">{priceLabel(product, lang)}</span>
+                <span className="font-bold gradient-text">{priceLabel(product, lang)}</span>
               ) : (
                 <>
-                  <span className="font-bold text-primary">{formatPrice(product.price)}</span>
+                  <span className="font-bold gradient-text">{formatPrice(product.price)}</span>
                   <span className="text-ink-faint"> / {product.unit}</span>
                 </>
               )}
@@ -62,8 +62,8 @@ export default function StickyQuotePanel({ product, lang, onQuoteClick }) {
           className={[
             "w-10 h-10 rounded-lg flex items-center justify-center transition-colors shrink-0",
             isCompared
-              ? "bg-primary text-white"
-              : "bg-canvas-soft text-ink-muted hover:text-primary hover:bg-tint-blue",
+              ? "bg-brand-gradient text-white"
+              : "bg-canvas-soft text-ink-muted hover:text-brand-violet hover:bg-brand-violet/10",
           ].join(" ")}
           title={isCompared ? t.product.inCompare : t.product.addToCompare}
         >

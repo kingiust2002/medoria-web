@@ -30,9 +30,9 @@ export default function ProductGallery({ product }) {
   if (all.length === 0) {
     const catIcon = CATEGORIES.find((c) => c.slug === product.category)?.icon || "package";
     return (
-      <div className="card overflow-hidden aspect-square bg-gradient-to-br from-tint-blue via-white to-tint-cyan">
+      <div className="card overflow-hidden aspect-square img-ph noise">
         <div className="w-full h-full flex flex-col items-center justify-center gap-3">
-          <div className="text-primary/30"><Icon name={catIcon} size={96} strokeWidth={1} /></div>
+          <div className="text-brand-violet/30"><Icon name={catIcon} size={96} strokeWidth={1} /></div>
           <span className="text-xs text-ink-faint uppercase tracking-widest">{product.sku || "Medoria"}</span>
         </div>
       </div>
@@ -88,8 +88,8 @@ export default function ProductGallery({ product }) {
                 className={[
                   "aspect-square rounded-xl overflow-hidden border-2 transition-all",
                   i === active
-                    ? "border-primary shadow-soft"
-                    : "border-line hover:border-primary/40 opacity-70 hover:opacity-100",
+                    ? "border-brand-violet shadow-soft"
+                    : "border-line hover:border-brand-violet/40 opacity-70 hover:opacity-100",
                 ].join(" ")}
               >
                 <img src={imageUrl(url)} alt="" className="w-full h-full object-cover" />

@@ -40,16 +40,18 @@ export default function CategoriesPage({ params }) {
 
   return (
     <div className="bg-canvas-soft min-h-screen">
-      <div className="bg-white border-b border-line relative overflow-hidden">
-        <div className="absolute -top-1/2 right-0 w-[40vw] h-[40vw] rounded-full pointer-events-none"
-             style={{ background: "radial-gradient(circle, rgba(37,99,235,0.05) 0%, transparent 70%)" }} />
+      <div className="bg-canvas-soft border-b border-line relative overflow-hidden">
+        <div className="blob w-[44vw] h-[44vw] -top-1/3 -end-[6%] animate-aurora"
+             style={{ background: "radial-gradient(circle, rgba(139,47,247,0.14) 0%, transparent 70%)" }} />
+        <div className="blob w-[34vw] h-[34vw] top-0 start-[10%] animate-aurora"
+             style={{ background: "radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%)", animationDelay: "4s" }} />
         <div className="container-x py-12 md:py-16 relative">
           <nav className="text-[11px] text-ink-muted mb-3 flex items-center gap-2">
-            <Link href={`/${lang}`} className="hover:text-primary">{t.common.home}</Link>
+            <Link href={`/${lang}`} className="hover:text-brand-violet">{t.common.home}</Link>
             <span className="text-line">/</span>
-            <span className="text-primary font-semibold">{t.common.categories}</span>
+            <span className="text-brand-violet font-semibold">{t.common.categories}</span>
           </nav>
-          <div className="section-tag mb-3">{t.home.catTag}</div>
+          <div className="eyebrow mb-4"><span className="gradient-text">{t.home.catTag}</span></div>
           <h1 className="section-h-lg mb-3">{t.categories.title}</h1>
           <p className="text-base text-ink-muted max-w-xl">{t.categories.subtitle}</p>
         </div>
@@ -63,13 +65,13 @@ export default function CategoriesPage({ params }) {
               href={`/${lang}/catalog?category=${c.slug}`}
               className="card card-hover overflow-hidden group flex"
             >
-              <div className="w-32 md:w-40 shrink-0 bg-tint-blue flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                <Icon name={c.icon} size={56} strokeWidth={1.3} />
+              <div className="w-32 md:w-40 shrink-0 img-ph flex items-center justify-center text-brand-violet group-hover:bg-brand-gradient group-hover:text-white transition-colors">
+                <Icon name={c.icon} size={56} strokeWidth={1.3} className="relative" />
               </div>
 
               <div className="p-5 md:p-6 flex-1 flex flex-col">
                 <div className="flex items-baseline justify-between gap-3 mb-2">
-                  <h2 className="font-display text-lg md:text-xl font-bold text-ink group-hover:text-primary transition-colors">
+                  <h2 className="font-display text-lg md:text-xl font-bold text-ink group-hover:text-brand-violet transition-colors">
                     {getCategoryName(c.slug, lang)}
                   </h2>
                   <span className="text-[11px] text-ink-faint shrink-0">{labelFor(c.slug)}</span>
@@ -77,8 +79,8 @@ export default function CategoriesPage({ params }) {
                 <p className="text-[13px] text-ink-muted leading-relaxed mb-4 flex-1">
                   {t.categories.details[c.slug]}
                 </p>
-                <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-primary">
-                  {t.categories.viewProducts} <Icon name="arrow" size={12} />
+                <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-brand-violet">
+                  {t.categories.viewProducts} <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={12} />
                 </span>
               </div>
             </Link>

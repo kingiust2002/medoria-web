@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LOCALES, getTranslations } from "@/lib/i18n";
 import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
+import Aurora from "@/components/shared/Aurora";
 
 const VALUE_ICONS = ["shield", "bolt", "check", "handshake"];
 const OFFER_ICONS = ["gloves", "stethoscope", "bandage", "thermometer", "flask", "pill"];
@@ -29,22 +30,19 @@ export default function AboutPage({ params }) {
   return (
     <div className="bg-canvas-soft">
       {/* Hero */}
-      <section className="relative overflow-hidden bg-white border-b border-line">
+      <section className="relative overflow-hidden bg-canvas-soft border-b border-line">
+        <Aurora />
         <div
-          className="absolute inset-0 opacity-[0.03] pointer-events-none"
-          style={{
-            backgroundImage: "linear-gradient(to right, #0F172A 1px, transparent 1px), linear-gradient(to bottom, #0F172A 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
+          className="absolute inset-0 opacity-[0.5] pointer-events-none"
+          style={{ backgroundImage: "radial-gradient(circle, rgba(99,102,241,0.10) 1px, transparent 1px)", backgroundSize: "26px 26px", maskImage: "radial-gradient(circle at 50% 20%, black, transparent 70%)" }}
         />
-        <div className="absolute -top-1/4 -right-1/4 w-[60vw] h-[60vw] rounded-full bg-hero-radial pointer-events-none" />
         <div className="container-x py-14 md:py-24 relative">
           <nav className="text-[11px] text-ink-muted mb-4 flex items-center gap-2">
-            <Link href={`/${lang}`} className="hover:text-primary">{t.common.home}</Link>
+            <Link href={`/${lang}`} className="hover:text-brand-violet">{t.common.home}</Link>
             <span className="text-line">/</span>
-            <span className="text-primary font-semibold">{t.common.about}</span>
+            <span className="text-brand-violet font-semibold">{t.common.about}</span>
           </nav>
-          <div className="section-tag mb-3">{a.hero.tag}</div>
+          <div className="eyebrow mb-4"><span className="gradient-text">{a.hero.tag}</span></div>
           <h1 className="section-h-lg mb-5 max-w-3xl">{a.hero.title}</h1>
           <p className="text-base md:text-lg text-ink-muted leading-relaxed max-w-2xl">
             {a.hero.sub}
@@ -73,8 +71,8 @@ export default function AboutPage({ params }) {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
             {a.values.items.map(([_, title, desc], i) => (
-              <div key={i} className="card p-7 hover:shadow-hover hover:border-primary/20 transition-all group">
-                <div className="w-12 h-12 rounded-2xl bg-tint-blue text-primary flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-colors">
+              <div key={i} className="card p-7 hover:shadow-hover hover:border-brand-violet/20 transition-all group">
+                <div className="w-12 h-12 rounded-2xl bg-brand-violet/[0.08] text-brand-violet flex items-center justify-center mb-4 transition-all duration-300 group-hover:bg-brand-gradient group-hover:text-white group-hover:shadow-brand">
                   <Icon name={VALUE_ICONS[i]} size={22} strokeWidth={1.75} />
                 </div>
                 <h3 className="font-bold text-[16px] text-ink mb-2">{title}</h3>
@@ -95,7 +93,7 @@ export default function AboutPage({ params }) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {a.offer.items.map(([_, title, desc], i) => (
               <div key={i} className="card p-7 hover:shadow-hover transition-all group">
-                <div className="w-12 h-12 rounded-2xl bg-tint-blue text-primary flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-white transition-colors">
+                <div className="w-12 h-12 rounded-2xl bg-brand-violet/[0.08] text-brand-violet flex items-center justify-center mb-4 transition-all duration-300 group-hover:bg-brand-gradient group-hover:text-white group-hover:shadow-brand">
                   <Icon name={OFFER_ICONS[i]} size={24} strokeWidth={1.6} />
                 </div>
                 <h3 className="font-semibold text-[15px] text-ink mb-1.5">{title}</h3>
@@ -114,7 +112,7 @@ export default function AboutPage({ params }) {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {a.whoWeServe.items.map(([title, desc], i) => (
-              <div key={i} className="card p-5 hover:shadow-hover hover:border-primary/20 transition-all">
+              <div key={i} className="card p-5 hover:shadow-hover hover:border-brand-violet/20 transition-all">
                 <h3 className="font-semibold text-[15px] text-ink mb-1.5">{title}</h3>
                 <p className="text-[13px] text-ink-muted leading-relaxed">{desc}</p>
               </div>

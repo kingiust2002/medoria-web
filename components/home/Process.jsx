@@ -13,12 +13,12 @@ export default function Process({ lang }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 relative">
-          {/* Connecting dashed line */}
-          <div className="hidden lg:block absolute top-7 left-[12%] right-[12%] border-t-2 border-dashed border-primary/25 pointer-events-none" />
+          {/* Connecting gradient line */}
+          <div className="hidden lg:block absolute top-7 inset-x-[12%] h-0.5 bg-gradient-to-r from-brand-pink/40 via-brand-violet/40 to-brand-cyan/40 pointer-events-none" />
 
           {t.home.processItems.map(([num, title, desc], i) => (
-            <div key={i} className="relative bg-white">
-              <div className="relative mx-auto w-14 h-14 rounded-full bg-white border-2 border-primary text-primary font-display font-extrabold text-lg flex items-center justify-center shadow-card mb-5">
+            <div key={i} className="relative bg-canvas-soft">
+              <div className="relative mx-auto w-14 h-14 rounded-2xl bg-brand-gradient text-white font-display font-extrabold text-lg flex items-center justify-center shadow-brand mb-5 ring-4 ring-white">
                 {num}
               </div>
               <h3 className="font-semibold text-[15px] text-ink mb-2 text-center">{title}</h3>

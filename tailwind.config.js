@@ -13,15 +13,28 @@ module.exports = {
         farsi:   ['Vazirmatn',      'Tahoma',    'sans-serif'],
       },
       colors: {
-        // ── Brand — derived from logo (kept as-is for logo) ─────────────────
-        // These are USED only for the logo and rare accents — NOT for main UI
+        // ── Brand spectrum — straight from the logo ─────────────────────────
+        // pink/magenta → violet → blue → cyan. This IS the visual identity now.
+        brand: {
+          pink:    "#EC1E95",
+          fuchsia: "#D6249F",
+          magenta: "#FF2D9E",
+          violet:  "#8B2FF7",
+          purple:  "#7C3AED",
+          indigo:  "#4F46E5",
+          blue:    "#2563EB",
+          sky:     "#3B82F6",
+          cyan:    "#06B6D4",
+          aqua:    "#22D3EE",
+        },
+        // Kept for the raster logo / legacy halos
         logo: {
           pink:   "#E8188A",
           violet: "#7B2FF7",
           blue:   "#3B5BDB",
           cyan:   "#00C8F0",
         },
-        // ── Primary B2B Medical Palette ─────────────────────────────────────
+        // ── Primary (blue) — the trust anchor, still used widely ─────────────
         primary: {
           50:  "#EFF6FF",
           100: "#DBEAFE",
@@ -29,7 +42,7 @@ module.exports = {
           300: "#93C5FD",
           400: "#60A5FA",
           500: "#3B82F6",
-          600: "#2563EB",   // ← MAIN brand color
+          600: "#2563EB",
           700: "#1D4ED8",
           800: "#1E40AF",
           900: "#1E3A8A",
@@ -39,57 +52,75 @@ module.exports = {
           50:  "#ECFEFF",
           100: "#CFFAFE",
           400: "#22D3EE",
-          500: "#06B6D4",   // ← accent
+          500: "#06B6D4",
           600: "#0891B2",
           DEFAULT: "#06B6D4",
         },
-        // Used sparingly — for SALE badge or special features
+        // Accents now point at the brand spectrum
         accent: {
           violet: "#7C3AED",
-          pink:   "#DB2777",
-          gold:   "#D97706",
+          pink:   "#EC1E95",
+          gold:   "#F59E0B",
         },
-        // ── Neutrals (Medline / McKesson style) ─────────────────────────────
-        ink:     { DEFAULT: "#0F172A", soft: "#1E293B", muted: "#475569", faint: "#94A3B8" },
-        line:    { DEFAULT: "#E2E8F0", soft: "#F1F5F9" },
-        canvas:  { DEFAULT: "#FFFFFF", soft: "#F8FAFC", tint: "#F1F5F9" },
+        // ── Neutrals — clean & deep so the colour pops ──────────────────────
+        ink:     { DEFAULT: "#0B1120", soft: "#1E293B", muted: "#4A5568", faint: "#94A3B8" },
+        line:    { DEFAULT: "#E6EAF2", soft: "#F1F5F9" },
+        canvas:  { DEFAULT: "#FFFFFF", soft: "#F7F9FD", tint: "#EEF2FB" },
         ok:      "#16A34A",
         warn:    "#EA580C",
-        navy:    "#0F172A",
-        // ── Soft backgrounds (subtle) ───────────────────────────────────────
+        navy:    "#080B17",
+        // ── Soft tints (subtle backgrounds) ─────────────────────────────────
         tint: {
-          blue:   "#EFF6FF",
+          blue:   "#EFF4FF",
           cyan:   "#ECFEFF",
-          violet: "#F5F3FF",
+          violet: "#F4F1FE",
+          pink:   "#FDF1F8",
         },
       },
       backgroundImage: {
-        // ── Main brand gradient (B2B blue) ──────────────────────────────────
-        "brand-gradient":     "linear-gradient(135deg,#2563EB 0%,#0891B2 100%)",
-        "brand-gradient-soft":"linear-gradient(135deg,#EFF6FF 0%,#ECFEFF 100%)",
-        // Logo gradient — kept for the logo only
-        "logo-gradient":      "linear-gradient(135deg,#E8188A 0%,#7B2FF7 52%,#3B5BDB 100%)",
-        "hero-radial":        "radial-gradient(circle at 30% 20%,rgba(37,99,235,0.07) 0%,rgba(6,182,212,0.04) 50%,transparent 80%)",
-        "subtle-grid":        "linear-gradient(to right, #E2E8F0 1px, transparent 1px), linear-gradient(to bottom, #E2E8F0 1px, transparent 1px)",
+        // Full-spectrum brand gradient (the logo flow) — used everywhere now
+        "brand-gradient":      "linear-gradient(120deg,#EC1E95 0%,#8B2FF7 38%,#2563EB 72%,#06B6D4 100%)",
+        "brand-gradient-vivid":"linear-gradient(115deg,#FF2D9E 0%,#9333EA 40%,#2563EB 74%,#10C9E8 100%)",
+        "brand-gradient-soft": "linear-gradient(135deg,#FDF1F8 0%,#F1F0FF 46%,#ECFEFF 100%)",
+        "brand-conic":         "conic-gradient(from 180deg at 50% 50%,#EC1E95,#8B2FF7,#2563EB,#06B6D4,#EC1E95)",
+        "brand-sheen":         "linear-gradient(120deg,transparent 25%,rgba(255,255,255,0.38) 50%,transparent 75%)",
+        "logo-gradient":       "linear-gradient(135deg,#E8188A 0%,#7B2FF7 52%,#3B5BDB 100%)",
+        "hero-radial":         "radial-gradient(circle at 30% 20%,rgba(124,58,237,0.10) 0%,rgba(6,182,212,0.05) 50%,transparent 80%)",
+        "dot-grid":            "radial-gradient(circle, rgba(99,102,241,0.14) 1px, transparent 1px)",
+        "subtle-grid":         "linear-gradient(to right,#E6EAF2 1px,transparent 1px),linear-gradient(to bottom,#E6EAF2 1px,transparent 1px)",
       },
       boxShadow: {
-        soft:   "0 1px 2px rgba(15,23,42,0.04), 0 1px 8px rgba(15,23,42,0.04)",
-        card:   "0 2px 8px rgba(15,23,42,0.04), 0 8px 32px rgba(15,23,42,0.06)",
-        hover:  "0 4px 16px rgba(15,23,42,0.06), 0 16px 48px rgba(37,99,235,0.08)",
-        brand:  "0 8px 24px rgba(37,99,235,0.22)",
-        ring:   "0 0 0 4px rgba(37,99,235,0.10)",
+        soft:      "0 1px 2px rgba(15,23,42,0.04), 0 2px 10px rgba(15,23,42,0.05)",
+        card:      "0 2px 8px rgba(15,23,42,0.04), 0 12px 36px rgba(15,23,42,0.07)",
+        hover:     "0 8px 24px rgba(124,58,237,0.10), 0 24px 60px rgba(37,99,235,0.12)",
+        brand:     "0 10px 30px -6px rgba(124,58,237,0.45)",
+        "brand-lg":"0 24px 70px -14px rgba(124,58,237,0.55)",
+        "glow-pink":"0 0 44px -8px rgba(236,30,149,0.6)",
+        "glow-blue":"0 0 44px -8px rgba(37,99,235,0.55)",
+        "glow-cyan":"0 0 44px -8px rgba(6,182,212,0.55)",
+        ring:      "0 0 0 4px rgba(37,99,235,0.12)",
       },
       animation: {
-        shimmer:  "shimmer 1.6s linear infinite",
-        "fade-up":"fadeUp 0.7s cubic-bezier(0.2,0.8,0.2,1) forwards",
-        "fade-in":"fadeIn 0.5s ease forwards",
-        marquee:  "marquee 35s linear infinite",
+        shimmer:       "shimmer 1.6s linear infinite",
+        "fade-up":     "fadeUp 0.7s cubic-bezier(0.2,0.8,0.2,1) forwards",
+        "fade-in":     "fadeIn 0.5s ease forwards",
+        marquee:       "marquee 35s linear infinite",
+        float:         "float 6s ease-in-out infinite",
+        "float-slow":  "float 9s ease-in-out infinite",
+        aurora:        "aurora 20s ease-in-out infinite",
+        "gradient-pan":"gradientPan 6s ease infinite",
+        "spin-slow":   "spin 26s linear infinite",
+        "glow-pulse":  "glowPulse 4.5s ease-in-out infinite",
       },
       keyframes: {
         shimmer:{ "0%":{ backgroundPosition:"200% 0"}, "100%":{ backgroundPosition:"-200% 0"} },
-        fadeUp: { "0%":{ opacity:0, transform:"translateY(16px)"}, "100%":{ opacity:1, transform:"translateY(0)"} },
+        fadeUp: { "0%":{ opacity:0, transform:"translateY(18px)"}, "100%":{ opacity:1, transform:"translateY(0)"} },
         fadeIn: { "0%":{ opacity:0}, "100%":{ opacity:1} },
         marquee:{ "0%":{ transform:"translateX(0)"}, "100%":{ transform:"translateX(-50%)"} },
+        float:  { "0%,100%":{ transform:"translateY(0)"}, "50%":{ transform:"translateY(-14px)"} },
+        aurora: { "0%,100%":{ transform:"translate(0,0) scale(1)"}, "33%":{ transform:"translate(5%,-7%) scale(1.12)"}, "66%":{ transform:"translate(-5%,5%) scale(0.94)"} },
+        gradientPan: { "0%,100%":{ backgroundPosition:"0% 50%"}, "50%":{ backgroundPosition:"100% 50%"} },
+        glowPulse: { "0%,100%":{ opacity:0.45}, "50%":{ opacity:0.85} },
       },
     },
   },

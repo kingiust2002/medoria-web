@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { getTranslations } from "@/lib/i18n";
-import Icon from "@/components/shared/Icon";
+import Aurora from "@/components/shared/Aurora";
 
 export default function StatsBar({ lang }) {
   const t = getTranslations(lang);
@@ -25,18 +25,17 @@ export default function StatsBar({ lang }) {
   return (
     <section className="py-10 md:py-14 bg-white">
       <div className="container-x">
-        <div className="relative bg-navy rounded-3xl px-6 py-8 md:px-12 md:py-10 grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-4 overflow-hidden">
-          <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full pointer-events-none"
-               style={{ background: "radial-gradient(circle, rgba(37,99,235,0.25) 0%, transparent 70%)" }} />
-          <div className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full pointer-events-none"
-               style={{ background: "radial-gradient(circle, rgba(6,182,212,0.18) 0%, transparent 70%)" }} />
+        <div className="relative bg-navy rounded-[2rem] px-6 py-9 md:px-12 md:py-12 grid grid-cols-2 md:grid-cols-4 gap-y-7 gap-x-4 overflow-hidden noise">
+          <Aurora variant="dark" className="opacity-60" />
+          {/* top gradient hairline */}
+          <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
 
           {stats.map(([val, label], i) => (
-            <div key={i} className={`relative ${i < 3 ? "md:border-r md:border-white/10" : ""} md:px-4`}>
-              <div className="text-4xl md:text-5xl font-display font-extrabold leading-none mb-2 gradient-text tabular">
+            <div key={i} className={`relative ${i < 3 ? "md:border-e md:border-white/10" : ""} md:px-4`}>
+              <div className="text-4xl md:text-5xl font-display font-extrabold leading-none mb-2 gradient-text-animated tabular">
                 {val}
               </div>
-              <div className="text-[11px] md:text-[12px] font-medium text-white/55 tracking-wide">
+              <div className="text-[11px] md:text-[12px] font-medium text-white/60 tracking-wide">
                 {label}
               </div>
             </div>

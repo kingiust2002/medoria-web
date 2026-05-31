@@ -5,14 +5,16 @@ import LanguageSwitcher from "./LanguageSwitcher";
 import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
 import { WA_NUMBER, TG_USER, waLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
+import Aurora from "@/components/shared/Aurora";
 
 export default function Footer({ lang }) {
   const t = getTranslations(lang);
 
   return (
-    <footer className="bg-navy text-white/50 pt-14 pb-24 md:pb-10 relative overflow-hidden">
+    <footer className="bg-navy text-white/50 pt-14 pb-24 md:pb-10 relative overflow-hidden noise">
       {/* Decorative gradient */}
       <div className="absolute top-0 inset-x-0 h-1 bg-brand-gradient" />
+      <Aurora variant="dark" className="opacity-30" />
 
       <div className="container-x relative">
         <div className="grid gap-10 md:grid-cols-12 pb-10 border-b border-white/10">

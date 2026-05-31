@@ -56,11 +56,11 @@ export default function ProductDetailClient({ product, lang }) {
         {/* Breadcrumb */}
         <div className="bg-white border-b border-line">
           <div className="container-x py-3 flex items-center gap-2 text-[11px] text-ink-muted overflow-x-auto no-scrollbar">
-            <Link href={`/${lang}`} className="hover:text-primary whitespace-nowrap">{t.common.home}</Link>
+            <Link href={`/${lang}`} className="hover:text-brand-violet whitespace-nowrap">{t.common.home}</Link>
             <span className="text-line">/</span>
-            <Link href={`/${lang}/catalog`} className="hover:text-primary whitespace-nowrap">{t.common.catalog}</Link>
+            <Link href={`/${lang}/catalog`} className="hover:text-brand-violet whitespace-nowrap">{t.common.catalog}</Link>
             <span className="text-line">/</span>
-            <Link href={`/${lang}/catalog?category=${product.category}`} className="hover:text-primary whitespace-nowrap">
+            <Link href={`/${lang}/catalog?category=${product.category}`} className="hover:text-brand-violet whitespace-nowrap">
               {getCategoryName(product.category, lang)}
             </Link>
             <span className="text-line">/</span>
@@ -78,7 +78,7 @@ export default function ProductDetailClient({ product, lang }) {
               <div className="flex items-center gap-3 mb-3 flex-wrap">
                 <Link
                   href={`/${lang}/catalog?category=${product.category}`}
-                  className="text-[10px] font-bold tracking-[0.16em] text-primary uppercase hover:opacity-70"
+                  className="text-[10px] font-bold tracking-[0.16em] gradient-text uppercase hover:opacity-70"
                 >
                   {getCategoryName(product.category, lang)}
                 </Link>
@@ -86,7 +86,7 @@ export default function ProductDetailClient({ product, lang }) {
                   <>
                     <span className="text-ink-faint text-xs">·</span>
                     <Link href={`/${lang}/catalog?brand=${encodeURIComponent(product.brand)}`}
-                      className="text-[12px] font-semibold text-ink-muted hover:text-primary">
+                      className="text-[12px] font-semibold text-ink-muted hover:text-brand-violet">
                       {product.brand}
                     </Link>
                   </>
@@ -110,7 +110,7 @@ export default function ProductDetailClient({ product, lang }) {
                   <div>
                     <div className="text-[11px] text-ink-faint mb-1">{t.common.price}</div>
                     {onRequest ? (
-                      <div className="font-display text-2xl font-extrabold text-primary leading-none">
+                      <div className="font-display text-2xl font-extrabold gradient-text leading-none">
                         {priceLabel(product, lang)}
                       </div>
                     ) : (
