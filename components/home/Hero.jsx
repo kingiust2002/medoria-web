@@ -4,12 +4,16 @@
 //   /public/images/hero-medical-banner-mobile.jpg  (mobile,  ~1080×1350)
 "use client";
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
 import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
+
+// Lazy, client-only premium WebGL aurora (self-gates to desktop / non-reduced-motion).
+const HeroShader = dynamic(() => import("@/components/home/HeroShader"), { ssr: false });
 
 export default function Hero({ lang }) {
   const t = getTranslations(lang);
@@ -44,8 +48,9 @@ export default function Hero({ lang }) {
       <div className="absolute inset-0 -z-10 bg-cover bg-center md:hidden opacity-50"
            style={{ backgroundImage: "url(/images/hero-medical-banner-mobile.jpg)" }} />
 
-      {/* animated aurora + contrast overlays */}
+      {/* animated aurora (CSS fallback) + premium WebGL aurora on top (desktop, gated) */}
       <Aurora variant="dark" className="-z-10 opacity-70" />
+      <HeroShader />
       <div className="absolute inset-0 -z-10 bg-gradient-to-t from-navy via-navy/55 to-navy/25" />
       <div className="absolute inset-0 -z-10 opacity-[0.35]"
            style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.16) 1px, transparent 1px)", backgroundSize: "30px 30px", maskImage: "radial-gradient(circle at 50% 0%, black, transparent 70%)" }} />
