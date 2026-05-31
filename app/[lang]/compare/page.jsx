@@ -38,7 +38,10 @@ export default function ComparePage({ params }) {
     return (
       <div className="bg-canvas-soft min-h-screen">
         <div className="container-x py-20 text-center max-w-md">
-          <div className="w-20 h-20 mx-auto rounded-2xl bg-tint-blue text-primary flex items-center justify-center mb-4"><Icon name="switchH" size={36} /></div>
+          <div className="relative w-20 h-20 mx-auto rounded-2xl bg-brand-violet/[0.08] text-brand-violet flex items-center justify-center mb-4 overflow-hidden">
+            <span className="absolute inset-0 bg-brand-gradient opacity-10" />
+            <Icon name="switchH" size={36} className="relative" />
+          </div>
           <h1 className="font-display text-3xl font-extrabold text-ink mb-3">{t.compare.empty}</h1>
           <p className="text-ink-muted mb-8">{t.compare.emptySub}</p>
           <Link href={`/${lang}/catalog`} className="btn-primary size-lg">
@@ -90,14 +93,16 @@ export default function ComparePage({ params }) {
   return (
     <div className="bg-canvas-soft min-h-screen">
       {/* Header */}
-      <div className="bg-white border-b border-line">
-        <div className="container-x py-6">
+      <div className="bg-canvas-soft border-b border-line relative overflow-hidden">
+        <div className="blob w-[34vw] h-[34vw] -top-1/2 -end-[4%] animate-aurora"
+             style={{ background: "radial-gradient(circle, rgba(139,47,247,0.12) 0%, transparent 70%)" }} />
+        <div className="container-x py-6 relative">
           <nav className="text-[11px] text-ink-muted mb-3 flex items-center gap-2">
-            <Link href={`/${lang}`} className="hover:text-primary">{t.common.home}</Link>
+            <Link href={`/${lang}`} className="hover:text-brand-violet">{t.common.home}</Link>
             <span className="text-line">/</span>
-            <Link href={`/${lang}/catalog`} className="hover:text-primary">{t.common.catalog}</Link>
+            <Link href={`/${lang}/catalog`} className="hover:text-brand-violet">{t.common.catalog}</Link>
             <span className="text-line">/</span>
-            <span className="text-primary font-semibold">{t.compare.title}</span>
+            <span className="text-brand-violet font-semibold">{t.compare.title}</span>
           </nav>
           <div className="flex items-end justify-between gap-4 flex-wrap">
             <div>
@@ -146,14 +151,14 @@ export default function ComparePage({ params }) {
                     ><Icon name="close" size={15} /></button>
 
                     <Link href={`/${lang}/catalog/${p.slug || p.id}`} className="block">
-                      <div className="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-tint-blue to-tint-cyan mb-3">
+                      <div className="aspect-square rounded-xl overflow-hidden img-ph mb-3">
                         {p.image_url ? (
                           <img src={imageUrl(p.image_url)} alt={name} className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-primary/40"><Icon name="package" size={40} strokeWidth={1.2} /></div>
+                          <div className="w-full h-full flex items-center justify-center text-brand-violet/30"><Icon name="package" size={40} strokeWidth={1.2} /></div>
                         )}
                       </div>
-                      <h3 className="text-[13px] font-semibold text-ink leading-snug line-clamp-2 hover:text-primary transition-colors mb-2">
+                      <h3 className="text-[13px] font-semibold text-ink leading-snug line-clamp-2 hover:text-brand-violet transition-colors mb-2">
                         {name}
                       </h3>
                     </Link>
@@ -201,8 +206,8 @@ export default function ComparePage({ params }) {
         )}
 
         <div className="mt-8 text-center">
-          <Link href={`/${lang}/catalog`} className="text-[13px] font-semibold text-primary hover:opacity-80">
-            ← {t.common.catalog}
+          <Link href={`/${lang}/catalog`} className="inline-flex items-center gap-1 text-[13px] font-semibold text-brand-violet hover:opacity-80">
+            <Icon name={lang === "fa" ? "arrow" : "arrowL"} size={13} /> {t.common.catalog}
           </Link>
         </div>
       </div>

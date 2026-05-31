@@ -17,16 +17,18 @@ export default function ContactInner({ lang }) {
   return (
     <div className="bg-canvas-soft">
       {/* Hero */}
-      <section className="bg-white border-b border-line relative overflow-hidden">
-        <div className="absolute -top-1/2 end-0 w-[40vw] h-[40vw] rounded-full pointer-events-none"
-             style={{ background: "radial-gradient(circle, rgba(37,99,235,0.05) 0%, transparent 70%)" }} />
+      <section className="bg-canvas-soft border-b border-line relative overflow-hidden">
+        <div className="blob w-[44vw] h-[44vw] -top-1/3 -end-[6%] animate-aurora"
+             style={{ background: "radial-gradient(circle, rgba(139,47,247,0.14) 0%, transparent 70%)" }} />
+        <div className="blob w-[32vw] h-[32vw] top-0 start-[8%] animate-aurora"
+             style={{ background: "radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%)", animationDelay: "4s" }} />
         <div className="container-x py-12 md:py-20 relative">
           <nav className="text-[11px] text-ink-muted mb-4 flex items-center gap-2">
-            <Link href={`/${lang}`} className="hover:text-primary">{t.common.home}</Link>
+            <Link href={`/${lang}`} className="hover:text-brand-violet">{t.common.home}</Link>
             <span className="text-line">/</span>
-            <span className="text-primary font-semibold">{t.common.contact}</span>
+            <span className="text-brand-violet font-semibold">{t.common.contact}</span>
           </nav>
-          <div className="section-tag mb-3">{c.hero.tag}</div>
+          <div className="eyebrow mb-4"><span className="gradient-text">{c.hero.tag}</span></div>
           <h1 className="section-h-lg mb-5 max-w-2xl">{c.hero.title}</h1>
           <p className="text-base md:text-lg text-ink-muted leading-relaxed max-w-2xl">
             {c.hero.sub}
