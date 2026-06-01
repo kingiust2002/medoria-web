@@ -1,0 +1,247 @@
+"use client";
+import { useState, useRef } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import Icon from "@/components/shared/Icon";
+import { imageUrl } from "@/lib/supabase";
+import { createProduct, updateProduct, uploadProductImage } from "@/lib/operator/actions";
+import { slugify } from "@/lib/operator/validation";
+import { PRODUCT_BADGES } from "@/lib/operator/constants";
+import ImageUploader from "@/components/operator/ImageUploader";
+import SpecsEditor from "@/components/operator/SpecsEditor";
+import { SectionCard, Field, Input, Textarea, Select, Toggle, Spinner } from "@/components/operator/ui";
+
+export default function ProductForm({ mode, product, categories }) {
+  const router = useRouter();
+  const editing = mode === "edit";
+  const galleryRef = useRef(null);
+
+  const [f, setF] = useState({
+    name_fa: product?.name_fa || "", name_en: product?.name_en || "",
+    name_ru: product?.name_ru || "", name_tg: product?.name_tg || "",
+    description_fa: product?.description_fa || "", description_en: product?.description_en || "",
+    description_ru: product?.description_ru || "", description_tg: product?.description_tg || "",
+    slug: product?.slug || "", sku: product?.sku || "", brand: product?.brand || "",
+    category_id: product?.category_id != null ? String(product.category_id) : "",
+    price: product?.price != null ? String(product.price) : "",
+    unit: product?.unit || "", min_order_qty: product?.min_order_qty != null ? String(product.min_order_qty) : "1",
+    in_stock: product ? !!product.in_stock : true,
+    badge: product?.badge || "",
+    is_featured: !!product?.is_featured,
+    is_active: product ? product.is_active !== false : true,
+    image_url: product?.image_url || "", brochure_url: product?.brochure_url || "",
+    tags: Array.isArray(product?.tags) ? product.tags.join("، ") : "",
+    seo_title: product?.seo_title || "", seo_description: product?.seo_description || "",
+  });
+  const [gallery, setGallery] = useState(Array.isArray(product?.gallery_urls) ? product.gallery_urls : []);
+  const [specs, setSpecs] = useState(
+    product?.specs && typeof product.specs === "object" && !Array.isArray(product.specs)
+      ? Object.entries(product.specs).map(([key, value]) => ({ key, value: String(value ?? "") }))
+      : [{ key: "", value: "" }]
+  );
+  const [priceOnRequest, setPriceOnRequest] = useState(
+    product ? product.price == null || product.price === "" || Number(product.price) === 0 : false
+  );
+  const [slugTouched, setSlugTouched] = useState(!!product?.slug);
+  const [saving, setSaving] = useState(false);
+  const [galleryBusy, setGalleryBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const up = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const onNameEn = (v) => { up("name_en", v); if (!slugTouched) up("slug", slugify(v)); };
+
+  const selectedCat = categories.find((c) => String(c.id) === String(f.category_id));
+  const catLabel = selectedCat ? (selectedCat.name_fa || selectedCat.name_en || selectedCat.slug) : "بدون دسته";
+  const previewImg = f.image_url ? imageUrl(f.image_url) : null;
+  const priceLabel = priceOnRequest || !f.price ? "استعلام قیمت" : `$${Number(f.price).toFixed(2)}`;
+
+  async function addGalleryFile(file) {
+    if (!file) return;
+    setGalleryBusy(true);
+    const fd = new FormData(); fd.append("file", file);
+    const res = await uploadProductImage(fd);
+    setGalleryBusy(false);
+    if (res.ok) setGallery((g) => [...g, res.path]);
+    else setErr(res.error || "آپلود گالری ناموفق بود.");
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    setErr("");
+    if (!f.name_fa.trim() && !f.name_en.trim()) { setErr("حداقل نام فارسی یا انگلیسی محصول را وارد کنید."); return; }
+    setSaving(true);
+    const payload = {
+      ...f,
+      category_id: f.category_id || null,
+      category: selectedCat?.slug || null,
+      priceOnRequest,
+      price: priceOnRequest ? "" : f.price,
+      tags: f.tags.split(/[،,]/),
+      gallery_urls: gallery,
+      specs,
+    };
+    const res = editing ? await updateProduct(product.id, payload) : await createProduct(payload);
+    setSaving(false);
+    if (res.ok) router.push("/operator/products");
+    else setErr(res.error || "ذخیره ناموفق بود.");
+  }
+
+  const SaveButton = ({ full }) => (
+    <button type="submit" disabled={saving} className={`btn-primary size-md ${full ? "w-full" : ""} disabled:opacity-60`}>
+      {saving ? <Spinner /> : <Icon name="save" size={18} />}
+      {saving ? "در حال ذخیره…" : editing ? "ذخیره تغییرات" : "افزودن محصول"}
+    </button>
+  );
+
+  return (
+    <form onSubmit={submit}>
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="flex items-center gap-3 min-w-0">
+          <Link href="/operator/products" className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-line-soft shrink-0"><Icon name="chevronRight" size={18} /></Link>
+          <h1 className="text-xl sm:text-2xl font-bold font-display text-ink tracking-tight truncate">{editing ? "ویرایش محصول" : "افزودن محصول"}</h1>
+        </div>
+        <div className="hidden sm:block"><SaveButton /></div>
+      </div>
+
+      {err && (
+        <div className="mb-5 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn">
+          <Icon name="alertTriangle" size={16} /> {err}
+        </div>
+      )}
+
+      <div className="grid lg:grid-cols-[1fr_330px] gap-6 items-start">
+        {/* ── Left: form sections ─────────────────────────────────────────── */}
+        <div className="flex flex-col gap-5 min-w-0">
+          {/* Basic */}
+          <SectionCard title="اطلاعات پایه" desc="نام و مشخصات اصلی محصول" icon="package">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="نام محصول (فارسی)" required><Input value={f.name_fa} onChange={(e) => up("name_fa", e.target.value)} placeholder="دستکش نیتریل" /></Field>
+              <Field label="نام محصول (انگلیسی)" hint="برای ساخت آدرس صفحه استفاده می‌شود"><Input value={f.name_en} onChange={(e) => onNameEn(e.target.value)} dir="ltr" placeholder="Nitrile gloves" /></Field>
+            </div>
+            <details className="mt-3 group">
+              <summary className="cursor-pointer text-xs font-semibold text-brand-violet inline-flex items-center gap-1">نام‌های روسی و تاجیکی (اختیاری) <Icon name="chevronDown" size={14} className="group-open:rotate-180 transition-transform" /></summary>
+              <div className="grid sm:grid-cols-2 gap-4 mt-3">
+                <Field label="نام (روسی)"><Input value={f.name_ru} onChange={(e) => up("name_ru", e.target.value)} dir="ltr" /></Field>
+                <Field label="نام (تاجیکی)"><Input value={f.name_tg} onChange={(e) => up("name_tg", e.target.value)} dir="ltr" /></Field>
+              </div>
+            </details>
+            <div className="grid sm:grid-cols-3 gap-4 mt-4">
+              <Field label="اسلاگ (slug)" hint="در آدرس صفحه"><Input value={f.slug} onChange={(e) => { setSlugTouched(true); up("slug", e.target.value); }} dir="ltr" placeholder="nitrile-gloves" /></Field>
+              <Field label="کد محصول (SKU)"><Input value={f.sku} onChange={(e) => up("sku", e.target.value)} dir="ltr" placeholder="GLV-001" /></Field>
+              <Field label="برند"><Input value={f.brand} onChange={(e) => up("brand", e.target.value)} placeholder="MediCare" /></Field>
+            </div>
+            <div className="mt-4">
+              <Field label="دسته‌بندی">
+                <Select value={f.category_id} onChange={(e) => up("category_id", e.target.value)}>
+                  <option value="">— انتخاب دسته —</option>
+                  {categories.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{c.name_fa || c.name_en || c.slug}</option>)}
+                </Select>
+              </Field>
+            </div>
+            <div className="mt-4">
+              <Field label="توضیحات (فارسی)"><Textarea value={f.description_fa} onChange={(e) => up("description_fa", e.target.value)} rows={4} placeholder="توضیح کامل محصول…" /></Field>
+            </div>
+            <details className="mt-3 group">
+              <summary className="cursor-pointer text-xs font-semibold text-brand-violet inline-flex items-center gap-1">توضیحات به زبان‌های دیگر (اختیاری) <Icon name="chevronDown" size={14} className="group-open:rotate-180 transition-transform" /></summary>
+              <div className="grid gap-4 mt-3">
+                <Field label="توضیحات (انگلیسی)"><Textarea value={f.description_en} onChange={(e) => up("description_en", e.target.value)} dir="ltr" rows={3} /></Field>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <Field label="توضیحات (روسی)"><Textarea value={f.description_ru} onChange={(e) => up("description_ru", e.target.value)} dir="ltr" rows={3} /></Field>
+                  <Field label="توضیحات (تاجیکی)"><Textarea value={f.description_tg} onChange={(e) => up("description_tg", e.target.value)} dir="ltr" rows={3} /></Field>
+                </div>
+              </div>
+            </details>
+          </SectionCard>
+
+          {/* Pricing */}
+          <SectionCard title="قیمت و موجودی" desc="قیمت ثابت یا استعلام قیمت" icon="dollar">
+            <div className="rounded-xl bg-canvas-soft border border-line p-3.5 mb-4">
+              <Toggle checked={priceOnRequest} onChange={setPriceOnRequest} label="استعلام قیمت" desc="قیمت نمایش داده نمی‌شود؛ مشتری درخواست قیمت می‌دهد." />
+            </div>
+            <div className="grid sm:grid-cols-3 gap-4">
+              <Field label="قیمت (دلار)" hint={priceOnRequest ? "غیرفعال (حالت استعلام)" : "خالی = استعلام قیمت"}>
+                <Input type="number" step="0.01" min="0" value={priceOnRequest ? "" : f.price} disabled={priceOnRequest} onChange={(e) => up("price", e.target.value)} dir="ltr" placeholder="8.50" />
+              </Field>
+              <Field label="واحد"><Input value={f.unit} onChange={(e) => up("unit", e.target.value)} placeholder="× ۱۰۰ عدد" /></Field>
+              <Field label="حداقل سفارش"><Input type="number" min="1" value={f.min_order_qty} onChange={(e) => up("min_order_qty", e.target.value)} dir="ltr" /></Field>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4 mt-4 items-center">
+              <Field label="نشان محصول"><Select value={f.badge} onChange={(e) => up("badge", e.target.value)}>{PRODUCT_BADGES.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}</Select></Field>
+              <div className="rounded-xl bg-canvas-soft border border-line p-3.5 mt-6 sm:mt-5"><Toggle checked={f.in_stock} onChange={(v) => up("in_stock", v)} label="موجود است" /></div>
+            </div>
+          </SectionCard>
+
+          {/* Images */}
+          <SectionCard title="تصاویر" desc="تصویر اصلی و گالری محصول" icon="image">
+            <Field label="تصویر اصلی"><ImageUploader value={f.image_url} onChange={(v) => up("image_url", v)} /></Field>
+            <div className="mt-5">
+              <span className="block text-[13px] font-medium text-ink-soft mb-2">گالری (اختیاری)</span>
+              <div className="flex flex-wrap gap-2.5">
+                {gallery.map((g, i) => (
+                  <span key={i} className="img-ph relative w-20 h-20 rounded-lg overflow-hidden border border-line group">
+                    <img src={imageUrl(g)} alt="" className="w-full h-full object-cover" />
+                    <button type="button" onClick={() => setGallery(gallery.filter((_, idx) => idx !== i))} className="absolute top-1 left-1 grid place-items-center w-6 h-6 rounded-md bg-navy/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="close" size={13} /></button>
+                  </span>
+                ))}
+                <button type="button" onClick={() => galleryRef.current?.click()} disabled={galleryBusy} className="w-20 h-20 rounded-lg border-2 border-dashed border-line grid place-items-center text-ink-faint hover:border-brand-violet/40 hover:text-brand-violet transition-colors">
+                  {galleryBusy ? <Spinner size={18} /> : <Icon name="plus" size={20} />}
+                </button>
+                <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={(e) => addGalleryFile(e.target.files?.[0])} />
+              </div>
+            </div>
+          </SectionCard>
+
+          {/* Specs */}
+          <SectionCard title="مشخصات فنی" desc="ویژگی‌ها به‌صورت کلید/مقدار" icon="list">
+            <SpecsEditor rows={specs} onChange={setSpecs} />
+          </SectionCard>
+
+          {/* SEO & more */}
+          <SectionCard title="سئو و موارد بیشتر" desc="اختیاری — برای بهبود نمایش در گوگل" icon="search">
+            <div className="grid gap-4">
+              <Field label="برچسب‌ها (با ویرگول جدا کنید)"><Input value={f.tags} onChange={(e) => up("tags", e.target.value)} placeholder="دستکش، نیتریل، یکبار مصرف" /></Field>
+              <Field label="عنوان سئو"><Input value={f.seo_title} onChange={(e) => up("seo_title", e.target.value)} /></Field>
+              <Field label="توضیح سئو"><Textarea value={f.seo_description} onChange={(e) => up("seo_description", e.target.value)} rows={2} /></Field>
+              <Field label="لینک بروشور (PDF)"><Input value={f.brochure_url} onChange={(e) => up("brochure_url", e.target.value)} dir="ltr" placeholder="https://…" /></Field>
+            </div>
+          </SectionCard>
+
+          <div className="sm:hidden"><SaveButton full /></div>
+        </div>
+
+        {/* ── Right: publish + live preview ───────────────────────────────── */}
+        <div className="flex flex-col gap-5 lg:sticky lg:top-6">
+          <SectionCard title="انتشار" icon="badgeCheck">
+            <div className="flex flex-col gap-3">
+              <div className="rounded-xl bg-canvas-soft border border-line p-3.5"><Toggle checked={f.is_active} onChange={(v) => up("is_active", v)} label="فعال (نمایش در سایت)" desc="غیرفعال = آرشیو، در سایت دیده نمی‌شود." /></div>
+              <div className="rounded-xl bg-canvas-soft border border-line p-3.5"><Toggle checked={f.is_featured} onChange={(v) => up("is_featured", v)} label="ویژه (Featured)" desc="نمایش در بخش محصولات منتخب." /></div>
+            </div>
+            <div className="mt-4 flex flex-col gap-2">
+              <SaveButton full />
+              <Link href="/operator/products" className="btn-ghost size-md w-full">انصراف</Link>
+            </div>
+          </SectionCard>
+
+          <SectionCard title="پیش‌نمایش" icon="eye">
+            <div className="card-flat overflow-hidden">
+              <div className="img-ph aspect-[4/3] grid place-items-center text-ink-faint relative">
+                {previewImg ? <img src={previewImg} alt="" className="w-full h-full object-cover" /> : <Icon name="image" size={30} />}
+                {f.badge && <span className="tag absolute top-2.5 right-2.5 bg-primary text-white">{f.badge}</span>}
+                {!f.in_stock && <span className="pill absolute bottom-2.5 right-2.5 bg-navy/70 text-white !text-[10px]">ناموجود</span>}
+              </div>
+              <div className="p-3.5">
+                <p className="font-semibold text-ink truncate">{f.name_fa || f.name_en || "نام محصول"}</p>
+                <p className="text-xs text-ink-muted truncate mt-0.5">{[f.brand, catLabel].filter(Boolean).join(" · ") || "—"}</p>
+                <p className={`mt-2 font-bold ${priceOnRequest || !f.price ? "text-brand-violet text-sm" : "text-ink"}`}>
+                  {priceLabel}{!priceOnRequest && f.price && f.unit ? <span className="text-ink-faint font-normal text-xs"> / {f.unit}</span> : null}
+                </p>
+              </div>
+            </div>
+            <p className="text-[11px] text-ink-faint mt-3 leading-relaxed text-center">پیش‌نمایش زنده — همراه با تغییر فیلدها به‌روز می‌شود.</p>
+          </SectionCard>
+        </div>
+      </div>
+    </form>
+  );
+}

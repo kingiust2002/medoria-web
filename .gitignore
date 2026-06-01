@@ -33,3 +33,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# operator panel local test artifacts (do not commit)
+/screenshots/
+/_shoot.mjs
