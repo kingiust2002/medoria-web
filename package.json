@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.69.0",
     "@formkit/auto-animate": "^0.8.2",
     "@supabase/supabase-js": "2.45.0",
     "framer-motion": "^11.18.2",

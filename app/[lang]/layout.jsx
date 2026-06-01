@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header";
 import TopBar from "@/components/layout/TopBar";
 import Footer from "@/components/layout/Footer";
 import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
+import AiAssistant from "@/components/shared/AiAssistant";
 
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
@@ -57,6 +58,7 @@ export default function LangLayout({ children, params }) {
       <main>{children}</main>
       <Footer lang={lang} />
       <FloatingWhatsApp lang={lang} />
+      <AiAssistant lang={lang} />
     </div>
   );
 }
