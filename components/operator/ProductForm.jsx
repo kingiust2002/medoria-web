@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
 import { imageUrl } from "@/lib/supabase";
-import { createProduct, updateProduct, uploadProductImage } from "@/lib/operator/actions";
+import { createProduct, updateProduct, uploadProductImage, translateProductFields } from "@/lib/operator/actions";
 import { slugify } from "@/lib/operator/validation";
 import { PRODUCT_BADGES } from "@/lib/operator/constants";
 import ImageUploader from "@/components/operator/ImageUploader";
@@ -46,6 +46,9 @@ export default function ProductForm({ mode, product, categories }) {
   const [saving, setSaving] = useState(false);
   const [galleryBusy, setGalleryBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [translating, setTranslating] = useState(false);
+  const [transSource, setTransSource] = useState("fa");
+  const [expandLangs, setExpandLangs] = useState(false);
 
   const up = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const onNameEn = (v) => { up("name_en", v); if (!slugTouched) up("slug", slugify(v)); };
@@ -63,6 +66,26 @@ export default function ProductForm({ mode, product, categories }) {
     setGalleryBusy(false);
     if (res.ok) setGallery((g) => [...g, res.path]);
     else setErr(res.error || "آپلود گالری ناموفق بود.");
+  }
+
+  async function autoTranslate() {
+    setErr("");
+    const srcName = f[`name_${transSource}`] || "";
+    const srcDesc = f[`description_${transSource}`] || "";
+    if (!srcName.trim() && !srcDesc.trim()) { setErr("اول نام یا توضیحات زبانِ مبدأ را پر کن."); return; }
+    setTranslating(true);
+    const res = await translateProductFields({ source: transSource, name: srcName, description: srcDesc });
+    setTranslating(false);
+    if (!res.ok) { setErr(res.error || "ترجمه ناموفق بود."); return; }
+    setF((s) => {
+      const next = { ...s };
+      for (const [lang, vals] of Object.entries(res.translations)) {
+        if (vals.name) next[`name_${lang}`] = vals.name;
+        if (vals.description) next[`description_${lang}`] = vals.description;
+      }
+      return next;
+    });
+    setExpandLangs(true);
   }
 
   async function submit(e) {
@@ -119,7 +142,24 @@ export default function ProductForm({ mode, product, categories }) {
               <Field label="نام محصول (فارسی)" required><Input value={f.name_fa} onChange={(e) => up("name_fa", e.target.value)} placeholder="دستکش نیتریل" /></Field>
               <Field label="نام محصول (انگلیسی)" hint="برای ساخت آدرس صفحه استفاده می‌شود"><Input value={f.name_en} onChange={(e) => onNameEn(e.target.value)} dir="ltr" placeholder="Nitrile gloves" /></Field>
             </div>
-            <details className="mt-3 group">
+
+            {/* Auto-translate */}
+            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-brand-violet/5 border border-brand-violet/15 p-2.5">
+              <Icon name="globe" size={15} className="text-brand-violet shrink-0" />
+              <span className="text-[12px] text-ink-muted">ترجمهٔ خودکار از</span>
+              <select value={transSource} onChange={(e) => setTransSource(e.target.value)} className="input !h-8 w-auto text-xs py-0">
+                <option value="fa">فارسی</option>
+                <option value="en">انگلیسی</option>
+                <option value="ru">روسی</option>
+                <option value="tg">تاجیکی</option>
+              </select>
+              <button type="button" onClick={autoTranslate} disabled={translating} className="btn-ghost size-sm">
+                {translating ? <Spinner /> : <Icon name="sparkles" size={15} />} ترجمه به سایر زبان‌ها
+              </button>
+              <span className="text-[11px] text-ink-faint">نام و توضیحات را پر می‌کند</span>
+            </div>
+
+            <details open={expandLangs} onToggle={(e) => setExpandLangs(e.currentTarget.open)} className="mt-3 group">
               <summary className="cursor-pointer text-xs font-semibold text-brand-violet inline-flex items-center gap-1">نام‌های روسی و تاجیکی (اختیاری) <Icon name="chevronDown" size={14} className="group-open:rotate-180 transition-transform" /></summary>
               <div className="grid sm:grid-cols-2 gap-4 mt-3">
                 <Field label="نام (روسی)"><Input value={f.name_ru} onChange={(e) => up("name_ru", e.target.value)} dir="ltr" /></Field>
@@ -142,7 +182,7 @@ export default function ProductForm({ mode, product, categories }) {
             <div className="mt-4">
               <Field label="توضیحات (فارسی)"><Textarea value={f.description_fa} onChange={(e) => up("description_fa", e.target.value)} rows={4} placeholder="توضیح کامل محصول…" /></Field>
             </div>
-            <details className="mt-3 group">
+            <details open={expandLangs} onToggle={(e) => setExpandLangs(e.currentTarget.open)} className="mt-3 group">
               <summary className="cursor-pointer text-xs font-semibold text-brand-violet inline-flex items-center gap-1">توضیحات به زبان‌های دیگر (اختیاری) <Icon name="chevronDown" size={14} className="group-open:rotate-180 transition-transform" /></summary>
               <div className="grid gap-4 mt-3">
                 <Field label="توضیحات (انگلیسی)"><Textarea value={f.description_en} onChange={(e) => up("description_en", e.target.value)} dir="ltr" rows={3} /></Field>

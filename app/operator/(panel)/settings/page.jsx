@@ -25,6 +25,7 @@ export default function SettingsPage() {
   const secret = hasSessionSecret();
   const pass = hasPasswordHash();
   const admin = isAdminConfigured();
+  const translate = Boolean(process.env.GOOGLE_TRANSLATE_API_KEY);
 
   return (
     <>
@@ -38,6 +39,7 @@ export default function SettingsPage() {
             <StatusRow ok={secret} label="OPERATOR_SESSION_SECRET" hint={secret ? "تنظیم شده — نشست‌ها امضا می‌شوند." : "اجباری. بدون آن ورود غیرممکن است."} />
             <StatusRow ok={pass} label="OPERATOR_PASSWORD_HASH" hint={pass ? "تنظیم شده." : "هش رمز عبور اپراتور را تنظیم کنید."} />
             <StatusRow ok={admin} label="SUPABASE_SERVICE_ROLE_KEY" hint={admin ? "تنظیم شده — خواندن/نوشتن و آپلود فعال است." : "بدون آن نمی‌توان داده‌ها را ذخیره یا آپلود کرد."} />
+            <StatusRow ok={translate} label="GOOGLE_TRANSLATE_API_KEY" hint={translate ? "دکمه‌ی ترجمه‌ی خودکار فعال است." : "اختیاری — برای دکمه‌ی ترجمه‌ی خودکار در فرم محصول."} />
           </div>
         </SectionCard>
 
