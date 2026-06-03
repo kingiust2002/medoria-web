@@ -8,6 +8,7 @@ import { createQuoteRequest } from "@/lib/supabase";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
+import SplitText from "@/components/shared/SplitText";
 
 const PHONE = process.env.NEXT_PUBLIC_PHONE || "+992900000000";
 
@@ -27,7 +28,7 @@ export default function ContactInner({ lang }) {
         <div className="container-x py-12 md:py-20 relative">
           <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.common.home, href: `/${lang}` }, { label: t.common.contact }]} />
           <div className="eyebrow mb-4"><span className="gradient-text">{c.hero.tag}</span></div>
-          <h1 className="section-h-lg mb-5 max-w-2xl">{c.hero.title}</h1>
+          <h1 className="section-h-lg mb-5 max-w-2xl"><SplitText text={c.hero.title} delay={0.1} /></h1>
           <p className="text-base md:text-lg text-ink-muted leading-relaxed max-w-2xl">
             {c.hero.sub}
           </p>

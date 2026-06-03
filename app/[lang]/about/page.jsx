@@ -7,6 +7,7 @@ import Aurora from "@/components/shared/Aurora";
 import ImagePlaceholder from "@/components/shared/ImagePlaceholder";
 import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
+import SplitText from "@/components/shared/SplitText";
 
 const VALUE_ICONS = ["shield", "bolt", "check", "handshake"];
 const OFFER_ICONS = ["gloves", "stethoscope", "bandage", "thermometer", "flask", "pill"];
@@ -42,7 +43,7 @@ export default function AboutPage({ params }) {
         <div className="container-x py-14 md:py-24 relative">
           <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.common.home, href: `/${lang}` }, { label: t.common.about }]} />
           <div className="eyebrow mb-4"><span className="gradient-text">{a.hero.tag}</span></div>
-          <h1 className="section-h-lg mb-5 max-w-3xl">{a.hero.title}</h1>
+          <h1 className="section-h-lg mb-5 max-w-3xl"><SplitText text={a.hero.title} delay={0.1} /></h1>
           <p className="text-base md:text-lg text-ink-muted leading-relaxed max-w-2xl">
             {a.hero.sub}
           </p>

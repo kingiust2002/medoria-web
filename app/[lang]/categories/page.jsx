@@ -7,6 +7,8 @@ import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
+import SpotlightCard from "@/components/shared/SpotlightCard";
+import SplitText from "@/components/shared/SplitText";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +52,7 @@ export default function CategoriesPage({ params }) {
         <div className="container-x py-12 md:py-16 relative">
           <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.common.home, href: `/${lang}` }, { label: t.common.categories }]} />
           <div className="eyebrow mb-4"><span className="gradient-text">{t.home.catTag}</span></div>
-          <h1 className="section-h-lg mb-3">{t.categories.title}</h1>
+          <h1 className="section-h-lg mb-3"><SplitText text={t.categories.title} delay={0.1} /></h1>
           <p className="text-base text-ink-muted max-w-xl">{t.categories.subtitle}</p>
         </div>
       </div>
@@ -59,6 +61,7 @@ export default function CategoriesPage({ params }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {CATEGORIES.map((c) => (
             <TiltCard key={c.slug} className="h-full rounded-2xl" max={5}>
+            <SpotlightCard className="h-full rounded-2xl">
             <Link
               href={`/${lang}/catalog?category=${c.slug}`}
               className="card card-hover overflow-hidden group flex h-full"
@@ -82,6 +85,7 @@ export default function CategoriesPage({ params }) {
                 </span>
               </div>
             </Link>
+            </SpotlightCard>
             </TiltCard>
           ))}
         </div>

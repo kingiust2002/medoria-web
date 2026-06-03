@@ -7,6 +7,7 @@ import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
 import Icon from "@/components/shared/Icon";
 import { Reveal, Stagger, StaggerItem } from "@/components/shared/Reveal";
 import TiltCard from "@/components/shared/TiltCard";
+import SpotlightCard from "@/components/shared/SpotlightCard";
 
 export default function CategoryGrid({ lang }) {
   const t = getTranslations(lang);
@@ -56,6 +57,7 @@ export default function CategoryGrid({ lang }) {
           {CATEGORIES.map((c) => (
             <StaggerItem key={c.slug}>
             <TiltCard className="h-full rounded-2xl" max={8}>
+            <SpotlightCard className="h-full rounded-2xl">
             <Link
               href={`/${lang}/catalog?category=${c.slug}`}
               className="card card-hover overflow-hidden group p-5 text-center block h-full"
@@ -71,6 +73,7 @@ export default function CategoryGrid({ lang }) {
                 {labelFor(c.slug)}
               </div>
             </Link>
+            </SpotlightCard>
             </TiltCard>
             </StaggerItem>
           ))}
