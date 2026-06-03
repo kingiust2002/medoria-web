@@ -144,6 +144,13 @@ const CHANNELS = [
   ["phone",    "phone", null],
 ];
 
+// Per-channel selected colour (each on its own brand colour, not all blue).
+const CHANNEL_ACTIVE = {
+  whatsapp: "bg-[#22C55E] text-white border-[#22C55E] shadow-[0_6px_16px_rgba(34,197,94,0.30)]",
+  telegram: "bg-[#229ED9] text-white border-[#229ED9] shadow-[0_6px_16px_rgba(34,158,217,0.30)]",
+  phone:    "bg-brand-violet text-white border-brand-violet shadow-[0_6px_16px_rgba(139,47,247,0.30)]",
+};
+
 function ContactForm({ lang, t }) {
   const c = t.contact;
   const [form, setForm] = useState({
@@ -277,7 +284,7 @@ function ContactForm({ lang, t }) {
               className={[
                 "h-11 rounded-xl text-[13px] font-semibold border transition-colors flex items-center justify-center gap-2",
                 via === v
-                  ? "bg-primary text-white border-primary"
+                  ? CHANNEL_ACTIVE[v]
                   : "bg-surface text-ink-muted border-line hover:border-ink-faint",
               ].join(" ")}
             >
