@@ -6,12 +6,14 @@ import CategoryGrid from "@/components/home/CategoryGrid";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import Showcase from "@/components/home/Showcase";
 import Brands from "@/components/home/Brands";
+import Certifications from "@/components/home/Certifications";
 import WhyMedoria from "@/components/home/WhyMedoria";
 import Process from "@/components/home/Process";
 import GlobeSection from "@/components/home/GlobeSection";
 import Audience from "@/components/home/Audience";
 import Trust from "@/components/home/Trust";
 import Procurement from "@/components/home/Procurement";
+import NewsletterSection from "@/components/home/NewsletterSection";
 import FinalCTA from "@/components/home/FinalCTA";
 
 export async function generateMetadata({ params }) {
@@ -44,12 +46,14 @@ export default function HomePage({ params }) {
       <FeaturedProducts lang={lang} />
       <Showcase lang={lang} />
       <Brands lang={lang} />
+      <Certifications lang={lang} />
       <WhyMedoria lang={lang} />
       <Process lang={lang} />
       <GlobeSection lang={lang} />
       <Audience lang={lang} />
       <Trust lang={lang} />
       <Procurement lang={lang} />
+      <NewsletterSection lang={lang} />
       <FinalCTA lang={lang} />
     </>
   );
