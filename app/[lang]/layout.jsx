@@ -2,7 +2,6 @@
 import { notFound } from "next/navigation";
 import { LOCALES, LANG_META, getTranslations } from "@/lib/i18n";
 import Header from "@/components/layout/Header";
-import TopBar from "@/components/layout/TopBar";
 import Footer from "@/components/layout/Footer";
 import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
 import AiAssistant from "@/components/shared/AiAssistant";
@@ -53,7 +52,6 @@ export default function LangLayout({ children, params }) {
           __html: `document.documentElement.lang="${lang}";document.documentElement.dir="${dir}";`,
         }}
       />
-      <TopBar lang={lang} />
       <Header lang={lang} />
       <main>{children}</main>
       <Footer lang={lang} />
