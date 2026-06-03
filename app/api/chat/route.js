@@ -1,10 +1,12 @@
 // app/api/chat/route.js
 // Streaming B2B assistant. Server-only route handler.
 //
-// Provider is chosen by which key is present (Hugging Face takes priority,
-// then Anthropic). With neither key set the route returns 503 / {available:false}
-// so the widget silently falls back to WhatsApp/Telegram and the site still
-// works with no AI configured.
+// Provider is chosen by which key is present (Google Gemini takes priority,
+// then Hugging Face, then Anthropic). With no key set the route returns
+// 503 / {available:false} so the widget silently falls back to
+// WhatsApp/Telegram and the site still works with no AI configured.
+//   - Gemini:       set GEMINI_API_KEY (+ optional GEMINI_MODEL). Free key from
+//     Google AI Studio (aistudio.google.com) — no billing. OpenAI-compatible.
 //   - Hugging Face: set HUGGING_FACE_API_KEY (+ optional HF_MODEL). Uses the
 //     OpenAI-compatible Inference Providers router (plain fetch, no SDK).
 //   - Anthropic:    set ANTHROPIC_API_KEY (+ optional ANTHROPIC_MODEL).
@@ -18,6 +20,9 @@ export const dynamic = "force-dynamic";
 const HF_ENDPOINT =
   process.env.HF_BASE_URL || "https://router.huggingface.co/v1/chat/completions";
 const HF_MODEL = process.env.HF_MODEL || "Qwen/Qwen2.5-72B-Instruct";
+const GEMINI_ENDPOINT =
+  "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
 
 const LANG_NAMES = {
@@ -28,6 +33,7 @@ const LANG_NAMES = {
 };
 
 function provider() {
+  if (process.env.GEMINI_API_KEY) return "gemini";
   if (process.env.HUGGING_FACE_API_KEY) return "hf";
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
   return null;
@@ -90,16 +96,16 @@ function sanitize(raw) {
   return out;
 }
 
-// ── Hugging Face (OpenAI-compatible) streaming ──────────────────────────────
-async function* hfStream(system, messages) {
-  const res = await fetch(HF_ENDPOINT, {
+// ── OpenAI-compatible streaming (Gemini & Hugging Face) ─────────────────────
+async function* openaiStream({ endpoint, apiKey, model }, system, messages) {
+  const res = await fetch(endpoint, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${process.env.HUGGING_FACE_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: HF_MODEL,
+      model,
       messages: [{ role: "system", content: system }, ...messages],
       max_tokens: 1024,
       temperature: 0.4,
@@ -108,7 +114,7 @@ async function* hfStream(system, messages) {
   });
   if (!res.ok || !res.body) {
     const detail = await res.text().catch(() => "");
-    throw new Error(`HF ${res.status} ${detail.slice(0, 300)}`);
+    throw new Error(`LLM ${res.status} ${detail.slice(0, 300)}`);
   }
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -172,7 +178,12 @@ export async function POST(req) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        const gen = which === "hf" ? hfStream(system, messages) : anthropicStream(system, messages);
+        const gen =
+          which === "gemini"
+            ? openaiStream({ endpoint: GEMINI_ENDPOINT, apiKey: process.env.GEMINI_API_KEY, model: GEMINI_MODEL }, system, messages)
+            : which === "hf"
+            ? openaiStream({ endpoint: HF_ENDPOINT, apiKey: process.env.HUGGING_FACE_API_KEY, model: HF_MODEL }, system, messages)
+            : anthropicStream(system, messages);
         for await (const chunk of gen) controller.enqueue(encoder.encode(chunk));
         controller.close();
       } catch (err) {
