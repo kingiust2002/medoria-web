@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { getTranslations } from "@/lib/i18n";
 import Aurora from "@/components/shared/Aurora";
+import CountUp from "@/components/shared/CountUp";
 
 export default function StatsBar({ lang }) {
   const t = getTranslations(lang);
@@ -33,7 +34,7 @@ export default function StatsBar({ lang }) {
           {stats.map(([val, label], i) => (
             <div key={i} className={`relative ${i < 3 ? "md:border-e md:border-white/10" : ""} md:px-4`}>
               <div className="text-4xl md:text-5xl font-display font-extrabold leading-none mb-2 gradient-text-animated tabular">
-                {val}
+                <CountUp value={val} />
               </div>
               <div className="text-[11px] md:text-[12px] font-medium text-white/60 tracking-wide">
                 {label}

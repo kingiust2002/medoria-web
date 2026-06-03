@@ -8,6 +8,7 @@ import Showcase from "@/components/home/Showcase";
 import Brands from "@/components/home/Brands";
 import WhyMedoria from "@/components/home/WhyMedoria";
 import Process from "@/components/home/Process";
+import GlobeSection from "@/components/home/GlobeSection";
 import Audience from "@/components/home/Audience";
 import Trust from "@/components/home/Trust";
 import Procurement from "@/components/home/Procurement";
@@ -45,6 +46,7 @@ export default function HomePage({ params }) {
       <Brands lang={lang} />
       <WhyMedoria lang={lang} />
       <Process lang={lang} />
+      <GlobeSection lang={lang} />
       <Audience lang={lang} />
       <Trust lang={lang} />
       <Procurement lang={lang} />

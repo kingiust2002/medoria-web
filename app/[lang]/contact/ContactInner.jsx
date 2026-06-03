@@ -8,6 +8,7 @@ import { createQuoteRequest } from "@/lib/supabase";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
+import SplitText from "@/components/shared/SplitText";
 
 const PHONE = process.env.NEXT_PUBLIC_PHONE || "+992900000000";
 
@@ -27,7 +28,7 @@ export default function ContactInner({ lang }) {
         <div className="container-x py-12 md:py-20 relative">
           <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.common.home, href: `/${lang}` }, { label: t.common.contact }]} />
           <div className="eyebrow mb-4"><span className="gradient-text">{c.hero.tag}</span></div>
-          <h1 className="section-h-lg mb-5 max-w-2xl">{c.hero.title}</h1>
+          <h1 className="section-h-lg mb-5 max-w-2xl"><SplitText text={c.hero.title} delay={0.1} /></h1>
           <p className="text-base md:text-lg text-ink-muted leading-relaxed max-w-2xl">
             {c.hero.sub}
           </p>
@@ -143,6 +144,13 @@ const CHANNELS = [
   ["telegram", "send",  "Telegram"],
   ["phone",    "phone", null],
 ];
+
+// Per-channel selected colour (each on its own brand colour, not all blue).
+const CHANNEL_ACTIVE = {
+  whatsapp: "bg-[#22C55E] text-white border-[#22C55E] shadow-[0_6px_16px_rgba(34,197,94,0.30)]",
+  telegram: "bg-[#229ED9] text-white border-[#229ED9] shadow-[0_6px_16px_rgba(34,158,217,0.30)]",
+  phone:    "bg-brand-violet text-white border-brand-violet shadow-[0_6px_16px_rgba(139,47,247,0.30)]",
+};
 
 function ContactForm({ lang, t }) {
   const c = t.contact;
@@ -277,7 +285,7 @@ function ContactForm({ lang, t }) {
               className={[
                 "h-11 rounded-xl text-[13px] font-semibold border transition-colors flex items-center justify-center gap-2",
                 via === v
-                  ? "bg-primary text-white border-primary"
+                  ? CHANNEL_ACTIVE[v]
                   : "bg-surface text-ink-muted border-line hover:border-ink-faint",
               ].join(" ")}
             >
