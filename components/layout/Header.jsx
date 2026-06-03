@@ -2,6 +2,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import Brand from "./Brand";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { getTranslations } from "@/lib/i18n";
@@ -11,8 +12,14 @@ import ThemeToggle from "@/components/shared/ThemeToggle";
 
 export default function Header({ lang }) {
   const t = getTranslations(lang);
+  const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+
+  const isActive = (href) =>
+    href === `/${lang}`
+      ? pathname === `/${lang}` || pathname === `/${lang}/`
+      : pathname === href || pathname.startsWith(`${href}/`);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 16);
@@ -53,15 +60,28 @@ export default function Header({ lang }) {
 
           {/* Desktop nav */}
           <nav className="hidden lg:flex items-center gap-1">
-            {nav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="px-3.5 py-2 text-[13px] font-medium text-ink-muted rounded-lg hover:text-brand-violet hover:bg-brand-violet/[0.06] transition-colors"
-              >
-                {item.label}
-              </Link>
-            ))}
+            {nav.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={[
+                    "group relative px-3.5 py-2 text-[13px] font-medium rounded-lg transition-colors",
+                    active ? "text-brand-violet" : "text-ink-muted hover:text-brand-violet",
+                  ].join(" ")}
+                >
+                  {item.label}
+                  <span
+                    className={[
+                      "pointer-events-none absolute inset-x-3 bottom-1 h-[2px] rounded-full bg-brand-gradient origin-center transition-transform duration-300",
+                      active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100",
+                    ].join(" ")}
+                  />
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Right side */}
@@ -97,16 +117,24 @@ export default function Header({ lang }) {
         <div className="fixed inset-0 top-16 z-50 lg:hidden bg-canvas overflow-y-auto">
           <div className="container-x py-6">
             <nav className="flex flex-col">
-              {nav.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className="py-3.5 text-base font-semibold text-ink border-b border-line"
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {nav.map((item) => {
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    aria-current={active ? "page" : undefined}
+                    className={[
+                      "py-3.5 text-base font-semibold border-b border-line flex items-center justify-between transition-colors",
+                      active ? "text-brand-violet" : "text-ink",
+                    ].join(" ")}
+                  >
+                    {item.label}
+                    {active && <span className="w-2 h-2 rounded-full bg-brand-gradient" />}
+                  </Link>
+                );
+              })}
             </nav>
 
             <div className="mt-6 flex items-center gap-3">

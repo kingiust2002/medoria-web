@@ -15,6 +15,7 @@ import CompareDrawer from "@/components/catalog/CompareDrawer";
 import ProductViewTracker from "@/components/product/ProductViewTracker";
 import RecentlyViewed from "@/components/product/RecentlyViewed";
 import Icon from "@/components/shared/Icon";
+import Breadcrumb from "@/components/shared/Breadcrumb";
 
 const BADGE_STYLE = {
   SALE: "bg-accent-pink text-white",
@@ -55,16 +56,16 @@ export default function ProductDetailClient({ product, lang }) {
       <div className="bg-canvas-soft min-h-screen">
         {/* Breadcrumb */}
         <div className="bg-canvas border-b border-line">
-          <div className="container-x py-3 flex items-center gap-2 text-[11px] text-ink-muted overflow-x-auto no-scrollbar">
-            <Link href={`/${lang}`} className="hover:text-brand-violet whitespace-nowrap">{t.common.home}</Link>
-            <span className="text-line">/</span>
-            <Link href={`/${lang}/catalog`} className="hover:text-brand-violet whitespace-nowrap">{t.common.catalog}</Link>
-            <span className="text-line">/</span>
-            <Link href={`/${lang}/catalog?category=${product.category}`} className="hover:text-brand-violet whitespace-nowrap">
-              {getCategoryName(product.category, lang)}
-            </Link>
-            <span className="text-line">/</span>
-            <span className="text-ink font-semibold truncate">{name}</span>
+          <div className="container-x py-3">
+            <Breadcrumb
+              lang={lang}
+              crumbs={[
+                { label: t.common.home, href: `/${lang}` },
+                { label: t.common.catalog, href: `/${lang}/catalog` },
+                { label: getCategoryName(product.category, lang), href: `/${lang}/catalog?category=${product.category}` },
+                { label: name },
+              ]}
+            />
           </div>
         </div>
 

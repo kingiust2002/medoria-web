@@ -7,6 +7,7 @@ import { WA_NUMBER, TG_USER, waLink, tgLink } from "@/lib/whatsapp";
 import { createQuoteRequest } from "@/lib/supabase";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
+import Breadcrumb from "@/components/shared/Breadcrumb";
 
 const PHONE = process.env.NEXT_PUBLIC_PHONE || "+992900000000";
 
@@ -24,11 +25,7 @@ export default function ContactInner({ lang }) {
         <div className="blob w-[32vw] h-[32vw] top-0 start-[8%] animate-aurora"
              style={{ background: "radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%)", animationDelay: "4s" }} />
         <div className="container-x py-12 md:py-20 relative">
-          <nav className="text-[11px] text-ink-muted mb-4 flex items-center gap-2">
-            <Link href={`/${lang}`} className="hover:text-brand-violet">{t.common.home}</Link>
-            <span className="text-line">/</span>
-            <span className="text-brand-violet font-semibold">{t.common.contact}</span>
-          </nav>
+          <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.common.home, href: `/${lang}` }, { label: t.common.contact }]} />
           <div className="eyebrow mb-4"><span className="gradient-text">{c.hero.tag}</span></div>
           <h1 className="section-h-lg mb-5 max-w-2xl">{c.hero.title}</h1>
           <p className="text-base md:text-lg text-ink-muted leading-relaxed max-w-2xl">

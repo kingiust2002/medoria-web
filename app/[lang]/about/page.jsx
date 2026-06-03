@@ -6,6 +6,7 @@ import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
 import ImagePlaceholder from "@/components/shared/ImagePlaceholder";
 import TiltCard from "@/components/shared/TiltCard";
+import Breadcrumb from "@/components/shared/Breadcrumb";
 
 const VALUE_ICONS = ["shield", "bolt", "check", "handshake"];
 const OFFER_ICONS = ["gloves", "stethoscope", "bandage", "thermometer", "flask", "pill"];
@@ -39,11 +40,7 @@ export default function AboutPage({ params }) {
           style={{ backgroundImage: "radial-gradient(circle, rgba(99,102,241,0.10) 1px, transparent 1px)", backgroundSize: "26px 26px", maskImage: "radial-gradient(circle at 50% 20%, black, transparent 70%)" }}
         />
         <div className="container-x py-14 md:py-24 relative">
-          <nav className="text-[11px] text-ink-muted mb-4 flex items-center gap-2">
-            <Link href={`/${lang}`} className="hover:text-brand-violet">{t.common.home}</Link>
-            <span className="text-line">/</span>
-            <span className="text-brand-violet font-semibold">{t.common.about}</span>
-          </nav>
+          <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.common.home, href: `/${lang}` }, { label: t.common.about }]} />
           <div className="eyebrow mb-4"><span className="gradient-text">{a.hero.tag}</span></div>
           <h1 className="section-h-lg mb-5 max-w-3xl">{a.hero.title}</h1>
           <p className="text-base md:text-lg text-ink-muted leading-relaxed max-w-2xl">

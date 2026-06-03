@@ -8,6 +8,7 @@ import { getTranslations, getCategoryName } from "@/lib/i18n";
 import { waLink, tgLink, productInquiryMessage } from "@/lib/whatsapp";
 import { priceLabel, isOnRequest } from "@/lib/price";
 import Icon from "@/components/shared/Icon";
+import Breadcrumb from "@/components/shared/Breadcrumb";
 
 export const dynamic = "force-dynamic";
 
@@ -97,13 +98,7 @@ export default function ComparePage({ params }) {
         <div className="blob w-[34vw] h-[34vw] -top-1/2 -end-[4%] animate-aurora"
              style={{ background: "radial-gradient(circle, rgba(139,47,247,0.12) 0%, transparent 70%)" }} />
         <div className="container-x py-6 relative">
-          <nav className="text-[11px] text-ink-muted mb-3 flex items-center gap-2">
-            <Link href={`/${lang}`} className="hover:text-brand-violet">{t.common.home}</Link>
-            <span className="text-line">/</span>
-            <Link href={`/${lang}/catalog`} className="hover:text-brand-violet">{t.common.catalog}</Link>
-            <span className="text-line">/</span>
-            <span className="text-brand-violet font-semibold">{t.compare.title}</span>
-          </nav>
+          <Breadcrumb lang={lang} className="mb-3" crumbs={[{ label: t.common.home, href: `/${lang}` }, { label: t.common.catalog, href: `/${lang}/catalog` }, { label: t.compare.title }]} />
           <div className="flex items-end justify-between gap-4 flex-wrap">
             <div>
               <h1 className="font-display text-3xl md:text-4xl font-extrabold text-ink tracking-tight mb-1">

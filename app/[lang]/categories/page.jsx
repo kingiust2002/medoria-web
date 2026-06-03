@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
+import Breadcrumb from "@/components/shared/Breadcrumb";
 
 export const dynamic = "force-dynamic";
 
@@ -47,11 +48,7 @@ export default function CategoriesPage({ params }) {
         <div className="blob w-[34vw] h-[34vw] top-0 start-[10%] animate-aurora"
              style={{ background: "radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%)", animationDelay: "4s" }} />
         <div className="container-x py-12 md:py-16 relative">
-          <nav className="text-[11px] text-ink-muted mb-3 flex items-center gap-2">
-            <Link href={`/${lang}`} className="hover:text-brand-violet">{t.common.home}</Link>
-            <span className="text-line">/</span>
-            <span className="text-brand-violet font-semibold">{t.common.categories}</span>
-          </nav>
+          <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.common.home, href: `/${lang}` }, { label: t.common.categories }]} />
           <div className="eyebrow mb-4"><span className="gradient-text">{t.home.catTag}</span></div>
           <h1 className="section-h-lg mb-3">{t.categories.title}</h1>
           <p className="text-base text-ink-muted max-w-xl">{t.categories.subtitle}</p>
