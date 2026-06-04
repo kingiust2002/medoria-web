@@ -1,7 +1,9 @@
 // components/home/GlobeSection.jsx — "nationwide reach" band.
-// Uses /images/globe-reach.png if present; otherwise falls back to the CSS globe.
+// Uses /images/globe-reach.png if present (gently floating, with glow + depth so a
+// static render still feels alive); otherwise falls back to the animated CSS globe.
 "use client";
 import { useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { Reveal } from "@/components/shared/Reveal";
 import Globe from "@/components/shared/Globe";
 
@@ -15,6 +17,7 @@ const COPY = {
 export default function GlobeSection({ lang }) {
   const c = COPY[lang] || COPY.en;
   const [imgOk, setImgOk] = useState(false);
+  const reduce = useReducedMotion();
   return (
     <section className="relative overflow-hidden bg-navy text-white py-16 md:py-24 noise">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
@@ -26,12 +29,23 @@ export default function GlobeSection({ lang }) {
         </Reveal>
         <Reveal delay={0.1}>
           <div className="relative mx-auto w-full max-w-[460px]">
-            {/* image loads hidden; on success it replaces the CSS globe with no flash */}
-            <img
-              src="/images/globe-reach.png" alt={c.title}
-              onLoad={() => setImgOk(true)} onError={() => setImgOk(false)}
-              className={imgOk ? "block w-full h-auto" : "hidden"}
-            />
+            {/* soft glow halo behind the render */}
+            {imgOk && (
+              <div className="pointer-events-none absolute inset-[10%] rounded-full blur-3xl opacity-70"
+                   style={{ background: "radial-gradient(circle, rgba(56,130,246,0.45), rgba(139,47,247,0.18) 55%, transparent 72%)" }} />
+            )}
+            {/* the render gently floats so a static image still feels alive */}
+            <motion.div
+              className="relative"
+              animate={reduce || !imgOk ? {} : { y: [0, -12, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <img
+                src="/images/globe-reach.png" alt={c.title}
+                onLoad={() => setImgOk(true)} onError={() => setImgOk(false)}
+                className={imgOk ? "block w-full h-auto drop-shadow-[0_24px_60px_rgba(40,90,200,0.45)]" : "hidden"}
+              />
+            </motion.div>
             {!imgOk && <Globe />}
           </div>
         </Reveal>
