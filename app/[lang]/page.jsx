@@ -13,7 +13,6 @@ import GlobeSection from "@/components/home/GlobeSection";
 import Audience from "@/components/home/Audience";
 import Trust from "@/components/home/Trust";
 import Procurement from "@/components/home/Procurement";
-import NewsletterSection from "@/components/home/NewsletterSection";
 import FinalCTA from "@/components/home/FinalCTA";
 
 export async function generateMetadata({ params }) {
@@ -53,7 +52,6 @@ export default function HomePage({ params }) {
       <Audience lang={lang} />
       <Trust lang={lang} />
       <Procurement lang={lang} />
-      <NewsletterSection lang={lang} />
       <FinalCTA lang={lang} />
     </>
   );

@@ -22,12 +22,12 @@ export default function Globe() {
       phi: 0,
       theta: 0.28,
       dark: 1,
-      diffuse: 1.2,
+      diffuse: 1.4,
       mapSamples: 16000,
-      mapBrightness: 6,
-      baseColor: [0.42, 0.42, 0.5],
-      markerColor: [0.95, 0.25, 0.62],
-      glowColor: [0.28, 0.42, 0.85],
+      mapBrightness: 5,
+      baseColor: [0.55, 0.6, 0.85],
+      markerColor: [0.97, 0.3, 0.62],
+      glowColor: [0.25, 0.5, 1],
       markers: [{ location: [38.5598, 68.787], size: 0.12 }], // Dushanbe, TJ
       onRender: (state) => {
         if (pointer.current === null) phiRef.current += 0.005;
