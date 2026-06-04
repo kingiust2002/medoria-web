@@ -9,10 +9,12 @@ import { getTranslations } from "@/lib/i18n";
 import { bulkInquiryMessage, waLink } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import ThemeToggle from "@/components/shared/ThemeToggle";
+import { useWishlist } from "@/lib/wishlist";
 
 export default function Header({ lang }) {
   const t = getTranslations(lang);
   const pathname = usePathname();
+  const { count: wishCount } = useWishlist();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -86,6 +88,12 @@ export default function Header({ lang }) {
 
           {/* Right side */}
           <div className="flex items-center gap-2.5">
+            <Link href={`/${lang}/wishlist`} aria-label="Wishlist" className="relative grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:text-accent-gold hover:bg-accent-gold/10 transition-colors">
+              <Icon name="star" size={18} />
+              {wishCount > 0 && (
+                <span className="absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-1 rounded-full bg-accent-gold text-white text-[10px] font-bold grid place-items-center tabular">{wishCount}</span>
+              )}
+            </Link>
             <ThemeToggle lang={lang} />
             <div className="hidden md:block">
               <LanguageSwitcher lang={lang} />

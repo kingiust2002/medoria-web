@@ -14,6 +14,7 @@ import QuoteModal from "@/components/product/QuoteModal";
 import QuickViewModal from "@/components/product/QuickViewModal";
 import Icon from "@/components/shared/Icon";
 import Breadcrumb from "@/components/shared/Breadcrumb";
+import FancySelect from "@/components/shared/FancySelect";
 
 const BADGES = ["NEW", "TOP", "SALE"];
 
@@ -165,28 +166,29 @@ export default function CatalogInner({ params }) {
 
           <div className="hidden md:flex gap-3">
           {brands.length > 0 && (
-            <select
+            <FancySelect
+              ariaLabel={t.common.allBrands}
               value={brand}
-              onChange={(e) => { setBrand(e.target.value); reset(); }}
-              className="input h-12 px-4 cursor-pointer min-w-[140px]"
-            >
-              <option value="all">{t.common.allBrands}</option>
-              {brands.map((b) => <option key={b} value={b}>{b}</option>)}
-            </select>
+              onChange={(v) => { setBrand(v); reset(); }}
+              className="min-w-[150px]"
+              options={[{ value: "all", label: t.common.allBrands }, ...brands.map((b) => ({ value: b, label: b }))]}
+            />
           )}
 
-          <select
+          <FancySelect
+            ariaLabel={t.catalog.sortDefault}
             value={sortIdx}
-            onChange={(e) => { setSortIdx(+e.target.value); reset(); }}
-            className="input h-12 px-4 cursor-pointer min-w-[150px]"
-          >
-            <option value={0}>{t.catalog.sortDefault}</option>
-            <option value={1}>{t.catalog.sortNewest}</option>
-            <option value={2}>{t.catalog.sortPriceAsc}</option>
-            <option value={3}>{t.catalog.sortPriceDesc}</option>
-            <option value={4}>{t.catalog.sortPopular}</option>
-            <option value={5}>{t.catalog.sortName}</option>
-          </select>
+            onChange={(v) => { setSortIdx(Number(v)); reset(); }}
+            className="min-w-[160px]"
+            options={[
+              { value: 0, label: t.catalog.sortDefault },
+              { value: 1, label: t.catalog.sortNewest },
+              { value: 2, label: t.catalog.sortPriceAsc },
+              { value: 3, label: t.catalog.sortPriceDesc },
+              { value: 4, label: t.catalog.sortPopular },
+              { value: 5, label: t.catalog.sortName },
+            ]}
+          />
           </div>
         </div>
 

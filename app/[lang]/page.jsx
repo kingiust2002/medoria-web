@@ -6,6 +6,7 @@ import CategoryGrid from "@/components/home/CategoryGrid";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import Showcase from "@/components/home/Showcase";
 import Brands from "@/components/home/Brands";
+import Certifications from "@/components/home/Certifications";
 import WhyMedoria from "@/components/home/WhyMedoria";
 import Process from "@/components/home/Process";
 import GlobeSection from "@/components/home/GlobeSection";
@@ -44,6 +45,7 @@ export default function HomePage({ params }) {
       <FeaturedProducts lang={lang} />
       <Showcase lang={lang} />
       <Brands lang={lang} />
+      <Certifications lang={lang} />
       <WhyMedoria lang={lang} />
       <Process lang={lang} />
       <GlobeSection lang={lang} />

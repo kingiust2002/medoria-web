@@ -7,6 +7,7 @@ import { getTranslations, getCategoryName, CATEGORIES } from "@/lib/i18n";
 import { waLink, tgLink, quickInquiryMessage } from "@/lib/whatsapp";
 import { priceLabel, isOnRequest, formatPrice } from "@/lib/price";
 import { useCompare } from "@/lib/compare";
+import { useWishlist } from "@/lib/wishlist";
 import QuoteModal from "@/components/product/QuoteModal";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
@@ -23,6 +24,9 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
   const [quoteOpen, setQuoteOpen] = useState(false);
   const { has, toggle } = useCompare();
   const isCompared = has(p.id);
+  const { has: hasWish, toggle: toggleWish } = useWishlist();
+  const isWished = hasWish(p.id);
+  const wishLabel = { fa: "علاقه‌مندی", ru: "В избранное", tg: "Дӯстдошта", en: "Wishlist" }[lang] || "Wishlist";
 
   const name = p[`name_${lang}`] || p.name_en || "";
   const desc = p[`description_${lang}`] || p.description_en || "";
@@ -41,6 +45,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
   };
 
   const handleCompare = (e) => { e.preventDefault(); e.stopPropagation(); toggle(p.id); };
+  const handleWish = (e) => { e.preventDefault(); e.stopPropagation(); toggleWish(p.id); };
   const handleQuickView = (e) => { e.preventDefault(); e.stopPropagation(); onQuickView?.(p); };
 
   // ── LIST VIEW ─────────────────────────────────────────────────────────
@@ -101,6 +106,14 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
                   title={isCompared ? t.product.inCompare : t.product.addToCompare}>
                   <Icon name={isCompared ? "check" : "switchH"} size={16} />
                 </button>
+                <button onClick={handleWish}
+                  className={[
+                    "w-9 h-9 rounded-lg flex items-center justify-center transition-colors",
+                    isWished ? "bg-accent-gold/15 text-accent-gold" : "bg-canvas-soft hover:bg-accent-gold/10 text-ink-muted hover:text-accent-gold",
+                  ].join(" ")}
+                  title={wishLabel} aria-label={wishLabel}>
+                  <Icon name="star" size={16} fill={isWished ? "currentColor" : "none"} />
+                </button>
                 <a href={waLink(quickMsg)} target="_blank" rel="noopener noreferrer" className="btn-wa size-sm">
                   <Icon name="chat" size={14} /> WhatsApp
                 </a>
@@ -158,11 +171,26 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
             <Icon name={isCompared ? "check" : "switchH"} size={16} />
           </button>
 
-          {/* Quick view button (below compare) */}
+          {/* Wishlist button (below compare) */}
+          <button
+            onClick={handleWish}
+            className={[
+              "absolute top-[52px] end-3 w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-soft backdrop-blur",
+              isWished
+                ? "bg-accent-gold/20 text-accent-gold scale-105"
+                : "bg-surface/90 text-ink-muted hover:bg-surface hover:text-accent-gold opacity-0 group-hover:opacity-100",
+            ].join(" ")}
+            title={wishLabel}
+            aria-label={wishLabel}
+          >
+            <Icon name="star" size={16} fill={isWished ? "currentColor" : "none"} />
+          </button>
+
+          {/* Quick view button (below wishlist) */}
           {onQuickView && (
             <button
               onClick={handleQuickView}
-              className="absolute top-[52px] end-3 w-9 h-9 rounded-full flex items-center justify-center bg-surface/90 text-ink-muted hover:bg-surface hover:text-brand-violet shadow-soft backdrop-blur opacity-0 group-hover:opacity-100 transition-all"
+              className="absolute top-[92px] end-3 w-9 h-9 rounded-full flex items-center justify-center bg-surface/90 text-ink-muted hover:bg-surface hover:text-brand-violet shadow-soft backdrop-blur opacity-0 group-hover:opacity-100 transition-all"
               title={t.catalog.quickView}
               aria-label={t.catalog.quickView}
             >
