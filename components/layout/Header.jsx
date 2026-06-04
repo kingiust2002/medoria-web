@@ -9,14 +9,24 @@ import { getTranslations } from "@/lib/i18n";
 import { bulkInquiryMessage, waLink } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import ThemeToggle from "@/components/shared/ThemeToggle";
+import SearchCommand from "@/components/shared/SearchCommand";
 import { useWishlist } from "@/lib/wishlist";
 
 export default function Header({ lang }) {
   const t = getTranslations(lang);
   const pathname = usePathname();
   const { count: wishCount } = useWishlist();
+  const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setSearchOpen(true); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const isActive = (href) =>
     href === `/${lang}`
@@ -88,6 +98,9 @@ export default function Header({ lang }) {
 
           {/* Right side */}
           <div className="flex items-center gap-2.5">
+            <button onClick={() => setSearchOpen(true)} aria-label="Search" className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:text-brand-violet hover:bg-brand-violet/10 transition-colors">
+              <Icon name="search" size={18} />
+            </button>
             <Link href={`/${lang}/wishlist`} aria-label="Wishlist" className="relative grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:text-accent-gold hover:bg-accent-gold/10 transition-colors">
               <Icon name="star" size={18} />
               {wishCount > 0 && (
@@ -163,6 +176,8 @@ export default function Header({ lang }) {
           </div>
         </div>
       )}
+
+      <SearchCommand lang={lang} open={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );
 }
