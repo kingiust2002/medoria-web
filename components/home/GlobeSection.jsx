@@ -1,9 +1,6 @@
 // components/home/GlobeSection.jsx — "nationwide reach" band with an interactive globe.
-"use client";
-import dynamic from "next/dynamic";
 import { Reveal } from "@/components/shared/Reveal";
-
-const Globe = dynamic(() => import("@/components/shared/Globe"), { ssr: false });
+import Globe from "@/components/shared/Globe";
 
 const COPY = {
   fa: { tag: "دسترسی سراسری", title: "تأمین مطمئن در سراسر تاجیکستان", sub: "از دوشنبه تا دورترین نقاط — تحویل سریع، قیمت رقابتی و پشتیبانی محلی." },
