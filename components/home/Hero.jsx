@@ -10,6 +10,8 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { motion, useReducedMotion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
+import { getProducts, imageUrl } from "@/lib/supabase";
+import { priceLabel } from "@/lib/price";
 import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
@@ -27,6 +29,7 @@ export default function Hero({ lang }) {
   const [q, setQ] = useState("");
   const [searchFocus, setSearchFocus] = useState(false);
   const [canRender3D, setCanRender3D] = useState(false);
+  const [featured, setFeatured] = useState([]);
   useEffect(() => {
     setMounted(true);
     try {
@@ -37,6 +40,16 @@ export default function Hero({ lang }) {
         && !(navigator.connection && navigator.connection.saveData);
       setCanRender3D(ok);
     } catch { /* keep CSS fallback */ }
+  }, []);
+
+  useEffect(() => {
+    getProducts()
+      .then((p) => {
+        const list = Array.isArray(p) ? p : [];
+        const feat = list.filter((x) => x.is_featured);
+        setFeatured((feat.length ? feat : list).slice(0, 3));
+      })
+      .catch(() => {});
   }, []);
   const isDark = mounted && resolvedTheme === "dark";
 
@@ -209,14 +222,33 @@ export default function Hero({ lang }) {
                 </div>
                 <span className="w-8 h-8 rounded-full bg-cyan-500/15 text-cyan-600 dark:text-cyan-300 flex items-center justify-center"><Icon name="badgeCheck" size={16} /></span>
               </div>
-              <div className="text-[11px] text-ink-muted dark:text-white/60 -mt-3 mb-5">B2B Medical · Tajikistan</div>
-              <div className="grid grid-cols-3 gap-2.5 mb-5">
-                {CATEGORIES.slice(0, 6).map((c) => (
-                  <Link key={c.slug} href={`/${lang}/catalog?category=${c.slug}`}
-                    className="aspect-square rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all group bg-brand-violet/[0.05] border-line hover:border-brand-violet/30 hover:bg-brand-violet/[0.09] dark:bg-white/[0.06] dark:border-white/10 dark:hover:bg-white/[0.12]">
-                    <Icon name={c.icon} size={20} className="text-brand-violet dark:text-cyan-200 group-hover:scale-110 transition-transform" strokeWidth={1.6} />
-                    <span className="text-[8px] text-ink-faint dark:text-white/55 leading-none text-center px-1">{getCategoryName(c.slug, lang).split(" ")[0]}</span>
-                  </Link>
+              <div className="text-[11px] text-ink-muted dark:text-white/60 -mt-3 mb-4">B2B Medical · Tajikistan</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint dark:text-white/50 mb-2">
+                {{ fa: "محصولات منتخب", ru: "Избранные товары", tg: "Маҳсулоти интихоб", en: "Featured products" }[lang] || "Featured products"}
+              </div>
+              <div className="flex flex-col gap-2 mb-4">
+                {(featured.length ? featured : [null, null, null]).map((p, i) => (
+                  p ? (
+                    <Link key={p.id} href={`/${lang}/catalog/${p.slug || p.id}`}
+                      className="flex items-center gap-3 rounded-xl border px-3 py-2 transition-colors group bg-brand-violet/[0.05] border-line hover:bg-brand-violet/[0.09] dark:bg-white/[0.06] dark:border-white/10 dark:hover:bg-white/[0.12]">
+                      <span className="w-10 h-10 rounded-lg img-ph overflow-hidden grid place-items-center shrink-0 text-brand-violet dark:text-cyan-200">
+                        {p.image_url ? <img src={imageUrl(p.image_url)} alt="" className="w-full h-full object-cover" /> : <Icon name="package" size={18} strokeWidth={1.6} />}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[12px] font-semibold text-ink dark:text-white truncate">{p[`name_${lang}`] || p.name_en}</span>
+                        <span className="block text-[11px] font-semibold text-brand-violet dark:text-cyan-300">{priceLabel(p, lang)}</span>
+                      </span>
+                      <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={14} className="text-ink-faint dark:text-white/50 group-hover:text-brand-violet dark:group-hover:text-cyan-300 transition-colors" />
+                    </Link>
+                  ) : (
+                    <div key={i} className="flex items-center gap-3 rounded-xl border px-3 py-2 border-line dark:border-white/10">
+                      <span className="w-10 h-10 rounded-lg bg-line-soft dark:bg-white/10 animate-pulse shrink-0" />
+                      <span className="flex-1">
+                        <span className="block h-2.5 w-2/3 rounded bg-line-soft dark:bg-white/10 animate-pulse mb-1.5" />
+                        <span className="block h-2 w-1/3 rounded bg-line-soft dark:bg-white/10 animate-pulse" />
+                      </span>
+                    </div>
+                  )
                 ))}
               </div>
               <Link href={`/${lang}/catalog`} className="flex items-center justify-between rounded-xl border px-4 py-3 transition-colors bg-brand-violet/[0.05] border-line hover:bg-brand-violet/[0.09] dark:bg-white/[0.06] dark:border-white/10 dark:hover:bg-white/[0.12]">

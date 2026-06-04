@@ -65,9 +65,9 @@ export default function Header({ lang }) {
       >
         {/* gradient hairline */}
         <div className={`absolute inset-x-0 top-0 h-[2px] bg-brand-gradient transition-opacity ${scrolled ? "opacity-100" : "opacity-0"}`} />
-        <div className="container-x flex h-16 items-center justify-between">
+        <div className="container-x flex h-[4.5rem] items-center justify-between">
           <Link href={`/${lang}`} className="shrink-0" aria-label="Medoria home">
-            <Brand height={26} />
+            <Brand height={30} />
           </Link>
 
           {/* Desktop nav */}
@@ -80,7 +80,7 @@ export default function Header({ lang }) {
                   href={item.href}
                   aria-current={active ? "page" : undefined}
                   className={[
-                    "group relative px-3.5 py-2 text-[13px] font-medium rounded-lg transition-colors",
+                    "group relative px-4 py-2.5 text-[14px] font-medium rounded-lg transition-colors",
                     active ? "text-brand-violet" : "text-ink-muted hover:text-brand-violet",
                   ].join(" ")}
                 >
@@ -135,7 +135,7 @@ export default function Header({ lang }) {
 
       {/* Mobile menu */}
       {open && (
-        <div className="fixed inset-0 top-16 z-50 lg:hidden bg-canvas overflow-y-auto">
+        <div className="fixed inset-0 top-[4.5rem] z-50 lg:hidden bg-canvas overflow-y-auto">
           <div className="container-x py-6">
             <nav className="flex flex-col">
               {nav.map((item) => {

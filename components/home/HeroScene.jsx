@@ -91,8 +91,8 @@ export default function HeroScene({ dark = true, rtl = false }) {
       // even coverage → crisp, legible letters: shuffle then round-robin assign
       for (let i = pts.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; const tmp = pts[i]; pts[i] = pts[j]; pts[j] = tmp; }
       // word sits in the empty UPPER band (right for LTR, left for RTL)
-      const SX = 8, SY = 8 * (tc.height / tc.width);
-      const OX = rtl ? -3.2 : 3.2, OY = 5.8;
+      const SX = 7, SY = 7 * (tc.height / tc.width);
+      const OX = rtl ? -3.2 : 3.2, OY = 6.9;
       for (let i = 0; i < N; i++) {
         const p = pts.length ? pts[i % pts.length] : [tc.width / 2, tc.height / 2];
         target[i * 3] = (p[0] / tc.width - 0.5) * SX + OX + (Math.random() - 0.5) * 0.035;

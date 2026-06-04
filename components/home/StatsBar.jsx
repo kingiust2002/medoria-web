@@ -22,6 +22,8 @@ export default function StatsBar({ lang }) {
   if (productCount !== null && productCount > 0) {
     stats[0] = [`${productCount}+`, t.home.stats[0][1]];
   }
+  // Show 3 languages (Farsi is being phased out of the count, but stays on the site for now).
+  if (stats[2]) stats[2] = ["3", stats[2][1]];
 
   return (
     <section className="py-10 md:py-14 bg-canvas">
