@@ -7,6 +7,7 @@ import { getTranslations, getCategoryName } from "@/lib/i18n";
 import { waLink, tgLink, productInquiryMessage } from "@/lib/whatsapp";
 import { priceLabel, priceLine, isOnRequest, formatPrice } from "@/lib/price";
 import { useCompare } from "@/lib/compare";
+import { useWishlist } from "@/lib/wishlist";
 import ProductCard from "@/components/catalog/ProductCard";
 import QuoteModal from "@/components/product/QuoteModal";
 import ProductGallery from "@/components/product/ProductGallery";
@@ -29,6 +30,7 @@ export default function ProductDetailClient({ product, lang }) {
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const { has, toggle } = useCompare();
+  const { has: hasWish, toggle: toggleWish } = useWishlist();
 
   useEffect(() => {
     getRelatedProducts(product).then(setRelated);
@@ -38,6 +40,7 @@ export default function ProductDetailClient({ product, lang }) {
   const desc = product[`description_${lang}`] || product.description_en;
   const pageUrl = typeof window !== "undefined" ? window.location.href : "";
   const isCompared = has(product.id);
+  const isWished = hasWish(product.id);
   const onRequest = isOnRequest(product);
 
   const handleCopy = () => {
@@ -159,6 +162,18 @@ export default function ProductDetailClient({ product, lang }) {
                     {isCompared ? t.product.inCompare : t.product.addToCompare}
                   </button>
                 </div>
+                <button
+                  onClick={() => toggleWish(product.id)}
+                  className={[
+                    "btn size-sm w-full mt-2 transition-colors",
+                    isWished
+                      ? "bg-accent-gold/15 text-accent-gold border border-accent-gold/30"
+                      : "bg-surface text-ink-muted border border-line hover:border-accent-gold/40 hover:text-accent-gold",
+                  ].join(" ")}
+                >
+                  <Icon name="star" size={14} fill={isWished ? "currentColor" : "none"} />
+                  {{ fa: "ذخیره در علاقه‌مندی‌ها", ru: "В избранное", tg: "Ба дӯстдошта", en: "Save to wishlist" }[lang] || "Save to wishlist"}
+                </button>
               </div>
 
               {/* Meta */}
