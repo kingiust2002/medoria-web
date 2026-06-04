@@ -1,11 +1,13 @@
-// components/home/GlobeSection.jsx — "nationwide reach" band.
-// Uses /images/globe-reach.png if present (gently floating, with glow + depth so a
-// static render still feels alive); otherwise falls back to the animated CSS globe.
+// components/home/GlobeSection.jsx — "nationwide reach" band with a real 3D globe.
+// Theme-aware: dark navy band + dark globe in dark mode; light band + light globe
+// in light mode. The globe (cobe/WebGL) is client-only.
 "use client";
-import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
+import dynamic from "next/dynamic";
 import { Reveal } from "@/components/shared/Reveal";
-import Globe from "@/components/shared/Globe";
+
+const Globe = dynamic(() => import("@/components/shared/Globe"), { ssr: false });
 
 const COPY = {
   fa: { tag: "دسترسی سراسری", title: "تأمین مطمئن در سراسر تاجیکستان", sub: "از دوشنبه تا دورترین نقاط — تحویل سریع، قیمت رقابتی و پشتیبانی محلی." },
@@ -16,38 +18,22 @@ const COPY = {
 
 export default function GlobeSection({ lang }) {
   const c = COPY[lang] || COPY.en;
-  const [imgOk, setImgOk] = useState(false);
-  const reduce = useReducedMotion();
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const dark = !mounted || resolvedTheme === "dark";
+
   return (
-    <section className="relative overflow-hidden bg-navy text-white py-16 md:py-24 noise">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+    <section className={`relative overflow-hidden py-16 md:py-24 ${dark ? "bg-navy text-white noise" : "bg-canvas-soft text-ink border-y border-line"}`}>
+      <div className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent ${dark ? "via-white/30" : "via-brand-violet/25"} to-transparent`} />
       <div className="container-x grid lg:grid-cols-2 gap-10 items-center">
         <Reveal>
-          <div className="text-[11px] font-bold tracking-[0.18em] uppercase text-cyan-300 mb-3">{c.tag}</div>
+          <div className={`text-[11px] font-bold tracking-[0.18em] uppercase mb-3 ${dark ? "text-cyan-300" : "gradient-text"}`}>{c.tag}</div>
           <h2 className="font-display text-2xl md:text-4xl font-extrabold leading-tight mb-4">{c.title}</h2>
-          <p className="text-white/70 leading-[1.85] max-w-md">{c.sub}</p>
+          <p className={`leading-[1.85] max-w-md ${dark ? "text-white/70" : "text-ink-muted"}`}>{c.sub}</p>
         </Reveal>
         <Reveal delay={0.1}>
-          <div className="relative mx-auto w-full max-w-[460px]">
-            {/* soft glow halo behind the render */}
-            {imgOk && (
-              <div className="pointer-events-none absolute inset-[10%] rounded-full blur-3xl opacity-70"
-                   style={{ background: "radial-gradient(circle, rgba(56,130,246,0.45), rgba(139,47,247,0.18) 55%, transparent 72%)" }} />
-            )}
-            {/* the render gently floats so a static image still feels alive */}
-            <motion.div
-              className="relative"
-              animate={reduce || !imgOk ? {} : { y: [0, -12, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <img
-                src="/images/globe-reach.png" alt={c.title}
-                onLoad={() => setImgOk(true)} onError={() => setImgOk(false)}
-                className={imgOk ? "block w-full h-auto drop-shadow-[0_24px_60px_rgba(40,90,200,0.45)]" : "hidden"}
-              />
-            </motion.div>
-            {!imgOk && <Globe />}
-          </div>
+          <Globe dark={dark} />
         </Reveal>
       </div>
     </section>
