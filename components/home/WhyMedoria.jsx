@@ -34,13 +34,19 @@ export default function WhyMedoria({ lang }) {
               <StaggerItem key={i} className={SPANS[i] || ""}>
                 <TiltCard className="h-full rounded-2xl" max={6}>
                   <SpotlightCard className="h-full rounded-2xl">
-                    <div className={`card card-hover group h-full flex flex-col ${big ? "p-8 bg-brand-violet/[0.04]" : "p-6"}`}>
+                    <div className={`card card-hover group relative overflow-hidden h-full flex flex-col ${big ? "p-8" : "p-6"}`}>
+                      {big && (
+                        <>
+                          <span className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-violet/[0.08] via-transparent to-brand-pink/[0.05]" />
+                          <Icon name={ICON_MAP[i]} size={150} strokeWidth={1} className="pointer-events-none absolute -bottom-8 -end-6 text-brand-violet/[0.07]" />
+                        </>
+                      )}
                       <div className={`relative ${big ? "w-14 h-14" : "w-12 h-12"} rounded-2xl bg-brand-violet/[0.08] text-brand-violet flex items-center justify-center mb-4 transition-all duration-300 group-hover:text-white group-hover:shadow-brand`}>
                         <span className="absolute inset-0 rounded-2xl bg-brand-gradient opacity-0 group-hover:opacity-100 transition-opacity" />
                         <Icon name={ICON_MAP[i]} size={big ? 30 : 24} strokeWidth={1.75} className="relative" />
                       </div>
-                      <h3 className={`font-display font-bold text-ink mb-2 ${big ? "text-xl md:text-2xl" : "text-[16px]"}`}>{title}</h3>
-                      <p className={`text-ink-muted leading-[1.7] ${big ? "text-[14px] md:text-[15px] max-w-md" : "text-[13px]"}`}>{desc}</p>
+                      <h3 className={`relative font-display font-bold text-ink mb-2 ${big ? "text-xl md:text-2xl" : "text-[16px]"}`}>{title}</h3>
+                      <p className={`relative text-ink-muted leading-[1.7] ${big ? "text-[14px] md:text-[15px] max-w-md" : "text-[13px]"}`}>{desc}</p>
                     </div>
                   </SpotlightCard>
                 </TiltCard>
