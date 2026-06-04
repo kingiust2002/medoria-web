@@ -1,4 +1,7 @@
-// components/home/GlobeSection.jsx — "nationwide reach" band with an interactive globe.
+// components/home/GlobeSection.jsx — "nationwide reach" band.
+// Uses /images/globe-reach.png if present; otherwise falls back to the CSS globe.
+"use client";
+import { useState } from "react";
 import { Reveal } from "@/components/shared/Reveal";
 import Globe from "@/components/shared/Globe";
 
@@ -11,6 +14,7 @@ const COPY = {
 
 export default function GlobeSection({ lang }) {
   const c = COPY[lang] || COPY.en;
+  const [imgOk, setImgOk] = useState(false);
   return (
     <section className="relative overflow-hidden bg-navy text-white py-16 md:py-24 noise">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
@@ -21,7 +25,15 @@ export default function GlobeSection({ lang }) {
           <p className="text-white/70 leading-[1.85] max-w-md">{c.sub}</p>
         </Reveal>
         <Reveal delay={0.1}>
-          <Globe />
+          <div className="relative mx-auto w-full max-w-[460px]">
+            {/* image loads hidden; on success it replaces the CSS globe with no flash */}
+            <img
+              src="/images/globe-reach.png" alt={c.title}
+              onLoad={() => setImgOk(true)} onError={() => setImgOk(false)}
+              className={imgOk ? "block w-full h-auto" : "hidden"}
+            />
+            {!imgOk && <Globe />}
+          </div>
         </Reveal>
       </div>
     </section>
