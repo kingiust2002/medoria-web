@@ -8,8 +8,6 @@ import Showcase from "@/components/home/Showcase";
 import Brands from "@/components/home/Brands";
 import Certifications from "@/components/home/Certifications";
 import WhyMedoria from "@/components/home/WhyMedoria";
-import ScrollyHowItWorks from "@/components/home/ScrollyHowItWorks";
-import GlobeSection from "@/components/home/GlobeSection";
 import Audience from "@/components/home/Audience";
 import Trust from "@/components/home/Trust";
 import Procurement from "@/components/home/Procurement";
@@ -47,8 +45,6 @@ export default function HomePage({ params }) {
       <Brands lang={lang} />
       <Certifications lang={lang} />
       <WhyMedoria lang={lang} />
-      <ScrollyHowItWorks lang={lang} />
-      <GlobeSection lang={lang} />
       <Audience lang={lang} />
       <Trust lang={lang} />
       <Procurement lang={lang} />
