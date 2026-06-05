@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.69.0",
     "@formkit/auto-animate": "^0.8.2",
     "@supabase/supabase-js": "2.45.0",
+    "@vercel/analytics": "^2.0.1",
     "cobe": "^2.0.1",
     "framer-motion": "^11.18.2",
     "lenis": "^1.1.18",

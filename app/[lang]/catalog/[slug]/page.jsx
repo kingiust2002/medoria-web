@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { getProductBySlug, imageUrl } from "@/lib/supabase";
 import { LOCALES, getTranslations, getCategoryName } from "@/lib/i18n";
+import { buildAlternates, SITE_URL } from "@/lib/seo";
 import { isOnRequest } from "@/lib/price";
 import Icon from "@/components/shared/Icon";
 import ProductDetailClient from "./ProductDetailClient";
@@ -22,10 +23,7 @@ export async function generateMetadata({ params }) {
   return {
     title: `${name}${p.sku ? ` — ${p.sku}` : ""} — ${t.common.brand}`,
     description: desc,
-    alternates: {
-      canonical: `/${lang}${path}`,
-      languages: Object.fromEntries(LOCALES.map((l) => [l, `/${l}${path}`])),
-    },
+    alternates: buildAlternates(lang, path),
     openGraph: {
       title: name,
       description: desc,
@@ -71,11 +69,22 @@ export default async function ProductPage({ params }) {
     },
   };
 
+  const crumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: t.common.home, item: `${SITE_URL}/${lang}` },
+      { "@type": "ListItem", position: 2, name: t.common.catalog, item: `${SITE_URL}/${lang}/catalog` },
+      { "@type": "ListItem", position: 3, name: getCategoryName(product.category, lang), item: `${SITE_URL}/${lang}/catalog?category=${product.category}` },
+      { "@type": "ListItem", position: 4, name },
+    ],
+  };
+
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify([jsonLd, crumbLd]) }}
       />
       <ProductDetailClient product={product} lang={lang} />
     </>

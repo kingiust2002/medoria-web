@@ -1,5 +1,6 @@
 // app/[lang]/page.jsx — Home
 import { LOCALES, getTranslations } from "@/lib/i18n";
+import { buildAlternates, ogImage } from "@/lib/seo";
 import Hero from "@/components/home/Hero";
 import StatsBar from "@/components/home/StatsBar";
 import CategoryGrid from "@/components/home/CategoryGrid";
@@ -20,15 +21,12 @@ export async function generateMetadata({ params }) {
   return {
     title: `${t.common.brand} — ${t.home.heroH1Pre} ${t.home.heroH1Accent}`,
     description: t.home.heroSub,
-    alternates: {
-      canonical: `/${lang}`,
-      languages: Object.fromEntries(LOCALES.map((l) => [l, `/${l}`])),
-    },
+    alternates: buildAlternates(lang, ""),
     openGraph: {
       title: `${t.common.brand} — ${t.home.heroH1Pre} ${t.home.heroH1Accent}`,
       description: t.home.heroSub,
       type: "website",
-      images: [{ url: "/logo.png", width: 512, height: 512, alt: t.common.brand }],
+      images: [{ url: ogImage(), width: 1200, height: 630, alt: t.common.brand }],
     },
   };
 }

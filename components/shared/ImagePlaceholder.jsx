@@ -5,6 +5,7 @@
 // broken-image icon. This is what makes the image strategy "drop-in".
 "use client";
 import { useState } from "react";
+import Image from "next/image";
 import Icon from "@/components/shared/Icon";
 
 export default function ImagePlaceholder({
@@ -22,12 +23,13 @@ export default function ImagePlaceholder({
   return (
     <div className={`relative overflow-hidden ${rounded} ${className}`}>
       {showImg ? (
-        <img
+        <Image
           src={src}
           alt={alt}
-          loading="lazy"
+          fill
+          sizes="(max-width: 768px) 100vw, 50vw"
           onError={() => setFailed(true)}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="object-cover"
         />
       ) : (
         <div className="img-ph noise group absolute inset-0 flex flex-col items-center justify-center text-center border border-white/60">
@@ -44,7 +46,7 @@ export default function ImagePlaceholder({
           )}
           {showHint && (
             <div className="relative mt-1 text-[10px] font-medium tracking-wide text-ink-faint uppercase">
-              جای عکس · image slot
+              Image slot
             </div>
           )}
         </div>
