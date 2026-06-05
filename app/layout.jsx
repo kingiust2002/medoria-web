@@ -1,12 +1,38 @@
-// app/layout.jsx
+// app/layout.jsx — root document + global metadata, OG defaults, analytics.
 import "./globals.css";
 import { Providers } from "./providers";
+import { Analytics } from "@vercel/analytics/react";
+import AnalyticsScripts from "@/components/shared/AnalyticsScripts";
+import { SITE_URL, ogImage } from "@/lib/seo";
+
+const TITLE = "Medoria — Medical Supplies & Consumables in Tajikistan";
+const DESC =
+  "Professional B2B catalog of medical consumables and supplies — gloves, masks, syringes, dressings, infusion sets and lab essentials — for clinics, pharmacies and hospitals across Tajikistan.";
 
 export const metadata = {
-  metadataBase: new URL("https://medoria.tj"),
-  title: { default: "Medoria — Medical Catalog", template: "%s | Medoria" },
-  description: "Professional B2B catalog of medical consumables for clinics, pharmacies and hospitals in Tajikistan.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: TITLE, template: "%s | Medoria" },
+  description: DESC,
+  applicationName: "Medoria",
   icons: { icon: "/logo-mark.png", apple: "/logo-mark.png" },
+  robots: { index: true, follow: true },
+  openGraph: {
+    type: "website",
+    siteName: "Medoria",
+    title: TITLE,
+    description: "B2B medical consumables and supplies across Tajikistan. Direct supply via WhatsApp & Telegram.",
+    images: [{ url: ogImage(), width: 1200, height: 630, alt: "Medoria — B2B medical supplies" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: "B2B medical consumables and supplies across Tajikistan.",
+    images: [ogImage()],
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+    yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION || undefined,
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -22,6 +48,8 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <Providers>{children}</Providers>
+        <AnalyticsScripts />
+        <Analytics />
       </body>
     </html>
   );

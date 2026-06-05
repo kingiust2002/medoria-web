@@ -1,6 +1,7 @@
 // app/[lang]/about/page.jsx
 import Link from "next/link";
 import { LOCALES, getTranslations } from "@/lib/i18n";
+import { buildAlternates } from "@/lib/seo";
 import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
@@ -19,10 +20,7 @@ export async function generateMetadata({ params }) {
   return {
     title: `${t.about.hero.title} — ${t.common.brand}`,
     description: t.about.hero.sub,
-    alternates: {
-      canonical: `/${lang}/about`,
-      languages: Object.fromEntries(LOCALES.map((l) => [l, `/${l}/about`])),
-    },
+    alternates: buildAlternates(lang, "/about"),
   };
 }
 

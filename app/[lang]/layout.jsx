@@ -1,6 +1,8 @@
-// app/[lang]/layout.jsx
+// app/[lang]/layout.jsx — per-locale shell: localized metadata defaults, Farsi
+// noindex, global Organization + WebSite (SearchAction) JSON-LD, chrome.
 import { notFound } from "next/navigation";
 import { LOCALES, LANG_META, getTranslations } from "@/lib/i18n";
+import { SEO_KEYWORDS, robotsFor, SITE_URL } from "@/lib/seo";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
@@ -15,28 +17,11 @@ export function generateMetadata({ params }) {
   const { lang } = params;
   if (!LOCALES.includes(lang)) return {};
   const t = getTranslations(lang);
-  const title = `${t.common.brand} — ${t.home.heroH1Pre} ${t.home.heroH1Accent}`;
   return {
-    title: t.common.brand,
     description: t.footer.desc,
-    keywords: ["medical supplies", "Tajikistan", "B2B", "медицинские расходники", "Душанбе", t.common.brand],
-    alternates: {
-      languages: Object.fromEntries(LOCALES.map((l) => [l, `/${l}`])),
-    },
-    openGraph: {
-      title,
-      description: t.footer.desc,
-      siteName: t.common.brand,
-      locale: lang,
-      type: "website",
-      images: [{ url: "/logo.png", width: 512, height: 512, alt: t.common.brand }],
-    },
-    twitter: {
-      card: "summary",
-      title,
-      description: t.footer.desc,
-      images: ["/logo.png"],
-    },
+    keywords: SEO_KEYWORDS[lang] || SEO_KEYWORDS.en,
+    robots: robotsFor(lang),
+    openGraph: { locale: lang },
   };
 }
 
@@ -44,6 +29,40 @@ export default function LangLayout({ children, params }) {
   const { lang } = params;
   if (!LOCALES.includes(lang)) notFound();
   const dir = LANG_META[lang].dir;
+  const t = getTranslations(lang);
+
+  const phone = process.env.NEXT_PUBLIC_PHONE;
+  const email = process.env.NEXT_PUBLIC_EMAIL;
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "Medoria",
+      url: SITE_URL,
+      logo: `${SITE_URL}/logo.png`,
+      description: t.footer.desc,
+      areaServed: { "@type": "Country", name: "Tajikistan" },
+      contactPoint: [{
+        "@type": "ContactPoint",
+        contactType: "sales",
+        availableLanguage: ["en", "ru", "tg"],
+        ...(phone ? { telephone: phone } : {}),
+        ...(email ? { email } : {}),
+      }],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "Medoria",
+      url: SITE_URL,
+      inLanguage: ["en", "ru", "tg"],
+      potentialAction: {
+        "@type": "SearchAction",
+        target: `${SITE_URL}/${lang}/catalog?q={search_term_string}`,
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ];
 
   return (
     <div lang={lang} dir={dir} className={dir === "rtl" ? "font-farsi" : "font-sans"}>
@@ -53,6 +72,7 @@ export default function LangLayout({ children, params }) {
           __html: `document.documentElement.lang="${lang}";document.documentElement.dir="${dir}";`,
         }}
       />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <ScrollProgress />
       {/* subtle film-grain overlay — premium textured feel, never blocks input */}
       <div
