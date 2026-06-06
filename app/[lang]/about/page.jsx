@@ -62,7 +62,8 @@ export default function AboutPage({ params }) {
           </div>
           {/* Company / team photo slot → /public/images/about-medical-team.jpg */}
           <ImagePlaceholder
-            src="/images/about-medical-team.jpg"
+            src="/images/about-medical-team-light.webp"
+            srcDark="/images/about-medical-team-dark.webp"
             alt={a.mission.title}
             icon="hospital"
             label={a.mission.tag}

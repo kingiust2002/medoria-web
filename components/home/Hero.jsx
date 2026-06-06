@@ -104,8 +104,15 @@ export default function Hero({ lang }) {
       <div className="absolute inset-0 -z-20 hidden dark:block" style={{
         background: "linear-gradient(135deg,#070A14 0%,#141036 45%,#0A1E45 76%,#06243B 100%)",
       }} />
-      <div className="absolute inset-0 -z-10 bg-cover bg-center hidden dark:md:block opacity-50"
-           style={{ backgroundImage: "url(/images/hero-medical-banner.jpg)" }} />
+      {/* hero banner photos — dark/light × desktop/mobile (theme via the .dark class) */}
+      <div className="absolute inset-0 -z-10 hidden dark:block" aria-hidden="true">
+        <div className="absolute inset-0 bg-cover bg-center opacity-50 md:hidden" style={{ backgroundImage: "url(/images/hero-medical-banner-mobile-dark.webp)" }} />
+        <div className="absolute inset-0 bg-cover bg-center opacity-50 hidden md:block" style={{ backgroundImage: "url(/images/hero-medical-banner-dark.webp)" }} />
+      </div>
+      <div className="absolute inset-0 -z-10 dark:hidden" aria-hidden="true">
+        <div className="absolute inset-0 bg-cover bg-center opacity-[0.25] md:hidden" style={{ backgroundImage: "url(/images/hero-medical-banner-mobile-light.webp)" }} />
+        <div className="absolute inset-0 bg-cover bg-center opacity-[0.25] hidden md:block" style={{ backgroundImage: "url(/images/hero-medical-banner-light.webp)" }} />
+      </div>
 
       {/* auroras — soft on light, neon on dark */}
       <Aurora variant="light" className="-z-10 dark:hidden opacity-90" />
