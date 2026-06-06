@@ -49,23 +49,30 @@ export default function Showcase({ lang }) {
           <p className="section-sub mx-auto">{L.sub}</p>
         </Reveal>
 
-        {/* Bento grid */}
-        <Reveal delay={0.1} className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 auto-rows-[150px] md:auto-rows-[170px]">
-          {/* Large feature tile */}
-          <div className="col-span-2 row-span-2 relative">
-            <ImagePlaceholder src="/images/showcase-warehouse-light.webp" srcDark="/images/showcase-warehouse-dark.webp" alt={L.tiles[0]} icon={TILE_ICONS[0]} label={L.tiles[0]} className="w-full h-full" rounded="rounded-3xl" />
-            {/* floating stat chip */}
-            <div className="absolute bottom-4 start-4 glass rounded-2xl px-4 py-2.5 flex items-center gap-2.5">
+        {/* Uniform gallery — identical square tiles so every photo crops the same way.
+            aspect-square lives on the ImagePlaceholder root (a normal-flow block),
+            not on the grid item, so the row can never collapse. */}
+        <Reveal delay={0.1} className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          {/* Warehouse (carries the delivery stat chip) */}
+          <div className="relative">
+            <ImagePlaceholder src="/images/showcase-warehouse-light.webp" srcDark="/images/showcase-warehouse-dark.webp" alt={L.tiles[0]} icon={TILE_ICONS[0]} label={L.tiles[0]} className="aspect-square w-full" rounded="rounded-3xl" />
+            <div className="absolute bottom-3 start-3 glass rounded-2xl px-3.5 py-2 flex items-center gap-2.5">
               <span className="w-8 h-8 rounded-xl bg-brand-gradient text-white flex items-center justify-center shadow-brand">
                 <Icon name="truck" size={16} />
               </span>
-              <span className="text-[12px] font-bold text-ink">{L.stat}</span>
+              <span className="text-[11px] font-bold text-ink leading-tight">{L.stat}</span>
             </div>
           </div>
 
-          <ImagePlaceholder src="/images/showcase-products-light.webp" srcDark="/images/showcase-products-dark.webp" alt={L.tiles[1]} icon={TILE_ICONS[1]} label={L.tiles[1]} className="col-span-1 w-full h-full" rounded="rounded-3xl" />
-          <ImagePlaceholder src="/images/showcase-qc-light.webp" srcDark="/images/showcase-qc-dark.webp" alt={L.tiles[2]} icon={TILE_ICONS[2]} label={L.tiles[2]} className="col-span-1 w-full h-full" rounded="rounded-3xl" />
-          <ImagePlaceholder src="/images/showcase-team-light.webp" srcDark="/images/showcase-team-dark.webp" alt={L.tiles[3]} icon={TILE_ICONS[3]} label={L.tiles[3]} className="col-span-2 w-full h-full" rounded="rounded-3xl" />
+          <div className="relative">
+            <ImagePlaceholder src="/images/showcase-products-light.webp" srcDark="/images/showcase-products-dark.webp" alt={L.tiles[1]} icon={TILE_ICONS[1]} label={L.tiles[1]} className="aspect-square w-full" rounded="rounded-3xl" />
+          </div>
+          <div className="relative">
+            <ImagePlaceholder src="/images/showcase-qc-light.webp" srcDark="/images/showcase-qc-dark.webp" alt={L.tiles[2]} icon={TILE_ICONS[2]} label={L.tiles[2]} className="aspect-square w-full" rounded="rounded-3xl" />
+          </div>
+          <div className="relative">
+            <ImagePlaceholder src="/images/showcase-team-light.webp" srcDark="/images/showcase-team-dark.webp" alt={L.tiles[3]} icon={TILE_ICONS[3]} label={L.tiles[3]} className="aspect-square w-full" rounded="rounded-3xl" />
+          </div>
         </Reveal>
       </div>
     </section>
