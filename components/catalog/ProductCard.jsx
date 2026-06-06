@@ -2,8 +2,9 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { imageUrl } from "@/lib/supabase";
-import { getTranslations, getCategoryName, CATEGORIES } from "@/lib/i18n";
+import { getTranslations, getCategoryName } from "@/lib/i18n";
 import { waLink, tgLink, quickInquiryMessage } from "@/lib/whatsapp";
 import { priceLabel, isOnRequest, formatPrice } from "@/lib/price";
 import { useCompare } from "@/lib/compare";
@@ -32,7 +33,6 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
   const desc = p[`description_${lang}`] || p.description_en || "";
   const img  = p.image_url ? imageUrl(p.image_url) : null;
   const onRequest = isOnRequest(p);
-  const catIcon = CATEGORIES.find((c) => c.slug === p.category)?.icon || "package";
 
   const pageUrl = typeof window !== "undefined" ? `${window.location.origin}/${lang}/catalog/${p.slug || p.id}` : `/${lang}/catalog/${p.slug || p.id}`;
   const quickMsg = quickInquiryMessage(p, lang, pageUrl);
@@ -59,9 +59,10 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
             {img ? (
               <img src={img} alt={name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Icon name={catIcon} size={40} className="text-brand-violet/25" strokeWidth={1.2} />
-              </div>
+              <>
+                <Image src="/images/product-placeholder-light.webp" alt={name} fill sizes="160px" className="object-cover dark:hidden" />
+                <Image src="/images/product-placeholder-dark.webp" alt={name} fill sizes="160px" className="object-cover hidden dark:block" />
+              </>
             )}
             {p.badge && (
               <span className={`absolute top-2 start-2 ${BADGE_STYLE[p.badge]} tag`}>{p.badge}</span>
@@ -143,10 +144,10 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
               loading="lazy"
             />
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-              <Icon name={catIcon} size={56} className="text-brand-violet/25 transition-transform duration-500 group-hover:scale-110" strokeWidth={1.1} />
-              <span className="text-[10px] text-ink-faint uppercase tracking-wider">{p.sku || p.brand || "Medoria"}</span>
-            </div>
+            <>
+              <Image src="/images/product-placeholder-light.webp" alt={name} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover transition-transform duration-500 group-hover:scale-105 dark:hidden" />
+              <Image src="/images/product-placeholder-dark.webp" alt={name} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover transition-transform duration-500 group-hover:scale-105 hidden dark:block" />
+            </>
           )}
 
           {/* Badge (start) */}

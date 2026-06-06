@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { Drawer } from "vaul";
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { getProducts, getCategories } from "@/lib/supabase";
 import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
@@ -132,6 +133,9 @@ export default function CatalogInner({ params }) {
 
       {/* Page header */}
       <div className="relative overflow-hidden bg-canvas-soft border-b border-line">
+        {/* catalog visual accent (theme-aware) */}
+        <Image src="/images/catalog-visual-light.webp" alt="" fill sizes="100vw" className="object-cover opacity-[0.12] dark:hidden pointer-events-none" />
+        <Image src="/images/catalog-visual-dark.webp" alt="" fill sizes="100vw" className="object-cover opacity-30 hidden dark:block pointer-events-none" />
         <div className="blob w-[40vw] h-[40vw] -top-1/3 -end-[6%] animate-aurora"
              style={{ background: "radial-gradient(circle, rgba(139,47,247,0.12) 0%, transparent 70%)" }} />
         <div className="blob w-[30vw] h-[30vw] top-0 start-[6%] animate-aurora"

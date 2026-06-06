@@ -10,6 +10,7 @@ import Icon from "@/components/shared/Icon";
 
 export default function ImagePlaceholder({
   src,
+  srcDark,
   alt = "",
   icon = "image",
   label,
@@ -23,14 +24,26 @@ export default function ImagePlaceholder({
   return (
     <div className={`relative overflow-hidden ${rounded} ${className}`}>
       {showImg ? (
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          sizes="(max-width: 768px) 100vw, 50vw"
-          onError={() => setFailed(true)}
-          className="object-cover"
-        />
+        <>
+          <Image
+            src={src}
+            alt={alt}
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            onError={() => setFailed(true)}
+            className={`object-cover ${srcDark ? "dark:hidden" : ""}`}
+          />
+          {srcDark && (
+            <Image
+              src={srcDark}
+              alt={alt}
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              onError={() => setFailed(true)}
+              className="object-cover hidden dark:block"
+            />
+          )}
+        </>
       ) : (
         <div className="img-ph noise group absolute inset-0 flex flex-col items-center justify-center text-center border border-white/60">
           {/* dotted frame */}
