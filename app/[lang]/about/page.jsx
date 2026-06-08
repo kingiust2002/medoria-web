@@ -8,6 +8,7 @@ import Aurora from "@/components/shared/Aurora";
 import ImagePlaceholder from "@/components/shared/ImagePlaceholder";
 import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
+import PageHeaderVisual from "@/components/shared/PageHeaderVisual";
 import SplitText from "@/components/shared/SplitText";
 
 const VALUE_ICONS = ["shield", "bolt", "check", "handshake"];
@@ -33,6 +34,7 @@ export default function AboutPage({ params }) {
     <div className="bg-canvas-soft">
       {/* Hero */}
       <section className="relative overflow-hidden bg-canvas-soft border-b border-line">
+        <PageHeaderVisual name="about-header" light={0.32} dark={0.52} />
         <Aurora />
         <div
           className="absolute inset-0 opacity-[0.5] pointer-events-none"

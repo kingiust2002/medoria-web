@@ -8,6 +8,7 @@ import { createQuoteRequest } from "@/lib/supabase";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
+import PageHeaderVisual from "@/components/shared/PageHeaderVisual";
 import SplitText from "@/components/shared/SplitText";
 
 const PHONE = process.env.NEXT_PUBLIC_PHONE || "+992900000000";
@@ -21,6 +22,7 @@ export default function ContactInner({ lang }) {
     <div className="bg-canvas-soft">
       {/* Hero */}
       <section className="bg-canvas-soft border-b border-line relative overflow-hidden">
+        <PageHeaderVisual name="contact-header" light={0.24} dark={0.5} />
         <div className="blob w-[44vw] h-[44vw] -top-1/3 -end-[6%] animate-aurora"
              style={{ background: "radial-gradient(circle, rgba(139,47,247,0.14) 0%, transparent 70%)" }} />
         <div className="blob w-[32vw] h-[32vw] top-0 start-[8%] animate-aurora"
