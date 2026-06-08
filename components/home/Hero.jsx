@@ -6,6 +6,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { motion, useReducedMotion, useMotionValue, useSpring, useTransform } from "framer-motion";
@@ -107,11 +108,11 @@ export default function Hero({ lang }) {
       {/* hero banner photos — dark/light × desktop/mobile (theme via the .dark class) */}
       <div className="absolute inset-0 -z-10 hidden dark:block" aria-hidden="true">
         <div className="absolute inset-0 bg-cover bg-center opacity-50 md:hidden" style={{ backgroundImage: "url(/images/hero-medical-banner-mobile-dark.webp)" }} />
-        <div className="absolute inset-0 bg-cover bg-center opacity-50 hidden md:block" style={{ backgroundImage: "url(/images/hero-medical-banner-dark.webp)" }} />
+        <Image src="/images/hero-medical-banner-dark.webp" alt="" fill sizes="100vw" className="hidden md:block object-cover opacity-50" style={{ objectPosition: "left center" }} />
       </div>
       <div className="absolute inset-0 -z-10 dark:hidden" aria-hidden="true">
         <div className="absolute inset-0 bg-cover bg-center opacity-[0.25] md:hidden" style={{ backgroundImage: "url(/images/hero-medical-banner-mobile-light.webp)" }} />
-        <div className="absolute inset-0 bg-cover bg-center opacity-[0.25] hidden md:block" style={{ backgroundImage: "url(/images/hero-medical-banner-light.webp)" }} />
+        <Image src="/images/hero-medical-banner-light.webp" alt="" fill sizes="100vw" className="hidden md:block object-cover opacity-[0.25]" style={{ objectPosition: "left center" }} />
       </div>
 
       {/* auroras — soft on light, neon on dark */}
