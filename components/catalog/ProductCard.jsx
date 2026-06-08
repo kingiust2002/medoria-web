@@ -2,9 +2,8 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { imageUrl } from "@/lib/supabase";
-import { getTranslations, getCategoryName } from "@/lib/i18n";
+import { getTranslations, getCategoryName, CATEGORIES } from "@/lib/i18n";
 import { waLink, tgLink, quickInquiryMessage } from "@/lib/whatsapp";
 import { priceLabel, isOnRequest, formatPrice } from "@/lib/price";
 import { useCompare } from "@/lib/compare";
@@ -32,6 +31,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
   const name = p[`name_${lang}`] || p.name_en || "";
   const desc = p[`description_${lang}`] || p.description_en || "";
   const img  = p.image_url ? imageUrl(p.image_url) : null;
+  const catIcon = (CATEGORIES.find((c) => c.slug === p.category) || {}).icon || "package";
   const onRequest = isOnRequest(p);
 
   const pageUrl = typeof window !== "undefined" ? `${window.location.origin}/${lang}/catalog/${p.slug || p.id}` : `/${lang}/catalog/${p.slug || p.id}`;
@@ -59,10 +59,12 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
             {img ? (
               <img src={img} alt={name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
             ) : (
-              <>
-                <Image src="/images/product-placeholder-light.webp" alt={name} fill sizes="160px" className="object-cover dark:hidden" />
-                <Image src="/images/product-placeholder-dark.webp" alt={name} fill sizes="160px" className="object-cover hidden dark:block" />
-              </>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="relative w-12 h-12 rounded-xl bg-surface/70 backdrop-blur flex items-center justify-center shadow-soft">
+                  <span className="absolute inset-0 rounded-xl bg-brand-gradient opacity-10" />
+                  <Icon name={catIcon} size={22} className="relative text-brand-violet/70" strokeWidth={1.5} />
+                </span>
+              </div>
             )}
             {p.badge && (
               <span className={`absolute top-2 start-2 ${BADGE_STYLE[p.badge]} tag`}>{p.badge}</span>
@@ -144,10 +146,12 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
               loading="lazy"
             />
           ) : (
-            <>
-              <Image src="/images/product-placeholder-light.webp" alt={name} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover transition-transform duration-500 group-hover:scale-105 dark:hidden" />
-              <Image src="/images/product-placeholder-dark.webp" alt={name} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover transition-transform duration-500 group-hover:scale-105 hidden dark:block" />
-            </>
+            <div className="absolute inset-0 flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
+              <span className="relative w-16 h-16 rounded-2xl bg-surface/70 backdrop-blur flex items-center justify-center shadow-soft">
+                <span className="absolute inset-0 rounded-2xl bg-brand-gradient opacity-10" />
+                <Icon name={catIcon} size={30} className="relative text-brand-violet/70" strokeWidth={1.5} />
+              </span>
+            </div>
           )}
 
           {/* Badge (start) */}

@@ -134,8 +134,10 @@ export default function CatalogInner({ params }) {
       {/* Page header */}
       <div className="relative overflow-hidden bg-canvas-soft border-b border-line">
         {/* catalog visual accent (theme-aware) */}
-        <Image src="/images/catalog-visual-light.webp" alt="" fill sizes="100vw" className="object-cover opacity-[0.12] dark:hidden pointer-events-none" />
-        <Image src="/images/catalog-visual-dark.webp" alt="" fill sizes="100vw" className="object-cover opacity-30 hidden dark:block pointer-events-none" />
+        <Image src="/images/catalog-visual-light.webp" alt="" fill sizes="100vw" className="object-cover opacity-60 dark:hidden pointer-events-none" />
+        <Image src="/images/catalog-visual-dark.webp" alt="" fill sizes="100vw" className="object-cover opacity-[0.55] hidden dark:block pointer-events-none" />
+        {/* scrim keeps the title/breadcrumb readable on the left while the photo shows */}
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-canvas-soft via-canvas-soft/75 to-canvas-soft/25 dark:via-canvas-soft/70 dark:to-transparent" />
         <div className="blob w-[40vw] h-[40vw] -top-1/3 -end-[6%] animate-aurora"
              style={{ background: "radial-gradient(circle, rgba(139,47,247,0.12) 0%, transparent 70%)" }} />
         <div className="blob w-[30vw] h-[30vw] top-0 start-[6%] animate-aurora"
