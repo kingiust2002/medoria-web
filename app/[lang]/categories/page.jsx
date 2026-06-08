@@ -7,6 +7,7 @@ import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
+import PageHeaderVisual from "@/components/shared/PageHeaderVisual";
 import SpotlightCard from "@/components/shared/SpotlightCard";
 import SplitText from "@/components/shared/SplitText";
 
@@ -45,6 +46,7 @@ export default function CategoriesPage({ params }) {
   return (
     <div className="bg-canvas-soft min-h-screen">
       <div className="bg-canvas-soft border-b border-line relative overflow-hidden">
+        <PageHeaderVisual name="categories-header" light={0.09} dark={0.15} />
         <div className="blob w-[44vw] h-[44vw] -top-1/3 -end-[6%] animate-aurora"
              style={{ background: "radial-gradient(circle, rgba(139,47,247,0.14) 0%, transparent 70%)" }} />
         <div className="blob w-[34vw] h-[34vw] top-0 start-[10%] animate-aurora"
