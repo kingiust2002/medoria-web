@@ -34,7 +34,7 @@ export default function AboutPage({ params }) {
     <div className="bg-canvas-soft">
       {/* Hero */}
       <section className="relative overflow-hidden bg-canvas-soft border-b border-line">
-        <PageHeaderVisual name="about-header" light={0.5} dark={0.6} objectPosition="75% 30%" lightFilter="saturate(1.45) contrast(1.3)" darkFilter="saturate(1.2) contrast(1.12) brightness(1.06)" tint={0.12} />
+        <PageHeaderVisual name="about-header" light={0.58} dark={0.8} objectPosition="80% 45%" lightFilter="saturate(1.1) contrast(1.06)" darkFilter="saturate(1.06)" tint={0.06} />
         <Aurora />
         <div
           className="absolute inset-0 opacity-[0.5] pointer-events-none"
