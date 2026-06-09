@@ -46,7 +46,7 @@ export default function CategoriesPage({ params }) {
   return (
     <div className="bg-canvas-soft min-h-screen">
       <div className="bg-canvas-soft border-b border-line relative overflow-hidden">
-        <PageHeaderVisual name="categories-header" light={0.09} dark={0.15} />
+        <PageHeaderVisual name="categories-header" light={0.2} dark={0.3} lightFilter="saturate(1.4) contrast(1.25)" darkFilter="saturate(1.25) contrast(1.12) brightness(1.12)" tint={0.12} />
         <div className="blob w-[44vw] h-[44vw] -top-1/3 -end-[6%] animate-aurora"
              style={{ background: "radial-gradient(circle, rgba(139,47,247,0.14) 0%, transparent 70%)" }} />
         <div className="blob w-[34vw] h-[34vw] top-0 start-[10%] animate-aurora"

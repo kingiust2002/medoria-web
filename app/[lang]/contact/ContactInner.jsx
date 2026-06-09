@@ -22,7 +22,7 @@ export default function ContactInner({ lang }) {
     <div className="bg-canvas-soft">
       {/* Hero */}
       <section className="bg-canvas-soft border-b border-line relative overflow-hidden">
-        <PageHeaderVisual name="contact-header" light={0.24} dark={0.5} />
+        <PageHeaderVisual name="contact-header" light={0.5} dark={0.5} lightFilter="saturate(1.35) contrast(1.18)" tint={0.16} />
         <div className="blob w-[44vw] h-[44vw] -top-1/3 -end-[6%] animate-aurora"
              style={{ background: "radial-gradient(circle, rgba(139,47,247,0.14) 0%, transparent 70%)" }} />
         <div className="blob w-[32vw] h-[32vw] top-0 start-[8%] animate-aurora"
