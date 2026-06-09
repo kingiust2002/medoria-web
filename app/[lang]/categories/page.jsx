@@ -51,10 +51,10 @@ export default function CategoriesPage({ params }) {
              style={{ background: "radial-gradient(circle, rgba(139,47,247,0.14) 0%, transparent 70%)" }} />
         <div className="blob w-[34vw] h-[34vw] top-0 start-[10%] animate-aurora"
              style={{ background: "radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%)", animationDelay: "4s" }} />
-        <div className="container-x py-12 md:py-16 relative">
+        <div className="container-x pt-12 md:pt-16 pb-16 md:pb-20 relative">
           <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.common.home, href: `/${lang}` }, { label: t.common.categories }]} />
           <div className="eyebrow mb-4"><span className="gradient-text">{t.home.catTag}</span></div>
-          <h1 className="section-h-lg mb-3"><SplitText text={t.categories.title} delay={0.1} /></h1>
+          <h1 className="section-h-lg mb-3 leading-[1.2] pb-1"><SplitText text={t.categories.title} delay={0.1} /></h1>
           <p className="text-base text-ink-muted max-w-xl">{t.categories.subtitle}</p>
         </div>
       </div>
