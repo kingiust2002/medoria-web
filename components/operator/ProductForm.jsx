@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
@@ -9,7 +9,11 @@ import { slugify } from "@/lib/operator/validation";
 import { PRODUCT_BADGES } from "@/lib/operator/constants";
 import ImageUploader from "@/components/operator/ImageUploader";
 import SpecsEditor from "@/components/operator/SpecsEditor";
+import QuickCategoryModal from "@/components/operator/QuickCategoryModal";
 import { SectionCard, Field, Input, Textarea, Select, Toggle, Spinner } from "@/components/operator/ui";
+
+// Unsaved NEW-product draft (never edit pages, never secrets) survives reloads.
+const DRAFT_KEY = "medoria_operator_product_draft_v1";
 
 export default function ProductForm({ mode, product, categories }) {
   const router = useRouter();
@@ -50,10 +54,89 @@ export default function ProductForm({ mode, product, categories }) {
   const [transSource, setTransSource] = useState("fa");
   const [expandLangs, setExpandLangs] = useState(false);
 
+  const [cats, setCats] = useState(categories);
+  const [catModal, setCatModal] = useState(false);
+  const [savedToast, setSavedToast] = useState(null); // { id, name }
+  const [draftFound, setDraftFound] = useState(null);
+  const [dirty, setDirty] = useState(false);
+  const addAnotherRef = useRef(false);
+  const skipDirtyRef = useRef(false);
+
   const up = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const onNameEn = (v) => { up("name_en", v); if (!slugTouched) up("slug", slugify(v)); };
 
-  const selectedCat = categories.find((c) => String(c.id) === String(f.category_id));
+  // ── draft protection (new mode only) ─────────────────────────────────────────
+  useEffect(() => {
+    if (editing) return;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d && d.f && (d.f.name_fa || d.f.name_en || d.f.sku)) setDraftFound(d);
+      }
+    } catch { /* corrupted draft — ignore */ }
+  }, [editing]);
+
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    if (!mountedRef.current) { mountedRef.current = true; return; }
+    if (skipDirtyRef.current) { skipDirtyRef.current = false; return; }
+    setDirty(true);
+  }, [f, gallery, specs, priceOnRequest]);
+
+  useEffect(() => {
+    if (editing || !dirty) return;
+    const t = setTimeout(() => {
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ f, gallery, specs, priceOnRequest, at: Date.now() })); } catch { /* storage full */ }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [f, gallery, specs, priceOnRequest, dirty, editing]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const h = (e) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
+  }, [dirty]);
+
+  function restoreDraft() {
+    const d = draftFound;
+    if (!d) return;
+    setF((s) => ({ ...s, ...d.f }));
+    setGallery(Array.isArray(d.gallery) ? d.gallery : []);
+    setSpecs(Array.isArray(d.specs) && d.specs.length ? d.specs : [{ key: "", value: "" }]);
+    setPriceOnRequest(!!d.priceOnRequest);
+    setSlugTouched(!!d.f?.slug);
+    setDraftFound(null);
+  }
+  function discardDraft() {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* no-op */ }
+    setDraftFound(null);
+  }
+  function clearDraftStorage() {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* no-op */ }
+  }
+
+  // Identity fields reset for "save & add another"; sticky defaults (category,
+  // brand, unit, price mode, stock/active/badge/min qty) carry to the next one.
+  function resetForNext() {
+    skipDirtyRef.current = true;
+    setF((s) => ({
+      ...s,
+      name_fa: "", name_en: "", name_ru: "", name_tg: "",
+      description_fa: "", description_en: "", description_ru: "", description_tg: "",
+      slug: "", sku: "", image_url: "", brochure_url: "",
+      tags: "", seo_title: "", seo_description: "",
+    }));
+    setGallery([]);
+    setSpecs([{ key: "", value: "" }]);
+    setSlugTouched(false);
+    setExpandLangs(false);
+    setDirty(false);
+    requestAnimationFrame(() => document.getElementById("pf-name-fa")?.focus());
+  }
+
+  const selectedCat = cats.find((c) => String(c.id) === String(f.category_id));
   const catLabel = selectedCat ? (selectedCat.name_fa || selectedCat.name_en || selectedCat.slug) : "بدون دسته";
   const previewImg = f.image_url ? imageUrl(f.image_url) : null;
   const priceLabel = priceOnRequest || !f.price ? "استعلام قیمت" : `$${Number(f.price).toFixed(2)}`;
@@ -105,8 +188,21 @@ export default function ProductForm({ mode, product, categories }) {
     };
     const res = editing ? await updateProduct(product.id, payload) : await createProduct(payload);
     setSaving(false);
-    if (res.ok) router.push("/operator/products");
-    else setErr(res.error || "ذخیره ناموفق بود.");
+    if (res.ok) {
+      clearDraftStorage();
+      setDirty(false);
+      if (!editing && addAnotherRef.current) {
+        addAnotherRef.current = false;
+        setSavedToast({ id: res.id, name: f.name_fa || f.name_en || res.slug });
+        resetForNext();
+        router.refresh();
+        return;
+      }
+      router.push("/operator/products");
+    } else {
+      addAnotherRef.current = false;
+      setErr(res.error || "ذخیره ناموفق بود.");
+    }
   }
 
   const SaveButton = ({ full }) => (
@@ -114,6 +210,21 @@ export default function ProductForm({ mode, product, categories }) {
       {saving ? <Spinner /> : <Icon name="save" size={18} />}
       {saving ? "در حال ذخیره…" : editing ? "ذخیره تغییرات" : "افزودن محصول"}
     </button>
+  );
+
+  // "Save & add another" — create mode only; resets identity fields, keeps
+  // sticky defaults, and keeps the operator on this page for the next product.
+  const SaveAndNextButton = ({ full }) => (
+    editing ? null : (
+      <button
+        type="submit"
+        disabled={saving}
+        onClick={() => { addAnotherRef.current = true; }}
+        className={`btn-ghost size-md ${full ? "w-full" : ""} disabled:opacity-60`}
+      >
+        <Icon name="plusCircle" size={18} /> ذخیره و افزودن بعدی
+      </button>
+    )
   );
 
   return (
@@ -124,8 +235,28 @@ export default function ProductForm({ mode, product, categories }) {
           <Link href="/operator/products" className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-line-soft shrink-0"><Icon name="chevronRight" size={18} /></Link>
           <h1 className="text-xl sm:text-2xl font-bold font-display text-ink tracking-tight truncate">{editing ? "ویرایش محصول" : "افزودن محصول"}</h1>
         </div>
-        <div className="hidden sm:block"><SaveButton /></div>
+        <div className="hidden sm:flex items-center gap-2"><SaveAndNextButton /><SaveButton /></div>
       </div>
+
+      {draftFound && (
+        <div className="mb-5 text-sm rounded-xl px-3 py-2.5 flex flex-wrap items-center gap-2 bg-primary/10 text-primary">
+          <Icon name="archive" size={16} />
+          پیش‌نویس ذخیره‌نشده‌ای از قبل وجود دارد{draftFound.f?.name_fa ? ` («${draftFound.f.name_fa}»)` : ""}.
+          <button type="button" onClick={restoreDraft} className="font-semibold underline underline-offset-2">بازیابی</button>
+          <button type="button" onClick={discardDraft} className="text-ink-muted underline underline-offset-2">حذف پیش‌نویس</button>
+        </div>
+      )}
+
+      {savedToast && (
+        <div className="mb-5 text-sm rounded-xl px-3 py-2.5 flex flex-wrap items-center gap-2 bg-ok/10 text-ok">
+          <Icon name="check" size={16} />
+          «{savedToast.name}» ذخیره شد.
+          {savedToast.id && (
+            <Link href={`/operator/products/${savedToast.id}/edit`} className="font-semibold underline underline-offset-2">ویرایش</Link>
+          )}
+          <button type="button" onClick={() => setSavedToast(null)} className="mr-auto text-ink-muted"><Icon name="close" size={14} /></button>
+        </div>
+      )}
 
       {err && (
         <div className="mb-5 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn">
@@ -139,7 +270,7 @@ export default function ProductForm({ mode, product, categories }) {
           {/* Basic */}
           <SectionCard title="اطلاعات پایه" desc="نام و مشخصات اصلی محصول" icon="package">
             <div className="grid sm:grid-cols-2 gap-4">
-              <Field label="نام محصول (فارسی)" required><Input value={f.name_fa} onChange={(e) => up("name_fa", e.target.value)} placeholder="دستکش نیتریل" /></Field>
+              <Field label="نام محصول (فارسی)" required><Input id="pf-name-fa" value={f.name_fa} onChange={(e) => up("name_fa", e.target.value)} placeholder="دستکش نیتریل" /></Field>
               <Field label="نام محصول (انگلیسی)" hint="برای ساخت آدرس صفحه استفاده می‌شود"><Input value={f.name_en} onChange={(e) => onNameEn(e.target.value)} dir="ltr" placeholder="Nitrile gloves" /></Field>
             </div>
 
@@ -171,13 +302,18 @@ export default function ProductForm({ mode, product, categories }) {
               <Field label="کد محصول (SKU)"><Input value={f.sku} onChange={(e) => up("sku", e.target.value)} dir="ltr" placeholder="GLV-001" /></Field>
               <Field label="برند"><Input value={f.brand} onChange={(e) => up("brand", e.target.value)} placeholder="MediCare" /></Field>
             </div>
-            <div className="mt-4">
-              <Field label="دسته‌بندی">
-                <Select value={f.category_id} onChange={(e) => up("category_id", e.target.value)}>
-                  <option value="">— انتخاب دسته —</option>
-                  {categories.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{c.name_fa || c.name_en || c.slug}</option>)}
-                </Select>
-              </Field>
+            <div className="mt-4 flex items-end gap-2">
+              <div className="flex-1">
+                <Field label="دسته‌بندی">
+                  <Select value={f.category_id} onChange={(e) => up("category_id", e.target.value)}>
+                    <option value="">— انتخاب دسته —</option>
+                    {cats.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{c.name_fa || c.name_en || c.slug}</option>)}
+                  </Select>
+                </Field>
+              </div>
+              <button type="button" onClick={() => setCatModal(true)} title="دسته جدید" className="btn-ghost size-md shrink-0">
+                <Icon name="plus" size={16} /> دسته جدید
+              </button>
             </div>
             <div className="mt-4">
               <Field label="توضیحات (فارسی)"><Textarea value={f.description_fa} onChange={(e) => up("description_fa", e.target.value)} rows={4} placeholder="توضیح کامل محصول…" /></Field>
@@ -247,7 +383,7 @@ export default function ProductForm({ mode, product, categories }) {
             </div>
           </SectionCard>
 
-          <div className="sm:hidden"><SaveButton full /></div>
+          <div className="sm:hidden flex flex-col gap-2"><SaveButton full /><SaveAndNextButton full /></div>
         </div>
 
         {/* ── Right: publish + live preview ───────────────────────────────── */}
@@ -259,6 +395,7 @@ export default function ProductForm({ mode, product, categories }) {
             </div>
             <div className="mt-4 flex flex-col gap-2">
               <SaveButton full />
+              <SaveAndNextButton full />
               <Link href="/operator/products" className="btn-ghost size-md w-full">انصراف</Link>
             </div>
           </SectionCard>
@@ -282,6 +419,17 @@ export default function ProductForm({ mode, product, categories }) {
           </SectionCard>
         </div>
       </div>
+
+      {catModal && (
+        <QuickCategoryModal
+          onClose={() => setCatModal(false)}
+          onCreated={(cat) => {
+            setCats((list) => [...list, cat]);
+            up("category_id", String(cat.id ?? ""));
+            setCatModal(false);
+          }}
+        />
+      )}
     </form>
   );
 }
