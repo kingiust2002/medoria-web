@@ -1,58 +1,87 @@
 // app/api/operator/login/route.js
-// Operator login: verifies the password, sets a signed HttpOnly session cookie.
+// Operator login: verifies username + password, sets a signed HttpOnly cookie.
 // Lives under /api so middleware never locale-rewrites or auth-gates it.
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { OP_COOKIE, signSession } from "@/lib/operator/session";
-import { verifyPassword, isOperatorConfigured, sessionCookieOptions } from "@/lib/operator/auth";
+import {
+  verifyCredentials,
+  isOperatorConfigured,
+  sessionCookieOptions,
+  credentialsVersion,
+  isSameOrigin,
+} from "@/lib/operator/auth";
 
 export const runtime = "nodejs";
 
-// Simple in-memory rate limit (per server instance). Resets on redeploy.
+// Best-effort brute-force protection. In-memory, so it is per server instance
+// and resets on redeploy/cold start — see the PR notes for the limitation.
 const attempts = new Map();
-const WINDOW_MS = 15 * 60 * 1000;
-const MAX_ATTEMPTS = 8;
+const WINDOW_MS = 10 * 60 * 1000;
+const MAX_ATTEMPTS = 5;
+const MAX_TRACKED = 500;
+
+// Generic on purpose: never reveal which field was wrong.
+const GENERIC_FAIL = "نام کاربری یا رمز عبور نادرست است.";
+const LOCKED_OUT = "تلاش‌های ناموفق زیاد است. چند دقیقه بعد دوباره امتحان کنید.";
+const UNAVAILABLE = "سرویس در دسترس نیست.";
 
 function clientIp(req) {
   const xff = req.headers.get("x-forwarded-for");
   return (xff ? xff.split(",")[0] : "").trim() || req.headers.get("x-real-ip") || "local";
 }
-function isRateLimited(ip) {
-  const now = Date.now();
-  const rec = attempts.get(ip);
-  if (!rec || rec.resetAt < now) { attempts.set(ip, { count: 0, resetAt: now + WINDOW_MS }); return false; }
-  return rec.count >= MAX_ATTEMPTS;
+
+function isLimited(key) {
+  const rec = attempts.get(key);
+  return Boolean(rec && rec.resetAt >= Date.now() && rec.count >= MAX_ATTEMPTS);
 }
-function recordFailure(ip) { const rec = attempts.get(ip); if (rec) rec.count += 1; }
+
+function recordFailure(key) {
+  const now = Date.now();
+  if (attempts.size >= MAX_TRACKED) {
+    for (const [k, v] of attempts) if (v.resetAt < now) attempts.delete(k);
+  }
+  const rec = attempts.get(key);
+  if (!rec || rec.resetAt < now) attempts.set(key, { count: 1, resetAt: now + WINDOW_MS });
+  else rec.count += 1;
+}
 
 export async function POST(req) {
-  const ip = clientIp(req);
-
-  // Constant-ish delay to blunt brute-force + timing analysis.
+  // Uniform delay blunts brute force and smooths timing differences.
   await new Promise((r) => setTimeout(r, 250));
 
-  if (isRateLimited(ip)) {
-    return NextResponse.json({ error: "تلاش‌های زیاد. چند دقیقه بعد دوباره امتحان کنید." }, { status: 429 });
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "درخواست نامعتبر است." }, { status: 403 });
   }
 
-  // Fail-safe: if the panel isn't configured (no secret / no hash), deny generically.
+  // Fail-safe: if the panel isn't fully configured, deny generically.
   if (!isOperatorConfigured()) {
-    return NextResponse.json({ error: "سرویس در دسترس نیست." }, { status: 503 });
+    return NextResponse.json({ error: UNAVAILABLE }, { status: 503 });
   }
 
   let body = {};
   try { body = await req.json(); } catch { /* ignore */ }
-  const password = body?.password;
+  const username = typeof body?.username === "string" ? body.username.trim() : "";
+  const password = typeof body?.password === "string" ? body.password : "";
 
-  if (!password || !verifyPassword(password)) {
-    recordFailure(ip);
-    return NextResponse.json({ error: "رمز عبور نادرست است." }, { status: 401 });
+  // Throttle by client IP and by attempted username, so neither a single IP
+  // nor a distributed attack on one account gets unlimited tries.
+  const keys = [`ip:${clientIp(req)}`];
+  if (username) keys.push(`user:${username.toLowerCase().slice(0, 64)}`);
+
+  if (keys.some(isLimited)) {
+    return NextResponse.json({ error: LOCKED_OUT }, { status: 429 });
   }
 
-  const token = await signSession({ role: "admin" });
-  if (!token) return NextResponse.json({ error: "سرویس در دسترس نیست." }, { status: 503 });
+  if (!verifyCredentials(username, password)) {
+    keys.forEach(recordFailure);
+    return NextResponse.json({ error: GENERIC_FAIL }, { status: 401 });
+  }
 
-  attempts.delete(ip);
+  const token = await signSession({ role: "admin", ver: credentialsVersion() });
+  if (!token) return NextResponse.json({ error: UNAVAILABLE }, { status: 503 });
+
+  keys.forEach((k) => attempts.delete(k));
   cookies().set(OP_COOKIE, token, sessionCookieOptions());
   return NextResponse.json({ ok: true });
 }

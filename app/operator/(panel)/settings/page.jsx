@@ -1,6 +1,6 @@
 // app/operator/(panel)/settings/page.jsx — configuration status + setup guidance.
 import Icon from "@/components/shared/Icon";
-import { hasSessionSecret, hasPasswordHash } from "@/lib/operator/auth";
+import { hasSessionSecret, hasPasswordHash, hasUsername } from "@/lib/operator/auth";
 import { isAdminConfigured } from "@/lib/operator/supabaseAdmin";
 import { PageHeader, SectionCard } from "@/components/operator/ui";
 import LogoutButton from "@/components/operator/LogoutButton";
@@ -23,6 +23,7 @@ function StatusRow({ ok, label, hint }) {
 
 export default function SettingsPage() {
   const secret = hasSessionSecret();
+  const user = hasUsername();
   const pass = hasPasswordHash();
   const admin = isAdminConfigured();
   const translate = Boolean(process.env.GOOGLE_TRANSLATE_API_KEY);
@@ -37,6 +38,7 @@ export default function SettingsPage() {
         <SectionCard title="وضعیت پیکربندی" desc="این متغیرها در محیط سرور (env) تنظیم می‌شوند" icon="shield">
           <div className="divide-y divide-line">
             <StatusRow ok={secret} label="OPERATOR_SESSION_SECRET" hint={secret ? "تنظیم شده — نشست‌ها امضا می‌شوند." : "اجباری. بدون آن ورود غیرممکن است."} />
+            <StatusRow ok={user} label="OPERATOR_USERNAME" hint={user ? "تنظیم شده." : "اجباری. نام کاربری ورود اپراتور را تنظیم کنید."} />
             <StatusRow ok={pass} label="OPERATOR_PASSWORD_HASH" hint={pass ? "تنظیم شده." : "هش رمز عبور اپراتور را تنظیم کنید."} />
             <StatusRow ok={admin} label="SUPABASE_SERVICE_ROLE_KEY" hint={admin ? "تنظیم شده — خواندن/نوشتن و آپلود فعال است." : "بدون آن نمی‌توان داده‌ها را ذخیره یا آپلود کرد."} />
             <StatusRow ok={translate} label="GOOGLE_TRANSLATE_API_KEY" hint={translate ? "دکمه‌ی ترجمه‌ی خودکار فعال است." : "اختیاری — برای دکمه‌ی ترجمه‌ی خودکار در فرم محصول."} />

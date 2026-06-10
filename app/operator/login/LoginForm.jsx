@@ -6,6 +6,7 @@ import { Spinner } from "@/components/operator/ui";
 
 export default function LoginForm() {
   const router = useRouter();
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -18,7 +19,7 @@ export default function LoginForm() {
       const res = await fetch("/api/operator/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ username, password }),
       });
       if (res.ok) {
         router.push("/operator");
@@ -49,10 +50,28 @@ export default function LoginForm() {
 
         <form onSubmit={submit} className="card p-6 flex flex-col gap-4">
           <label className="block">
+            <span className="block text-[13px] font-medium text-ink-soft mb-1.5">نام کاربری</span>
+            <input
+              type="text"
+              name="username"
+              dir="ltr"
+              autoFocus
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="input w-full"
+              placeholder="username"
+            />
+          </label>
+
+          <label className="block">
             <span className="block text-[13px] font-medium text-ink-soft mb-1.5">رمز عبور</span>
             <input
               type="password"
-              autoFocus
+              name="password"
+              dir="ltr"
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -68,7 +87,7 @@ export default function LoginForm() {
             </div>
           )}
 
-          <button type="submit" disabled={loading || !password} className="btn-primary size-lg w-full disabled:opacity-60">
+          <button type="submit" disabled={loading || !username || !password} className="btn-primary size-lg w-full disabled:opacity-60">
             {loading ? <Spinner /> : <Icon name="arrowL" size={18} />}
             {loading ? "در حال ورود…" : "ورود"}
           </button>
