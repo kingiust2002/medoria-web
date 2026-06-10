@@ -1,11 +1,16 @@
 // app/api/operator/logout/route.js — clears the operator session cookie.
+// POST-only + origin check so a cross-site page can't log the operator out.
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { OP_COOKIE } from "@/lib/operator/session";
+import { isSameOrigin } from "@/lib/operator/auth";
 
 export const runtime = "nodejs";
 
-export async function POST() {
+export async function POST(req) {
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "درخواست نامعتبر است." }, { status: 403 });
+  }
   cookies().set(OP_COOKIE, "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
