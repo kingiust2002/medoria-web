@@ -94,7 +94,7 @@ export default function HeroScene({ dark = true, rtl = false }) {
       // nudged right + lower vs. the old high/left placement so every word in
       // WORDS gathers around the card, not up in the empty corner.
       const SX = 7, SY = 7 * (tc.height / tc.width);
-      const OX = rtl ? -5 : 5, OY = 5;
+      const OX = rtl ? -7: 7, OY = 6;
       for (let i = 0; i < N; i++) {
         const p = pts.length ? pts[i % pts.length] : [tc.width / 2, tc.height / 2];
         target[i * 3] = (p[0] / tc.width - 0.5) * SX + OX + (Math.random() - 0.5) * 0.035;
