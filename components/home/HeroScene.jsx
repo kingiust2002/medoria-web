@@ -90,9 +90,11 @@ export default function HeroScene({ dark = true, rtl = false }) {
       }
       // even coverage → crisp, legible letters: shuffle then round-robin assign
       for (let i = pts.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; const tmp = pts[i]; pts[i] = pts[j]; pts[j] = tmp; }
-      // word sits in the empty UPPER band (right for LTR, left for RTL)
+      // word rests over the right-side hero card zone (mirrored for RTL):
+      // nudged right + lower vs. the old high/left placement so every word in
+      // WORDS gathers around the card, not up in the empty corner.
       const SX = 7, SY = 7 * (tc.height / tc.width);
-      const OX = rtl ? -3.2 : 3.2, OY = 6.9;
+      const OX = rtl ? -4.6 : 4.6, OY = 4.7;
       for (let i = 0; i < N; i++) {
         const p = pts.length ? pts[i % pts.length] : [tc.width / 2, tc.height / 2];
         target[i * 3] = (p[0] / tc.width - 0.5) * SX + OX + (Math.random() - 0.5) * 0.035;
