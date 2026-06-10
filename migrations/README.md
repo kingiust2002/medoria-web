@@ -12,6 +12,8 @@ idempotent (safe to re-run) and **purely additive** — none delete or overwrite
 | 4 | `04_operator_fields.sql` | `products.is_active/tags/seo_title/seo_description`, `categories.is_active/is_featured`, `set_updated_at()` trigger on products |
 | 5 | `05_quote_requests_ops.sql` | `quote_requests.internal_notes/source_url/updated_at`, expanded status set, updated_at trigger |
 | 6 | `06_storage_product_images.sql` | `product-images` storage bucket (public read) + read policy |
+| 7 | `07_unique_product_sku_slug.sql` | UNIQUE indexes on `products.slug` and case-insensitive `products.sku` (empty SKU stays allowed). **Stops safely with a list of duplicates** if production data already has any — fix those by hand, nothing is changed automatically |
+| 8 | `08_import_logs.sql` | `import_logs` history table (service-role only, RLS locked) |
 
 ## Operator panel — required migrations
 

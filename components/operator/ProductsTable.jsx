@@ -114,6 +114,8 @@ export default function ProductsTable({ products, categories }) {
   return (
     <>
       <PageHeader title="محصولات" subtitle={`${products.length} محصول`}>
+        <Link href="/operator/products/import" className="btn-ghost size-md"><Icon name="upload" size={17} /> Excel/CSV</Link>
+        <Link href="/operator/products/bulk" className="btn-ghost size-md"><Icon name="plusCircle" size={17} /> افزودن گروهی</Link>
         <Link href="/operator/products/new" className="btn-primary size-md"><Icon name="plus" size={18} /> افزودن محصول</Link>
       </PageHeader>
 

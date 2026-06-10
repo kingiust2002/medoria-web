@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
 import { imageUrl } from "@/lib/supabase";
 import { createCategory, updateCategory } from "@/lib/operator/actions";
+import { deleteCategorySafe } from "@/lib/operator/importActions";
 import { slugify } from "@/lib/operator/validation";
 import { PageHeader, Field, Input, Textarea, Select, Toggle, Badge, EmptyState, Spinner } from "@/components/operator/ui";
 
@@ -11,8 +12,11 @@ const ICON_OPTIONS = ["gloves", "mask", "stethoscope", "bandage", "thermometer",
 
 export default function CategoriesManager({ categories }) {
   const router = useRouter();
-  const [editing, setEditing] = useState(null); // null | {} (new) | category
+  const [editing, setEditing] = useState(null);   // null | {} (new) | category
+  const [deleting, setDeleting] = useState(null); // null | category
   const [msg, setMsg] = useState(null);
+
+  const flash = (text, ok) => { setMsg({ text, ok }); setTimeout(() => setMsg(null), 4000); };
 
   return (
     <>
@@ -46,6 +50,7 @@ export default function CategoriesManager({ categories }) {
                 {c.is_featured && <Badge tone="violet" className="hidden sm:inline-flex">ویژه</Badge>}
                 <Badge tone={active ? "ok" : "muted"} className="hidden sm:inline-flex">{active ? "فعال" : "غیرفعال"}</Badge>
                 <button onClick={() => setEditing(c)} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-brand-violet/10 hover:text-brand-violet transition-colors shrink-0" title="ویرایش"><Icon name="edit" size={16} /></button>
+                <button onClick={() => setDeleting(c)} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors shrink-0" title="حذف / ادغام"><Icon name="trash" size={16} /></button>
               </div>
             );
           })}
@@ -56,10 +61,80 @@ export default function CategoriesManager({ categories }) {
         <CategoryModal
           category={editing}
           onClose={() => setEditing(null)}
-          onSaved={(ok) => { setEditing(null); setMsg({ text: "دسته ذخیره شد.", ok: true }); setTimeout(() => setMsg(null), 3000); router.refresh(); }}
+          onSaved={() => { setEditing(null); flash("دسته ذخیره شد.", true); router.refresh(); }}
+        />
+      )}
+
+      {deleting !== null && (
+        <DeleteCategoryModal
+          category={deleting}
+          categories={categories}
+          onClose={() => setDeleting(null)}
+          onDone={(moved) => {
+            setDeleting(null);
+            flash(moved > 0 ? `دسته حذف شد و ${moved} محصول منتقل شد.` : "دسته حذف شد.", true);
+            router.refresh();
+          }}
         />
       )}
     </>
+  );
+}
+
+// Safe delete: a category with products cannot be removed until its products
+// are moved to another category (both category_id and the legacy slug field
+// are updated server-side). Products are never deleted.
+function DeleteCategoryModal({ category, categories, onClose, onDone }) {
+  const count = category.product_count ?? 0;
+  const others = categories.filter((c) => c.id !== category.id);
+  const [moveTo, setMoveTo] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function run() {
+    setErr("");
+    if (count > 0 && !moveTo) { setErr("اول دسته مقصد برای انتقال محصولات را انتخاب کنید."); return; }
+    setBusy(true);
+    const res = await deleteCategorySafe(category.id, count > 0 ? moveTo : undefined);
+    setBusy(false);
+    if (res.ok) onDone(res.moved || 0);
+    else setErr(res.error || "حذف ناموفق بود.");
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-navy/40 backdrop-blur-sm" />
+      <div onClick={(e) => e.stopPropagation()} dir="rtl" className="relative card p-6 w-full max-w-md animate-fade-in">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-bold text-lg text-ink">حذف دسته «{category.name_fa || category.name_en || category.slug}»</h2>
+          <button type="button" onClick={onClose} className="grid place-items-center w-9 h-9 rounded-lg hover:bg-line-soft text-ink-muted"><Icon name="close" size={18} /></button>
+        </div>
+        {err && <div className="mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn"><Icon name="alertTriangle" size={16} /> {err}</div>}
+        {count > 0 ? (
+          <>
+            <p className="text-sm text-ink-soft leading-relaxed mb-4">
+              این دسته <b>{count} محصول</b> دارد. برای حذف، اول محصول‌ها به دسته دیگری منتقل می‌شوند — هیچ محصولی حذف نمی‌شود.
+            </p>
+            <Field label="انتقال محصولات به" required>
+              <Select value={moveTo} onChange={(e) => setMoveTo(e.target.value)}>
+                <option value="">— انتخاب دسته مقصد —</option>
+                {others.map((c) => <option key={c.id} value={String(c.id)}>{c.name_fa || c.name_en || c.slug}</option>)}
+              </Select>
+            </Field>
+            <p className="text-[11px] text-ink-faint mt-2 leading-relaxed">اگر فقط می‌خواهید دسته از سایت پنهان شود، به‌جای حذف از «ویرایش → فعال» استفاده کنید.</p>
+          </>
+        ) : (
+          <p className="text-sm text-ink-soft leading-relaxed mb-2">این دسته محصولی ندارد و می‌تواند حذف شود.</p>
+        )}
+        <div className="flex gap-2 mt-5">
+          <button type="button" onClick={run} disabled={busy || (count > 0 && !moveTo)} className="btn-primary size-md flex-1 disabled:opacity-60 !bg-warn hover:!bg-warn/90">
+            {busy ? <Spinner /> : <Icon name="trash" size={17} />}
+            {busy ? "در حال انجام…" : count > 0 ? "انتقال و حذف" : "حذف دسته"}
+          </button>
+          <button type="button" onClick={onClose} className="btn-ghost size-md">انصراف</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
