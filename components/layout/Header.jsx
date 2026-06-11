@@ -108,6 +108,11 @@ export default function Header({ lang }) {
               )}
             </Link>
             <ThemeToggle lang={lang} />
+            {/* Compact language pill — mobile only */}
+            <div className="md:hidden">
+              <LanguageSwitcher lang={lang} variant="dropdown" />
+            </div>
+            {/* Inline language row — tablet/desktop */}
             <div className="hidden md:block">
               <LanguageSwitcher lang={lang} />
             </div>
@@ -159,7 +164,6 @@ export default function Header({ lang }) {
             </nav>
 
             <div className="mt-6 flex items-center gap-3">
-              <LanguageSwitcher lang={lang} />
               <ThemeToggle lang={lang} withLabel />
             </div>
 
