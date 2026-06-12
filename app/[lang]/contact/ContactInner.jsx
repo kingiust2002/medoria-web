@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { getTranslations } from "@/lib/i18n";
 import { WA_NUMBER, TG_USER, waLink, tgLink } from "@/lib/whatsapp";
-import { createQuoteRequest } from "@/lib/supabase";
+import { submitQuoteRequest } from "@/lib/actions/quote";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
@@ -159,6 +159,7 @@ function ContactForm({ lang, t }) {
   const [form, setForm] = useState({
     name: "", org: "", phone: "", email: "", subject: "", message: "",
   });
+  const [hp, setHp] = useState(""); // honeypot — humans never fill this
   const [via, setVia] = useState("whatsapp");
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
@@ -193,17 +194,17 @@ function ContactForm({ lang, t }) {
       form.email ? `\n${c.form.emailField}: ${form.email}` : "",
     ].join("");
     try {
-      await createQuoteRequest({
+      await submitQuoteRequest({
         name: form.name,
         organization: form.org,
         phone: form.phone,
-        product: null,
         message: composedMessage,
         preferredContact: via,
         language: lang,
+        website: hp,
       });
     } catch (err) {
-      console.warn("createQuoteRequest failed:", err);
+      console.warn("submitQuoteRequest failed:", err);
     }
 
     if (via === "phone") {
@@ -247,23 +248,30 @@ function ContactForm({ lang, t }) {
       <h2 className="font-display text-2xl font-bold text-ink mb-2">{c.form.title}</h2>
       <p className="text-[13px] text-ink-muted mb-6">{c.form.sub}</p>
 
+      {/* Honeypot: visually hidden, ignored by humans, filled by bots. */}
+      <input
+        type="text" value={hp} onChange={(e) => setHp(e.target.value)}
+        name="website" tabIndex={-1} autoComplete="off" aria-hidden="true"
+        className="absolute opacity-0 h-0 w-0 pointer-events-none"
+      />
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <Field label={c.form.name} required>
-          <input value={form.name} onChange={update("name")} required className="input w-full" />
+          <input value={form.name} onChange={update("name")} required maxLength={150} className="input w-full" />
         </Field>
         <Field label={c.form.org}>
-          <input value={form.org} onChange={update("org")} className="input w-full" />
+          <input value={form.org} onChange={update("org")} maxLength={160} className="input w-full" />
         </Field>
         <Field label={c.form.phone} required>
-          <input value={form.phone} onChange={update("phone")} type="tel" required className="input w-full" />
+          <input value={form.phone} onChange={update("phone")} type="tel" required maxLength={40} className="input w-full" />
         </Field>
         <Field label={c.form.emailField}>
-          <input value={form.email} onChange={update("email")} type="email" className="input w-full" />
+          <input value={form.email} onChange={update("email")} type="email" maxLength={120} className="input w-full" />
         </Field>
       </div>
 
       <Field label={c.form.subject} className="mb-4">
-        <input value={form.subject} onChange={update("subject")} className="input w-full" />
+        <input value={form.subject} onChange={update("subject")} maxLength={150} className="input w-full" />
       </Field>
 
       <Field label={c.form.message} required className="mb-5">
@@ -272,6 +280,7 @@ function ContactForm({ lang, t }) {
           onChange={update("message")}
           required
           rows={5}
+          maxLength={2000}
           className="input w-full h-auto py-3 resize-none"
         />
       </Field>

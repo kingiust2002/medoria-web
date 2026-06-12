@@ -2,7 +2,7 @@
 // noindex, global Organization + WebSite (SearchAction) JSON-LD, chrome.
 import { notFound } from "next/navigation";
 import { LOCALES, LANG_META, getTranslations } from "@/lib/i18n";
-import { SEO_KEYWORDS, robotsFor, SITE_URL } from "@/lib/seo";
+import { SEO_KEYWORDS, robotsFor, SITE_URL, safeJsonLd } from "@/lib/seo";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
@@ -72,7 +72,7 @@ export default function LangLayout({ children, params }) {
           __html: `document.documentElement.lang="${lang}";document.documentElement.dir="${dir}";`,
         }}
       />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
       <ScrollProgress />
       {/* subtle film-grain overlay — premium textured feel, never blocks input */}
       <div

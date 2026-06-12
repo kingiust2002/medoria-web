@@ -2,12 +2,21 @@
 import Link from "next/link";
 import { getProductBySlug, imageUrl } from "@/lib/supabase";
 import { LOCALES, getTranslations, getCategoryName } from "@/lib/i18n";
-import { buildAlternates, SITE_URL } from "@/lib/seo";
+import { buildAlternates, SITE_URL, safeJsonLd } from "@/lib/seo";
 import { isOnRequest } from "@/lib/price";
 import Icon from "@/components/shared/Icon";
 import ProductDetailClient from "./ProductDetailClient";
 
-export const dynamic = "force-dynamic";
+// ISR instead of force-dynamic: product pages are served from the CDN cache
+// and re-render at most every 5 minutes per slug — Supabase sees revalidations,
+// not every pageview. Operator saves still refresh instantly via revalidatePath.
+export const revalidate = 300;
+
+// Empty on purpose: no DB dependency at build time. Each slug renders on its
+// first request and is then cached/revalidated (dynamicParams default).
+export async function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata({ params }) {
   const { lang, slug } = params;
@@ -36,7 +45,9 @@ export async function generateMetadata({ params }) {
 export default async function ProductPage({ params }) {
   const { lang, slug } = params;
   const t = getTranslations(lang);
-  const product = await getProductBySlug(slug);
+  // throwOnError: a DB blip during ISR revalidation keeps the stale page
+  // alive instead of caching a "not found" for a real product.
+  const product = await getProductBySlug(slug, { throwOnError: true });
 
   if (!product) {
     return (
@@ -84,7 +95,7 @@ export default async function ProductPage({ params }) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify([jsonLd, crumbLd]) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd([jsonLd, crumbLd]) }}
       />
       <ProductDetailClient product={product} lang={lang} />
     </>
