@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Brand from "./Brand";
 import LanguageSwitcher from "./LanguageSwitcher";
+import MobilePrefs from "./MobilePrefs";
 import { getTranslations } from "@/lib/i18n";
 import { bulkInquiryMessage, waLink } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
@@ -65,8 +66,8 @@ export default function Header({ lang }) {
       >
         {/* gradient hairline */}
         <div className={`absolute inset-x-0 top-0 h-[2px] bg-brand-gradient transition-opacity ${scrolled ? "opacity-100" : "opacity-0"}`} />
-        <div className="container-x flex h-[4.5rem] items-center justify-between">
-          <Link href={`/${lang}`} className="shrink-0" aria-label="Medoria home">
+        <div className="container-x flex h-[4.5rem] items-center justify-between gap-2">
+          <Link href={`/${lang}`} className="shrink-0 min-w-0" aria-label="Medoria home">
             <Brand height={30} />
           </Link>
 
@@ -97,20 +98,24 @@ export default function Header({ lang }) {
           </nav>
 
           {/* Right side */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 shrink-0">
             <button onClick={() => setSearchOpen(true)} aria-label="Search" className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:text-brand-violet hover:bg-brand-violet/10 transition-colors">
               <Icon name="search" size={18} />
             </button>
-            <Link href={`/${lang}/wishlist`} aria-label="Wishlist" className="relative grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:text-accent-gold hover:bg-accent-gold/10 transition-colors">
+            {/* Wishlist/star — tablet/desktop only; on mobile it lives in the drawer */}
+            <Link href={`/${lang}/wishlist`} aria-label="Wishlist" className="relative hidden md:grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:text-accent-gold hover:bg-accent-gold/10 transition-colors">
               <Icon name="star" size={18} />
               {wishCount > 0 && (
                 <span className="absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-1 rounded-full bg-accent-gold text-white text-[10px] font-bold grid place-items-center tabular">{wishCount}</span>
               )}
             </Link>
-            <ThemeToggle lang={lang} />
-            {/* Compact language pill — mobile only */}
+            {/* Standalone theme toggle — tablet/desktop only (mobile uses MobilePrefs) */}
+            <div className="hidden md:block">
+              <ThemeToggle lang={lang} />
+            </div>
+            {/* Combined language + theme control — mobile only */}
             <div className="md:hidden">
-              <LanguageSwitcher lang={lang} variant="dropdown" />
+              <MobilePrefs lang={lang} />
             </div>
             {/* Inline language row — tablet/desktop */}
             <div className="hidden md:block">
@@ -161,11 +166,22 @@ export default function Header({ lang }) {
                   </Link>
                 );
               })}
-            </nav>
 
-            <div className="mt-6 flex items-center gap-3">
-              <ThemeToggle lang={lang} withLabel />
-            </div>
+              {/* Wishlist/favorites — moved here from the mobile top header */}
+              <Link
+                href={`/${lang}/wishlist`}
+                onClick={() => setOpen(false)}
+                className="py-3.5 text-base font-semibold border-b border-line flex items-center justify-between text-ink transition-colors"
+              >
+                <span className="flex items-center gap-3">
+                  <Icon name="star" size={20} className="text-accent-gold" />
+                  {{ fa: "علاقه‌مندی‌ها", ru: "Избранное", tg: "Дӯстдошта", en: "Favorites" }[lang] || "Favorites"}
+                </span>
+                {wishCount > 0 && (
+                  <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-accent-gold text-white text-[11px] font-bold grid place-items-center tabular">{wishCount}</span>
+                )}
+              </Link>
+            </nav>
 
             <a
               href={waLink(bulkInquiryMessage(lang))}
