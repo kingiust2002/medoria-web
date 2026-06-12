@@ -192,7 +192,8 @@ export async function POST(req) {
 
   const ip = clientIpFromHeaders(req.headers);
   for (const r of RATE) {
-    if (!rateLimit(`chat:${r.suffix}:${ip}`, r).ok) {
+    const rl = await rateLimit(`chat:${r.suffix}:${ip}`, r);
+    if (!rl.ok) {
       return Response.json({ error: "Too many requests" }, { status: 429 });
     }
   }
