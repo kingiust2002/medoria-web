@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getTranslations } from "@/lib/i18n";
 import { WA_NUMBER, TG_USER, waLink, tgLink } from "@/lib/whatsapp";
 import { submitQuoteRequest } from "@/lib/actions/quote";
+import MathCaptcha, { captchaErrorText } from "@/components/shared/MathCaptcha";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
@@ -160,6 +161,9 @@ function ContactForm({ lang, t }) {
     name: "", org: "", phone: "", email: "", subject: "", message: "",
   });
   const [hp, setHp] = useState(""); // honeypot — humans never fill this
+  const [captcha, setCaptcha] = useState({ token: "", answer: "" });
+  const [captchaReset, setCaptchaReset] = useState(0);
+  const [formError, setFormError] = useState(null);
   const [via, setVia] = useState("whatsapp");
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
@@ -170,6 +174,7 @@ function ContactForm({ lang, t }) {
     e.preventDefault();
     if (!form.name.trim() || sending) return;
     setSending(true);
+    setFormError(null);
 
     const msg = [
       lang === "fa" ? "📝 پیام از وب‌سایت" :
@@ -193,8 +198,9 @@ function ContactForm({ lang, t }) {
       form.message,
       form.email ? `\n${c.form.emailField}: ${form.email}` : "",
     ].join("");
+    let res = null;
     try {
-      await submitQuoteRequest({
+      res = await submitQuoteRequest({
         name: form.name,
         organization: form.org,
         phone: form.phone,
@@ -202,9 +208,20 @@ function ContactForm({ lang, t }) {
         preferredContact: via,
         language: lang,
         website: hp,
+        captchaToken: captcha.token,
+        captchaAnswer: captcha.answer,
       });
     } catch (err) {
       console.warn("submitQuoteRequest failed:", err);
+    }
+
+    // Captcha / rate-limit rejections BLOCK the submission with clear feedback.
+    // Other persistence failures stay non-blocking — messaging is the channel.
+    if (res && res.ok === false && (res.error === "captcha" || res.error === "rate_limited")) {
+      setFormError(captchaErrorText(lang, res.error));
+      if (res.error === "captcha") setCaptchaReset((k) => k + 1); // fresh question
+      setSending(false);
+      return;
     }
 
     if (via === "phone") {
@@ -286,6 +303,10 @@ function ContactForm({ lang, t }) {
       </Field>
 
       <div className="mb-5">
+        <MathCaptcha lang={lang} value={captcha} onChange={setCaptcha} resetKey={captchaReset} invalid={Boolean(formError)} />
+      </div>
+
+      <div className="mb-5">
         <label className="block text-[11px] font-semibold text-ink mb-2">{c.form.sendVia}</label>
         <div className="grid grid-cols-3 gap-2">
           {CHANNELS.map(([v, icon, fixedLabel]) => (
@@ -307,6 +328,9 @@ function ContactForm({ lang, t }) {
         </div>
       </div>
 
+      {formError ? (
+        <p role="alert" className="text-[11px] text-warn mb-3 text-center">{formError}</p>
+      ) : null}
       <button type="submit" disabled={sending} className="btn-primary size-xl w-full disabled:opacity-60">
         <Icon name={via === "phone" ? "phone" : "send"} size={16} />
         {via === "phone" ? t.quoteModal.callUs : c.form.send}

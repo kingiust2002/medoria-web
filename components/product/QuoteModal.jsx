@@ -7,6 +7,7 @@ import { waLink, tgLink } from "@/lib/whatsapp";
 import { submitQuoteRequest } from "@/lib/actions/quote";
 import { priceLabel, priceLine, isOnRequest, formatPrice } from "@/lib/price";
 import Icon from "@/components/shared/Icon";
+import MathCaptcha, { captchaErrorText } from "@/components/shared/MathCaptcha";
 
 const PHONE = process.env.NEXT_PUBLIC_PHONE || "+992900000000";
 
@@ -27,6 +28,9 @@ export default function QuoteModal({ product, lang, onClose }) {
   const [note, setNote] = useState("");
   const [via, setVia]   = useState("whatsapp");
   const [hp, setHp]     = useState(""); // honeypot — humans never fill this
+  const [captcha, setCaptcha] = useState({ token: "", answer: "" });
+  const [captchaReset, setCaptchaReset] = useState(0);
+  const [formError, setFormError] = useState(null);
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -64,19 +68,31 @@ export default function QuoteModal({ product, lang, onClose }) {
     e.preventDefault();
     if (!name.trim() || sending) return;
     setSending(true);
+    setFormError(null);
 
-    // Persist the inquiry (non-blocking — a DB failure must not stop routing).
+    let res = null;
     try {
-      await submitQuoteRequest({
+      res = await submitQuoteRequest({
         name, organization: org, phone, quantity: qty,
         productId: product?.id,
         productName: product?.name_en || product?.[`name_${lang}`] || null,
         productSku: product?.sku || null,
         message: note, preferredContact: via, language: lang,
         website: hp,
+        captchaToken: captcha.token, captchaAnswer: captcha.answer,
       });
     } catch (err) {
       console.warn("submitQuoteRequest failed:", err);
+    }
+
+    // Captcha / rate-limit rejections BLOCK the submission with clear feedback.
+    // Other persistence failures stay non-blocking — WhatsApp/Telegram is the
+    // primary channel and a DB blip must not stop the hand-off.
+    if (res && res.ok === false && (res.error === "captcha" || res.error === "rate_limited")) {
+      setFormError(captchaErrorText(lang, res.error));
+      if (res.error === "captcha") setCaptchaReset((k) => k + 1); // fresh question
+      setSending(false);
+      return;
     }
 
     // Route to the chosen channel.
@@ -170,6 +186,7 @@ export default function QuoteModal({ product, lang, onClose }) {
                 <label className="block text-[11px] font-semibold text-ink mb-1">{t.quoteModal.note}</label>
                 <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={2500} className="input w-full h-auto py-2.5 resize-none" />
               </div>
+              <MathCaptcha lang={lang} value={captcha} onChange={setCaptcha} resetKey={captchaReset} invalid={Boolean(formError)} />
               <div>
                 <label className="block text-[11px] font-semibold text-ink mb-1.5">{t.quoteModal.via}</label>
                 <div className="grid grid-cols-3 gap-2">
@@ -193,6 +210,9 @@ export default function QuoteModal({ product, lang, onClose }) {
               </div>
             </div>
 
+            {formError ? (
+              <p role="alert" className="text-[11px] text-warn mt-3 text-center">{formError}</p>
+            ) : null}
             <button type="submit" disabled={sending} className="btn-primary size-lg w-full mt-5 disabled:opacity-60">
               <Icon name={via === "phone" ? "phone" : "send"} size={15} />
               {via === "phone" ? t.quoteModal.callUs : t.quoteModal.send}
