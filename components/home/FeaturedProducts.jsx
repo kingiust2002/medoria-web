@@ -20,7 +20,10 @@ export default function FeaturedProducts({ lang }) {
   }, []);
 
   return (
-    <section className="py-14 md:py-20 bg-canvas border-y border-line">
+    // Decorative product-detail preview cards take too much vertical space on
+    // mobile — show this section on tablet/desktop only (md+). The catalog stays
+    // reachable on mobile via the hero search/CTA, category grid and menu.
+    <section className="hidden md:block py-14 md:py-20 bg-canvas border-y border-line">
       <div className="container-x">
         <Reveal className="flex items-end justify-between mb-8 md:mb-10 gap-4">
           <div>
