@@ -14,6 +14,7 @@ idempotent (safe to re-run) and **purely additive** — none delete or overwrite
 | 6 | `06_storage_product_images.sql` | `product-images` storage bucket (public read) + read policy |
 | 7 | `07_unique_product_sku_slug.sql` | UNIQUE indexes on `products.slug` and case-insensitive `products.sku` (empty SKU stays allowed). **Stops safely with a list of duplicates** if production data already has any — fix those by hand, nothing is changed automatically |
 | 8 | `08_import_logs.sql` | `import_logs` history table (service-role only, RLS locked) |
+| 9 | `09_security_hardening.sql` | Length/quantity CHECK constraints on `quote_requests` (new rows only), query indexes. Step 3 inside the file (commented out) drops the anon public-insert policy — run that step **only after** the release that submits quotes via the server action is live with `SUPABASE_SERVICE_ROLE_KEY` set |
 
 ## Operator panel — required migrations
 

@@ -13,9 +13,18 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { CATEGORIES, getCategoryName } from "@/lib/i18n";
 import { WA_NUMBER, TG_USER } from "@/lib/whatsapp";
+import { rateLimit, clientIpFromHeaders, isSameOriginRequest } from "@/lib/security/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// The route fans out to PAID LLM APIs — cap how fast and how much a single
+// client can push through it. Per-instance limits (see lib/security/rateLimit).
+const MAX_BODY_BYTES = 32 * 1024; // 12 capped messages ≈ 24 KB worst case
+const RATE = [
+  { suffix: "m", limit: 10, windowMs: 60_000 },     // burst
+  { suffix: "h", limit: 60, windowMs: 3_600_000 },  // sustained
+];
 
 const HF_ENDPOINT =
   process.env.HF_BASE_URL || "https://router.huggingface.co/v1/chat/completions";
@@ -175,6 +184,23 @@ export async function POST(req) {
   const which = provider();
   if (!which) return Response.json({ unavailable: true }, { status: 503 });
 
+  // Same-origin only: stops other websites from burning the LLM quota through
+  // visitors' browsers. Non-browser clients fall through to the rate limits.
+  if (!isSameOriginRequest(req)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const ip = clientIpFromHeaders(req.headers);
+  for (const r of RATE) {
+    if (!rateLimit(`chat:${r.suffix}:${ip}`, r).ok) {
+      return Response.json({ error: "Too many requests" }, { status: 429 });
+    }
+  }
+
+  if (Number(req.headers.get("content-length") || 0) > MAX_BODY_BYTES) {
+    return Response.json({ error: "Payload too large" }, { status: 413 });
+  }
+
   let body;
   try {
     body = await req.json();
@@ -201,6 +227,9 @@ export async function POST(req) {
         for await (const chunk of gen) controller.enqueue(encoder.encode(chunk));
         controller.close();
       } catch (err) {
+        // Server log only — the client just sees the stream abort and falls
+        // back to the WhatsApp/Telegram hand-off UI.
+        console.error("chat stream failed:", err?.message || err);
         controller.error(err);
       }
     },

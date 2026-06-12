@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { getTranslations, LANG_META } from "@/lib/i18n";
 import { waLink, tgLink } from "@/lib/whatsapp";
-import { createQuoteRequest } from "@/lib/supabase";
+import { submitQuoteRequest } from "@/lib/actions/quote";
 import { priceLabel, priceLine, isOnRequest, formatPrice } from "@/lib/price";
 import Icon from "@/components/shared/Icon";
 
@@ -26,6 +26,7 @@ export default function QuoteModal({ product, lang, onClose }) {
   const [qty, setQty]   = useState(1);
   const [note, setNote] = useState("");
   const [via, setVia]   = useState("whatsapp");
+  const [hp, setHp]     = useState(""); // honeypot — humans never fill this
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -66,12 +67,16 @@ export default function QuoteModal({ product, lang, onClose }) {
 
     // Persist the inquiry (non-blocking — a DB failure must not stop routing).
     try {
-      await createQuoteRequest({
-        name, organization: org, phone, product, quantity: qty,
+      await submitQuoteRequest({
+        name, organization: org, phone, quantity: qty,
+        productId: product?.id,
+        productName: product?.name_en || product?.[`name_${lang}`] || null,
+        productSku: product?.sku || null,
         message: note, preferredContact: via, language: lang,
+        website: hp,
       });
     } catch (err) {
-      console.warn("createQuoteRequest failed:", err);
+      console.warn("submitQuoteRequest failed:", err);
     }
 
     // Route to the chosen channel.
@@ -136,28 +141,34 @@ export default function QuoteModal({ product, lang, onClose }) {
               </div>
             </div>
 
+            {/* Honeypot: visually hidden, ignored by humans, filled by bots. */}
+            <input
+              type="text" value={hp} onChange={(e) => setHp(e.target.value)}
+              name="website" tabIndex={-1} autoComplete="off" aria-hidden="true"
+              className="absolute opacity-0 h-0 w-0 pointer-events-none"
+            />
             <div className="space-y-3">
               <div>
                 <label className="block text-[11px] font-semibold text-ink mb-1">{t.quoteModal.name} <span className="text-warn">*</span></label>
-                <input value={name} onChange={(e) => setName(e.target.value)} required className="input w-full" />
+                <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={150} className="input w-full" />
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-ink mb-1">{t.quoteModal.org}</label>
-                <input value={org} onChange={(e) => setOrg(e.target.value)} className="input w-full" />
+                <input value={org} onChange={(e) => setOrg(e.target.value)} maxLength={160} className="input w-full" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-semibold text-ink mb-1">{t.quoteModal.phone}</label>
-                  <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" className="input w-full" />
+                  <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" maxLength={40} className="input w-full" />
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-ink mb-1">{t.quoteModal.qty}</label>
-                  <input value={qty} onChange={(e) => setQty(e.target.value)} type="number" min={1} required className="input w-full tabular" />
+                  <input value={qty} onChange={(e) => setQty(e.target.value)} type="number" min={1} max={1000000} required className="input w-full tabular" />
                 </div>
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-ink mb-1">{t.quoteModal.note}</label>
-                <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} className="input w-full h-auto py-2.5 resize-none" />
+                <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={2500} className="input w-full h-auto py-2.5 resize-none" />
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-ink mb-1.5">{t.quoteModal.via}</label>
