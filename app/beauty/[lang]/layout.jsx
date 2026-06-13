@@ -14,7 +14,7 @@ export default function BeautyLayout({ children, params }) {
   if (!LOCALES.includes(lang)) notFound();
   const dir = LANG_META[lang].dir;
   return (
-    <div lang={lang} dir={dir} className={dir === "rtl" ? "font-farsi" : "font-sans"}>
+    <div lang={lang} dir={dir} data-vertical="beauty" className={dir === "rtl" ? "font-farsi" : "font-sans"}>
       <script
         dangerouslySetInnerHTML={{
           __html: `document.documentElement.lang="${lang}";document.documentElement.dir="${dir}";`,
