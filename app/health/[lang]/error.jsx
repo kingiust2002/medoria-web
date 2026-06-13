@@ -16,7 +16,9 @@ const COPY = {
 
 export default function LangError({ error, reset }) {
   const pathname = usePathname();
-  const seg = (pathname || "/").split("/")[1];
+  const parts = (pathname || "/").split("/");
+  // Under /health/{lang}/… the locale is the segment after the vertical.
+  const seg = parts[1] === "health" || parts[1] === "beauty" ? parts[2] : parts[1];
   const lang = LOCALES.includes(seg) ? seg : DEFAULT_LOCALE;
   const t = COPY[lang] || COPY.en;
 
@@ -33,7 +35,7 @@ export default function LangError({ error, reset }) {
         <p className="text-sm text-ink-muted mb-6">{t.sub}</p>
         <div className="flex items-center justify-center gap-3">
           <button onClick={() => reset()} className="btn-primary size-md">{t.retry}</button>
-          <a href={`/${lang}`} className="btn-ghost size-md">{t.home}</a>
+          <a href={`/health/${lang}`} className="btn-ghost size-md">{t.home}</a>
         </div>
       </div>
     </div>

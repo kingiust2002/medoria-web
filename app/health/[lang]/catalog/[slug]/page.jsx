@@ -54,7 +54,7 @@ export default async function ProductPage({ params }) {
       <div className="container-x py-20 text-center">
         <Icon name="package" size={48} className="text-ink-faint mx-auto mb-4" strokeWidth={1.2} />
         <p className="text-ink-muted">{t.common.noResults}</p>
-        <Link href={`/${lang}/catalog`} className="btn-primary size-md mt-6 inline-flex">
+        <Link href={`/health/${lang}/catalog`} className="btn-primary size-md mt-6 inline-flex">
           {t.product.backToCatalog.replace(/[←→]/g, "").trim()}
         </Link>
       </div>
@@ -84,9 +84,9 @@ export default async function ProductPage({ params }) {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: t.common.home, item: `${SITE_URL}/${lang}` },
-      { "@type": "ListItem", position: 2, name: t.common.catalog, item: `${SITE_URL}/${lang}/catalog` },
-      { "@type": "ListItem", position: 3, name: getCategoryName(product.category, lang), item: `${SITE_URL}/${lang}/catalog?category=${product.category}` },
+      { "@type": "ListItem", position: 1, name: t.common.home, item: `${SITE_URL}/health/${lang}` },
+      { "@type": "ListItem", position: 2, name: t.common.catalog, item: `${SITE_URL}/health/${lang}/catalog` },
+      { "@type": "ListItem", position: 3, name: getCategoryName(product.category, lang), item: `${SITE_URL}/health/${lang}/catalog?category=${product.category}` },
       { "@type": "ListItem", position: 4, name },
     ],
   };

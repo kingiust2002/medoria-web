@@ -25,11 +25,12 @@ export default function MobilePrefs({ lang }) {
   }, []);
 
   const buildHref = (newLang) => {
-    const parts = pathname.split("/");
-    // Replace the locale segment whether it is a switcher locale or a hidden
-    // one (e.g. fa reached by direct URL), otherwise inject it.
-    if (LANG_META[parts[1]]) parts[1] = newLang;
-    else parts.splice(1, 0, newLang);
+    const parts = pathname.split("/"); // ["", vertical?, lang?, …]
+    // The locale segment now sits after the vertical segment (health/beauty);
+    // swap it in place (or inject it) while keeping the current vertical.
+    const lIdx = parts[1] === "health" || parts[1] === "beauty" ? 2 : 1;
+    if (LANG_META[parts[lIdx]]) parts[lIdx] = newLang;
+    else parts.splice(lIdx, 0, newLang);
     return parts.join("/") || `/${newLang}`;
   };
   const handleLang = (code) => { try { localStorage.setItem("lang", code); } catch {} setOpen(false); };

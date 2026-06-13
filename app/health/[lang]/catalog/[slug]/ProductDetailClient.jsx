@@ -63,9 +63,9 @@ export default function ProductDetailClient({ product, lang }) {
             <Breadcrumb
               lang={lang}
               crumbs={[
-                { label: t.common.home, href: `/${lang}` },
-                { label: t.common.catalog, href: `/${lang}/catalog` },
-                { label: getCategoryName(product.category, lang), href: `/${lang}/catalog?category=${product.category}` },
+                { label: t.common.home, href: `/health/${lang}` },
+                { label: t.common.catalog, href: `/health/${lang}/catalog` },
+                { label: getCategoryName(product.category, lang), href: `/health/${lang}/catalog?category=${product.category}` },
                 { label: name },
               ]}
             />
@@ -81,7 +81,7 @@ export default function ProductDetailClient({ product, lang }) {
             <div>
               <div className="flex items-center gap-3 mb-3 flex-wrap">
                 <Link
-                  href={`/${lang}/catalog?category=${product.category}`}
+                  href={`/health/${lang}/catalog?category=${product.category}`}
                   className="text-[10px] font-bold tracking-[0.16em] gradient-text uppercase hover:opacity-70"
                 >
                   {getCategoryName(product.category, lang)}
@@ -89,7 +89,7 @@ export default function ProductDetailClient({ product, lang }) {
                 {product.brand && (
                   <>
                     <span className="text-ink-faint text-xs">·</span>
-                    <Link href={`/${lang}/catalog?brand=${encodeURIComponent(product.brand)}`}
+                    <Link href={`/health/${lang}/catalog?brand=${encodeURIComponent(product.brand)}`}
                       className="text-[12px] font-semibold text-ink-muted hover:text-brand-violet">
                       {product.brand}
                     </Link>
@@ -232,7 +232,7 @@ export default function ProductDetailClient({ product, lang }) {
           <RecentlyViewed lang={lang} excludeId={product.id} />
 
           <div className="mt-12">
-            <Link href={`/${lang}/catalog`} className="text-[13px] font-semibold text-primary hover:opacity-80 inline-flex items-center gap-1">
+            <Link href={`/health/${lang}/catalog`} className="text-[13px] font-semibold text-primary hover:opacity-80 inline-flex items-center gap-1">
               <Icon name={lang === "fa" ? "arrow" : "arrowL"} size={14} />
               {t.product.backToCatalog.replace(/[←→]/g, "").trim()}
             </Link>

@@ -52,7 +52,7 @@ export default function CategoriesPage({ params }) {
         <div className="blob w-[34vw] h-[34vw] top-0 start-[10%] animate-aurora"
              style={{ background: "radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%)", animationDelay: "4s" }} />
         <div className="container-x pt-12 md:pt-16 pb-16 md:pb-20 relative">
-          <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.common.home, href: `/${lang}` }, { label: t.common.categories }]} />
+          <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.common.home, href: `/health/${lang}` }, { label: t.common.categories }]} />
           <div className="eyebrow mb-4"><span className="gradient-text">{t.home.catTag}</span></div>
           <h1 className="section-h-lg mb-3 leading-[1.2] pb-1"><SplitText text={t.categories.title} delay={0.1} /></h1>
           <p className="text-base text-ink-muted max-w-xl">{t.categories.subtitle}</p>
@@ -65,7 +65,7 @@ export default function CategoriesPage({ params }) {
             <TiltCard key={c.slug} className="h-full rounded-2xl" max={5}>
             <SpotlightCard className="h-full rounded-2xl">
             <Link
-              href={`/${lang}/catalog?category=${c.slug}`}
+              href={`/health/${lang}/catalog?category=${c.slug}`}
               className="card card-hover overflow-hidden group flex h-full"
             >
               <div className="w-32 md:w-40 shrink-0 img-ph flex items-center justify-center text-brand-violet group-hover:bg-brand-gradient group-hover:text-white transition-colors">
@@ -98,7 +98,7 @@ export default function CategoriesPage({ params }) {
              lang === "tg" ? "Чизи лозимиро ёфта наметавонед?" :
              lang === "en" ? "Can't find what you're looking for?" : "Не нашли нужное?"}
           </p>
-          <Link href={`/${lang}/contact`} className="btn-primary size-lg">
+          <Link href={`/health/${lang}/contact`} className="btn-primary size-lg">
             {t.common.contactUs} <Icon name="arrow" size={15} />
           </Link>
         </div>

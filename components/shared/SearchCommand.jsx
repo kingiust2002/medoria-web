@@ -54,7 +54,7 @@ export default function SearchCommand({ lang, open, onClose }) {
           <Icon name="search" size={18} className="text-ink-faint shrink-0" />
           <input
             ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && q.trim()) go(`/${lang}/catalog?q=${encodeURIComponent(q.trim())}`); }}
+            onKeyDown={(e) => { if (e.key === "Enter" && q.trim()) go(`/health/${lang}/catalog?q=${encodeURIComponent(q.trim())}`); }}
             placeholder={t.ph} className="flex-1 h-14 bg-transparent outline-none text-ink text-[15px] placeholder:text-ink-faint"
           />
           <kbd className="hidden sm:block text-[10px] text-ink-faint border border-line rounded px-1.5 py-0.5">Esc</kbd>
@@ -64,7 +64,7 @@ export default function SearchCommand({ lang, open, onClose }) {
             <>
               <div className="text-[10px] font-bold uppercase tracking-wide text-ink-faint px-3 pt-2 pb-1">{t.categories}</div>
               {cats.map((c) => (
-                <button key={c.slug} onClick={() => go(`/${lang}/catalog?category=${c.slug}`)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand-violet/5 text-start transition-colors">
+                <button key={c.slug} onClick={() => go(`/health/${lang}/catalog?category=${c.slug}`)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand-violet/5 text-start transition-colors">
                   <span className="w-8 h-8 rounded-lg bg-brand-violet/10 text-brand-violet grid place-items-center shrink-0"><Icon name={c.icon} size={16} /></span>
                   <span className="text-[13px] font-medium text-ink">{getCategoryName(c.slug, lang)}</span>
                 </button>
@@ -76,7 +76,7 @@ export default function SearchCommand({ lang, open, onClose }) {
               <div className="text-[10px] font-bold uppercase tracking-wide text-ink-faint px-3 pt-3 pb-1">{t.products}</div>
               {prods.length === 0 && loaded && <div className="px-3 py-3 text-[13px] text-ink-muted">{t.none}</div>}
               {prods.map((p) => (
-                <button key={p.id} onClick={() => go(`/${lang}/catalog/${p.slug || p.id}`)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand-violet/5 text-start transition-colors">
+                <button key={p.id} onClick={() => go(`/health/${lang}/catalog/${p.slug || p.id}`)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand-violet/5 text-start transition-colors">
                   <span className="w-9 h-9 rounded-lg img-ph overflow-hidden grid place-items-center text-ink-faint shrink-0">
                     {p.image_url ? <img src={imageUrl(p.image_url)} alt="" className="w-full h-full object-cover" /> : <Icon name="package" size={16} />}
                   </span>

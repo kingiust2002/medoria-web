@@ -45,11 +45,11 @@ export default function Footer({ lang }) {
           <div className="md:col-span-3">
             <div className="text-white font-semibold text-[12px] tracking-wider uppercase mb-4">{t.footer.catalog}</div>
             <ul className="space-y-2.5">
-              <li><Link href={`/${lang}/catalog`} className="text-[13px] text-white/55 hover:text-white transition-colors">{t.common.all} {t.common.catalog.toLowerCase()}</Link></li>
-              <li><Link href={`/${lang}/categories`} className="text-[13px] text-white/55 hover:text-white transition-colors">{t.common.categories}</Link></li>
+              <li><Link href={`/health/${lang}/catalog`} className="text-[13px] text-white/55 hover:text-white transition-colors">{t.common.all} {t.common.catalog.toLowerCase()}</Link></li>
+              <li><Link href={`/health/${lang}/categories`} className="text-[13px] text-white/55 hover:text-white transition-colors">{t.common.categories}</Link></li>
               {CATEGORIES.slice(0, 3).map((c) => (
                 <li key={c.slug}>
-                  <Link href={`/${lang}/catalog?category=${c.slug}`} className="text-[13px] text-white/55 hover:text-white transition-colors">
+                  <Link href={`/health/${lang}/catalog?category=${c.slug}`} className="text-[13px] text-white/55 hover:text-white transition-colors">
                     {getCategoryName(c.slug, lang)}
                   </Link>
                 </li>
@@ -61,9 +61,9 @@ export default function Footer({ lang }) {
           <div className="md:col-span-2">
             <div className="text-white font-semibold text-[12px] tracking-wider uppercase mb-4">{t.footer.company}</div>
             <ul className="space-y-2.5">
-              <li><Link href={`/${lang}/about`} className="text-[13px] text-white/55 hover:text-white transition-colors">{t.common.about}</Link></li>
-              <li><Link href={`/${lang}/contact`} className="text-[13px] text-white/55 hover:text-white transition-colors">{t.common.contact}</Link></li>
-              <li><Link href={`/${lang}/compare`} className="text-[13px] text-white/55 hover:text-white transition-colors">{t.compare.title}</Link></li>
+              <li><Link href={`/health/${lang}/about`} className="text-[13px] text-white/55 hover:text-white transition-colors">{t.common.about}</Link></li>
+              <li><Link href={`/health/${lang}/contact`} className="text-[13px] text-white/55 hover:text-white transition-colors">{t.common.contact}</Link></li>
+              <li><Link href={`/health/${lang}/compare`} className="text-[13px] text-white/55 hover:text-white transition-colors">{t.compare.title}</Link></li>
             </ul>
           </div>
 

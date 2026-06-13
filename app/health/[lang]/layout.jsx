@@ -58,7 +58,7 @@ export default function LangLayout({ children, params }) {
       inLanguage: ["en", "ru", "tg"],
       potentialAction: {
         "@type": "SearchAction",
-        target: `${SITE_URL}/${lang}/catalog?q={search_term_string}`,
+        target: `${SITE_URL}/health/${lang}/catalog?q={search_term_string}`,
         "query-input": "required name=search_term_string",
       },
     },

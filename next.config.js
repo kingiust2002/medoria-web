@@ -58,6 +58,11 @@ const nextConfig = {
     return [
       { source: "/:path*", has: [{ type: "host", value: "medoria.com" }], destination: "https://medoria.tj/:path*", permanent: true },
       { source: "/:path*", has: [{ type: "host", value: "www.medoria.com" }], destination: "https://medoria.tj/:path*", permanent: true },
+      // Vertical-first migration: old locale-first public routes are now Medoria
+      // Health. Permanent, single-hop, path-tail preserved. The locale enum keeps
+      // these from ever matching /health, /beauty, /operator, /api or /.
+      { source: "/:lang(tg|ru|en|fa)/:path*", destination: "/health/:lang/:path*", permanent: true },
+      { source: "/:lang(tg|ru|en|fa)", destination: "/health/:lang", permanent: true },
     ];
   },
 };

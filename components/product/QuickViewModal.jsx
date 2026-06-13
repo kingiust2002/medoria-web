@@ -28,7 +28,7 @@ export default function QuickViewModal({ product, lang, onClose, onRequestQuote 
   const desc = product[`description_${lang}`] || product.description_en;
   const img = product.image_url ? imageUrl(product.image_url) : null;
   const url = typeof window !== "undefined"
-    ? `${window.location.origin}/${lang}/catalog/${product.slug || product.id}` : "";
+    ? `${window.location.origin}/health/${lang}/catalog/${product.slug || product.id}` : "";
   const inquire = (kind) => {
     const msg = productInquiryMessage(product, lang, { url });
     window.open(kind === "telegram" ? tgLink(msg) : waLink(msg), "_blank", "noopener");
@@ -111,7 +111,7 @@ export default function QuickViewModal({ product, lang, onClose, onRequestQuote 
               <button onClick={() => inquire("whatsapp")} className="btn-wa size-md"><Icon name="chat" size={15} />WhatsApp</button>
               <button onClick={() => inquire("telegram")} className="btn-tg size-md"><Icon name="send" size={15} />Telegram</button>
             </div>
-            <Link href={`/${lang}/catalog/${product.slug || product.id}`} onClick={onClose}
+            <Link href={`/health/${lang}/catalog/${product.slug || product.id}`} onClick={onClose}
               className="flex items-center justify-center gap-1 text-[12px] font-semibold text-brand-violet py-2 rounded-lg border border-brand-violet/20 hover:bg-brand-violet/10 transition-colors">
               {t.common.details} <Icon name={dir === "rtl" ? "arrowL" : "arrow"} size={13} />
             </Link>
