@@ -15,6 +15,13 @@ export function generateMetadata({ params }) {
     title: "Medoria Beauty — Coming soon",
     robots: { index: false, follow: true },
     alternates: { canonical: `/beauty/${lang}` },
+    openGraph: {
+      type: "website",
+      siteName: "Medoria",
+      title: "Medoria Beauty",
+      description: "Premium cosmetics & beauty — arriving soon.",
+      images: [{ url: "/og/beauty.jpg", width: 1200, height: 630, alt: "Medoria Beauty" }],
+    },
   };
 }
 
