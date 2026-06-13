@@ -65,7 +65,7 @@ export default function LangLayout({ children, params }) {
   ];
 
   return (
-    <div lang={lang} dir={dir} className={dir === "rtl" ? "font-farsi" : "font-sans"}>
+    <div lang={lang} dir={dir} data-vertical="health" className={dir === "rtl" ? "font-farsi" : "font-sans"}>
       {/* Set html attributes via script to avoid SSR mismatch */}
       <script
         dangerouslySetInnerHTML={{

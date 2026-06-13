@@ -193,3 +193,72 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
 .lenis.lenis-stopped { overflow: hidden; }
 .lenis.lenis-smooth iframe { pointer-events: none; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DUAL-VERTICAL TOKEN LAYER (--v-*) — additive & light-first (PR2)
+   Powers the gateway and the Medoria Beauty world WITHOUT touching the existing
+   token/brand system, so Health internal pages stay byte-identical (they never
+   read --v-*). Neutrals are RGB triplets for rgb(var(--x) / <alpha>); brand and
+   glow are ready-to-use colour strings. [data-vertical] scopes swap the values.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --v-canvas:     255 255 255;
+  --v-surface:    255 255 255;
+  --v-ink:         14  22  38;
+  --v-ink-muted:   88  99 116;
+  --v-line:       236 238 242;
+  --v-ring:       201 212 226;
+  --v-brand-from: #2563EB;
+  --v-brand-via:  #38BDF8;
+  --v-brand-to:   #5ED3C9;
+  --v-accent:     #2563EB;
+  --v-glow:       rgba(37,99,235,0.10);
+  --v-glass:      rgba(255,255,255,0.66);
+  --v-shadow:     0 30px 80px -32px rgba(15,23,42,0.28);
+}
+[data-vertical="health"] {
+  --v-canvas:     246 250 253;
+  --v-surface:    255 255 255;
+  --v-ink:         17  35  52;
+  --v-ink-muted:   71  89 107;
+  --v-line:       219 230 241;
+  --v-ring:       156 198 241;
+  --v-brand-from: #2563EB;
+  --v-brand-via:  #38BDF8;
+  --v-brand-to:   #5ED3C9;
+  --v-accent:     #2563EB;
+  --v-glow:       rgba(37,99,235,0.12);
+  --v-glass:      rgba(255,255,255,0.66);
+  --v-shadow:     0 30px 80px -32px rgba(20,52,90,0.30);
+}
+[data-vertical="beauty"] {
+  --v-canvas:     255 249 247;
+  --v-surface:    255 255 255;
+  --v-ink:         42  26  30;
+  --v-ink-muted:  106  79  84;
+  --v-line:       240 226 228;
+  --v-ring:       232 183 198;
+  --v-brand-from: #C2557A;
+  --v-brand-via:  #E2A0B4;
+  --v-brand-to:   #E9C9A0;
+  --v-accent:     #C2557A;
+  --v-glow:       rgba(225,160,180,0.16);
+  --v-glass:      rgba(255,252,250,0.70);
+  --v-shadow:     0 30px 80px -32px rgba(120,60,80,0.26);
+}
+
+@layer components {
+  /* Light-first vertical surfaces — these never read the .dark neutral tokens,
+     so the gateway and Beauty stay luminous even if dark mode was chosen. */
+  .v-scope { color-scheme: light; background: rgb(var(--v-canvas)); color: rgb(var(--v-ink)); }
+  .v-glass {
+    background: var(--v-glass);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    border: 1px solid rgb(var(--v-line));
+  }
+  .v-cta {
+    background-image: linear-gradient(120deg, var(--v-brand-from), var(--v-brand-via));
+    color: #fff;
+  }
+  .v-focus:focus-visible { outline: 2px solid var(--v-accent); outline-offset: 2px; }
+}
