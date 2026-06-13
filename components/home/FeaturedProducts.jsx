@@ -31,7 +31,7 @@ export default function FeaturedProducts({ lang }) {
             <h2 className="section-h">{t.home.featH}</h2>
             <p className="section-sub">{t.home.featSub}</p>
           </div>
-          <Link href={`/${lang}/catalog`} className="hidden sm:inline-flex items-center gap-1 text-[13px] font-semibold text-brand-violet hover:opacity-80 whitespace-nowrap">
+          <Link href={`/health/${lang}/catalog`} className="hidden sm:inline-flex items-center gap-1 text-[13px] font-semibold text-brand-violet hover:opacity-80 whitespace-nowrap">
             {t.home.featAll} <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={14} />
           </Link>
         </Reveal>
@@ -65,7 +65,7 @@ export default function FeaturedProducts({ lang }) {
         )}
 
         <div className="mt-10 text-center">
-          <Link href={`/${lang}/catalog`} className="btn-primary size-xl">
+          <Link href={`/health/${lang}/catalog`} className="btn-primary size-xl">
             {t.home.featAll}
             <Icon name="arrow" size={16} />
           </Link>

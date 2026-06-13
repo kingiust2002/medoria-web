@@ -40,7 +40,7 @@ export default function WishlistPage({ params }) {
     <div className="bg-canvas-soft min-h-screen">
       <div className="relative overflow-hidden bg-canvas-soft border-b border-line">
         <div className="container-x py-10 md:py-14">
-          <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.common.home, href: `/${lang}` }, { label: c.title }]} />
+          <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.common.home, href: `/health/${lang}` }, { label: c.title }]} />
           <div className="flex items-end justify-between gap-4 flex-wrap">
             <div>
               <h1 className="section-h-lg mb-1">{c.title}</h1>
@@ -59,7 +59,7 @@ export default function WishlistPage({ params }) {
             <div className="w-16 h-16 mx-auto rounded-2xl bg-accent-gold/10 text-accent-gold grid place-items-center mb-4"><Icon name="star" size={32} /></div>
             <h2 className="font-display text-2xl font-bold text-ink mb-2">{c.empty}</h2>
             <p className="text-ink-muted mb-6">{c.emptySub}</p>
-            <Link href={`/${lang}/catalog`} className="btn-primary size-lg">{c.go}</Link>
+            <Link href={`/health/${lang}/catalog`} className="btn-primary size-lg">{c.go}</Link>
           </div>
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">

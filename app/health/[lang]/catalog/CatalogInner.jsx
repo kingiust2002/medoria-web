@@ -143,7 +143,7 @@ export default function CatalogInner({ params }) {
         <div className="blob w-[30vw] h-[30vw] top-0 start-[6%] animate-aurora"
              style={{ background: "radial-gradient(circle, rgba(6,182,212,0.10) 0%, transparent 70%)", animationDelay: "5s" }} />
         <div className="container-x py-8 md:py-12 relative">
-          <Breadcrumb lang={lang} className="mb-3" crumbs={[{ label: t.common.home, href: `/${lang}` }, { label: t.catalog.title }]} />
+          <Breadcrumb lang={lang} className="mb-3" crumbs={[{ label: t.common.home, href: `/health/${lang}` }, { label: t.catalog.title }]} />
           <h1 className="font-display text-3xl md:text-4xl font-extrabold text-ink tracking-tight mb-2">
             {t.catalog.title}
           </h1>

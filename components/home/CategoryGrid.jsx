@@ -48,7 +48,7 @@ export default function CategoryGrid({ lang }) {
             <h2 className="section-h">{t.home.catH}</h2>
             <p className="section-sub">{t.home.catSub}</p>
           </div>
-          <Link href={`/${lang}/categories`} className="hidden sm:inline-flex items-center gap-1 text-[13px] font-semibold text-brand-violet hover:opacity-80 whitespace-nowrap">
+          <Link href={`/health/${lang}/categories`} className="hidden sm:inline-flex items-center gap-1 text-[13px] font-semibold text-brand-violet hover:opacity-80 whitespace-nowrap">
             {t.home.catAll} <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={14} />
           </Link>
         </Reveal>
@@ -59,7 +59,7 @@ export default function CategoryGrid({ lang }) {
             <TiltCard className="h-full rounded-2xl" max={8}>
             <SpotlightCard className="h-full rounded-2xl">
             <Link
-              href={`/${lang}/catalog?category=${c.slug}`}
+              href={`/health/${lang}/catalog?category=${c.slug}`}
               className="card card-hover overflow-hidden group p-5 text-center block h-full"
             >
               <div className="relative w-14 h-14 mx-auto mb-3 rounded-2xl bg-brand-violet/[0.08] text-brand-violet flex items-center justify-center transition-all duration-300 group-hover:text-white group-hover:shadow-brand group-hover:-translate-y-0.5">
@@ -79,7 +79,7 @@ export default function CategoryGrid({ lang }) {
           ))}
         </Stagger>
 
-        <Link href={`/${lang}/categories`} className="sm:hidden flex items-center justify-center gap-1 mt-6 text-[13px] font-semibold text-primary">
+        <Link href={`/health/${lang}/categories`} className="sm:hidden flex items-center justify-center gap-1 mt-6 text-[13px] font-semibold text-primary">
           {t.home.catAll} <Icon name="arrow" size={14} />
         </Link>
       </div>

@@ -30,8 +30,8 @@ export default function Header({ lang }) {
   }, []);
 
   const isActive = (href) =>
-    href === `/${lang}`
-      ? pathname === `/${lang}` || pathname === `/${lang}/`
+    href === `/health/${lang}`
+      ? pathname === `/health/${lang}` || pathname === `/health/${lang}/`
       : pathname === href || pathname.startsWith(`${href}/`);
 
   useEffect(() => {
@@ -47,11 +47,11 @@ export default function Header({ lang }) {
   }, [open]);
 
   const nav = [
-    { href: `/${lang}`,            label: t.common.home },
-    { href: `/${lang}/catalog`,    label: t.common.catalog },
-    { href: `/${lang}/categories`, label: t.common.categories },
-    { href: `/${lang}/about`,      label: t.common.about },
-    { href: `/${lang}/contact`,    label: t.common.contact },
+    { href: `/health/${lang}`,            label: t.common.home },
+    { href: `/health/${lang}/catalog`,    label: t.common.catalog },
+    { href: `/health/${lang}/categories`, label: t.common.categories },
+    { href: `/health/${lang}/about`,      label: t.common.about },
+    { href: `/health/${lang}/contact`,    label: t.common.contact },
   ];
 
   return (
@@ -67,7 +67,7 @@ export default function Header({ lang }) {
         {/* gradient hairline */}
         <div className={`absolute inset-x-0 top-0 h-[2px] bg-brand-gradient transition-opacity ${scrolled ? "opacity-100" : "opacity-0"}`} />
         <div className="container-x flex h-[4.5rem] items-center justify-between gap-2">
-          <Link href={`/${lang}`} className="shrink-0 min-w-0" aria-label="Medoria home">
+          <Link href={`/health/${lang}`} className="shrink-0 min-w-0" aria-label="Medoria home">
             <Brand height={30} />
           </Link>
 
@@ -103,7 +103,7 @@ export default function Header({ lang }) {
               <Icon name="search" size={18} />
             </button>
             {/* Wishlist/star — tablet/desktop only; on mobile it lives in the drawer */}
-            <Link href={`/${lang}/wishlist`} aria-label="Wishlist" className="relative hidden md:grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:text-accent-gold hover:bg-accent-gold/10 transition-colors">
+            <Link href={`/health/${lang}/wishlist`} aria-label="Wishlist" className="relative hidden md:grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:text-accent-gold hover:bg-accent-gold/10 transition-colors">
               <Icon name="star" size={18} />
               {wishCount > 0 && (
                 <span className="absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-1 rounded-full bg-accent-gold text-white text-[10px] font-bold grid place-items-center tabular">{wishCount}</span>
@@ -169,7 +169,7 @@ export default function Header({ lang }) {
 
               {/* Wishlist/favorites — moved here from the mobile top header */}
               <Link
-                href={`/${lang}/wishlist`}
+                href={`/health/${lang}/wishlist`}
                 onClick={() => setOpen(false)}
                 className="py-3.5 text-base font-semibold border-b border-line flex items-center justify-between text-ink transition-colors"
               >

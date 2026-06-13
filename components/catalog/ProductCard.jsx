@@ -34,7 +34,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
   const catIcon = (CATEGORIES.find((c) => c.slug === p.category) || {}).icon || "package";
   const onRequest = isOnRequest(p);
 
-  const pageUrl = typeof window !== "undefined" ? `${window.location.origin}/${lang}/catalog/${p.slug || p.id}` : `/${lang}/catalog/${p.slug || p.id}`;
+  const pageUrl = typeof window !== "undefined" ? `${window.location.origin}/health/${lang}/catalog/${p.slug || p.id}` : `/health/${lang}/catalog/${p.slug || p.id}`;
   const quickMsg = quickInquiryMessage(p, lang, pageUrl);
   const priceText = onRequest ? priceLabel(p, lang) : `${formatPrice(p.price)} / ${p.unit}`;
 
@@ -54,7 +54,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
       <>
         {quoteOpen && <QuoteModal product={p} lang={lang} onClose={() => setQuoteOpen(false)} />}
         <article className="card card-hover overflow-hidden flex gap-4 p-3 group">
-          <Link href={`/${lang}/catalog/${p.slug || p.id}`}
+          <Link href={`/health/${lang}/catalog/${p.slug || p.id}`}
                 className="block relative w-32 h-32 md:w-40 md:h-40 rounded-xl img-ph overflow-hidden shrink-0">
             {img ? (
               <img src={img} alt={name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
@@ -77,7 +77,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
               {p.brand && (<><span className="text-ink-faint">·</span><span className="text-[10px] text-ink-muted">{p.brand}</span></>)}
               {p.sku && (<><span className="text-ink-faint">·</span><span className="text-[10px] font-mono text-ink-muted tabular">{p.sku}</span></>)}
             </div>
-            <Link href={`/${lang}/catalog/${p.slug || p.id}`}>
+            <Link href={`/health/${lang}/catalog/${p.slug || p.id}`}>
               <h3 className="font-semibold text-[15px] text-ink leading-snug mb-1 hover:text-brand-violet transition-colors">{name}</h3>
             </Link>
             <p className="text-[12px] text-ink-muted leading-relaxed line-clamp-2 mb-3">{desc}</p>
@@ -120,7 +120,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
                 <a href={waLink(quickMsg)} target="_blank" rel="noopener noreferrer" className="btn-wa size-sm">
                   <Icon name="chat" size={14} /> WhatsApp
                 </a>
-                <Link href={`/${lang}/catalog/${p.slug || p.id}`} className="btn-primary size-sm">{t.common.details}</Link>
+                <Link href={`/health/${lang}/catalog/${p.slug || p.id}`} className="btn-primary size-sm">{t.common.details}</Link>
               </div>
             </div>
           </div>
@@ -137,7 +137,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
       <TiltCard className="h-full rounded-2xl" max={5}>
       <article className="card card-hover overflow-hidden flex flex-col group h-full">
         {/* Image */}
-        <Link href={`/${lang}/catalog/${p.slug || p.id}`} className="block relative aspect-[4/3] img-ph overflow-hidden">
+        <Link href={`/health/${lang}/catalog/${p.slug || p.id}`} className="block relative aspect-[4/3] img-ph overflow-hidden">
           {img ? (
             <img
               src={img}
@@ -234,7 +234,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
             )}
           </div>
 
-          <Link href={`/${lang}/catalog/${p.slug || p.id}`}>
+          <Link href={`/health/${lang}/catalog/${p.slug || p.id}`}>
             <h3 className="font-semibold text-[14px] text-ink leading-snug mb-1 hover:text-brand-violet transition-colors">
               {name}
             </h3>
@@ -286,7 +286,7 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
           </div>
 
           <Link
-            href={`/${lang}/catalog/${p.slug || p.id}`}
+            href={`/health/${lang}/catalog/${p.slug || p.id}`}
             className="mt-2 flex items-center justify-center gap-1 text-[11px] font-semibold text-brand-violet py-2 rounded-lg border border-brand-violet/20 hover:bg-brand-violet/[0.06] transition-colors"
           >
             {t.common.details} <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={12} />

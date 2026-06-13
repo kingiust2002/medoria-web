@@ -71,7 +71,7 @@ export default function Hero({ lang }) {
 
   const submit = (e) => {
     e.preventDefault();
-    router.push(q.trim() ? `/${lang}/catalog?q=${encodeURIComponent(q.trim())}` : `/${lang}/catalog`);
+    router.push(q.trim() ? `/health/${lang}/catalog?q=${encodeURIComponent(q.trim())}` : `/health/${lang}/catalog`);
   };
   const filteredCats = q.trim()
     ? CATEGORIES.filter((c) => getCategoryName(c.slug, lang).toLowerCase().includes(q.toLowerCase()))
@@ -174,7 +174,7 @@ export default function Hero({ lang }) {
               <div className="absolute top-[60px] inset-x-0 sm:end-auto sm:w-[calc(100%-9rem)] bg-surface rounded-2xl shadow-hover border border-line p-2 z-30 animate-fade-up">
                 <div className="text-[10px] font-bold tracking-wider text-ink-faint uppercase px-3 pt-1.5 pb-1">{t.common.categories}</div>
                 {filteredCats.map((c) => (
-                  <Link key={c.slug} href={`/${lang}/catalog?category=${c.slug}`} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand-violet/5 transition-colors">
+                  <Link key={c.slug} href={`/health/${lang}/catalog?category=${c.slug}`} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand-violet/5 transition-colors">
                     <div className="w-9 h-9 rounded-lg bg-brand-violet/10 text-brand-violet flex items-center justify-center"><Icon name={c.icon} size={18} strokeWidth={1.75} /></div>
                     <span className="text-[13px] font-medium text-ink">{getCategoryName(c.slug, lang)}</span>
                     <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={13} className="ms-auto text-ink-faint" />
@@ -188,7 +188,7 @@ export default function Hero({ lang }) {
           <motion.div variants={item} className="mt-5 flex flex-wrap gap-2 items-center">
             <span className="text-[11px] text-ink-faint dark:text-white/50 me-1">{t.common.categories}:</span>
             {CATEGORIES.slice(0, 4).map((c) => (
-              <Link key={c.slug} href={`/${lang}/catalog?category=${c.slug}`}
+              <Link key={c.slug} href={`/health/${lang}/catalog?category=${c.slug}`}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-medium transition-all bg-surface/80 border-line text-ink-muted hover:text-brand-violet hover:border-brand-violet/30 shadow-soft dark:bg-white/10 dark:border-white/15 dark:text-white/80 dark:hover:bg-white/20 dark:hover:text-white dark:shadow-none">
                 <Icon name={c.icon} size={12} className="text-cyan-600 dark:text-cyan-300" strokeWidth={2} />
                 {getCategoryName(c.slug, lang)}
@@ -198,7 +198,7 @@ export default function Hero({ lang }) {
 
           {/* CTAs */}
           <motion.div variants={item} className="mt-8 flex flex-wrap gap-3">
-            <Link href={`/${lang}/catalog`} className="btn-primary size-xl group">
+            <Link href={`/health/${lang}/catalog`} className="btn-primary size-xl group">
               {t.home.heroCta}
               <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={16} className="transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
             </Link>
@@ -237,7 +237,7 @@ export default function Hero({ lang }) {
               <div className="flex flex-col gap-2 mb-4">
                 {(featured.length ? featured : [null, null, null]).map((p, i) => (
                   p ? (
-                    <Link key={p.id} href={`/${lang}/catalog/${p.slug || p.id}`}
+                    <Link key={p.id} href={`/health/${lang}/catalog/${p.slug || p.id}`}
                       className="flex items-center gap-3 rounded-xl border px-3 py-2 transition-colors group bg-brand-violet/[0.05] border-line hover:bg-brand-violet/[0.09] dark:bg-white/[0.06] dark:border-white/10 dark:hover:bg-white/[0.12]">
                       <span className="w-10 h-10 rounded-lg img-ph overflow-hidden grid place-items-center shrink-0 text-brand-violet dark:text-cyan-200">
                         {p.image_url ? <img src={imageUrl(p.image_url)} alt="" className="w-full h-full object-cover" /> : <Icon name="package" size={18} strokeWidth={1.6} />}
@@ -259,7 +259,7 @@ export default function Hero({ lang }) {
                   )
                 ))}
               </div>
-              <Link href={`/${lang}/catalog`} className="flex items-center justify-between rounded-xl border px-4 py-3 transition-colors bg-brand-violet/[0.05] border-line hover:bg-brand-violet/[0.09] dark:bg-white/[0.06] dark:border-white/10 dark:hover:bg-white/[0.12]">
+              <Link href={`/health/${lang}/catalog`} className="flex items-center justify-between rounded-xl border px-4 py-3 transition-colors bg-brand-violet/[0.05] border-line hover:bg-brand-violet/[0.09] dark:bg-white/[0.06] dark:border-white/10 dark:hover:bg-white/[0.12]">
                 <span className="text-[12px] font-semibold text-ink dark:text-white">{t.home.heroCta}</span>
                 <Icon name={lang === "fa" ? "arrowL" : "arrowUpRight"} size={15} className="text-brand-violet dark:text-cyan-300" />
               </Link>

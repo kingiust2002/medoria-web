@@ -45,7 +45,7 @@ export default function ComparePage({ params }) {
           </div>
           <h1 className="font-display text-3xl font-extrabold text-ink mb-3">{t.compare.empty}</h1>
           <p className="text-ink-muted mb-8">{t.compare.emptySub}</p>
-          <Link href={`/${lang}/catalog`} className="btn-primary size-lg">
+          <Link href={`/health/${lang}/catalog`} className="btn-primary size-lg">
             {t.compare.goCatalog} →
           </Link>
         </div>
@@ -98,7 +98,7 @@ export default function ComparePage({ params }) {
         <div className="blob w-[34vw] h-[34vw] -top-1/2 -end-[4%] animate-aurora"
              style={{ background: "radial-gradient(circle, rgba(139,47,247,0.12) 0%, transparent 70%)" }} />
         <div className="container-x py-6 relative">
-          <Breadcrumb lang={lang} className="mb-3" crumbs={[{ label: t.common.home, href: `/${lang}` }, { label: t.common.catalog, href: `/${lang}/catalog` }, { label: t.compare.title }]} />
+          <Breadcrumb lang={lang} className="mb-3" crumbs={[{ label: t.common.home, href: `/health/${lang}` }, { label: t.common.catalog, href: `/health/${lang}/catalog` }, { label: t.compare.title }]} />
           <div className="flex items-end justify-between gap-4 flex-wrap">
             <div>
               <h1 className="font-display text-3xl md:text-4xl font-extrabold text-ink tracking-tight mb-1">
@@ -110,7 +110,7 @@ export default function ComparePage({ params }) {
               <button onClick={clear} className="btn-ghost size-md text-warn border-warn/20 hover:border-warn/40">
                 {t.compare.clear}
               </button>
-              <Link href={`/${lang}/catalog`} className="btn-primary size-md">
+              <Link href={`/health/${lang}/catalog`} className="btn-primary size-md">
                 + {t.compare.goCatalog}
               </Link>
             </div>
@@ -145,7 +145,7 @@ export default function ComparePage({ params }) {
                       aria-label="Remove"
                     ><Icon name="close" size={15} /></button>
 
-                    <Link href={`/${lang}/catalog/${p.slug || p.id}`} className="block">
+                    <Link href={`/health/${lang}/catalog/${p.slug || p.id}`} className="block">
                       <div className="aspect-square rounded-xl overflow-hidden img-ph mb-3">
                         {p.image_url ? (
                           <img src={imageUrl(p.image_url)} alt={name} className="w-full h-full object-cover" />
@@ -201,7 +201,7 @@ export default function ComparePage({ params }) {
         )}
 
         <div className="mt-8 text-center">
-          <Link href={`/${lang}/catalog`} className="inline-flex items-center gap-1 text-[13px] font-semibold text-brand-violet hover:opacity-80">
+          <Link href={`/health/${lang}/catalog`} className="inline-flex items-center gap-1 text-[13px] font-semibold text-brand-violet hover:opacity-80">
             <Icon name={lang === "fa" ? "arrow" : "arrowL"} size={13} /> {t.common.catalog}
           </Link>
         </div>

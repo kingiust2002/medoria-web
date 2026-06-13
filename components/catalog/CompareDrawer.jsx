@@ -115,7 +115,7 @@ export default function CompareDrawer({ lang }) {
                 ))}
               </div>
 
-              <Link href={`/${lang}/compare`} onClick={() => setOpen(false)} className="btn-primary size-lg w-full">
+              <Link href={`/health/${lang}/compare`} onClick={() => setOpen(false)} className="btn-primary size-lg w-full">
                 {t.compare.title} ({count})
                 <Icon name="arrow" size={15} />
               </Link>

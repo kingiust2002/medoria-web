@@ -41,7 +41,7 @@ export default function AboutPage({ params }) {
           style={{ backgroundImage: "radial-gradient(circle, rgba(99,102,241,0.10) 1px, transparent 1px)", backgroundSize: "26px 26px", maskImage: "radial-gradient(circle at 50% 20%, black, transparent 70%)" }}
         />
         <div className="container-x py-14 md:py-24 relative">
-          <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.common.home, href: `/${lang}` }, { label: t.common.about }]} />
+          <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.common.home, href: `/health/${lang}` }, { label: t.common.about }]} />
           <div className="eyebrow mb-4"><span className="gradient-text">{a.hero.tag}</span></div>
           <h1 className="section-h-lg mb-5 max-w-3xl"><SplitText text={a.hero.title} delay={0.1} /></h1>
           <p className="text-base md:text-lg text-ink-muted leading-relaxed max-w-2xl">
@@ -159,7 +159,7 @@ export default function AboutPage({ params }) {
               </h2>
               <p className="text-white/85 text-[14px] md:text-base mb-7">{a.cta.sub}</p>
               <div className="flex flex-wrap gap-3 justify-center">
-                <Link href={`/${lang}/catalog`} className="btn h-12 px-7 rounded-2xl text-sm bg-white text-primary font-bold hover:opacity-90">
+                <Link href={`/health/${lang}/catalog`} className="btn h-12 px-7 rounded-2xl text-sm bg-white text-primary font-bold hover:opacity-90">
                   {t.common.openCatalog}
                   <Icon name="arrow" size={15} />
                 </Link>
