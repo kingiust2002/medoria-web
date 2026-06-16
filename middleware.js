@@ -38,6 +38,7 @@ export function middleware(req) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
     VERTICALS.includes(seg1) ||
+    seg1 === "test-gateway" || // TEMP: local scroll-gateway preview — remove with the test route
     PUBLIC_FILE.test(pathname)
   ) {
     return;
