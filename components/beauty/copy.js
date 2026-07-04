@@ -18,9 +18,15 @@ export const BEAUTY_COPY = {
       title: "Се ҷаҳони зебоӣ",
       items: [
         { t: "Нигоҳубини пӯст", s: "Ритуали ҳаррӯза бо формулаҳои сабук ва самарабахш." },
-        { t: "Косметика", s: "Ранг ва ҷилои хос — барои ҳар лаҳзаи шумо." },
-        { t: "Лавозимоти зебоӣ", s: "Ҷузъиёте, ки ҳисси люксро комил мекунанд." },
+        { t: "Ороиш", s: "Ранг ва ҷилои хос — барои ҳар лаҳзаи шумо." },
+        { t: "Абзорҳои зебоӣ", s: "Ҷузъиёте, ки ҳисси люксро комил мекунанд." },
       ],
+    },
+    signature: {
+      eyebrow: "Лаҳзаи имзо",
+      title: "Коллексияи аввал",
+      p: "Як интихоби хос, ки руҳияи Medoria Beauty-ро муаррифӣ мекунад.",
+      notes: ["Ранги гарм", "Бофти сабук", "Ҳисси люкс"],
     },
     story: {
       quote: "Ҳар маҳсулот — як лаҳзаи нур.",
@@ -30,7 +36,14 @@ export const BEAUTY_COPY = {
       eyebrow: "Коллексия",
       title: "Аввалин нигоҳ",
       items: ["Ритуал", "Ранг", "Дурахш", "Нафосат", "Ҳиссиёт"],
-      soon: "Аксбардории маҳсулот ба зудӣ",
+    },
+    philosophy: {
+      eyebrow: "Фалсафаи мо",
+      pillars: [
+        { t: "Сифат", s: "Танҳо брендҳое, ки ба онҳо худамон бовар дорем." },
+        { t: "Эҳсос", s: "Зебоӣ бояд ҳис карда шавад — на танҳо дида." },
+        { t: "Эътимод", s: "Шарики касбӣ бо шартҳои шаффоф." },
+      ],
     },
     cta: {
       title: "Ҳамкории касбӣ",
@@ -55,9 +68,15 @@ export const BEAUTY_COPY = {
       title: "Три мира красоты",
       items: [
         { t: "Уход за кожей", s: "Ежедневный ритуал с лёгкими и действенными формулами." },
-        { t: "Косметика", s: "Цвет и особое сияние — для каждого вашего момента." },
-        { t: "Аксессуары красоты", s: "Детали, завершающие ощущение люкса." },
+        { t: "Макияж", s: "Цвет и особое сияние — для каждого вашего момента." },
+        { t: "Бьюти-инструменты", s: "Детали, завершающие ощущение люкса." },
       ],
+    },
+    signature: {
+      eyebrow: "Фирменный момент",
+      title: "Первая коллекция",
+      p: "Особый выбор, задающий настроение Medoria Beauty.",
+      notes: ["Тёплый тон", "Лёгкая текстура", "Ощущение люкса"],
     },
     story: {
       quote: "Каждый продукт — мгновение света.",
@@ -67,7 +86,14 @@ export const BEAUTY_COPY = {
       eyebrow: "Коллекция",
       title: "Первый взгляд",
       items: ["Ритуал", "Цвет", "Сияние", "Изящество", "Чувство"],
-      soon: "Съёмка продуктов уже скоро",
+    },
+    philosophy: {
+      eyebrow: "Наша философия",
+      pillars: [
+        { t: "Качество", s: "Только бренды, которым мы доверяем сами." },
+        { t: "Чувство", s: "Красоту нужно ощущать — не только видеть." },
+        { t: "Доверие", s: "Профессиональное партнёрство на прозрачных условиях." },
+      ],
     },
     cta: {
       title: "Профессиональное сотрудничество",
@@ -92,9 +118,15 @@ export const BEAUTY_COPY = {
       title: "Three worlds of beauty",
       items: [
         { t: "Skincare", s: "A daily ritual of light, effective formulations." },
-        { t: "Cosmetics", s: "Colour and a signature glow for every moment." },
-        { t: "Beauty Essentials", s: "The details that complete the feeling of luxe." },
+        { t: "Makeup", s: "Colour and a signature glow for every moment." },
+        { t: "Beauty Tools", s: "The details that complete the feeling of luxe." },
       ],
+    },
+    signature: {
+      eyebrow: "Signature moment",
+      title: "The first collection",
+      p: "A single considered selection that sets the mood of Medoria Beauty.",
+      notes: ["Warm tone", "Light texture", "A feeling of luxe"],
     },
     story: {
       quote: "Every product is a moment of light.",
@@ -104,7 +136,14 @@ export const BEAUTY_COPY = {
       eyebrow: "Collection",
       title: "A first look",
       items: ["Ritual", "Colour", "Radiance", "Elegance", "Feeling"],
-      soon: "Product photography coming soon",
+    },
+    philosophy: {
+      eyebrow: "Our philosophy",
+      pillars: [
+        { t: "Quality", s: "Only brands we trust ourselves." },
+        { t: "Feeling", s: "Beauty should be felt, not only seen." },
+        { t: "Trust", s: "Professional partnership on transparent terms." },
+      ],
     },
     cta: {
       title: "Professional partnership",
@@ -130,8 +169,14 @@ export const BEAUTY_COPY = {
       items: [
         { t: "مراقبت پوست", s: "آیینی روزانه با فرمول‌های سبک و مؤثر." },
         { t: "آرایش", s: "رنگ و درخششی خاص برای هر لحظه." },
-        { t: "ملزومات زیبایی", s: "جزئیاتی که حس لوکس را کامل می‌کنند." },
+        { t: "ابزارهای زیبایی", s: "جزئیاتی که حس لوکس را کامل می‌کنند." },
       ],
+    },
+    signature: {
+      eyebrow: "لحظه امضا",
+      title: "نخستین کالکشن",
+      p: "انتخابی خاص که حال‌وهوای مدوریا بیوتی را تعریف می‌کند.",
+      notes: ["تُن گرم", "بافت سبک", "حس لوکس"],
     },
     story: {
       quote: "هر محصول، لحظه‌ای از نور است.",
@@ -141,7 +186,14 @@ export const BEAUTY_COPY = {
       eyebrow: "کالکشن",
       title: "نگاه نخست",
       items: ["آیین", "رنگ", "درخشش", "ظرافت", "احساس"],
-      soon: "عکاسی محصولات به‌زودی",
+    },
+    philosophy: {
+      eyebrow: "فلسفه ما",
+      pillars: [
+        { t: "کیفیت", s: "فقط برندهایی که خودمان به آن‌ها اعتماد داریم." },
+        { t: "احساس", s: "زیبایی باید حس شود، نه فقط دیده شود." },
+        { t: "اعتماد", s: "همکاری حرفه‌ای با شرایط شفاف." },
+      ],
     },
     cta: { title: "همکاری حرفه‌ای", sub: "برای پرایس‌لیست و شرایط همکاری با ما در تماس باشید." },
     footer: { tag: "زیبایی حرفه‌ای" },

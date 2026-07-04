@@ -1,14 +1,18 @@
-// app/beauty/[lang]/page.jsx — Medoria Beauty landing (pre-launch).
-// Full nude-luxury editorial experience: hero, marquee, collections, story,
-// scroll-scrubbed lookbook, partnership CTA. Still noindex until real product
-// photography + catalog land — flip robots when Beauty officially launches.
+// app/beauty/[lang]/page.jsx — MEDORIA BEAUTY · NUDE COPPER EDITORIAL.
+// Sequence: Hero → Marquee → Three Worlds → Signature Moment → Story →
+// Lookbook → Philosophy → Partnership CTA (footer in layout). Campaign media
+// resolves server-side from /public/beauty via the asset manifest; every slot
+// degrades to an elegant satin fallback. Still noindex until launch approval.
 import { notFound } from "next/navigation";
 import { LOCALES } from "@/lib/i18n";
+import { getBeautyMedia } from "@/lib/beauty/media";
 import BeautyHero from "@/components/beauty/BeautyHero";
 import BeautyMarquee from "@/components/beauty/BeautyMarquee";
 import BeautyCollections from "@/components/beauty/BeautyCollections";
+import BeautySignature from "@/components/beauty/BeautySignature";
 import BeautyStory from "@/components/beauty/BeautyStory";
 import BeautyLookbook from "@/components/beauty/BeautyLookbook";
+import BeautyPhilosophy from "@/components/beauty/BeautyPhilosophy";
 import BeautyCTA from "@/components/beauty/BeautyCTA";
 import { beautyCopy } from "@/components/beauty/copy";
 
@@ -37,14 +41,17 @@ export function generateMetadata({ params }) {
 export default function BeautyPage({ params }) {
   const { lang } = params;
   if (!LOCALES.includes(lang)) notFound();
+  const media = getBeautyMedia();
   return (
     <>
-      <BeautyHero lang={lang} />
+      <BeautyHero lang={lang} media={media} />
       <BeautyMarquee lang={lang} />
-      <BeautyCollections lang={lang} />
-      <BeautyStory lang={lang} />
-      <BeautyLookbook lang={lang} />
-      <BeautyCTA lang={lang} />
+      <BeautyCollections lang={lang} media={media} />
+      <BeautySignature lang={lang} media={media} />
+      <BeautyStory lang={lang} media={media} />
+      <BeautyLookbook lang={lang} media={media} />
+      <BeautyPhilosophy lang={lang} />
+      <BeautyCTA lang={lang} media={media} />
     </>
   );
 }
