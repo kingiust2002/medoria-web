@@ -236,23 +236,28 @@ html.lenis, html.lenis body { height: auto; }
   --v-shadow:     0 30px 80px -32px rgba(20,52,90,0.30);
 }
 [data-vertical="beauty"] {
-  --v-canvas:     255 250 248;
+  /* Nude-luxury palette drawn from the Medoria Beauty logo: deep navy ink,
+     copper/champagne ribbon, warm ivory canvas. Light-first. */
+  --v-canvas:     252 247 242;
   --v-surface:    255 255 255;
-  --v-ink:         43  26  29;
-  --v-ink-muted:   98  72  78;
-  --v-line:       240 225 228;
-  --v-ring:       228 175 192;
-  --v-brand-from: #B8395E;
-  --v-brand-via:  #D98FA5;
-  --v-brand-to:   #E7C597;
-  --v-accent:     #B8395E;
-  --v-glow:       rgba(184,57,94,0.14);
-  --v-glass:      rgba(255,252,250,0.72);
-  --v-carmine:    #9E2A4E;
-  --v-blush:      #FCE7EC;
-  --v-plum:       #5D3F48;
+  --v-ink:         24  31  58;
+  --v-ink-muted:  105  92  84;
+  --v-line:       238 226 214;
+  --v-ring:       214 169 128;
+  --v-brand-from: #B26E3F;
+  --v-brand-via:  #D99A66;
+  --v-brand-to:   #EFC894;
+  --v-accent:     #9C5B2D;
+  --v-glow:       rgba(216,154,102,0.16);
+  --v-glass:      rgba(255,252,248,0.72);
+  --v-carmine:    #9C5B2D;
+  --v-blush:      #F7E7D7;
+  --v-plum:       #3A3450;
+  --v-navy:       #1C2951;
+  --v-copper:     #C87D4E;
+  --v-champagne:  #F3DCBE;
   --v-sheen:      rgba(255,255,255,0.60);
-  --v-shadow:     0 30px 80px -32px rgba(120,60,80,0.26);
+  --v-shadow:     0 30px 80px -32px rgba(112,74,44,0.28);
 }
 
 @layer components {
@@ -280,6 +285,20 @@ html.lenis, html.lenis body { height: auto; }
   /* Slow champagne sheen for the Beauty scene; neutralised under the global
      prefers-reduced-motion rule above (animation effectively disabled). */
   .v-shimmer { animation: v-sheen 7s ease-in-out infinite; will-change: transform, opacity; }
+  /* Satin panel — warm nude gradient used for editorial image slots until real
+     photography drops into /public/images/beauty/. */
+  .v-satin {
+    background:
+      radial-gradient(120% 90% at 20% 10%, rgba(255,255,255,0.85), transparent 55%),
+      radial-gradient(130% 100% at 85% 90%, var(--v-glow), transparent 60%),
+      linear-gradient(160deg, #FBF3EA 0%, #F3DCBE 52%, #E8C39A 100%);
+  }
+  .v-float { animation: v-float 9s ease-in-out infinite; }
+}
+
+@keyframes v-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-14px) rotate(3deg); }
 }
 
 @keyframes v-sheen {

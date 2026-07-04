@@ -9,7 +9,7 @@ export default function BeautyScene() {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(64% 52% at 30% 24%, rgba(184,57,94,0.16), transparent 60%)," +
+            "radial-gradient(64% 52% at 30% 24%, rgba(200,125,78,0.16), transparent 60%)," +
             "radial-gradient(58% 50% at 74% 40%, rgba(231,197,151,0.22), transparent 64%)",
         }}
       />
@@ -27,16 +27,16 @@ export default function BeautyScene() {
         <defs>
           <linearGradient id="bglass" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#FFFFFF" stopOpacity="0.5" />
-            <stop offset="1" stopColor="#FCE7EC" stopOpacity="0.12" />
+            <stop offset="1" stopColor="#F7E7D7" stopOpacity="0.12" />
           </linearGradient>
           <linearGradient id="bedge" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0" stopColor="#E7C597" />
             <stop offset="0.5" stopColor="#FFFFFF" />
-            <stop offset="1" stopColor="#E4AFC0" />
+            <stop offset="1" stopColor="#D6A980" />
           </linearGradient>
           <linearGradient id="blit" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#FFF1D9" />
-            <stop offset="1" stopColor="#B8395E" stopOpacity="0" />
+            <stop offset="0" stopColor="#F9E8CF" />
+            <stop offset="1" stopColor="#9C5B2D" stopOpacity="0" />
           </linearGradient>
         </defs>
         <g strokeWidth="1">
@@ -54,7 +54,7 @@ export default function BeautyScene() {
       {/* soft base reflection */}
       <div
         className="absolute inset-x-0 bottom-0 h-1/3"
-        style={{ background: "linear-gradient(180deg, transparent, rgba(184,57,94,0.08))" }}
+        style={{ background: "linear-gradient(180deg, transparent, rgba(156,91,45,0.08))" }}
       />
     </div>
   );

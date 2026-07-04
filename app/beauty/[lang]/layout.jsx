@@ -1,9 +1,10 @@
-// app/beauty/[lang]/layout.jsx — Medoria Beauty shell.
-// PR1 ships a placeholder; the curated luxury landing + sector-scoped catalog
-// arrive in a later PR. Kept deliberately minimal (own chrome, not the Health
-// header/footer) and locale-validated like the Health tree.
+// app/beauty/[lang]/layout.jsx — Medoria Beauty shell: nude-luxury tokens
+// (data-vertical), the Playfair Display serif (latin + cyrillic, loaded only on
+// beauty routes), and the world's own slim chrome. Locale-validated like Health.
 import { notFound } from "next/navigation";
 import { LOCALES, LANG_META } from "@/lib/i18n";
+import BeautyHeader from "@/components/beauty/BeautyHeader";
+import BeautyFooter from "@/components/beauty/BeautyFooter";
 
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
@@ -14,13 +15,25 @@ export default function BeautyLayout({ children, params }) {
   if (!LOCALES.includes(lang)) notFound();
   const dir = LANG_META[lang].dir;
   return (
-    <div lang={lang} dir={dir} data-vertical="beauty" className={dir === "rtl" ? "font-farsi" : "font-sans"}>
+    <div
+      lang={lang}
+      dir={dir}
+      data-vertical="beauty"
+      className={`v-scope ${dir === "rtl" ? "font-farsi" : "font-sans"}`}
+    >
+      {/* Beauty display serif — scoped to this route tree only */}
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap"
+      />
       <script
         dangerouslySetInnerHTML={{
           __html: `document.documentElement.lang="${lang}";document.documentElement.dir="${dir}";`,
         }}
       />
-      {children}
+      <BeautyHeader lang={lang} />
+      <main>{children}</main>
+      <BeautyFooter lang={lang} />
     </div>
   );
 }
