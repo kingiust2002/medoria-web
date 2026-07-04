@@ -1,96 +1,95 @@
 "use client";
-// components/beauty/BeautyLookbook.jsx — the signature moment: a pinned,
-// scroll-scrubbed horizontal lookbook. The section is tall (260vh); a sticky
-// viewport maps vertical scroll to horizontal travel across five editorial
-// plates (satin slots awaiting real photography). Scrolling back reverses it.
-// Mobile (<lg) and reduced-motion get a swipeable static strip instead.
-import { useRef } from "react";
+// components/beauty/BeautyLookbook.jsx — horizontal editorial lookbook.
+// SINGLE rendering (no duplicate DOM): SSR + mobile + reduced-motion get a
+// native snap-scroll strip; after hydration, viewports ≥1024px with fine
+// pointers upgrade to the pinned scroll-scrub sequence (vertical scroll drives
+// horizontal travel, fully reversible, no scroll trap — the section simply
+// ends). Plates are data-driven and accept campaign images via the manifest.
+import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
-import BeautyMark from "./BeautyMark";
+import MediaSlot from "./MediaSlot";
 import { beautyCopy } from "./copy";
 
-function Plate({ label, index, soon }) {
+function Plate({ label, index, src }) {
   return (
-    <figure className="relative h-[62vh] w-[78vw] shrink-0 overflow-hidden rounded-[1.8rem] sm:w-[44vw] lg:h-[66vh] lg:w-[30vw]">
-      <div className="v-satin absolute inset-0" />
-      <div className="absolute inset-0 grid place-items-center">
-        <BeautyMark size={96} opacity={0.32} />
-      </div>
-      <span
-        aria-hidden="true"
-        className="absolute inset-x-0 top-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, var(--v-sheen), transparent)" }}
+    <figure className="relative h-[58vh] w-[76vw] shrink-0 snap-center overflow-hidden rounded-[1.6rem] sm:w-[44vw] lg:h-[64vh] lg:w-[30vw]">
+      <MediaSlot
+        src={src}
+        alt={label}
+        sizes="(min-width: 1024px) 30vw, 76vw"
+        markSize={84}
+        className="absolute inset-0"
       />
-      <figcaption className="absolute inset-x-0 bottom-0 flex items-end justify-between p-6">
-        <span className="font-beauty text-2xl font-bold italic" style={{ color: "var(--v-navy)" }}>
+      <figcaption
+        className="v-glass absolute inset-x-4 bottom-4 flex items-baseline justify-between rounded-lg px-4 py-2.5"
+      >
+        <span className="font-beauty text-xl font-semibold italic" style={{ color: "var(--v-navy)" }}>
           {label}
         </span>
         <span className="font-beauty text-sm italic" style={{ color: "var(--v-accent)" }}>
           0{index + 1}
         </span>
       </figcaption>
-      <span className="sr-only">{soon}</span>
     </figure>
   );
 }
 
-export default function BeautyLookbook({ lang }) {
+export default function BeautyLookbook({ lang, media }) {
   const t = beautyCopy(lang).lookbook;
   const reduced = useReducedMotion();
+  const [pinned, setPinned] = useState(false);
+
+  useEffect(() => {
+    if (reduced) return;
+    const mq = window.matchMedia("(min-width: 1024px) and (pointer: fine)");
+    const apply = () => setPinned(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, [reduced]);
+
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
-  const x = useTransform(scrollYProgress, [0, 1], ["2%", "-64%"]);
+  const x = useTransform(scrollYProgress, [0, 1], ["2%", "-62%"]);
+
+  const srcs = t.items.map((_, i) => media?.[`lookbook-0${i + 1}`]);
 
   const Head = (
     <div className="mx-auto mb-10 flex max-w-6xl flex-col gap-3 px-5">
       <span className="text-[11px] font-bold uppercase tracking-[0.3em]" style={{ color: "var(--v-accent)" }}>
         {t.eyebrow}
       </span>
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="font-beauty text-4xl font-bold tracking-tight sm:text-5xl" style={{ color: "var(--v-navy)" }}>
-          {t.title}
-        </h2>
-        <span className="text-[12px]" style={{ color: "rgb(var(--v-ink-muted))" }}>{t.soon}</span>
-      </div>
+      <h2 className="font-beauty text-4xl font-semibold tracking-tight sm:text-5xl" style={{ color: "var(--v-navy)" }}>
+        {t.title}
+      </h2>
     </div>
   );
 
-  // Static/mobile/reduced-motion variant: swipeable strip, no pinning.
-  const StaticStrip = (
-    <div dir="ltr" className="no-scrollbar flex gap-5 overflow-x-auto px-5 pb-4">
-      {t.items.map((label, i) => (
-        <Plate key={i} label={label} index={i} soon={t.soon} />
-      ))}
-    </div>
-  );
-
-  if (reduced) {
+  if (!pinned) {
+    // Native, accessible horizontal strip (SSR default; mobile; reduced motion).
+    // Peeking next plate + snap points provide the progression affordance.
     return (
       <section className="py-24">
         {Head}
-        {StaticStrip}
+        <div dir="ltr" className="no-scrollbar flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-4">
+          {t.items.map((label, i) => (
+            <Plate key={i} label={label} index={i} src={srcs[i]} />
+          ))}
+        </div>
       </section>
     );
   }
 
   return (
-    <>
-      {/* pinned scrub — desktop */}
-      <section ref={ref} className="relative hidden h-[260vh] lg:block">
-        <div className="sticky top-0 flex h-screen flex-col justify-center overflow-hidden">
-          {Head}
-          <motion.div dir="ltr" style={{ x }} className="flex w-max gap-6 ps-10 will-change-transform">
-            {t.items.map((label, i) => (
-              <Plate key={i} label={label} index={i} soon={t.soon} />
-            ))}
-          </motion.div>
-        </div>
-      </section>
-      {/* swipe strip — below lg */}
-      <section className="py-24 lg:hidden">
+    <section ref={ref} className="relative h-[240vh]">
+      <div className="sticky top-0 flex h-screen flex-col justify-center overflow-hidden">
         {Head}
-        {StaticStrip}
-      </section>
-    </>
+        <motion.div dir="ltr" style={{ x }} className="flex w-max gap-6 ps-10 will-change-transform">
+          {t.items.map((label, i) => (
+            <Plate key={i} label={label} index={i} src={srcs[i]} />
+          ))}
+        </motion.div>
+      </div>
+    </section>
   );
 }

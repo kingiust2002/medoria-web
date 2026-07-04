@@ -1,38 +1,40 @@
 "use client";
-// components/beauty/BeautyStory.jsx — editorial pull-quote with a parallax
-// champagne panel behind it. Scroll-linked; reduced-motion → static.
+// components/beauty/BeautyStory.jsx — brand story: large serif statement over a
+// champagne material layer with a macro-texture slot; gentle parallax only.
 import { useRef } from "react";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
-import BeautyMark from "./BeautyMark";
+import MediaSlot from "./MediaSlot";
 import { beautyCopy } from "./copy";
 
-export default function BeautyStory({ lang }) {
+export default function BeautyStory({ lang, media }) {
   const t = beautyCopy(lang).story;
   const reduced = useReducedMotion();
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const panelY = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
-  const markRotate = useTransform(scrollYProgress, [0, 1], [-14, 14]);
+  const panelY = useTransform(scrollYProgress, [0, 1], ["-6%", "6%"]);
 
   return (
     <section ref={ref} className="relative overflow-hidden py-28 sm:py-36">
       <motion.div
         aria-hidden="true"
         style={reduced ? {} : { y: panelY }}
-        className="v-satin absolute inset-x-6 inset-y-8 -z-10 rounded-[2.2rem] sm:inset-x-10"
-        // panel floats slightly slower than the page — quiet depth
-      />
-      <motion.div
-        aria-hidden="true"
-        style={reduced ? {} : { rotate: markRotate }}
-        className="pointer-events-none absolute -start-10 top-1/2 -translate-y-1/2 opacity-[0.16]"
+        className="absolute inset-x-5 inset-y-8 -z-10 overflow-hidden rounded-[2rem] sm:inset-x-10"
       >
-        <BeautyMark size={300} />
+        <MediaSlot
+          src={media?.["story-texture"]}
+          alt=""
+          sizes="92vw"
+          objectPosition="50% 50%"
+          markSize={0}
+          className="h-full w-full"
+        />
+        {/* ivory veil keeps the quote readable over any future texture */}
+        <span className="absolute inset-0" style={{ background: "rgb(var(--v-canvas) / 0.72)" }} />
       </motion.div>
 
       <figure className="relative mx-auto max-w-3xl px-8 text-center">
         <blockquote>
-          <p className="font-beauty text-3xl font-bold italic leading-snug sm:text-5xl" style={{ color: "var(--v-navy)" }}>
+          <p className="font-beauty text-3xl font-semibold italic leading-snug sm:text-5xl" style={{ color: "var(--v-navy)" }}>
             «{t.quote}»
           </p>
         </blockquote>

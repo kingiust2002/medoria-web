@@ -1,33 +1,52 @@
-// components/beauty/BeautyMarquee.jsx — giant serif marquee band (CSS-only,
-// reuses the existing `animate-marquee` keyframes; pauses under reduced motion
-// via the global rule). Decorative editorial texture between sections.
-import BeautyMark from "./BeautyMark";
+"use client";
+// components/beauty/BeautyMarquee.jsx — luxury editorial transition band.
+// Large serif words separated by the official mark; the CSS marquee pauses
+// whenever the band leaves the viewport (IntersectionObserver → class toggle)
+// and under reduced motion via the global rule.
+import { useEffect, useRef, useState } from "react";
+import { BeautyMarkImg } from "./BeautyBrand";
 import { beautyCopy } from "./copy";
 
 export default function BeautyMarquee({ lang }) {
   const words = beautyCopy(lang).marquee;
+  const ref = useRef(null);
+  const [paused, setPaused] = useState(true);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setPaused(false);
+      return;
+    }
+    const io = new IntersectionObserver(([e]) => setPaused(!e.isIntersecting), { threshold: 0 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   const Row = ({ hidden }) => (
     <div aria-hidden={hidden || undefined} className="flex shrink-0 items-center">
       {words.map((w, i) => (
-        <span key={i} className="flex items-center">
+        <span key={i} className="flex items-center gap-6 pe-6">
           <span
-            className="font-beauty whitespace-nowrap px-6 text-5xl font-semibold italic tracking-tight sm:text-6xl"
-            style={{ color: i % 2 ? "var(--v-accent)" : "var(--v-navy)", opacity: 0.92 }}
+            className="font-beauty whitespace-nowrap text-5xl font-semibold italic tracking-tight sm:text-6xl"
+            style={{ color: i % 2 ? "var(--v-accent)" : "var(--v-navy)", opacity: 0.9 }}
           >
             {w}
           </span>
-          <BeautyMark size={22} opacity={0.55} />
+          <BeautyMarkImg size={20} opacity={0.5} />
         </span>
       ))}
     </div>
   );
+
   return (
     <section
+      ref={ref}
       aria-label={words.join(" · ")}
-      className="relative overflow-hidden border-y py-7"
+      className={`relative overflow-hidden border-y py-8 ${paused ? "v-marquee-paused" : ""}`}
       style={{ borderColor: "rgb(var(--v-line))", background: "rgb(var(--v-surface) / 0.5)" }}
     >
-      <div dir="ltr" className="flex w-max animate-marquee">
+      <div dir="ltr" className="flex w-max animate-marquee [animation-duration:52s]">
         <Row />
         <Row hidden />
       </div>
