@@ -297,9 +297,16 @@ html.lenis, html.lenis body { height: auto; }
 }
 
 @keyframes v-float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50%      { transform: translateY(-14px) rotate(3deg); }
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
 }
+
+/* Persian route: the beauty serif has no Arabic glyphs — headings fall back to
+   Vazirmatn so RTL never renders with a mismatched system serif. */
+[dir="rtl"] .font-beauty { font-family: Vazirmatn, Tahoma, serif; }
+
+/* Marquee pauses while offscreen (toggled by an IntersectionObserver). */
+.v-marquee-paused .animate-marquee { animation-play-state: paused; }
 
 @keyframes v-sheen {
   0%   { transform: translateX(-25%); opacity: 0; }
