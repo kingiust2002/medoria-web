@@ -12,6 +12,7 @@ module.exports = {
         sans:    ['Inter',          'system-ui', 'sans-serif'],
         display: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
         farsi:   ['Vazirmatn',      'Tahoma',    'sans-serif'],
+        beauty:  ['"Playfair Display"', 'Georgia', 'serif'],
       },
       colors: {
         // ── Brand spectrum — straight from the logo ─────────────────────────
