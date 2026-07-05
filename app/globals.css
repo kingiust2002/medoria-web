@@ -305,6 +305,51 @@ html.lenis, html.lenis body { height: auto; }
    Vazirmatn so RTL never renders with a mismatched system serif. */
 [dir="rtl"] .font-beauty { font-family: Vazirmatn, Tahoma, serif; }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   BEAUTY RESKIN OF THE SHARED SYSTEM (structure = Health, skin = Beauty)
+   Inside [data-vertical="beauty"] the same shared utilities (bg-canvas, card,
+   section-tag, btn-primary, gradient-text…) render in the nude/copper/navy
+   identity by re-scoping the neutral tokens + brand accents. Health and the
+   gateway are untouched; Beauty stays light even under the global .dark class.
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-vertical="beauty"] {
+  --canvas:       252 247 242;   /* warm ivory            */
+  --canvas-soft:  248 240 232;   /* creamy pearl sections */
+  --surface:      255 255 255;
+  --surface-2:    250 244 237;
+  --ink:           24  31  58;   /* deep navy             */
+  --ink-soft:      45  50  76;
+  --ink-muted:    105  92  84;   /* warm charcoal         */
+  --ink-faint:    168 150 138;
+  --line:         238 226 214;
+  --line-soft:    245 237 229;
+  --img-ph-1:     250 240 230;
+  --img-ph-2:     247 231 215;
+  --img-ph-3:     243 220 190;
+  color-scheme: light;
+}
+[data-vertical="beauty"] .section-tag { color: var(--v-accent); }
+[data-vertical="beauty"] .section-h,
+[data-vertical="beauty"] .section-h-lg { font-family: "Playfair Display", Georgia, serif; font-weight: 600; }
+[data-vertical="beauty"][dir="rtl"] .section-h,
+[data-vertical="beauty"][dir="rtl"] .section-h-lg { font-family: Vazirmatn, Tahoma, serif; }
+[data-vertical="beauty"] .gradient-text,
+[data-vertical="beauty"] .gradient-text-animated {
+  background-image: linear-gradient(120deg, var(--v-navy), var(--v-copper) 55%, var(--v-brand-to));
+}
+[data-vertical="beauty"] .btn-primary {
+  background-image: linear-gradient(120deg, #1C2951 0%, #31427C 45%, #B26E3F 100%);
+  box-shadow: 0 10px 30px -6px rgba(28,41,81,0.45);
+}
+[data-vertical="beauty"] .btn-primary:hover { box-shadow: 0 16px 38px -10px rgba(178,110,63,0.55); }
+[data-vertical="beauty"] .btn-contact {
+  background: linear-gradient(rgb(var(--surface)),rgb(var(--surface))) padding-box,
+              linear-gradient(120deg, var(--v-navy), var(--v-copper), var(--v-brand-to)) border-box;
+}
+[data-vertical="beauty"] .card-hover:hover { border-color: rgb(var(--v-ring) / 0.6); box-shadow: 0 8px 24px rgba(178,110,63,0.10), 0 24px 60px rgba(28,41,81,0.10); }
+[data-vertical="beauty"] .section-tag.text-cyan-600 { color: var(--v-accent); }
+[data-vertical="beauty"] :focus-visible { outline-color: var(--v-accent); }
+
 /* Marquee pauses while offscreen (toggled by an IntersectionObserver). */
 .v-marquee-paused .animate-marquee { animation-play-state: paused; }
 
