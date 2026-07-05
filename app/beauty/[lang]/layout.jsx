@@ -1,10 +1,11 @@
-// app/beauty/[lang]/layout.jsx — Medoria Beauty shell: nude-luxury tokens
-// (data-vertical), the Playfair Display serif (latin + cyrillic, loaded only on
-// beauty routes), and the world's own slim chrome. Locale-validated like Health.
+// app/beauty/[lang]/layout.jsx — Medoria Beauty shell. Mirrors the Health
+// layout chrome (header, main, footer, floating WhatsApp) with the beauty
+// reskin scope (data-vertical) + the Playfair serif, loaded only here.
 import { notFound } from "next/navigation";
 import { LOCALES, LANG_META } from "@/lib/i18n";
 import BeautyHeader from "@/components/beauty/BeautyHeader";
 import BeautyFooter from "@/components/beauty/BeautyFooter";
+import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
 
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
@@ -34,6 +35,7 @@ export default function BeautyLayout({ children, params }) {
       <BeautyHeader lang={lang} />
       <main>{children}</main>
       <BeautyFooter lang={lang} />
+      <FloatingWhatsApp lang={lang} />
     </div>
   );
 }

@@ -1,2 +1,2 @@
-Campaign assets for the signature section.
+Campaign assets for the featured section.
 Filenames + exact specs: docs/beauty/asset-manifest.md

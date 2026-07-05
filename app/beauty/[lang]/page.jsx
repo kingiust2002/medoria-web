@@ -1,19 +1,22 @@
-// app/beauty/[lang]/page.jsx — MEDORIA BEAUTY · NUDE COPPER EDITORIAL.
-// Sequence: Hero → Marquee → Three Worlds → Signature Moment → Story →
-// Lookbook → Philosophy → Partnership CTA (footer in layout). Campaign media
-// resolves server-side from /public/beauty via the asset manifest; every slot
-// degrades to an elegant satin fallback. Still noindex until launch approval.
+// app/beauty/[lang]/page.jsx — Medoria Beauty (pre-launch, noindex).
+// The page mirrors the Health home skeleton section-for-section — hero →
+// value bar → worlds (categories) → featured picks → showcase → marquee
+// (brands slot) → why → audience → quote (trust slot) → partnership
+// (procurement slot) → final CTA — in the nude-copper beauty identity.
 import { notFound } from "next/navigation";
 import { LOCALES } from "@/lib/i18n";
 import { getBeautyMedia } from "@/lib/beauty/media";
 import BeautyHero from "@/components/beauty/BeautyHero";
+import BeautyValueBar from "@/components/beauty/BeautyValueBar";
+import BeautyWorlds from "@/components/beauty/BeautyWorlds";
+import BeautyFeatured from "@/components/beauty/BeautyFeatured";
+import BeautyShowcase from "@/components/beauty/BeautyShowcase";
 import BeautyMarquee from "@/components/beauty/BeautyMarquee";
-import BeautyCollections from "@/components/beauty/BeautyCollections";
-import BeautySignature from "@/components/beauty/BeautySignature";
-import BeautyStory from "@/components/beauty/BeautyStory";
-import BeautyLookbook from "@/components/beauty/BeautyLookbook";
-import BeautyPhilosophy from "@/components/beauty/BeautyPhilosophy";
-import BeautyCTA from "@/components/beauty/BeautyCTA";
+import WhyBeauty from "@/components/beauty/WhyBeauty";
+import BeautyAudience from "@/components/beauty/BeautyAudience";
+import BeautyQuote from "@/components/beauty/BeautyQuote";
+import BeautyPartnership from "@/components/beauty/BeautyPartnership";
+import BeautyFinalCTA from "@/components/beauty/BeautyFinalCTA";
 import { beautyCopy } from "@/components/beauty/copy";
 
 export function generateStaticParams() {
@@ -45,13 +48,16 @@ export default function BeautyPage({ params }) {
   return (
     <>
       <BeautyHero lang={lang} media={media} />
+      <BeautyValueBar lang={lang} />
+      <BeautyWorlds lang={lang} media={media} />
+      <BeautyFeatured lang={lang} media={media} />
+      <BeautyShowcase lang={lang} media={media} />
       <BeautyMarquee lang={lang} />
-      <BeautyCollections lang={lang} media={media} />
-      <BeautySignature lang={lang} media={media} />
-      <BeautyStory lang={lang} media={media} />
-      <BeautyLookbook lang={lang} media={media} />
-      <BeautyPhilosophy lang={lang} />
-      <BeautyCTA lang={lang} media={media} />
+      <WhyBeauty lang={lang} />
+      <BeautyAudience lang={lang} />
+      <BeautyQuote lang={lang} />
+      <BeautyPartnership lang={lang} />
+      <BeautyFinalCTA lang={lang} />
     </>
   );
 }
