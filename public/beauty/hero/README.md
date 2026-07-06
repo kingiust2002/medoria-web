@@ -1,2 +1,1 @@
-Campaign assets for the hero section.
-Filenames + exact specs: docs/beauty/asset-manifest.md
+Beauty hero banner: hero-banner-light.webp (see docs/beauty/asset-manifest.md)
