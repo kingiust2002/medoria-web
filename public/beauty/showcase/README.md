@@ -1,2 +1,1 @@
-Campaign assets for the showcase section.
-Filenames + exact specs: docs/beauty/asset-manifest.md
+Showcase tiles: showcase-01..04.webp (see docs/beauty/asset-manifest.md)
