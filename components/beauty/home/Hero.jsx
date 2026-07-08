@@ -3,7 +3,8 @@
 // no product fetch (worlds + "soon" fill the featured card); banner slot from
 // /public/beauty/hero. Colors remap via the [data-vertical="beauty"] scope.
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useReducedMotion, useMotionValue, useSpring, useTransform } from "framer-motion";
@@ -13,13 +14,44 @@ import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
 import { BeautyWordmarkImg } from "@/components/beauty/BeautyBrand";
 
+const BeautyHeroScene = dynamic(() => import("@/components/beauty/home/BeautyHeroScene"), { ssr: false });
 const EASE = [0.2, 0.8, 0.2, 1];
+
+// Localized particle words (canvas-sampled, so short + bold reads best). fa
+// keeps the Latin fallback set — Arabic-script canvas text shaping is
+// unreliable at small offscreen-canvas sizes, so we deliberately don't sample
+// Farsi glyphs here; the rest of the Beauty page is still fully RTL/Farsi.
+const PARTICLE_WORDS = {
+  tg: ["MEDORIA", "ЗЕБОӢ", "НУР", "ЭЪТИМОД"],
+  ru: ["MEDORIA", "КРАСОТА", "СИЯНИЕ", "УХОД"],
+  en: ["MEDORIA", "BEAUTY", "GLOW", "RITUAL"],
+  fa: ["MEDORIA", "BEAUTY", "GLOW", "TRUST"],
+};
 
 export default function Hero({ lang, banner }) {
   const t = getTranslations(lang);
   const reduce = useReducedMotion();
   const [q, setQ] = useState("");
   const [searchFocus, setSearchFocus] = useState(false);
+
+  // ── Particle scene eligibility — same bar as the Health hero (desktop,
+  // motion-safe, capable device, no data-saver), plus a graduated particle
+  // count instead of a hard on/off so mid-tier devices still get a lighter
+  // version of the effect rather than nothing.
+  const [mounted, setMounted] = useState(false);
+  const [particleCount, setParticleCount] = useState(0); // 0 = ineligible
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const desktop = window.matchMedia("(min-width: 1024px)").matches;
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const saveData = Boolean(navigator.connection && navigator.connection.saveData);
+      const cores = navigator.hardwareConcurrency || 4;
+      if (desktop && !reducedMotion && !saveData && cores >= 4) {
+        setParticleCount(cores >= 8 ? 3200 : 2000); // reduce particles on weaker devices
+      }
+    } catch { /* keep the CSS/gradient fallback */ }
+  }, []);
 
   // ── subtle mouse parallax for the hero card (desktop, motion-safe) ──
   const mx = useMotionValue(0), my = useMotionValue(0);
@@ -77,6 +109,12 @@ export default function Hero({ lang, banner }) {
 
       {/* aurora — soft light wash */}
       <Aurora variant="light" className="-z-10 opacity-90" />
+
+      {/* champagne dust / pearl dew particle scene — desktop + capable devices
+          only; confined to this hero section, never the whole page. */}
+      {mounted && particleCount > 0 && (
+        <BeautyHeroScene rtl={lang === "fa"} words={PARTICLE_WORDS[lang] || PARTICLE_WORDS.en} particleCount={particleCount} />
+      )}
 
       {/* dot grid */}
       <div className="absolute inset-0 -z-10 opacity-[0.5] pointer-events-none"
