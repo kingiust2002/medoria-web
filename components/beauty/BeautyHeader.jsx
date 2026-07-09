@@ -8,10 +8,10 @@ import { BeautyWordLockup } from "./BeautyBrand";
 import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
 import Icon from "@/components/shared/Icon";
 import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
-import { beautyCopy } from "./copy";
+import { getBeautyTranslations } from "./i18n";
 
 export default function BeautyHeader({ lang }) {
-  const t = beautyCopy(lang);
+  const t = getBeautyTranslations(lang);
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 

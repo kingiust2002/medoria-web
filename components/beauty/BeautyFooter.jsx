@@ -2,14 +2,14 @@
 // navy base, copper hairline, brand column with WA/TG + language switcher,
 // link columns, contact column, copyright row.
 import Link from "next/link";
-import { BeautyMarkImg } from "./BeautyBrand";
+import { BeautyWordLockup } from "./BeautyBrand";
 import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
 import Icon from "@/components/shared/Icon";
 import { waLink, tgLink, bulkInquiryMessage } from "@/lib/whatsapp";
-import { beautyCopy } from "./copy";
+import { getBeautyTranslations } from "./i18n";
 
 export default function BeautyFooter({ lang }) {
-  const t = beautyCopy(lang);
+  const t = getBeautyTranslations(lang);
   const email = process.env.NEXT_PUBLIC_EMAIL || "sales@medoria.tj";
   const anchors = [
     ["#collections", t.nav.collections],
@@ -25,9 +25,11 @@ export default function BeautyFooter({ lang }) {
         <div className="grid gap-10 md:grid-cols-12 pb-10 border-b border-white/10">
           {/* Brand */}
           <div className="md:col-span-5">
-            <span dir="ltr" translate="no" aria-label="Medoria Beauty" className="flex items-center gap-3">
-              <span className="rounded-full bg-white/95 p-2"><BeautyMarkImg size={26} /></span>
-              <span aria-hidden="true" className="text-[12px] font-bold uppercase tracking-[0.34em] text-white/85">Beauty</span>
+            {/* Beauty's official wordmarks are navy-toned — they disappear on
+                this navy footer, so (like Health.jsx's onDark swap) the whole
+                lockup sits on its own light badge instead of the page bg. */}
+            <span className="inline-flex w-fit items-center rounded-full bg-white/95 py-2 px-3.5">
+              <BeautyWordLockup height={20} />
             </span>
             <p className="mt-4 text-[13px] leading-relaxed max-w-xs text-white/60">{t.footer.desc}</p>
             <div className="mt-5 flex flex-wrap gap-2">

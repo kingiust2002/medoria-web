@@ -17,17 +17,6 @@ import { BeautyWordmarkImg } from "@/components/beauty/BeautyBrand";
 const BeautyHeroScene = dynamic(() => import("@/components/beauty/home/BeautyHeroScene"), { ssr: false });
 const EASE = [0.2, 0.8, 0.2, 1];
 
-// Localized particle words (canvas-sampled, so short + bold reads best). fa
-// keeps the Latin fallback set — Arabic-script canvas text shaping is
-// unreliable at small offscreen-canvas sizes, so we deliberately don't sample
-// Farsi glyphs here; the rest of the Beauty page is still fully RTL/Farsi.
-const PARTICLE_WORDS = {
-  tg: ["MEDORIA", "ЗЕБОӢ", "НУР", "ЭЪТИМОД"],
-  ru: ["MEDORIA", "КРАСОТА", "СИЯНИЕ", "УХОД"],
-  en: ["MEDORIA", "BEAUTY", "GLOW", "RITUAL"],
-  fa: ["MEDORIA", "BEAUTY", "GLOW", "TRUST"],
-};
-
 export default function Hero({ lang, banner }) {
   const t = getTranslations(lang);
   const reduce = useReducedMotion();
@@ -113,7 +102,7 @@ export default function Hero({ lang, banner }) {
       {/* champagne dust / pearl dew particle scene — desktop + capable devices
           only; confined to this hero section, never the whole page. */}
       {mounted && particleCount > 0 && (
-        <BeautyHeroScene rtl={lang === "fa"} words={PARTICLE_WORDS[lang] || PARTICLE_WORDS.en} particleCount={particleCount} />
+        <BeautyHeroScene particleCount={particleCount} />
       )}
 
       {/* dot grid */}
