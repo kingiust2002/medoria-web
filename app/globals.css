@@ -330,7 +330,7 @@ html.lenis, html.lenis body { height: auto; }
 }
 [data-vertical="beauty"] .section-tag { color: var(--v-accent); }
 [data-vertical="beauty"] .section-h,
-[data-vertical="beauty"] .section-h-lg { font-family: "Playfair Display", Georgia, serif; font-weight: 600; }
+[data-vertical="beauty"] .section-h-lg { font-family: var(--font-beauty), Georgia, serif; font-weight: 600; }
 [data-vertical="beauty"][dir="rtl"] .section-h,
 [data-vertical="beauty"][dir="rtl"] .section-h-lg { font-family: Vazirmatn, Tahoma, serif; }
 [data-vertical="beauty"] .gradient-text,
@@ -377,7 +377,7 @@ html.lenis, html.lenis body { height: auto; }
     linear-gradient(135deg, rgb(var(--img-ph-1)) 0%, rgb(var(--img-ph-2)) 50%, rgb(var(--img-ph-3)) 100%);
 }
 [data-vertical="beauty"] .hover\:border-primary\/30:hover { border-color: rgb(var(--v-ring)); }
-[data-vertical="beauty"] .font-display { font-family: "Playfair Display", Georgia, serif; }
+[data-vertical="beauty"] .font-display { font-family: var(--font-beauty), Georgia, serif; }
 [data-vertical="beauty"][dir="rtl"] .font-display { font-family: Vazirmatn, Tahoma, serif; }
 
 /* Marquee pauses while offscreen (toggled by an IntersectionObserver). */
