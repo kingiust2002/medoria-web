@@ -1,11 +1,24 @@
 // app/beauty/[lang]/layout.jsx — Medoria Beauty shell. Mirrors the Health
 // layout chrome (header, main, footer, floating WhatsApp) with the beauty
-// reskin scope (data-vertical) + the Playfair serif, loaded only here.
+// reskin scope (data-vertical) + a self-hosted Playfair Display serif (latin +
+// cyrillic, via next/font — no external Google Fonts request at runtime, no
+// font-swap flash, only loaded on beauty routes).
 import { notFound } from "next/navigation";
+import { Playfair_Display } from "next/font/google";
 import { LOCALES, LANG_META } from "@/lib/i18n";
 import BeautyHeader from "@/components/beauty/BeautyHeader";
 import BeautyFooter from "@/components/beauty/BeautyFooter";
 import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
+
+// Exposes --font-beauty (consumed by tailwind.config.js `font-beauty` and the
+// [data-vertical="beauty"] .font-display / .section-h-lg rules in globals.css).
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin", "cyrillic"],
+  weight: ["500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-beauty",
+  display: "swap",
+});
 
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
@@ -20,13 +33,8 @@ export default function BeautyLayout({ children, params }) {
       lang={lang}
       dir={dir}
       data-vertical="beauty"
-      className={`v-scope ${dir === "rtl" ? "font-farsi" : "font-sans"}`}
+      className={`v-scope ${playfairDisplay.variable} ${dir === "rtl" ? "font-farsi" : "font-sans"}`}
     >
-      {/* Beauty display serif — scoped to this route tree only */}
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap"
-      />
       <script
         dangerouslySetInnerHTML={{
           __html: `document.documentElement.lang="${lang}";document.documentElement.dir="${dir}";`,
