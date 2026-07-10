@@ -454,6 +454,18 @@ html.lenis, html.lenis body { height: auto; }
   animation: gw-pulse 5.5s ease-in-out 1.8s infinite;
 }
 
+/* Frosted panel behind each door's content — guarantees legibility over any
+   campaign photograph without dimming the scene itself. */
+.mirror-glass {
+  background: rgba(255, 255, 255, 0.58);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  backdrop-filter: blur(18px) saturate(1.15);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 1.25rem;
+  padding: 1.5rem 1.625rem;
+  box-shadow: 0 24px 70px -32px rgba(15, 23, 42, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
 /* Steering the light toward one world softens the other door — only on the
    side-by-side (md+) layout; stacked mobile doors both stay full-strength. */
 @media (min-width: 768px) {

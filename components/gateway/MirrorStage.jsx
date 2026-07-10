@@ -148,9 +148,10 @@ export default function MirrorStage({ images, copy, defaultLang, langs, langLabe
       <div className="relative z-20 grid gap-7 px-6 pb-8 md:grid-cols-2 md:gap-4 md:px-12 md:pb-12 lg:px-16">
         {/* Health — lives in the cool light (left). The gw-rise entrance runs
             on an inner wrapper: its animation-fill would otherwise pin
-            opacity:1 on the door and defeat the steer-dimming rule. */}
+            opacity:1 on the door and defeat the steer-dimming rule. The
+            mirror-glass panel keeps the door legible over any photography. */}
         <div data-vertical="health" className="mirror-door mirror-door-health">
-        <div className="gw-rise flex flex-col items-center text-center md:items-start md:text-start" style={{ "--d": "1.35s" }}>
+        <div className="gw-rise mirror-glass flex flex-col items-center text-center md:items-start md:text-start" style={{ "--d": "1.35s" }}>
           <WorldLockup vertical="health" height={34} />
           <p className="mt-3 max-w-sm text-[13.5px] leading-relaxed" style={{ color: "rgb(22 34 56 / 0.78)" }}>
             {copy.health.tagline}
@@ -183,7 +184,7 @@ export default function MirrorStage({ images, copy, defaultLang, langs, langLabe
 
         {/* Beauty — lives in the warm light (right) */}
         <div data-vertical="beauty" className="mirror-door mirror-door-beauty">
-        <div className="gw-rise flex flex-col items-center text-center md:items-end md:text-end" style={{ "--d": "1.45s" }}>
+        <div className="gw-rise mirror-glass flex flex-col items-center text-center md:items-end md:text-end" style={{ "--d": "1.45s" }}>
           <WorldLockup vertical="beauty" height={34} />
           <p className="mt-3 max-w-sm text-[13.5px] leading-relaxed" style={{ color: "rgb(48 34 22 / 0.78)" }}>
             {copy.beauty.tagline}
