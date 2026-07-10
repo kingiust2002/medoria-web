@@ -697,3 +697,79 @@ html.lenis, html.lenis body { height: auto; }
   .lumen-lang { padding: 0.65rem 0.8rem; }
   .lumen-headline { margin-top: 0.875rem; }
 }
+
+/* ── «Оптика» / THE COUNTER-LENS motion system ────────────────────────────
+   The living blade (SVG light path along the bent boundary) and the
+   counter-world loupe. Both exist only while the engine runs ([data-live]);
+   SSR / JS-off / reduced-motion keep the straight seam and never see them. */
+.lumen-blade {
+  pointer-events: none; z-index: 10; opacity: 0;
+  transition: opacity 0.5s var(--ease-lux);
+  -webkit-mask-image: linear-gradient(180deg, transparent 1%, #000 10%, #000 90%, transparent 99%);
+  mask-image: linear-gradient(180deg, transparent 1%, #000 10%, #000 90%, transparent 99%);
+}
+.lumen-stage[data-live] .lumen-blade { opacity: 1; }
+.lumen-stage[data-live] .lumen-aperture { opacity: 0; transition: opacity 0.4s var(--ease-lux); }
+.lumen-blade path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+/* chromatic fringes: two lights meeting at the bent boundary */
+.lumen-blade-cool {
+  stroke: rgba(142, 188, 238, 0.62);
+  stroke-width: calc(14px + var(--flare, 0) * 10px);
+  filter: blur(10px);
+  transform: translateX(-5px);
+}
+.lumen-blade-warm {
+  stroke: rgba(234, 186, 122, 0.62);
+  stroke-width: calc(14px + var(--flare, 0) * 10px);
+  filter: blur(10px);
+  transform: translateX(5px);
+}
+.lumen-blade-core {
+  stroke: rgba(255, 255, 255, 0.97);
+  stroke-width: calc(2px + var(--flare, 0) * 1.6px);
+  filter:
+    drop-shadow(0 0 9px rgba(255, 255, 255, 0.95))
+    drop-shadow(0 0 30px rgba(255, 255, 255, calc(0.4 + var(--flare, 0) * 0.4)));
+}
+
+/* The loupe: a weighted glass instrument that reveals the opposite world.
+   Fine pointers only; the engine positions it and crossfades its two
+   gradings by [data-side]. The native cursor yields while it is active. */
+.lumen-stage[data-lens] { cursor: none; }
+.lumen-lens {
+  position: absolute; top: 0; left: 0;
+  width: 176px; height: 176px; border-radius: 9999px;
+  overflow: hidden; z-index: 15; pointer-events: none;
+  opacity: 0;
+  box-shadow:
+    0 34px 80px -24px rgba(8, 16, 32, 0.6),
+    0 6px 22px -8px rgba(8, 16, 32, 0.35);
+  will-change: transform, opacity;
+}
+.lumen-lens-canvas { position: absolute; top: 0; left: 0; will-change: transform; }
+.lumen-lens-img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; opacity: 0;
+  transition: opacity 0.28s var(--ease-lux);
+}
+.lumen-lens[data-side="warm"] .lumen-lens-img[data-grade="warm"],
+.lumen-lens[data-side="cool"] .lumen-lens-img[data-grade="cool"] { opacity: 1; }
+.lumen-lens-ring {
+  position: absolute; inset: 0; border-radius: inherit;
+  border: 1.5px solid rgba(255, 255, 255, 0.88);
+  box-shadow:
+    inset 0 0 0 1px rgba(18, 28, 48, 0.2),
+    inset 8px 0 18px -6px rgba(142, 188, 238, 0.45),
+    inset -8px 0 18px -6px rgba(234, 186, 122, 0.45),
+    inset 0 22px 38px -14px rgba(255, 255, 255, 0.5),
+    inset 0 -26px 44px -18px rgba(14, 24, 44, 0.38),
+    0 0 calc(14px + var(--flare, 0) * 30px) rgba(255, 255, 255, calc(0.35 + var(--flare, 0) * 0.4));
+}
+/* glass top-light arc */
+.lumen-lens-ring::before {
+  content: ""; position: absolute; left: 18%; right: 30%; top: 5%; height: 26%;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent 72%);
+  filter: blur(3px);
+  transform: rotate(-14deg);
+}
