@@ -390,37 +390,23 @@ html.lenis, html.lenis body { height: auto; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   GATEWAY v3 — cinematic split-world choreography (route "/" only).
-   Pure CSS: the entrance plays without JS and collapses to the final frame
-   under prefers-reduced-motion (global rule zeroes durations). JS only adds
-   pointer parallax / magnetic pull by writing CSS vars — nothing here breaks
-   when it never mounts.
+   GATEWAY — «Оинаи нур» / The Light Mirror (route "/" only).
+   One scene, two lights: the warm grading is clipped at a luminous seam whose
+   position (--mx, a vw percentage) is spring-driven by JS. All entrance
+   choreography is pure CSS (plays JS-off, collapses under reduced motion);
+   without JS the seam simply rests at 50% and both worlds stay usable.
+   Keyframes animate the independent translate/scale properties so they never
+   fight Tailwind transform utilities on the same elements.
    ═══════════════════════════════════════════════════════════════════════════ */
 :root {
   --ease-lux:  cubic-bezier(0.22, 1, 0.36, 1);   /* long expo-out — settles like silk */
-  --ease-silk: cubic-bezier(0.65, 0, 0.13, 1);    /* cinematic in-out — curtains */
+  --ease-silk: cubic-bezier(0.65, 0, 0.13, 1);    /* cinematic in-out */
 }
 
-/* Entrance: center seam draws first, worlds open outward from it, content rises. */
 @keyframes gw-seam-draw { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-@keyframes gw-open-left  { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
-@keyframes gw-open-right { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
-/* gw-rise / gw-nexus-in / gw-breathe animate the independent `translate` /
-   `scale` properties (NOT `transform`) so they never fight the Tailwind
-   translate/rotate utilities living on the same elements. */
 @keyframes gw-rise {
   from { opacity: 0; translate: 0 18px; filter: blur(6px); }
   to   { opacity: 1; translate: 0 0;    filter: blur(0); }
-}
-@keyframes gw-nexus-in {
-  0%   { opacity: 0; scale: 0.55; }
-  70%  { opacity: 1; scale: 1.05; }
-  100% { opacity: 1; scale: 1; }
-}
-/* Ambient life: slow scene breathing, traveling seam pulse, rotating ring. */
-@keyframes gw-breathe {
-  from { translate: 0 0;    scale: 1; }
-  to   { translate: 0 -8px; scale: 1.014; }
 }
 @keyframes gw-pulse {
   0%   { transform: translateY(-100%); opacity: 0; }
@@ -428,58 +414,65 @@ html.lenis, html.lenis body { height: auto; }
   88%  { opacity: 0.9; }
   100% { transform: translateY(100%); opacity: 0; }
 }
-@keyframes gw-spin { to { transform: rotate(360deg); } }
-
-.gw-seam-line   { transform-origin: top; animation: gw-seam-draw 0.7s var(--ease-silk) 0.05s both; }
-/* Curtain reveal only makes sense on the side-by-side (lg) layout; stacked
-   mobile panels enter with the content's gw-rise instead. */
-@media (min-width: 1024px) {
-  .gw-open-left  { animation: gw-open-left  0.95s var(--ease-silk) 0.32s both; }
-  .gw-open-right { animation: gw-open-right 0.95s var(--ease-silk) 0.32s both; }
-}
-.gw-rise        { animation: gw-rise 0.8s var(--ease-lux) both; animation-delay: var(--d, 0.9s); }
-.gw-nexus       { animation: gw-nexus-in 0.75s var(--ease-lux) 1.1s both; }
-.gw-breathe     { animation: gw-breathe 16s ease-in-out infinite alternate; }
-.gw-ring-spin   { animation: gw-spin 26s linear infinite; }
-.gw-seam-pulse::after {
-  content: ""; position: absolute; inset-inline: -1px; top: 0; height: 34%;
-  background: linear-gradient(180deg, transparent, rgba(255,255,255,0.95), transparent);
-  animation: gw-pulse 5.5s ease-in-out 1.6s infinite;
+@keyframes mirror-veil {
+  from { opacity: 0; scale: 1.045; }
+  to   { opacity: 1; scale: 1; }
 }
 
-/* Pointer parallax receivers — JS lerps --gwx/--gwy (px) on each world;
-   every depth layer multiplies them by its own --gw-depth. Zero-JS = zero shift. */
-.gw-depth {
-  transform: translate3d(
-    calc(var(--gwx, 0px) * var(--gw-depth, 0)),
-    calc(var(--gwy, 0px) * var(--gw-depth, 0)),
-    0
+.gw-rise      { animation: gw-rise 0.8s var(--ease-lux) both; animation-delay: var(--d, 0.9s); }
+.gw-seam-line { transform-origin: top; animation: gw-seam-draw 0.8s var(--ease-silk) 0.55s both; }
+
+/* The scene breathes in from white while settling its scale. */
+.mirror-veil { animation: mirror-veil 1.5s var(--ease-lux) 0.05s both; }
+
+/* Seam anatomy: a chromatic light bloom (cool falls off left, warm falls off
+   right — two lights meeting), a crisp core with an ink micro-edge so it
+   stays visible over bright scenes, and a traveling pulse. */
+.mirror-seam { pointer-events: none; z-index: 10; will-change: left; }
+.mirror-seam-glow {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(132, 176, 226, 0.38) 30%,
+    rgba(255, 255, 255, 0.98) 50%,
+    rgba(224, 172, 112, 0.42) 70%,
+    transparent 100%
   );
-  will-change: transform;
+  filter: blur(6px);
+  opacity: 0.95;
+}
+.mirror-seam-core {
+  background: linear-gradient(180deg, transparent 2%, rgba(255,255,255,0.98) 16%, rgba(255,255,255,0.98) 84%, transparent 98%);
+  box-shadow:
+    0 0 0 0.5px rgba(22, 32, 52, 0.30),
+    0 0 20px rgba(255, 255, 255, 0.95),
+    0 0 64px rgba(255, 255, 255, 0.5);
+}
+.mirror-seam-pulse::after {
+  content: ""; position: absolute; inset-inline: -1px; top: 0; height: 34%;
+  background: linear-gradient(180deg, transparent, rgba(255,255,255,1), transparent);
+  animation: gw-pulse 5.5s ease-in-out 1.8s infinite;
 }
 
-/* Split interplay: hovering one world dims + desaturates the other and leans
-   the seam's gradient toward the active side. Desktop pointer only. */
-@media (hover: hover) and (pointer: fine) {
-  .gw-stage [data-world] { transition: filter 0.7s var(--ease-lux), opacity 0.7s var(--ease-lux); }
-  .gw-stage[data-gw-active="health"] [data-world="beauty"],
-  .gw-stage[data-gw-active="beauty"] [data-world="health"] {
-    filter: saturate(0.8) brightness(0.98);
-    opacity: 0.92;
+/* Frosted panel behind each door's content — guarantees legibility over any
+   campaign photograph without dimming the scene itself. */
+.mirror-glass {
+  background: rgba(255, 255, 255, 0.58);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  backdrop-filter: blur(18px) saturate(1.15);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 1.25rem;
+  padding: 1.5rem 1.625rem;
+  box-shadow: 0 24px 70px -32px rgba(15, 23, 42, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Steering the light toward one world softens the other door — only on the
+   side-by-side (md+) layout; stacked mobile doors both stay full-strength. */
+@media (min-width: 768px) {
+  .mirror-door { transition: opacity 0.6s var(--ease-lux), translate 0.6s var(--ease-lux); }
+  .mirror-stage[data-mirror="health"] .mirror-door-beauty,
+  .mirror-stage[data-mirror="beauty"] .mirror-door-health {
+    opacity: 0.52;
+    translate: 0 6px;
   }
-  .gw-seam-health, .gw-seam-beauty { transition: opacity 0.7s var(--ease-lux); }
-  .gw-stage[data-gw-active="health"] .gw-seam-beauty { opacity: 0.25; }
-  .gw-stage[data-gw-active="beauty"] .gw-seam-health { opacity: 0.25; }
-}
-
-/* Giant editorial ghost word behind each scene (decorative, strongest depth).
-   Whisper-quiet: it must read as atmosphere, never compete with the lockup. */
-.gw-ghost {
-  font-size: clamp(88px, 13vw, 190px);
-  line-height: 1;
-  letter-spacing: 0.02em;
-  color: rgb(var(--v-ink));
-  opacity: 0.026;
-  user-select: none;
-  white-space: nowrap;
 }
