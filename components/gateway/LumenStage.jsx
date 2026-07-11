@@ -414,6 +414,7 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
             src={src}
             alt=""
             aria-hidden="true"
+            data-grade={kind}
             fetchPriority="high"
             decoding="async"
             className="absolute inset-0 h-full w-full object-cover"
@@ -424,6 +425,7 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
         {videoOn && (
           <video
             className="lumen-video"
+            data-grade={kind}
             src={media.video[kind]}
             poster={src || undefined}
             muted

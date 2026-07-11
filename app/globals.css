@@ -904,3 +904,28 @@ html.lenis, html.lenis body { height: auto; }
       inset 0 1px 0 rgba(255, 255, 255, 0.95);
   }
 }
+
+/* ── Showroom staging (the owner's campaign pair: each world is its own
+   podium hall with a glowing shrine arch baked into the image center).
+   On md+ each grading slides so ITS shrine stands near the center of its
+   own half (~30% / ~70%; 120% width keeps the vertical crop under ~8% so
+   the whole hall stays in frame) — at rest you see two complete lit
+   arches, one per world, and the headline breathes on clean wall between
+   them. On mobile the arches leave the frame instead (the plaques carry
+   the branding) and the podium products fill each side. The counter-lens
+   mirrors the same staging so it always previews the other hall as it
+   would actually sit. */
+@media (min-width: 768px) {
+  .lumen-scene [data-grade="cool"],
+  .lumen-lens-canvas [data-grade="cool"] {
+    width: 120%; max-width: none; left: -30%;
+  }
+  .lumen-scene [data-grade="warm"],
+  .lumen-lens-canvas [data-grade="warm"] {
+    width: 120%; max-width: none; left: 10%;
+  }
+}
+@media (max-width: 767px) {
+  .lumen-scene [data-grade="cool"] { object-position: 12% 50%; }
+  .lumen-scene [data-grade="warm"] { object-position: 88% 50%; }
+}
