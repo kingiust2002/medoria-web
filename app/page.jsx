@@ -28,84 +28,17 @@ export const metadata = {
 
 // The gateway shows the language links; fa stays reachable here even though
 // inner pages hide it from their switcher (localization law).
-const GATEWAY_LANGS = ["tg", "ru", "en", "fa"];
+// fa stays a live route (/health/fa, /beauty/fa) but is intentionally not
+// linked from the gateway pills (owner request) — same "hidden fa" rule the
+// inner switcher already follows.
+const GATEWAY_LANGS = ["tg", "ru", "en"];
 
-// Full four-locale copy deck (tg is the rendered, first-class voice; the
-// other locales are the approved translations should the gateway ever become
-// locale-aware). Eyebrows are deliberate Latin micro-labels.
+// The gateway now renders only the two world CTAs (Tajik-first). The former
+// headline / hint / "choose your world" caption and the master parent logo
+// were removed at the owner's request, so nothing else needs to be passed.
 const GATEWAY_COPY = {
-  tg: {
-    eyebrow: "MEDORIA · TAJIKISTAN",
-    headline: "Як хона. Ду ҷаҳон.",
-    hint: "Нурро ҳаракат диҳед.",
-    choose: "Ҷаҳони худро интихоб кунед",
-    health: {
-      eyebrow: "MEDORIA HEALTH",
-      title: "Дақиқӣ. Эътимод. Ҳар рӯз.",
-      line: "Барои клиникаҳо, дорухонаҳо ва беморхонаҳои Тоҷикистон.",
-      cta: "Ворид шудан ба Health",
-    },
-    beauty: {
-      eyebrow: "MEDORIA BEAUTY",
-      title: "Зебоӣ, ки эҳсос мешавад.",
-      line: "Барои салонҳо, бутикҳо ва мутахассисони зебоӣ.",
-      cta: "Кашф кардани Beauty",
-    },
-  },
-  ru: {
-    eyebrow: "MEDORIA · TAJIKISTAN",
-    headline: "Один дом. Два мира.",
-    hint: "Двигайте свет.",
-    choose: "Выберите свой мир",
-    health: {
-      eyebrow: "MEDORIA HEALTH",
-      title: "Точность. Доверие. Каждый день.",
-      line: "Для клиник, аптек и больниц Таджикистана.",
-      cta: "Перейти в Health",
-    },
-    beauty: {
-      eyebrow: "MEDORIA BEAUTY",
-      title: "Красота, которую чувствуешь.",
-      line: "Для салонов, бутиков и профессионалов красоты.",
-      cta: "Открыть Beauty",
-    },
-  },
-  en: {
-    eyebrow: "MEDORIA · TAJIKISTAN",
-    headline: "One house. Two worlds.",
-    hint: "Move the light.",
-    choose: "Choose your world",
-    health: {
-      eyebrow: "MEDORIA HEALTH",
-      title: "Precision. Trust. Every day.",
-      line: "For clinics, pharmacies and hospitals across Tajikistan.",
-      cta: "Enter Health",
-    },
-    beauty: {
-      eyebrow: "MEDORIA BEAUTY",
-      title: "Beauty you can feel.",
-      line: "For salons, boutiques and beauty professionals.",
-      cta: "Discover Beauty",
-    },
-  },
-  fa: {
-    eyebrow: "MEDORIA · TAJIKISTAN",
-    headline: "یک خانه. دو جهان.",
-    hint: "نور را حرکت دهید.",
-    choose: "جهان خود را انتخاب کنید",
-    health: {
-      eyebrow: "MEDORIA HEALTH",
-      title: "دقت. اعتماد. هر روز.",
-      line: "برای کلینیک‌ها، داروخانه‌ها و بیمارستان‌های تاجیکستان.",
-      cta: "ورود به Health",
-    },
-    beauty: {
-      eyebrow: "MEDORIA BEAUTY",
-      title: "زیبایی‌ای که حس می‌شود.",
-      line: "برای سالن‌ها، بوتیک‌ها و متخصصان زیبایی.",
-      cta: "کشف Beauty",
-    },
-  },
+  health: { cta: "Ворид шудан ба Health" },
+  beauty: { cta: "Кашф кардани Beauty" },
 };
 
 const langLabels = Object.fromEntries(GATEWAY_LANGS.map((c) => [c, LANG_META[c].name]));
@@ -117,7 +50,7 @@ export default function Gateway() {
     <main className="v-scope">
       <LumenStage
         media={media}
-        copy={GATEWAY_COPY[DEFAULT_LOCALE]}
+        copy={GATEWAY_COPY}
         defaultLang={DEFAULT_LOCALE}
         langs={GATEWAY_LANGS}
         langLabels={langLabels}
