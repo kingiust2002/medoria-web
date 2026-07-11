@@ -55,7 +55,7 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
 
     // Magnetic plaque CTAs: each invitation subtly reaches toward the hand.
     const magnets = [healthDoorRef.current, beautyDoorRef.current]
-      .map((door) => door?.querySelector("a"))
+      .map((door) => door?.querySelector(".lumen-cta"))
       .filter(Boolean)
       .map((node) => ({ el: node, left: 0, top: 0, w: 0, h: 0, x: 0, y: 0, vx: 0, vy: 0 }));
 
@@ -343,7 +343,7 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
     const bindDoor = (door, at, name) => {
       if (!door) return;
       const enter = pin(at);
-      const cta = door.querySelector("a");
+      const cta = door.querySelector(".lumen-cta");
       const flash = lock(name);
       door.addEventListener("pointerenter", enter);
       door.addEventListener("pointerleave", unpin);
@@ -486,46 +486,10 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
         </div>
       )}
 
-      {/* ── neutral parent identity ──────────────────────────────────────── */}
-      <header className="relative z-20 flex flex-col items-center px-6 pt-8 text-center md:pt-10">
-        <p className="lumen-rise lumen-eyebrow" style={{ "--d": "0.92s" }}>
-          {copy.eyebrow}
-        </p>
-        <span
-          dir="ltr"
-          translate="no"
-          aria-label="Medoria"
-          className="lumen-rise mt-3 inline-flex select-none items-center gap-3"
-          style={{ "--d": "1.02s" }}
-        >
-          <img src="/logo-mark.png" alt="" aria-hidden="true" width={32} height={32} style={{ width: 32, height: 32 }} className="shrink-0 object-contain" />
-          <img src="/brand/wordmark-navy.png" alt="Medoria" width={131} height={26} fetchPriority="high" style={{ height: 26, width: "auto" }} className="object-contain" />
-        </span>
-        {/* poster headline, phrase by phrase: one house… then two worlds */}
-        <h1 className="lumen-headline font-display">
-          {copy.headline.split(/(?<=\.)\s+/).map((phrase, i) => (
-            <span key={phrase} className="lumen-rise inline-block" style={{ "--d": `${(1.05 + i * 0.17).toFixed(2)}s` }}>
-              {phrase}
-              {" "}
-            </span>
-          ))}
-        </h1>
-        <p className="lumen-rise lumen-hint" style={{ "--d": "1.24s" }}>
-          {copy.hint}
-        </p>
-      </header>
-
-      {/* the vitrine window — on mobile a guaranteed strip of raw scene
-          breathes between the identity and the plaques */}
-      <div className="min-h-[5.5rem] flex-1 md:min-h-0" />
-
-      {/* ── the two worlds ───────────────────────────────────────────────── */}
-      <p className="lumen-rise lumen-choose relative z-20 px-6" style={{ "--d": "1.55s" }}>
-        {copy.choose}
-      </p>
+      {/* the two worlds — slim invitation bars pinned to the top */}
       <nav
-        aria-label="Medoria Health ё Medoria Beauty"
-        className="relative z-20 mt-4 grid gap-4 px-5 pb-7 md:grid-cols-2 md:gap-6 md:px-10 md:pb-10 lg:px-14 xl:px-20"
+        aria-label="Medoria Health / Medoria Beauty"
+        className="relative z-20 grid gap-3 px-4 pt-5 md:px-8 md:pt-7 lg:grid-cols-2 lg:gap-5 lg:px-12"
       >
         <WorldDoor
           ref={healthDoorRef}
@@ -553,6 +517,9 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
         />
       </nav>
 
+      {/* the cinematic vitrine fills everything below the bars */}
+      <div className="flex-1" />
+
       <footer
         className="lumen-rise relative z-20 flex items-center justify-center gap-3 px-6 pb-5 text-center text-[11px]"
         style={{ "--d": "1.9s", color: "rgb(20 28 46 / 0.55)" }}
@@ -577,44 +544,17 @@ const WorldDoor = forwardRef(function WorldDoor(
   return (
     <div ref={ref} data-vertical={vertical} className={`lumen-door lumen-door-${vertical}`}>
       <div
-        className={`lumen-rise lumen-plaque lumen-plaque-${vertical} flex flex-col items-center text-center ${
-          beauty ? "md:items-end md:text-end" : "md:items-start md:text-start"
+        className={`lumen-rise lumen-plaque lumen-bar lumen-plaque-${vertical} ${
+          beauty ? "lumen-bar-beauty" : ""
         }`}
-        style={{ "--d": "1.32s" }}
+        style={{ "--d": beauty ? "0.62s" : "0.5s" }}
       >
-        {macro && (
-          <img
-            src={macro}
-            alt=""
-            aria-hidden="true"
-            loading="lazy"
-            decoding="async"
-            width={72}
-            height={72}
-            className="lumen-specimen"
-          />
-        )}
-        <p className="lumen-index">
-          <span className="lumen-index-no">{index}</span>
-          <span aria-hidden="true" className="lumen-index-rule" />
-          <span>{copy.eyebrow}</span>
-        </p>
-        <div className="mt-3.5">
-          <WorldLockup vertical={vertical} height={36} />
+        <div className="lumen-bar-id">
+          <span aria-hidden="true" className="lumen-bar-no">{index}</span>
+          <WorldLockup vertical={vertical} height={28} />
         </div>
-        <h2 className="lumen-title font-display">{copy.title}</h2>
-        <p className="lumen-line">{copy.line}</p>
-        <div
-          className={`lumen-rise mt-5 flex flex-wrap items-center justify-center gap-3 ${
-            beauty ? "md:flex-row-reverse md:justify-start" : "md:justify-start"
-          }`}
-          style={{ "--d": "1.72s" }}
-        >
-          <Link href={href} className={`lumen-cta lumen-cta-${vertical} v-focus group/cta`}>
-            <span>{copy.cta}</span>
-            <span aria-hidden="true" className="lumen-cta-arrow">→</span>
-          </Link>
-          <ul className="lumen-langs" aria-label={`Medoria ${beauty ? "Beauty" : "Health"} — забонҳо / languages`}>
+        <div className="lumen-bar-act">
+          <ul className="lumen-langs" aria-label={`Medoria ${beauty ? "Beauty" : "Health"} languages`}>
             {langs.map((code) => (
               <li key={code}>
                 <Link
@@ -630,6 +570,10 @@ const WorldDoor = forwardRef(function WorldDoor(
               </li>
             ))}
           </ul>
+          <Link href={href} className={`lumen-cta lumen-cta-${vertical} v-focus group/cta`}>
+            <span>{copy.cta}</span>
+            <span aria-hidden="true" className="lumen-cta-arrow">→</span>
+          </Link>
         </div>
       </div>
     </div>

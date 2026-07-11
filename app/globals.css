@@ -816,7 +816,51 @@ html.lenis, html.lenis body { height: auto; }
 
 /* Language pills settle one by one (35–40ms editorial stagger). */
 .lumen-langs li { animation: lumen-rise 0.5s var(--ease-lux) both; }
-.lumen-langs li:nth-child(1) { animation-delay: 1.78s; }
-.lumen-langs li:nth-child(2) { animation-delay: 1.82s; }
-.lumen-langs li:nth-child(3) { animation-delay: 1.86s; }
-.lumen-langs li:nth-child(4) { animation-delay: 1.9s; }
+.lumen-langs li:nth-child(1) { animation-delay: 0.72s; }
+.lumen-langs li:nth-child(2) { animation-delay: 0.76s; }
+.lumen-langs li:nth-child(3) { animation-delay: 0.8s; }
+.lumen-langs li:nth-child(4) { animation-delay: 0.84s; }
+
+/* ── Slim invitation bars (gateway top) ────────────────────────────────────
+   The two worlds collapse from tall plaques into thin single-row bars pinned
+   to the top; the cinematic vitrine fills everything below. One row:
+   [№] [lockup] … [languages] [enter →]. Wraps gracefully if a row is tight. */
+.lumen-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 0.65rem 1.1rem;
+  padding: 0.6rem 1rem;
+}
+.lumen-bar-id { display: flex; align-items: center; gap: 0.7rem; min-width: 0; }
+.lumen-bar-no {
+  flex: none;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  padding: 0.16rem 0.42rem; border-radius: 0.32rem;
+  color: rgb(43 72 104 / 0.9); border: 1px solid rgb(43 72 104 / 0.24);
+}
+.lumen-door-beauty .lumen-bar-no { color: rgb(140 86 46 / 0.95); border-color: rgb(140 86 46 / 0.3); }
+.lumen-bar-act { display: flex; align-items: center; gap: 0.5rem; }
+.lumen-bar .lumen-cta { padding: 0.58rem 1rem; font-size: 10.5px; }
+.lumen-bar .lumen-lang { padding: 0.5rem 0.68rem; }
+
+/* Beauty mirrors: identity on the right, actions on the left */
+.lumen-bar-beauty { flex-direction: row-reverse; }
+.lumen-bar-beauty .lumen-bar-id { flex-direction: row-reverse; }
+
+/* Comfortable taps when the bars stack (mobile / tablet) */
+@media (max-width: 1023px) {
+  .lumen-bar .lumen-cta { padding: 0.66rem 1.1rem; }
+  .lumen-bar .lumen-lang { padding: 0.58rem 0.8rem; }
+}
+
+/* Mobile: each bar becomes a tidy stack — identity, then a row of language
+   pills, then a full-width enter button. Compact, not a tall card. */
+@media (max-width: 767px) {
+  .lumen-bar, .lumen-bar-beauty {
+    flex-direction: column; align-items: stretch; justify-content: flex-start;
+    flex-wrap: nowrap; gap: 0.7rem; padding: 0.85rem 0.95rem 0.9rem;
+  }
+  .lumen-bar-beauty .lumen-bar-id { flex-direction: row; }
+  .lumen-bar-act { flex-direction: column; align-items: stretch; gap: 0.6rem; }
+  .lumen-bar-act .lumen-langs { justify-content: flex-start; }
+  .lumen-bar-act .lumen-cta { width: 100%; justify-content: center; }
+}
