@@ -53,6 +53,12 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
     const lens = finePointer ? lensRef.current : null;
     const lensCanvas = lensCanvasRef.current;
 
+    // Magnetic plaque CTAs: each invitation subtly reaches toward the hand.
+    const magnets = [healthDoorRef.current, beautyDoorRef.current]
+      .map((door) => door?.querySelector("a"))
+      .filter(Boolean)
+      .map((node) => ({ el: node, left: 0, top: 0, w: 0, h: 0, x: 0, y: 0, vx: 0, vy: 0 }));
+
     let rect = { left: 0, top: 0, width: 1, height: 1 };
     const measure = () => {
       const r = el.getBoundingClientRect();
@@ -62,6 +68,13 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
         lensCanvas.style.width = `${rect.width}px`;
         lensCanvas.style.height = `${rect.height}px`;
       }
+      for (const m of magnets) {
+        const b = m.el.getBoundingClientRect();
+        m.left = b.left - rect.left;
+        m.top = b.top - rect.top;
+        m.w = b.width;
+        m.h = b.height;
+      }
     };
     measure();
 
@@ -69,8 +82,10 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
     // velocity flare. All integrated per-frame with dt-clamped physics.
     let pos = 50, vel = 0, target = 50;
     let pointerPct = 50, pointerFresh = false; // raw pointer x% — the blade bows toward the hand
+    let pointerOn = false;                     // a fine pointer is over the stage right now
     let bend = 0, bendVel = 0;
     let cy = 50, cyVel = 0, cyTarget = 50;
+    let parX = 0, parVX = 0, parY = 0, parVY = 0; // heavy-lag scene depth (vitrine parallax)
     let flare = 0, flareT = 0;
     let lx = 0, ly = 0, ltx = 0, lty = 0, lvx = 0, lvy = 0, lensSeeded = false;
     let ls = 0, lsv = 0, lst = 0;
@@ -104,6 +119,14 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
       el.style.setProperty("--flare", Math.min(1, flare).toFixed(3));
       el.style.setProperty("--lift-health", clamp(0, 1, (pos - 52) / 11).toFixed(3));
       el.style.setProperty("--lift-beauty", clamp(0, 1, (48 - pos) / 11).toFixed(3));
+      if (finePointer && wide) {
+        el.style.setProperty("--par-x", parX.toFixed(4));
+        el.style.setProperty("--par-y", parY.toFixed(4));
+        for (const m of magnets) {
+          m.el.style.setProperty("--magx", `${m.x.toFixed(2)}px`);
+          m.el.style.setProperty("--magy", `${m.y.toFixed(2)}px`);
+        }
+      }
       setWorld(pos > 55 ? "health" : pos < 45 ? "beauty" : null);
 
       if (live) {
@@ -158,6 +181,37 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
       cy += cyVel * dt;
       flare += (flareT - flare) * (flareT > flare ? 10 : 3.2) * dt;
       flareT *= Math.pow(0.002, dt); // the flash always dies down
+      // Vitrine depth: the scene drifts against the hand on a deliberately
+      // heavy spring — the still life sits BEHIND the glass.
+      const parTX = pointerFresh ? clamp(-1, 1, (pointerPct - 50) / 50) : 0;
+      const parTY = pointerFresh ? clamp(-1, 1, (cyTarget - 50) / 50) : 0;
+      parVX += (26 * (parTX - parX) - 9 * parVX) * dt;
+      parX += parVX * dt;
+      parVY += (26 * (parTY - parY) - 9 * parVY) * dt;
+      parY += parVY * dt;
+      // Magnetic invitations: near the hand a plaque CTA leans toward it
+      // (≤5px, falloff from its nearest EDGE) and springs home when it leaves.
+      let magBusy = false;
+      for (const m of magnets) {
+        let tx = 0, ty = 0;
+        if (live && pointerOn) {
+          // distance from the CTA's nearest edge, not its center — wide
+          // buttons keep a real attraction field around them
+          const qx = clamp(m.left, m.left + m.w, ltx);
+          const qy = clamp(m.top, m.top + m.h, lty);
+          const dist = Math.hypot(ltx - qx, lty - qy);
+          if (dist < 80) {
+            const pull = (1 - dist / 80) * 0.1;
+            tx = clamp(-5, 5, (ltx - (m.left + m.w / 2)) * pull);
+            ty = clamp(-4, 4, (lty - (m.top + m.h / 2)) * pull);
+          }
+        }
+        m.vx += (120 * (tx - m.x) - 14 * m.vx) * dt;
+        m.x += m.vx * dt;
+        m.vy += (120 * (ty - m.y) - 14 * m.vy) * dt;
+        m.y += m.vy * dt;
+        if (Math.abs(tx - m.x) > 0.05 || Math.abs(m.vx) > 0.05) magBusy = true;
+      }
       if (lens) {
         lvx += (150 * (ltx - lx) - 18 * lvx) * dt;
         lx += lvx * dt;
@@ -168,9 +222,11 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
       }
 
       const busy =
-        breathing ||
+        breathing || magBusy ||
         Math.abs(target - pos) > 0.02 || Math.abs(vel) > 0.05 ||
         Math.abs(bend) > 0.03 || Math.abs(bendVel) > 0.05 ||
+        Math.abs(parTX - parX) > 0.002 || Math.abs(parVX) > 0.002 ||
+        Math.abs(parTY - parY) > 0.002 || Math.abs(parVY) > 0.002 ||
         flare > 0.015 ||
         (lens && (ls > 0.005 || Math.abs(lst - ls) > 0.005 ||
           Math.abs(ltx - lx) > 0.3 || Math.abs(lty - ly) > 0.3));
@@ -215,6 +271,7 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
 
     const onPointerMove = (e) => {
       if (e.pointerType === "touch") return;
+      pointerOn = true;
       const nx = e.clientX - rect.left, ny = e.clientY - rect.top;
       const nowT = performance.now();
       if (lensSeeded) {
@@ -237,7 +294,7 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
     };
     const onLeave = () => {
       setLensWanted(false);
-      lastSteer = 0; cyTarget = 50; pointerFresh = false;
+      lastSteer = 0; cyTarget = 50; pointerFresh = false; pointerOn = false;
       schedule(); // hand back to the idle breath
     };
     const onKey = (e) => {
@@ -381,6 +438,10 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
       className="lumen-stage noise relative flex min-h-[100svh] flex-col overflow-hidden"
       style={{ "--mx": "50%" }}
     >
+      {/* ── пардаи нур: the light curtains part from the aperture line ──── */}
+      <div aria-hidden="true" className="lumen-curtain lumen-curtain-l absolute inset-y-0 left-0 z-30" />
+      <div aria-hidden="true" className="lumen-curtain lumen-curtain-r absolute inset-y-0 right-0 z-30" />
+
       {/* ── the vitrine: one scene, two lights ──────────────────────────── */}
       <div aria-hidden="true" className="lumen-scene absolute inset-0">
         {/* cool / Health — full frame, owns everything left of the aperture */}
@@ -440,8 +501,14 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
           <img src="/logo-mark.png" alt="" aria-hidden="true" width={32} height={32} style={{ width: 32, height: 32 }} className="shrink-0 object-contain" />
           <img src="/brand/wordmark-navy.png" alt="Medoria" width={131} height={26} fetchPriority="high" style={{ height: 26, width: "auto" }} className="object-contain" />
         </span>
-        <h1 className="lumen-rise lumen-headline font-display" style={{ "--d": "1.12s" }}>
-          {copy.headline}
+        {/* poster headline, phrase by phrase: one house… then two worlds */}
+        <h1 className="lumen-headline font-display">
+          {copy.headline.split(/(?<=\.)\s+/).map((phrase, i) => (
+            <span key={phrase} className="lumen-rise inline-block" style={{ "--d": `${(1.05 + i * 0.17).toFixed(2)}s` }}>
+              {phrase}
+              {" "}
+            </span>
+          ))}
         </h1>
         <p className="lumen-rise lumen-hint" style={{ "--d": "1.24s" }}>
           {copy.hint}

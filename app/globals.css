@@ -612,11 +612,15 @@ html.lenis, html.lenis body { height: auto; }
   display: inline-flex; align-items: center; gap: 0.75rem;
   padding: 0.8rem 1.5rem; border-radius: 0.5rem;
   font-size: 12.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  /* magnetic reach (engine-driven vars) + press feedback on the independent
+     scale channel, so the two never fight */
+  transform: translate3d(var(--magx, 0px), var(--magy, 0px), 0);
+  scale: 1;
   transition:
-    transform 0.45s var(--ease-lux), box-shadow 0.45s var(--ease-lux),
+    scale 0.18s var(--ease-lux), box-shadow 0.45s var(--ease-lux),
     border-color 0.45s var(--ease-lux), background-color 0.45s var(--ease-lux);
 }
-.lumen-cta:hover { transform: translateY(-1px); }
+.lumen-cta:active { scale: 0.97; }
 .lumen-cta-arrow { transition: translate 0.35s var(--ease-lux); }
 .lumen-cta:hover .lumen-cta-arrow, .lumen-cta:focus-visible .lumen-cta-arrow { translate: 3px 0; }
 .lumen-cta-health {
@@ -773,3 +777,46 @@ html.lenis, html.lenis body { height: auto; }
   filter: blur(3px);
   transform: rotate(-14deg);
 }
+
+/* ── LUMEN OVERTURE — the opening act ─────────────────────────────────────
+   Пардаи нур: two ivory curtains part from the aperture line at first
+   paint — the page literally opens where the two worlds will meet. Pure
+   CSS (plays JS-off), collapsed instantly under reduced motion; the inner
+   edges glow like the seam being born. */
+@keyframes lumen-curtain-l { from { transform: translateX(0); } to { transform: translateX(-102%); } }
+@keyframes lumen-curtain-r { from { transform: translateX(0); } to { transform: translateX(102%); } }
+.lumen-curtain {
+  width: 50.5%; pointer-events: none;
+  background: linear-gradient(180deg, #FDFCFA 0%, #F7F4EF 100%);
+  animation-duration: 0.95s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-delay: 0.35s;
+  animation-fill-mode: both;
+  will-change: transform;
+}
+.lumen-curtain-l {
+  animation-name: lumen-curtain-l;
+  box-shadow: 22px 0 44px -10px rgba(255, 255, 255, 0.95), inset -1px 0 0 rgba(255, 255, 255, 0.9);
+}
+.lumen-curtain-r {
+  animation-name: lumen-curtain-r;
+  box-shadow: -22px 0 44px -10px rgba(255, 255, 255, 0.95), inset 1px 0 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Vitrine depth: the still life sits behind the glass — it drifts against
+   the hand on a heavy engine spring (--par-*), desktop fine pointers only. */
+@media (min-width: 768px) and (pointer: fine) {
+  .lumen-stage[data-live] .lumen-scene img,
+  .lumen-stage[data-live] .lumen-scene video {
+    transform: scale(1.05)
+      translate3d(calc(var(--par-x, 0) * -7px), calc(var(--par-y, 0) * -4px), 0);
+    will-change: transform;
+  }
+}
+
+/* Language pills settle one by one (35–40ms editorial stagger). */
+.lumen-langs li { animation: lumen-rise 0.5s var(--ease-lux) both; }
+.lumen-langs li:nth-child(1) { animation-delay: 1.78s; }
+.lumen-langs li:nth-child(2) { animation-delay: 1.82s; }
+.lumen-langs li:nth-child(3) { animation-delay: 1.86s; }
+.lumen-langs li:nth-child(4) { animation-delay: 1.9s; }
