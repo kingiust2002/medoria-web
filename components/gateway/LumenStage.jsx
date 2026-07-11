@@ -87,7 +87,11 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
     let cy = 50, cyVel = 0, cyTarget = 50;
     let parX = 0, parVX = 0, parY = 0, parVY = 0; // heavy-lag scene depth (vitrine parallax)
     let flare = 0, flareT = 0;
-    let lx = 0, ly = 0, ltx = 0, lty = 0, lvx = 0, lvy = 0, lensSeeded = false;
+    // lens/torch springs wake at the still life's pool of light — never at
+    // (0,0), or the torch would open in the top-left corner before the
+    // first pointer move
+    let lx = rect.width / 2, ly = rect.height * 0.42;
+    let ltx = lx, lty = ly, lvx = 0, lvy = 0, lensSeeded = false;
     let ls = 0, lsv = 0, lst = 0;
     let lensSide = "", lensAttr = false;
     let hold = null;                    // plaque hover/focus pin (62 health / 38 beauty)
