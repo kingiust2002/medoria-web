@@ -151,6 +151,9 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
           lensCanvas.style.transformOrigin = `${lx.toFixed(1)}px ${ly.toFixed(1)}px`;
           lensCanvas.style.transform = `translate(${(LENS_R - lx).toFixed(1)}px, ${(LENS_R - ly).toFixed(1)}px) scale(1.15)`;
         }
+        // the torch rides the same springs as the lens
+        el.style.setProperty("--tx", `${lx.toFixed(1)}px`);
+        el.style.setProperty("--ty", `${ly.toFixed(1)}px`);
         // Under the cool world you peer into the warm one — and back.
         const side = (lx / rect.width) * 100 < pos ? "warm" : "cool";
         if (side !== lensSide) { lensSide = side; lens.setAttribute("data-side", side); }
@@ -295,6 +298,9 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
     const onLeave = () => {
       setLensWanted(false);
       lastSteer = 0; cyTarget = 50; pointerFresh = false; pointerOn = false;
+      // the torch glides home to the still life
+      ltx = rect.width / 2;
+      lty = rect.height * 0.42;
       schedule(); // hand back to the idle breath
     };
     const onKey = (e) => {
@@ -455,6 +461,10 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
           {grading("warm")}
           <div className="lumen-field lumen-field-warm" />
         </div>
+        {/* шаби нур — the night veil; the visitor's torch is a hole cut
+            through it (engine-positioned on fine pointers, a still pool of
+            light on the scene everywhere else, JS-off included) */}
+        <div className="lumen-night absolute inset-0" />
         <div className="lumen-vignette absolute inset-0" />
         <div className="lumen-wash-top absolute inset-x-0 top-0 h-44" />
         <div className="lumen-wash-bottom absolute inset-x-0 bottom-0 h-[19rem]" />
@@ -499,7 +509,7 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
           style={{ "--d": "1.02s" }}
         >
           <img src="/logo-mark.png" alt="" aria-hidden="true" width={32} height={32} style={{ width: 32, height: 32 }} className="shrink-0 object-contain" />
-          <img src="/brand/wordmark-navy.png" alt="Medoria" width={131} height={26} fetchPriority="high" style={{ height: 26, width: "auto" }} className="object-contain" />
+          <img src="/brand/wordmark-white.png" alt="Medoria" width={131} height={26} fetchPriority="high" style={{ height: 26, width: "auto" }} className="object-contain" />
         </span>
         {/* poster headline, phrase by phrase: one house… then two worlds */}
         <h1 className="lumen-headline font-display">
@@ -555,10 +565,10 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
 
       <footer
         className="lumen-rise relative z-20 flex items-center justify-center gap-3 px-6 pb-5 text-center text-[11px]"
-        style={{ "--d": "1.9s", color: "rgb(20 28 46 / 0.55)" }}
+        style={{ "--d": "1.9s", color: "rgb(212 224 240 / 0.62)" }}
       >
         <span>© {year} Medoria</span>
-        <span aria-hidden="true" className="h-3 w-px" style={{ background: "rgb(20 28 46 / 0.2)" }} />
+        <span aria-hidden="true" className="h-3 w-px" style={{ background: "rgb(212 224 240 / 0.28)" }} />
         <span dir="ltr" translate="no">Health · Beauty</span>
       </footer>
     </section>
