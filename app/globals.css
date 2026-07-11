@@ -820,3 +820,112 @@ html.lenis, html.lenis body { height: auto; }
 .lumen-langs li:nth-child(2) { animation-delay: 1.82s; }
 .lumen-langs li:nth-child(3) { animation-delay: 1.86s; }
 .lumen-langs li:nth-child(4) { animation-delay: 1.9s; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NOCTURNE — «Шаби нур» / the gallery after dark (route "/" only).
+   The vitrine goes to midnight: a night veil sleeps over the photography and
+   the visitor's pointer carries the light — a torch cut through the veil on
+   the same springs as the counter-lens. "Нурро ҳаракат диҳед" made literal.
+   JS-off / touch / reduced-motion keep a still pool of light on the still
+   life (veil lightened so every word stays readable); choosing a world
+   (click) raises the house lights for a beat. Plaques read as backlit
+   gallery labels — light glass glowing in the dark, so all existing plaque
+   legibility/contrast work carries over unchanged.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.lumen-stage { background: #0A0E27; }
+
+/* the night veil, with the torch cut through it */
+.lumen-night {
+  pointer-events: none;
+  background: rgba(6, 10, 24, 0.68);
+  -webkit-mask-image: radial-gradient(
+    circle calc(430px + var(--flare, 0) * 130px) at var(--tx, 50%) var(--ty, 42%),
+    transparent 0%, rgba(0, 0, 0, 0.35) 42%, #000 82%
+  );
+  mask-image: radial-gradient(
+    circle calc(430px + var(--flare, 0) * 130px) at var(--tx, 50%) var(--ty, 42%),
+    transparent 0%, rgba(0, 0, 0, 0.35) 42%, #000 82%
+  );
+  transition: background-color 0.35s var(--ease-lux);
+  animation: lumen-fade-in 1.2s var(--ease-lux) 0.55s both;
+}
+/* approaching a world begins to raise the house lights; choosing it (click)
+   raises them fully for a beat */
+.lumen-stage[data-world] .lumen-night { background: rgba(6, 10, 24, 0.52); }
+.lumen-stage[data-lock] .lumen-night { background: rgba(6, 10, 24, 0.34); }
+/* touch surfaces and stillness get a lighter, fully readable night */
+@media (max-width: 767px), (pointer: coarse) {
+  .lumen-night { background: rgba(6, 10, 24, 0.5); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lumen-night { background: rgba(6, 10, 24, 0.44); }
+}
+
+/* identity typography turns to face the dark */
+.lumen-eyebrow { color: rgba(214, 226, 244, 0.72); }
+.lumen-headline { color: #F3F7FD; text-shadow: 0 2px 34px rgba(6, 11, 26, 0.85); }
+.lumen-hint { color: rgba(214, 226, 244, 0.68); }
+.lumen-choose { color: rgba(224, 233, 246, 0.72); text-shadow: 0 1px 18px rgba(4, 8, 20, 0.85); }
+.lumen-choose::before { background: linear-gradient(90deg, transparent, rgba(224, 233, 246, 0.5)); }
+.lumen-choose::after { background: linear-gradient(270deg, transparent, rgba(224, 233, 246, 0.5)); }
+
+/* washes and vignette become the hall's darkness, not daylight */
+.lumen-wash-top { background: linear-gradient(180deg, rgba(4, 8, 19, 0.62), transparent); }
+.lumen-wash-bottom { background: linear-gradient(0deg, rgba(4, 8, 19, 0.58) 12%, transparent); }
+.lumen-vignette {
+  background: radial-gradient(125% 100% at 50% 42%, transparent 54%, rgba(2, 5, 14, 0.52) 100%);
+}
+
+/* night curtains: the dark parts, a breath of light at the meeting line */
+.lumen-curtain { background: linear-gradient(180deg, #0D1428 0%, #070C1B 100%); }
+.lumen-curtain-l { box-shadow: 22px 0 46px -8px rgba(196, 219, 248, 0.45), inset -1px 0 0 rgba(226, 240, 255, 0.4); }
+.lumen-curtain-r { box-shadow: -22px 0 46px -8px rgba(196, 219, 248, 0.45), inset 1px 0 0 rgba(226, 240, 255, 0.4); }
+
+/* plaques become backlit gallery labels — light glass radiating in the dark
+   (content contrast unchanged), their glow answering the chosen world */
+.lumen-plaque {
+  background: linear-gradient(178deg, rgba(255, 255, 255, 0.88), rgba(250, 250, 252, 0.76));
+  box-shadow:
+    0 30px 90px -28px rgba(1, 4, 12, 0.9),
+    0 0 52px -8px rgba(222, 236, 252, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+@media (min-width: 768px) {
+  .lumen-stage[data-world="health"] .lumen-plaque-health {
+    box-shadow:
+      0 34px 96px -28px rgba(1, 4, 12, 0.92),
+      0 0 64px -6px rgba(150, 196, 244, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+  .lumen-stage[data-world="beauty"] .lumen-plaque-beauty {
+    box-shadow:
+      0 34px 96px -28px rgba(1, 4, 12, 0.92),
+      0 0 64px -6px rgba(240, 196, 138, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+}
+
+/* ── Showroom staging (the owner's campaign pair: each world is its own
+   podium hall with a glowing shrine arch baked into the image center).
+   On md+ each grading slides so ITS shrine stands near the center of its
+   own half (~30% / ~70%; 120% width keeps the vertical crop under ~8% so
+   the whole hall stays in frame) — at rest you see two complete lit
+   arches, one per world, and the headline breathes on clean wall between
+   them. On mobile the arches leave the frame instead (the plaques carry
+   the branding) and the podium products fill each side. The counter-lens
+   mirrors the same staging so it always previews the other hall as it
+   would actually sit. */
+@media (min-width: 768px) {
+  .lumen-scene [data-grade="cool"],
+  .lumen-lens-canvas [data-grade="cool"] {
+    width: 120%; max-width: none; left: -30%;
+  }
+  .lumen-scene [data-grade="warm"],
+  .lumen-lens-canvas [data-grade="warm"] {
+    width: 120%; max-width: none; left: 10%;
+  }
+}
+@media (max-width: 767px) {
+  .lumen-scene [data-grade="cool"] { object-position: 12% 50%; }
+  .lumen-scene [data-grade="warm"] { object-position: 88% 50%; }
+}
