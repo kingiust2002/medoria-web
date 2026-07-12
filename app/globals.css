@@ -821,46 +821,99 @@ html.lenis, html.lenis body { height: auto; }
 .lumen-langs li:nth-child(3) { animation-delay: 0.8s; }
 .lumen-langs li:nth-child(4) { animation-delay: 0.84s; }
 
-/* ── Slim invitation bars (gateway top) ────────────────────────────────────
-   The two worlds collapse from tall plaques into thin single-row bars pinned
-   to the top; the cinematic vitrine fills everything below. One row:
-   [№] [lockup] … [languages] [enter →]. Wraps gracefully if a row is tight. */
-.lumen-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 0.65rem 1.1rem;
-  padding: 0.6rem 1rem;
+/* ── World cards — centered "liquid glass" plaques (ui-ux-pro-max Liquid
+   Glass + 21st glass-card references). Content is centered, no numbering.
+   On wide desktop each card hugs its outer edge with a crescent inner edge so
+   the vitrine's own baked wordmarks stay clear in the middle; on narrower
+   widths the cards center with symmetric rounding. Mobile is handled below. */
+.lumen-door { display: flex; justify-content: center; }
+.lumen-card {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; gap: 0.46rem;
+  width: 100%; max-width: 25rem;
+  padding: 0.7rem 1.5rem 0.78rem;
+  border-radius: 1.4rem;
+  text-align: center;
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  backdrop-filter: blur(22px) saturate(1.35);
 }
-.lumen-bar-id { display: flex; align-items: center; gap: 0.7rem; min-width: 0; }
-.lumen-bar-no {
-  flex: none;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
-  padding: 0.16rem 0.42rem; border-radius: 0.32rem;
-  color: rgb(43 72 104 / 0.9); border: 1px solid rgb(43 72 104 / 0.24);
+.lumen-card-lockup { position: relative; z-index: 1; }
+.lumen-card-act {
+  position: relative; z-index: 1;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 0.4rem 0.5rem;
 }
-.lumen-door-beauty .lumen-bar-no { color: rgb(140 86 46 / 0.95); border-color: rgb(140 86 46 / 0.3); }
-.lumen-bar-act { display: flex; align-items: center; gap: 0.5rem; }
-.lumen-bar .lumen-cta { padding: 0.58rem 1rem; font-size: 10.5px; }
-.lumen-bar .lumen-lang { padding: 0.5rem 0.68rem; }
+.lumen-card .lumen-cta { padding: 0.56rem 1.05rem; font-size: 10.5px; }
+.lumen-card .lumen-lang { padding: 0.5rem 0.72rem; }
 
-/* Beauty mirrors: identity on the right, actions on the left */
-.lumen-bar-beauty { flex-direction: row-reverse; }
-.lumen-bar-beauty .lumen-bar-id { flex-direction: row-reverse; }
+/* liquid-glass sheen: a slow specular sweep on hover/focus */
+.lumen-card-sheen {
+  position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(115deg, transparent 34%, rgba(255,255,255,0.55) 50%, transparent 64%);
+  background-size: 220% 100%; background-position: 150% 0;
+  opacity: 0; mix-blend-mode: screen;
+  transition: opacity 0.45s var(--ease-lux);
+}
+.lumen-door:hover .lumen-card-sheen,
+.lumen-door:focus-within .lumen-card-sheen {
+  opacity: 0.7; animation: lumen-card-sweep 1.15s var(--ease-silk);
+}
+@keyframes lumen-card-sweep { from { background-position: 150% 0; } to { background-position: -70% 0; } }
 
-/* Comfortable taps when the bars stack (mobile / tablet) */
+/* Wide desktop: cards hug their outer edge; inner (center-facing) end is a
+   full semicircle — the crescent that ends at the seam-adjacent line. */
+@media (min-width: 1280px) {
+  .lumen-door-health { justify-content: flex-start; }
+  .lumen-door-beauty { justify-content: flex-end; }
+  .lumen-card { max-width: 32rem; }
+  .lumen-card-health { border-radius: 1.15rem 999px 999px 1.15rem; padding-right: 2.7rem; }
+  .lumen-card-beauty { border-radius: 999px 1.15rem 1.15rem 999px; padding-left: 2.7rem; }
+}
+
+/* Comfortable taps when the cards stack (tablet / small laptop) */
 @media (max-width: 1023px) {
-  .lumen-bar .lumen-cta { padding: 0.66rem 1.1rem; }
-  .lumen-bar .lumen-lang { padding: 0.58rem 0.8rem; }
+  .lumen-card .lumen-cta { padding: 0.64rem 1.1rem; }
+  .lumen-card .lumen-lang { padding: 0.56rem 0.8rem; }
 }
 
-/* Mobile: each bar becomes a tidy stack — identity, then a row of language
-   pills, then a full-width enter button. Compact, not a tall card. */
-@media (max-width: 767px) {
-  .lumen-bar, .lumen-bar-beauty {
-    flex-direction: column; align-items: stretch; justify-content: flex-start;
-    flex-wrap: nowrap; gap: 0.7rem; padding: 0.85rem 0.95rem 0.9rem;
-  }
-  .lumen-bar-beauty .lumen-bar-id { flex-direction: row; }
-  .lumen-bar-act { flex-direction: column; align-items: stretch; gap: 0.6rem; }
-  .lumen-bar-act .lumen-langs { justify-content: flex-start; }
-  .lumen-bar-act .lumen-cta { width: 100%; justify-content: center; }
+/* ── MOBILE two-door split (phones) — top Health hall, bottom Beauty hall,
+   a horizontal light seam between, a centered glass card in each. ─────────── */
+.lumen-mobile {
+  position: absolute; inset: 0; z-index: 40;
+  display: flex; flex-direction: column; background: #0a0e18;
+}
+.lumen-mo-half {
+  position: relative; flex: 1 1 0; min-height: 0;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.lumen-mo-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 44%; }
+.lumen-mo-wash {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(125% 78% at 50% 50%, rgba(255,255,255,0.14), transparent 62%),
+    linear-gradient(180deg, rgba(250,250,252,0.24), rgba(250,250,252,0.04) 42%, rgba(250,250,252,0.30));
+}
+.lumen-mo-beauty .lumen-mo-wash {
+  background:
+    radial-gradient(125% 78% at 50% 50%, rgba(255,248,240,0.14), transparent 62%),
+    linear-gradient(180deg, rgba(252,248,244,0.28), rgba(252,248,244,0.04) 46%, rgba(252,248,244,0.32));
+}
+.lumen-mo-card {
+  position: relative; z-index: 2;
+  width: min(88%, 20rem); max-width: none;
+  border-radius: 1.4rem;
+}
+/* the horizontal light seam where the two worlds meet */
+.lumen-mo-seam {
+  position: absolute; left: 0; right: 0; top: 50%; height: 2px; z-index: 3;
+  transform: translateY(-1px); pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.95) 28%, #fff 50%, rgba(255,255,255,0.95) 72%, transparent);
+  box-shadow: 0 0 22px rgba(255,255,255,0.85), 0 0 60px rgba(255,255,255,0.45);
+  animation: lumen-fade-in 1s var(--ease-lux) 0.5s both;
+}
+.lumen-mo-footer {
+  position: absolute; left: 0; right: 0; bottom: 0.55rem; z-index: 3;
+  text-align: center; font-size: 10.5px; letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.92); text-shadow: 0 1px 6px rgba(0,0,0,0.45);
+  pointer-events: none;
 }

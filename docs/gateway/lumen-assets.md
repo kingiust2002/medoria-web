@@ -74,15 +74,26 @@ Beauty macro prompt:
 > soft glow, sensual and quiet.
 > Negative: no people, no text, no logos, no labels, no watermark.
 
-## 3. Optional mobile portrait crops
-
-Not currently needed — the desktop pair center-crops safely at 390 px. Only
-if a future art direction demands it: `lumen-cold-portrait.*` /
-`lumen-warm-portrait.*`, 4:5, ≥1600 px tall, same base frames (these names are
-NOT yet wired into `lib/gateway/media.js`; wire them before uploading).
-
 ## After any upload
 
 1. Verify dimensions/weight (`file`, Pillow) against the specs above.
 2. `npm run build` — confirm `lib/gateway/media.js` picks the files up.
 3. Run `medoria-gateway-visual-qa` and review real screenshots.
+
+## 4. Optional portrait crops for the mobile two-door split
+
+The mobile gateway is a vertical split — top = Health hall, bottom = Beauty
+hall. It works today by center-cropping the landscape showroom stills, but you
+can upload bespoke portrait framings that `lib/gateway/media.js` auto-detects:
+
+| File | Role |
+| --- | --- |
+| `public/images/gateway/mobile-cold.webp` (or `mobile-cool.*`) | Health half (top) |
+| `public/images/gateway/mobile-warm.webp` | Beauty half (bottom) |
+
+Spec: portrait **4:5** (e.g. **1080 × 1350**), the world's shrine + its hero
+podium centered and safe within the middle 80% (a glass card floats over the
+upper-middle), ≤ ~250 KB webp each. Same scene family and grading as the
+landscape pair (glacial silver for Health, champagne copper for Beauty). No
+people, no added text/logos beyond what the showroom render already contains.
+If absent, the landscape stills are used (object-position 50% 44%).
