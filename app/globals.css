@@ -884,8 +884,12 @@ html.lenis, html.lenis body { height: auto; }
 }
 .lumen-mo-half {
   position: relative; flex: 1 1 0; min-height: 0;
-  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  display: flex; justify-content: center; overflow: hidden;
 }
+/* each card sits in the clear zone of its own half: Health up by the ceiling,
+   Beauty down by the floor — the shrines stay uncovered in the middle */
+.lumen-mo-health { align-items: flex-start; padding-top: 1.5rem; }
+.lumen-mo-beauty { align-items: flex-end; padding-bottom: 2.4rem; }
 .lumen-mo-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 44%; }
 .lumen-mo-wash {
   position: absolute; inset: 0; pointer-events: none;
