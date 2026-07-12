@@ -439,11 +439,11 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
       style={{ "--mx": "50%" }}
     >
       {/* ── пардаи нур: the light curtains part from the aperture line ──── */}
-      <div aria-hidden="true" className="lumen-curtain lumen-curtain-l absolute inset-y-0 left-0 z-30" />
-      <div aria-hidden="true" className="lumen-curtain lumen-curtain-r absolute inset-y-0 right-0 z-30" />
+      <div aria-hidden="true" className="lumen-curtain lumen-curtain-l absolute inset-y-0 left-0 z-30 max-md:hidden" />
+      <div aria-hidden="true" className="lumen-curtain lumen-curtain-r absolute inset-y-0 right-0 z-30 max-md:hidden" />
 
       {/* ── the vitrine: one scene, two lights ──────────────────────────── */}
-      <div aria-hidden="true" className="lumen-scene absolute inset-0">
+      <div aria-hidden="true" className="lumen-scene absolute inset-0 max-md:hidden">
         {/* cool / Health — full frame, owns everything left of the aperture */}
         <div className="absolute inset-0">
           {grading("cool")}
@@ -461,7 +461,7 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
       </div>
 
       {/* ── the aperture (straight seam: SSR/JS-off/entrance state) ──────── */}
-      <div aria-hidden="true" className="lumen-aperture absolute inset-y-0" style={{ left: "var(--mx)" }}>
+      <div aria-hidden="true" className="lumen-aperture absolute inset-y-0 max-md:hidden" style={{ left: "var(--mx)" }}>
         <span className="lumen-refract absolute inset-y-0 -left-[7px] w-[14px]" />
         <span className="lumen-bloom absolute inset-y-0 -left-16 w-32" />
         <span className="lumen-core absolute inset-y-0 -left-px w-[2px]" />
@@ -469,7 +469,7 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
       </div>
 
       {/* ── the light-blade: the boundary as a living curve (engine-driven) ─ */}
-      <svg ref={bladeRef} aria-hidden="true" className="lumen-blade absolute inset-0 h-full w-full" preserveAspectRatio="none">
+      <svg ref={bladeRef} aria-hidden="true" className="lumen-blade absolute inset-0 h-full w-full max-md:hidden" preserveAspectRatio="none">
         <path ref={bladeCoolRef} className="lumen-blade-cool" d="" />
         <path ref={bladeWarmRef} className="lumen-blade-warm" d="" />
         <path ref={bladeCoreRef} className="lumen-blade-core" d="" />
@@ -486,10 +486,11 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
         </div>
       )}
 
-      {/* the two worlds — slim invitation bars pinned to the top */}
+      {/* the two worlds — centered glass cards pinned to the top (md+). On
+          phones the dedicated vertical two-door split below takes over. */}
       <nav
         aria-label="Medoria Health / Medoria Beauty"
-        className="relative z-20 grid gap-3 px-4 pt-5 md:px-8 md:pt-7 lg:grid-cols-2 lg:gap-5 lg:px-12"
+        className="relative z-20 hidden gap-3 px-4 pt-5 md:grid md:px-8 md:pt-7 xl:grid-cols-2 xl:gap-6 xl:px-16"
       >
         <WorldDoor
           ref={healthDoorRef}
@@ -528,6 +529,64 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
         <span aria-hidden="true" className="h-3 w-px" style={{ background: "rgb(20 28 46 / 0.2)" }} />
         <span dir="ltr" translate="no">Health · Beauty</span>
       </footer>
+
+      {/* ── MOBILE: a vertical two-door split (phones only). Top = Health
+          hall, bottom = Beauty hall, a horizontal light seam between, a
+          centered glass card in each. Uses the portrait mobile crops when
+          present (media.mobile.*), else the campaign stills. ─────────────── */}
+      <div className="lumen-mobile md:hidden">
+        {[
+          { v: "health", grade: "cool", base: "/health", cta: copy.health.cta },
+          { v: "beauty", grade: "warm", base: "/beauty", cta: copy.beauty.cta },
+        ].map((w) => (
+          <section key={w.v} data-vertical={w.v} className={`lumen-mo-half lumen-mo-${w.v}`}>
+            {media?.mobile?.[w.grade] || media?.scene?.[w.grade] ? (
+              <img
+                src={media?.mobile?.[w.grade] || media.scene[w.grade]}
+                alt=""
+                aria-hidden="true"
+                fetchPriority="high"
+                decoding="async"
+                className="lumen-mo-img"
+              />
+            ) : (
+              <PlaceholderScene grade={w.grade} />
+            )}
+            <span aria-hidden="true" className="lumen-mo-wash" />
+            <div
+              className={`lumen-rise lumen-plaque lumen-card lumen-mo-card lumen-plaque-${w.v}`}
+              style={{ "--d": w.v === "beauty" ? "0.55s" : "0.45s" }}
+            >
+              <span aria-hidden="true" className="lumen-card-sheen" />
+              <WorldLockup vertical={w.v} height={30} className="lumen-card-lockup" />
+              <div className="lumen-card-act">
+                <ul className="lumen-langs" aria-label={`Medoria ${w.v === "beauty" ? "Beauty" : "Health"} languages`}>
+                  {langs.map((code) => (
+                    <li key={code}>
+                      <Link
+                        href={`${w.base}/${code}`}
+                        hrefLang={code}
+                        lang={code}
+                        dir={langDirs[code]}
+                        className="lumen-lang v-focus"
+                        aria-label={`Medoria ${w.v === "beauty" ? "Beauty" : "Health"} — ${langLabels[code]}`}
+                      >
+                        {langLabels[code]}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                <Link href={`${w.base}/${defaultLang}`} className={`lumen-cta lumen-cta-${w.v} v-focus group/cta`}>
+                  <span>{w.cta}</span>
+                  <span aria-hidden="true" className="lumen-cta-arrow">→</span>
+                </Link>
+              </div>
+            </div>
+          </section>
+        ))}
+        <span aria-hidden="true" className="lumen-mo-seam" />
+        <footer className="lumen-mo-footer">© {year} Medoria · Health · Beauty</footer>
+      </div>
     </section>
   );
 }
@@ -544,16 +603,12 @@ const WorldDoor = forwardRef(function WorldDoor(
   return (
     <div ref={ref} data-vertical={vertical} className={`lumen-door lumen-door-${vertical}`}>
       <div
-        className={`lumen-rise lumen-plaque lumen-bar lumen-plaque-${vertical} ${
-          beauty ? "lumen-bar-beauty" : ""
-        }`}
+        className={`lumen-rise lumen-plaque lumen-card lumen-plaque-${vertical} lumen-card-${vertical}`}
         style={{ "--d": beauty ? "0.62s" : "0.5s" }}
       >
-        <div className="lumen-bar-id">
-          <span aria-hidden="true" className="lumen-bar-no">{index}</span>
-          <WorldLockup vertical={vertical} height={28} />
-        </div>
-        <div className="lumen-bar-act">
+        <span aria-hidden="true" className="lumen-card-sheen" />
+        <WorldLockup vertical={vertical} height={28} className="lumen-card-lockup" />
+        <div className="lumen-card-act">
           <ul className="lumen-langs" aria-label={`Medoria ${beauty ? "Beauty" : "Health"} languages`}>
             {langs.map((code) => (
               <li key={code}>
