@@ -877,7 +877,7 @@ html.lenis, html.lenis body { height: auto; }
 }
 
 /* ── MOBILE two-door split (phones) — top Health hall, bottom Beauty hall,
-   a horizontal light seam between, a centered glass card in each. ─────────── */
+   a horizontal light seam between; each photo is the star. ─────────────── */
 .lumen-mobile {
   position: absolute; inset: 0; z-index: 40;
   display: flex; flex-direction: column; background: #0a0e18;
@@ -885,28 +885,50 @@ html.lenis, html.lenis body { height: auto; }
 .lumen-mo-half {
   position: relative; flex: 1 1 0; min-height: 0;
   display: flex; justify-content: center; overflow: hidden;
+  /* both bars pin to the TOP of their own half — above the baked shrine
+     wordmark and well clear of the product podiums lower in the frame */
+  align-items: flex-start; padding-top: 1.15rem;
 }
-/* each card sits in the clear zone of its own half: Health up by the ceiling,
-   Beauty down by the floor — the shrines stay uncovered in the middle */
-.lumen-mo-health { align-items: flex-start; padding-top: 1.5rem; }
-.lumen-mo-beauty { align-items: flex-end; padding-bottom: 2.4rem; }
 .lumen-mo-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 44%; }
 .lumen-mo-wash {
   position: absolute; inset: 0; pointer-events: none;
   background:
-    radial-gradient(125% 78% at 50% 50%, rgba(255,255,255,0.14), transparent 62%),
-    linear-gradient(180deg, rgba(250,250,252,0.24), rgba(250,250,252,0.04) 42%, rgba(250,250,252,0.30));
+    radial-gradient(120% 60% at 50% 0%, rgba(255,255,255,0.16), transparent 58%),
+    linear-gradient(180deg, rgba(250,250,252,0.26), transparent 30%);
 }
 .lumen-mo-beauty .lumen-mo-wash {
   background:
-    radial-gradient(125% 78% at 50% 50%, rgba(255,248,240,0.14), transparent 62%),
-    linear-gradient(180deg, rgba(252,248,244,0.28), rgba(252,248,244,0.04) 46%, rgba(252,248,244,0.32));
+    radial-gradient(120% 60% at 50% 0%, rgba(255,248,240,0.16), transparent 58%),
+    linear-gradient(180deg, rgba(252,248,244,0.3), transparent 30%);
 }
-.lumen-mo-card {
+/* the slim, mostly-transparent invitation pill — languages + an icon-only
+   enter button, no caption sentence; the photo stays uncovered below it */
+.lumen-mo-bar {
   position: relative; z-index: 2;
-  width: min(88%, 20rem); max-width: none;
-  border-radius: 1.4rem;
+  display: flex; align-items: center; justify-content: center;
+  gap: 0.4rem;
+  padding: 0.36rem 0.4rem 0.36rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 28px -12px rgba(8, 12, 22, 0.4);
 }
+.lumen-mo-bar .lumen-langs { gap: 0.3rem; }
+.lumen-mo-bar .lumen-lang {
+  padding: 0.34rem 0.56rem; font-size: 9.5px;
+  background: rgba(255, 255, 255, 0.38);
+}
+/* the enter CTA collapses to a small circular arrow — no visible sentence;
+   its accessible name (aria-label) still carries the full Tajik phrase */
+.lumen-mo-enter {
+  width: 2.05rem; height: 2.05rem; flex: none;
+  padding: 0; gap: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px;
+}
+.lumen-mo-enter .lumen-cta-arrow { margin: 0; }
 /* the horizontal light seam where the two worlds meet */
 .lumen-mo-seam {
   position: absolute; left: 0; right: 0; top: 50%; height: 2px; z-index: 3;

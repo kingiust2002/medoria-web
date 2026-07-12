@@ -254,7 +254,7 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
       const px = ((clientX - rect.left) / rect.width) * 100;
       pointerPct = px;
       pointerFresh = !direct;
-      target = direct ? clamp(12, 88, px) : clamp(24, 76, 50 + (px - 50) * 0.52);
+      target = direct ? clamp(6, 94, px) : clamp(15, 85, 50 + (px - 50) * 0.7);
       cyTarget = clamp(0, 100, ((clientY - rect.top) / rect.height) * 100);
       lastSteer = performance.now();
       schedule();
@@ -299,7 +299,7 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
     };
     const onKey = (e) => {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      target = clamp(16, 84, target + (e.key === "ArrowLeft" ? -6 : 6));
+      target = clamp(6, 94, target + (e.key === "ArrowLeft" ? -7 : 7));
       pointerFresh = false; // keys command the light directly
       lastSteer = performance.now();
       schedule();
@@ -531,9 +531,15 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
       </footer>
 
       {/* ── MOBILE: a vertical two-door split (phones only). Top = Health
-          hall, bottom = Beauty hall, a horizontal light seam between, a
-          centered glass card in each. Uses the portrait mobile crops when
-          present (media.mobile.*), else the campaign stills. ─────────────── */}
+          hall, bottom = Beauty hall, a horizontal light seam between. Each
+          half's own photo is the star — a slim, mostly-transparent glass
+          pill sits pinned to the TOP of that half (above the baked shrine
+          wordmark, never covering it, and never low enough to sit over the
+          product podiums): just language pills + an icon-only enter button
+          (no caption sentence). Fully decoupled from the desktop .lumen-card
+          styling so desktop is never affected by mobile tweaks. Uses the
+          portrait mobile crops when present (media.mobile.*), else the
+          campaign stills. ──────────────────────────────────────────────── */}
       <div className="lumen-mobile md:hidden">
         {[
           { v: "health", grade: "cool", base: "/health", cta: copy.health.cta },
@@ -554,32 +560,32 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
             )}
             <span aria-hidden="true" className="lumen-mo-wash" />
             <div
-              className={`lumen-rise lumen-plaque lumen-card lumen-mo-card lumen-plaque-${w.v}`}
+              className={`lumen-rise lumen-mo-bar lumen-plaque-${w.v}`}
               style={{ "--d": w.v === "beauty" ? "0.55s" : "0.45s" }}
             >
-              <span aria-hidden="true" className="lumen-card-sheen" />
-              <div className="lumen-card-act">
-                <ul className="lumen-langs" aria-label={`Medoria ${w.v === "beauty" ? "Beauty" : "Health"} languages`}>
-                  {langs.map((code) => (
-                    <li key={code}>
-                      <Link
-                        href={`${w.base}/${code}`}
-                        hrefLang={code}
-                        lang={code}
-                        dir={langDirs[code]}
-                        className="lumen-lang v-focus"
-                        aria-label={`Medoria ${w.v === "beauty" ? "Beauty" : "Health"} — ${langLabels[code]}`}
-                      >
-                        {langLabels[code]}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-                <Link href={`${w.base}/${defaultLang}`} className={`lumen-cta lumen-cta-${w.v} v-focus group/cta`}>
-                  <span>{w.cta}</span>
-                  <span aria-hidden="true" className="lumen-cta-arrow">→</span>
-                </Link>
-              </div>
+              <ul className="lumen-langs" aria-label={`Medoria ${w.v === "beauty" ? "Beauty" : "Health"} languages`}>
+                {langs.map((code) => (
+                  <li key={code}>
+                    <Link
+                      href={`${w.base}/${code}`}
+                      hrefLang={code}
+                      lang={code}
+                      dir={langDirs[code]}
+                      className="lumen-lang v-focus"
+                      aria-label={`Medoria ${w.v === "beauty" ? "Beauty" : "Health"} — ${langLabels[code]}`}
+                    >
+                      {langLabels[code]}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href={`${w.base}/${defaultLang}`}
+                className={`lumen-cta lumen-cta-${w.v} lumen-mo-enter v-focus group/cta`}
+                aria-label={w.cta}
+              >
+                <span aria-hidden="true" className="lumen-cta-arrow">→</span>
+              </Link>
             </div>
           </section>
         ))}
