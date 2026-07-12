@@ -254,7 +254,7 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
       const px = ((clientX - rect.left) / rect.width) * 100;
       pointerPct = px;
       pointerFresh = !direct;
-      target = direct ? clamp(16, 84, px) : clamp(36, 64, 50 + (px - 50) * 0.28);
+      target = direct ? clamp(12, 88, px) : clamp(24, 76, 50 + (px - 50) * 0.52);
       cyTarget = clamp(0, 100, ((clientY - rect.top) / rect.height) * 100);
       lastSteer = performance.now();
       schedule();
@@ -558,7 +558,6 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
               style={{ "--d": w.v === "beauty" ? "0.55s" : "0.45s" }}
             >
               <span aria-hidden="true" className="lumen-card-sheen" />
-              <WorldLockup vertical={w.v} height={30} className="lumen-card-lockup" />
               <div className="lumen-card-act">
                 <ul className="lumen-langs" aria-label={`Medoria ${w.v === "beauty" ? "Beauty" : "Health"} languages`}>
                   {langs.map((code) => (
