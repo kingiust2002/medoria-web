@@ -906,7 +906,11 @@ html.lenis, html.lenis body { height: auto; }
     linear-gradient(180deg, rgba(252,248,244,0.3), transparent 30%);
 }
 /* the tiny, heavily see-through language pill — no arrow, no sentence;
-   tapping the photo itself (behind it) enters the world */
+   tapping the photo itself (behind it) enters the world. Note: this bar is
+   NOT given a .lumen-plaque-{vertical} class (only the ancestor .lumen-mo-
+   health/.lumen-mo-beauty carries the vertical), so none of the desktop
+   card's ::before hairline / [data-world] box-shadow rules can bleed onto
+   it — the two are fully decoupled by design. */
 .lumen-mo-bar {
   position: relative; z-index: 2;
   display: flex; align-items: center; justify-content: center;
@@ -920,7 +924,30 @@ html.lenis, html.lenis body { height: auto; }
   box-shadow: 0 4px 14px -8px rgba(8, 12, 22, 0.28);
   pointer-events: none; /* the pills below opt back in individually */
 }
+/* per-world glow ring — a crisp light line + soft halo around the whole
+   bar, so it reads as a deliberate focal point (Health: cool silver-blue,
+   matching --lumen-specimen's #C6D3E2 ring; Beauty: warm gold/copper,
+   matching #D8A56D) — the same accent language used elsewhere on the page. */
+.lumen-mo-health .lumen-mo-bar {
+  box-shadow:
+    0 4px 14px -8px rgba(8, 12, 22, 0.28),
+    0 0 0 1px rgba(198, 211, 226, 0.75),
+    0 0 16px 1px rgba(170, 205, 245, 0.5);
+}
+.lumen-mo-beauty .lumen-mo-bar {
+  box-shadow:
+    0 4px 14px -8px rgba(8, 12, 22, 0.28),
+    0 0 0 1px rgba(216, 165, 111, 0.8),
+    0 0 16px 1px rgba(216, 165, 111, 0.5);
+}
 .lumen-mo-bar .lumen-langs { gap: 0.22rem; pointer-events: auto; }
+/* the <li> inherits the page's 16px/1.5 body line-height (24px), taller than
+   the 8.5px pill text inside it; baseline-aligning the anchor within that
+   tall line box pushed it toward the bottom (measured: 10.4px above vs
+   4.5px below). Collapsing the li's line box to 0 lets the anchor's own
+   height drive centering, so align-items:center on the ul actually centers
+   it — verified numerically after the fix (see visual QA). */
+.lumen-mo-bar .lumen-langs li { line-height: 0; }
 .lumen-mo-bar .lumen-lang {
   padding: 0.26rem 0.46rem; font-size: 8.5px;
   background: rgba(255, 255, 255, 0.16);

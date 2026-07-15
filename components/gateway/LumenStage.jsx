@@ -563,7 +563,7 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
               <span aria-hidden="true" className="lumen-mo-wash" />
             </Link>
             <div
-              className={`lumen-rise lumen-mo-bar lumen-plaque-${w.v}`}
+              className="lumen-rise lumen-mo-bar"
               style={{ "--d": w.v === "beauty" ? "0.55s" : "0.45s" }}
             >
               <ul className="lumen-langs" aria-label={`Medoria ${w.v === "beauty" ? "Beauty" : "Health"} languages`}>
