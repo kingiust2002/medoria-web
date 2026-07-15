@@ -33,12 +33,15 @@ export const metadata = {
 // inner switcher already follows.
 const GATEWAY_LANGS = ["tg", "ru", "en"];
 
-// The gateway now renders only the two world CTAs (Tajik-first). The former
-// headline / hint / "choose your world" caption and the master parent logo
-// were removed at the owner's request, so nothing else needs to be passed.
+// The gateway now renders only the two world CTAs (Tajik-first, fully
+// Tajik — no mixed-in Latin "Health"/"Beauty" words in the sentence itself;
+// the vertical names stay Latin only on the official logo/wordmark assets,
+// per brand law). The former headline / hint / "choose your world" caption
+// and the master parent logo were removed at the owner's request, so
+// nothing else needs to be passed.
 const GATEWAY_COPY = {
-  health: { cta: "Ворид шудан ба Health" },
-  beauty: { cta: "Кашф кардани Beauty" },
+  health: { cta: "Ворид ба ҷаҳони тиббӣ" },
+  beauty: { cta: "Кашфи ҷаҳони зебоӣ" },
 };
 
 const langLabels = Object.fromEntries(GATEWAY_LANGS.map((c) => [c, LANG_META[c].name]));
