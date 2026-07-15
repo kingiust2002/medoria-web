@@ -531,12 +531,13 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
       </footer>
 
       {/* ── MOBILE: a vertical two-door split (phones only). Top = Health
-          hall, bottom = Beauty hall, a horizontal light seam between. Each
-          half's own photo is the star — a slim, mostly-transparent glass
-          pill sits pinned to the TOP of that half (above the baked shrine
-          wordmark, never covering it, and never low enough to sit over the
-          product podiums): just language pills + an icon-only enter button
-          (no caption sentence). Fully decoupled from the desktop .lumen-card
+          hall, bottom = Beauty hall, a horizontal light seam between. The
+          photo itself IS the entry point — the whole half is a tap target
+          to that world's default locale (arrow removed entirely). A tiny,
+          heavily see-through glass pill sits pinned right at the very top
+          edge of that half — clear above the baked shrine wordmark, never
+          low enough to sit over the product podiums — holding just the
+          language pills. Fully decoupled from the desktop .lumen-card
           styling so desktop is never affected by mobile tweaks. Uses the
           portrait mobile crops when present (media.mobile.*), else the
           campaign stills. ──────────────────────────────────────────────── */}
@@ -546,19 +547,21 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
           { v: "beauty", grade: "warm", base: "/beauty", cta: copy.beauty.cta },
         ].map((w) => (
           <section key={w.v} data-vertical={w.v} className={`lumen-mo-half lumen-mo-${w.v}`}>
-            {media?.mobile?.[w.grade] || media?.scene?.[w.grade] ? (
-              <img
-                src={media?.mobile?.[w.grade] || media.scene[w.grade]}
-                alt=""
-                aria-hidden="true"
-                fetchPriority="high"
-                decoding="async"
-                className="lumen-mo-img"
-              />
-            ) : (
-              <PlaceholderScene grade={w.grade} />
-            )}
-            <span aria-hidden="true" className="lumen-mo-wash" />
+            <Link href={`${w.base}/${defaultLang}`} aria-label={w.cta} className="lumen-mo-tap v-focus">
+              {media?.mobile?.[w.grade] || media?.scene?.[w.grade] ? (
+                <img
+                  src={media?.mobile?.[w.grade] || media.scene[w.grade]}
+                  alt=""
+                  aria-hidden="true"
+                  fetchPriority="high"
+                  decoding="async"
+                  className="lumen-mo-img"
+                />
+              ) : (
+                <PlaceholderScene grade={w.grade} />
+              )}
+              <span aria-hidden="true" className="lumen-mo-wash" />
+            </Link>
             <div
               className={`lumen-rise lumen-mo-bar lumen-plaque-${w.v}`}
               style={{ "--d": w.v === "beauty" ? "0.55s" : "0.45s" }}
@@ -579,13 +582,6 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
                   </li>
                 ))}
               </ul>
-              <Link
-                href={`${w.base}/${defaultLang}`}
-                className={`lumen-cta lumen-cta-${w.v} lumen-mo-enter v-focus group/cta`}
-                aria-label={w.cta}
-              >
-                <span aria-hidden="true" className="lumen-cta-arrow">→</span>
-              </Link>
             </div>
           </section>
         ))}

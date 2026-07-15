@@ -885,10 +885,14 @@ html.lenis, html.lenis body { height: auto; }
 .lumen-mo-half {
   position: relative; flex: 1 1 0; min-height: 0;
   display: flex; justify-content: center; overflow: hidden;
-  /* both bars pin to the TOP of their own half — above the baked shrine
-     wordmark and well clear of the product podiums lower in the frame */
-  align-items: flex-start; padding-top: 1.15rem;
+  /* the language pill sits right at the very top edge of its own half —
+     clear above the baked shrine wordmark and well clear of the product
+     podiums lower in the frame */
+  align-items: flex-start; padding-top: 0.5rem;
 }
+/* the whole photo is the tap target into that world */
+.lumen-mo-tap { position: absolute; inset: 0; display: block; }
+.lumen-mo-tap:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.92); outline-offset: -3px; }
 .lumen-mo-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 44%; }
 .lumen-mo-wash {
   position: absolute; inset: 0; pointer-events: none;
@@ -901,34 +905,27 @@ html.lenis, html.lenis body { height: auto; }
     radial-gradient(120% 60% at 50% 0%, rgba(255,248,240,0.16), transparent 58%),
     linear-gradient(180deg, rgba(252,248,244,0.3), transparent 30%);
 }
-/* the slim, mostly-transparent invitation pill — languages + an icon-only
-   enter button, no caption sentence; the photo stays uncovered below it */
+/* the tiny, heavily see-through language pill — no arrow, no sentence;
+   tapping the photo itself (behind it) enters the world */
 .lumen-mo-bar {
   position: relative; z-index: 2;
   display: flex; align-items: center; justify-content: center;
-  gap: 0.4rem;
-  padding: 0.36rem 0.4rem 0.36rem 0.75rem;
+  gap: 0.28rem;
+  padding: 0.22rem 0.32rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
-  backdrop-filter: blur(16px) saturate(1.4);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 10px 28px -12px rgba(8, 12, 22, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(8px) saturate(1.25);
+  backdrop-filter: blur(8px) saturate(1.25);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  box-shadow: 0 4px 14px -8px rgba(8, 12, 22, 0.28);
+  pointer-events: none; /* the pills below opt back in individually */
 }
-.lumen-mo-bar .lumen-langs { gap: 0.3rem; }
+.lumen-mo-bar .lumen-langs { gap: 0.22rem; pointer-events: auto; }
 .lumen-mo-bar .lumen-lang {
-  padding: 0.34rem 0.56rem; font-size: 9.5px;
-  background: rgba(255, 255, 255, 0.38);
+  padding: 0.26rem 0.46rem; font-size: 8.5px;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.4);
 }
-/* the enter CTA collapses to a small circular arrow — no visible sentence;
-   its accessible name (aria-label) still carries the full Tajik phrase */
-.lumen-mo-enter {
-  width: 2.05rem; height: 2.05rem; flex: none;
-  padding: 0; gap: 0;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 999px;
-}
-.lumen-mo-enter .lumen-cta-arrow { margin: 0; }
 /* the horizontal light seam where the two worlds meet */
 .lumen-mo-seam {
   position: absolute; left: 0; right: 0; top: 50%; height: 2px; z-index: 3;
