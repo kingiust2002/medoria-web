@@ -95,7 +95,7 @@ export default function Procurement({ lang }) {
         <div className="grid lg:grid-cols-[1fr,1.2fr] gap-8 lg:gap-12 items-start">
           {/* Left — info */}
           <div>
-            <div className="section-tag text-cyan-600 mb-3">{L.tag}</div>
+            <div className="section-tag text-cyan-600 mb-3" data-fil-node>{L.tag}</div>
             <h2 className="section-h-lg mb-5 max-w-md">{L.title}</h2>
             <p className="text-[15px] text-ink-muted leading-relaxed mb-7 max-w-md">{L.sub}</p>
 

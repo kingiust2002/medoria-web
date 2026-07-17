@@ -44,7 +44,7 @@ export default function Showcase({ lang }) {
     <section className="py-14 md:py-20 bg-canvas-soft border-y border-line">
       <div className="container-x">
         <Reveal className="text-center mb-10 md:mb-12 max-w-2xl mx-auto">
-          <div className="eyebrow mb-4 mx-auto"><span className="gradient-text">{L.tag}</span></div>
+          <div className="eyebrow mb-4 mx-auto" data-fil-node><span className="gradient-text">{L.tag}</span></div>
           <h2 className="section-h-lg">{L.title}</h2>
           <p className="section-sub mx-auto">{L.sub}</p>
         </Reveal>

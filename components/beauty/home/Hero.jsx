@@ -77,6 +77,12 @@ export default function Hero({ lang, banner }) {
     hidden: reduce ? {} : { opacity: 0, y: 22, filter: "blur(10px)" },
     show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.7, ease: EASE } },
   };
+  // «Fil d'Or» editorial headline — each line rises out of an overflow mask,
+  // like type emerging from a fold of satin. Reduced motion renders in place.
+  const maskLine = {
+    hidden: reduce ? {} : { y: "112%" },
+    show: { y: "0%", transition: { duration: 0.9, ease: EASE } },
+  };
 
   return (
     <section onMouseMove={onMove} className="relative overflow-hidden isolate text-ink">
@@ -115,7 +121,7 @@ export default function Hero({ lang, banner }) {
       >
         {/* ── Content ─────────────────────────────────────────────── */}
         <div className="relative max-w-2xl">
-          <motion.div variants={item} className="inline-flex items-center gap-2 mb-6 rounded-full px-3.5 py-1.5 border bg-surface/80 border-line text-ink-soft backdrop-blur shadow-soft">
+          <motion.div variants={item} data-fil-node className="inline-flex items-center gap-2 mb-6 rounded-full px-3.5 py-1.5 border bg-surface/80 border-line text-ink-soft backdrop-blur shadow-soft">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-500 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
@@ -123,11 +129,17 @@ export default function Hero({ lang, banner }) {
             <span className="text-[10px] font-bold tracking-[0.18em] uppercase">{t.home.heroTag}</span>
           </motion.div>
 
-          <motion.h1 variants={item} className="font-display text-[40px] sm:text-[50px] md:text-[58px] lg:text-[66px] leading-[1.1] font-extrabold tracking-tight">
-            <span className="block">{t.home.heroH1Pre}</span>
-            <span className="block">{t.home.heroH1Mid}</span>
-            <span className="block gradient-text-animated leading-[1.18] pb-2">{t.home.heroH1Accent}</span>
-          </motion.h1>
+          <h1 className="bv-display text-[42px] sm:text-[54px] md:text-[62px] lg:text-[72px] leading-[1.08] tracking-tight">
+            <span className="block overflow-hidden pb-[0.08em]">
+              <motion.span variants={maskLine} className="block">{t.home.heroH1Pre}</motion.span>
+            </span>
+            <span className="block overflow-hidden pb-[0.08em]">
+              <motion.span variants={maskLine} className="block">{t.home.heroH1Mid}</motion.span>
+            </span>
+            <span className="block overflow-hidden pb-[0.16em]">
+              <motion.span variants={maskLine} className="block bv-display-accent gradient-text-animated leading-[1.18]">{t.home.heroH1Accent}</motion.span>
+            </span>
+          </h1>
 
           <motion.p variants={item} className="mt-6 text-[15px] md:text-[17px] text-ink-muted leading-[1.75] max-w-xl">
             {t.home.heroSub}
@@ -179,7 +191,7 @@ export default function Hero({ lang, banner }) {
 
           {/* CTAs */}
           <motion.div variants={item} className="mt-8 flex flex-wrap gap-3">
-            <a href="#collections" className="btn-primary size-xl group">
+            <a href="#collections" className="btn-primary size-xl group bv-sheen">
               {t.home.heroCta}
               <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={16} className="transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
             </a>
@@ -204,7 +216,7 @@ export default function Hero({ lang, banner }) {
         <motion.div variants={item} className="relative hidden lg:flex items-center justify-center" style={{ perspective: 1200 }}>
           <motion.div style={reduce ? undefined : { x: cardX, y: cardY, rotateX: rotX, rotateY: rotY }} className="relative w-full max-w-md will-change-transform">
             <div className="absolute inset-0 rounded-[2rem] bg-brand-conic blur-[64px] opacity-20 animate-spin-slow" />
-            <div className="relative rounded-[2rem] p-7 border bg-white/70 border-line shadow-card backdrop-blur-xl">
+            <div className="relative rounded-[2rem] p-7 border bg-white/70 border-line shadow-card backdrop-blur-xl bv-sheen">
               <div className="flex items-center justify-between gap-3 mb-5">
                 <div dir="ltr" className="flex items-center gap-2.5">
                   <BeautyWordmarkImg height={20} />
