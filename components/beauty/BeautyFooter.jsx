@@ -11,10 +11,12 @@ import { getBeautyTranslations } from "./i18n";
 export default function BeautyFooter({ lang }) {
   const t = getBeautyTranslations(lang);
   const email = process.env.NEXT_PUBLIC_EMAIL || "sales@medoria.tj";
-  const anchors = [
-    ["#collections", t.nav.collections],
-    ["#worlds", t.nav.worlds],
-    ["#partnership", t.nav.partnership],
+  const home = `/beauty/${lang}`;
+  const links = [
+    [`${home}/catalog`, t.nav.collections],
+    [`${home}/worlds`, t.nav.worlds],
+    [`${home}/about`, t.nav.about],
+    [`${home}/contact`, t.nav.contact],
   ];
   return (
     <footer className="text-white/50 pt-14 pb-24 md:pb-10 relative overflow-hidden noise" style={{ background: "#141D3C" }}>
@@ -49,8 +51,8 @@ export default function BeautyFooter({ lang }) {
           <div className="md:col-span-3">
             <div className="text-white font-semibold text-[12px] tracking-wider uppercase mb-4">{t.footer.colCollection}</div>
             <ul className="space-y-2.5">
-              {anchors.map(([href, label]) => (
-                <li key={href}><a href={href} className="text-[13px] text-white/55 hover:text-white transition-colors">{label}</a></li>
+              {links.map(([href, label]) => (
+                <li key={href}><Link href={href} className="text-[13px] text-white/55 hover:text-white transition-colors">{label}</Link></li>
               ))}
             </ul>
           </div>
@@ -59,7 +61,7 @@ export default function BeautyFooter({ lang }) {
           <div className="md:col-span-2">
             <div className="text-white font-semibold text-[12px] tracking-wider uppercase mb-4">{t.footer.colCompany}</div>
             <ul className="space-y-2.5">
-              <li><Link href={`/health/${lang}`} className="text-[13px] text-white/55 hover:text-white transition-colors">{t.nav.health}</Link></li>
+              <li><Link href={`${home}/about`} className="text-[13px] text-white/55 hover:text-white transition-colors">{t.nav.about}</Link></li>
               <li><Link href="/" className="text-[13px] text-white/55 hover:text-white transition-colors">{t.nav.gateway}</Link></li>
             </ul>
           </div>
@@ -76,7 +78,17 @@ export default function BeautyFooter({ lang }) {
           </div>
         </div>
 
-        <div className="pt-5 text-[11px] text-white/30">{t.footer.copy}</div>
+        <div className="pt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="text-[11px] text-white/30">{t.footer.copy}</div>
+          {/* Single cross-vertical entry — lives here at the very bottom instead
+              of the top nav; the mirror of it will be added to Health later. */}
+          <Link href={`/health/${lang}`}
+            className="group inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] hover:bg-white/[0.12] px-4 py-2 text-[12px] font-semibold text-white/85 hover:text-white transition-colors">
+            <span className="w-1.5 h-1.5 rounded-full bg-[color:var(--v-copper)]" />
+            {t.common.enterHealth}
+            <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={13} className="transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+          </Link>
+        </div>
       </div>
     </footer>
   );

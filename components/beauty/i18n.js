@@ -18,12 +18,12 @@ export function getCategoryName(slug, lang) {
 
 const T = {
   tg: {
-    nav: { collections: "Коллексия", worlds: "Самтҳо", partnership: "Ҳамкорӣ", contact: "Тамос", health: "Medoria Health", gateway: "Асосӣ" },
+    nav: { home: "Асосӣ", collections: "Коллексия", worlds: "Самтҳо", about: "Дар бораи мо", partnership: "Ҳамкорӣ", contact: "Тамос", health: "Medoria Health", gateway: "Дарвоза" },
     common: {
       brand: "Medoria Beauty",
       categories: "Самтҳо", search: "Ҷустуҷӯ", contactUs: "Тамос",
       noResults: "Коллексия ба зудӣ кушода мешавад",
-      soon: "ба зудӣ",
+      soon: "ба зудӣ", viewCollection: "Дидани коллексия", enterHealth: "Ба Medoria Health гузаред",
     },
     home: {
       heroTag: "КОЛЛЕКСИЯИ ЛЮКСИ ЗЕБОЙ",
@@ -73,12 +73,12 @@ const T = {
     },
   },
   ru: {
-    nav: { collections: "Коллекция", worlds: "Направления", partnership: "Сотрудничество", contact: "Контакт", health: "Medoria Health", gateway: "Главная" },
+    nav: { home: "Главная", collections: "Коллекция", worlds: "Направления", about: "О нас", partnership: "Сотрудничество", contact: "Контакт", health: "Medoria Health", gateway: "Портал" },
     common: {
       brand: "Medoria Beauty",
       categories: "Направления", search: "Поиск", contactUs: "Связаться",
       noResults: "Коллекция скоро откроется",
-      soon: "скоро",
+      soon: "скоро", viewCollection: "Смотреть коллекцию", enterHealth: "Перейти в Medoria Health",
     },
     home: {
       heroTag: "ЛЮКСОВАЯ БЬЮТИ-КОЛЛЕКЦИЯ",
@@ -128,12 +128,12 @@ const T = {
     },
   },
   en: {
-    nav: { collections: "Collection", worlds: "Worlds", partnership: "Partnership", contact: "Contact", health: "Medoria Health", gateway: "Gateway" },
+    nav: { home: "Home", collections: "Collection", worlds: "Worlds", about: "About", partnership: "Partnership", contact: "Contact", health: "Medoria Health", gateway: "Gateway" },
     common: {
       brand: "Medoria Beauty",
       categories: "Worlds", search: "Search", contactUs: "Get in touch",
       noResults: "The collection opens soon",
-      soon: "soon",
+      soon: "soon", viewCollection: "View the collection", enterHealth: "Enter Medoria Health",
     },
     home: {
       heroTag: "LUXURY BEAUTY COLLECTION",
@@ -183,12 +183,12 @@ const T = {
     },
   },
   fa: {
-    nav: { collections: "کالکشن", worlds: "دنیاها", partnership: "همکاری", contact: "تماس", health: "مدوریا هلث", gateway: "صفحه اصلی" },
+    nav: { home: "خانه", collections: "کالکشن", worlds: "دنیاها", about: "درباره ما", partnership: "همکاری", contact: "تماس", health: "مدوریا هلث", gateway: "درگاه" },
     common: {
       brand: "مدوریا بیوتی",
       categories: "دنیاها", search: "جستجو", contactUs: "تماس",
       noResults: "کالکشن به‌زودی باز می‌شود",
-      soon: "به‌زودی",
+      soon: "به‌زودی", viewCollection: "دیدن کالکشن", enterHealth: "ورود به مدوریا هلث",
     },
     home: {
       heroTag: "کالکشن لوکس زیبایی",
