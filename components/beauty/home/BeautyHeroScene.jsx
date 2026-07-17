@@ -10,15 +10,16 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-// Matches .gradient-text's navy -> copper (55%) -> gold direction.
-const STOPS = [
-  [0.973, 0.882, 0.816], // blush champagne
-  [0.953, 0.863, 0.745], // champagne  #F3DCBE
-  [0.784, 0.490, 0.306], // copper     #C87D4E
-  [0.106, 0.161, 0.318], // deep navy  #1C2951 — rare accent
-];
+// Brand-tone stops. The cloud now leans DARK — copper/navy dominant with only
+// a champagne minority — so the gathered words read with real contrast against
+// the ivory canvas (pale champagne alone was near-invisible).
+const CHAMP = [0.953, 0.863, 0.745]; // champagne   #F3DCBE  (light minority)
+const COPPER = [0.784, 0.490, 0.306]; // copper     #C87D4E
+const COPPER_DEEP = [0.612, 0.357, 0.176]; // deep copper #9C5B2D
+const NAVY = [0.106, 0.161, 0.318]; // deep navy    #1C2951
 const lerp = (a, b, t) => a + (b - a) * t;
-const WORDS = ["MEDORIA", "BEAUTY", "LUXE", "GLOW", "RITUAL"];
+// Medoria + Beauty, then luxury houses the boutique carries.
+const WORDS = ["MEDORIA", "BEAUTY", "CHANEL", "DIOR", "GUCCI", "YSL", "LANCOME", "HERMES"];
 
 export default function BeautyHeroScene({ particleCount = 6000, rtl = false }) {
   const ref = useRef(null);
@@ -58,24 +59,26 @@ export default function BeautyHeroScene({ particleCount = 6000, rtl = false }) {
       pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
       target[i * 3] = x; target[i * 3 + 1] = y; target[i * 3 + 2] = z;
       seed[i] = Math.random() * Math.PI * 2;
-      // Colour assigned ONCE per particle, biased toward the light end so navy
-      // stays a rare, deliberate accent (fine dark mica in gold powder).
-      const tt = Math.max(0, Math.min(1, x / 9.6 * 0.5 + 0.5));
-      const biased = Math.pow(tt, 2.4);
-      const s = Math.min(STOPS.length - 2, Math.floor(biased * (STOPS.length - 1)));
-      const lt = biased * (STOPS.length - 1) - s;
-      col[i * 3] = lerp(STOPS[s][0], STOPS[s + 1][0], lt);
-      col[i * 3 + 1] = lerp(STOPS[s][1], STOPS[s + 1][1], lt);
-      col[i * 3 + 2] = lerp(STOPS[s][2], STOPS[s + 1][2], lt);
+      // Colour assigned ONCE per particle, weighted DARK for legibility:
+      // ~15% champagne (sparkle), ~62% copper, ~23% navy (strong contrast).
+      const rc = Math.random();
+      let a, b;
+      if (rc < 0.15) { a = CHAMP; b = COPPER; }
+      else if (rc < 0.77) { a = COPPER; b = COPPER_DEEP; }
+      else { a = COPPER_DEEP; b = NAVY; }
+      const m = Math.random();
+      col[i * 3] = lerp(a[0], b[0], m);
+      col[i * 3 + 1] = lerp(a[1], b[1], m);
+      col[i * 3 + 2] = lerp(a[2], b[2], m);
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
     const mat = new THREE.PointsMaterial({
-      size: 0.07,
+      size: 0.08,
       vertexColors: true,
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.62,
       blending: THREE.NormalBlending, // light-only: additive would wash out on ivory
       depthWrite: false,
       sizeAttenuation: true,
@@ -128,9 +131,9 @@ export default function BeautyHeroScene({ particleCount = 6000, rtl = false }) {
       if (inWord && phase > 4.6) { inWord = false; phase = 0; toCloud(); }
       else if (!inWord && phase > 3.0) { inWord = true; phase = 0; wi = (wi + 1) % WORDS.length; setWord(WORDS[wi]); }
 
-      // crisp + brighten the dust when it assembles into a word (smaller, denser)
-      mat.size += ((inWord ? 0.085 : 0.07) - mat.size) * 0.08;
-      mat.opacity += ((inWord ? 0.96 : 0.5) - mat.opacity) * 0.08;
+      // crisp + fully opaque when it assembles into a word (denser, darker read)
+      mat.size += ((inWord ? 0.105 : 0.08) - mat.size) * 0.08;
+      mat.opacity += ((inWord ? 1.0 : 0.62) - mat.opacity) * 0.08;
 
       const k = inWord ? 0.07 : 0.03; // settle faster when forming, drift otherwise
       const arr = geo.attributes.position.array;
