@@ -12,7 +12,7 @@ import { getBeautyTranslations as getTranslations, BEAUTY_CATEGORIES as CATEGORI
 import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
-import { BeautyWordmarkImg } from "@/components/beauty/BeautyBrand";
+import { BeautyWordLockup } from "@/components/beauty/BeautyBrand";
 
 const BeautyHeroScene = dynamic(() => import("@/components/beauty/home/BeautyHeroScene"), { ssr: false });
 const EASE = [0.2, 0.8, 0.2, 1];
@@ -37,7 +37,9 @@ export default function Hero({ lang, banner }) {
       const saveData = Boolean(navigator.connection && navigator.connection.saveData);
       const cores = navigator.hardwareConcurrency || 4;
       if (desktop && !reducedMotion && !saveData && cores >= 4) {
-        setParticleCount(cores >= 8 ? 3200 : 2000); // reduce particles on weaker devices
+        // Health-parity density so the gathered words read as crisp letters
+        // rather than loose scattered sparkle (a lower count never spelled).
+        setParticleCount(cores >= 8 ? 6000 : 4200);
       }
     } catch { /* keep the CSS/gradient fallback */ }
   }, []);
@@ -108,7 +110,7 @@ export default function Hero({ lang, banner }) {
       {/* champagne dust / pearl dew particle scene — desktop + capable devices
           only; confined to this hero section, never the whole page. */}
       {mounted && particleCount > 0 && (
-        <BeautyHeroScene particleCount={particleCount} />
+        <BeautyHeroScene particleCount={particleCount} rtl={lang === "fa"} />
       )}
 
       {/* dot grid */}
@@ -219,7 +221,7 @@ export default function Hero({ lang, banner }) {
             <div className="relative rounded-[2rem] p-7 border bg-white/70 border-line shadow-card backdrop-blur-xl bv-sheen">
               <div className="flex items-center justify-between gap-3 mb-5">
                 <div dir="ltr" className="flex items-center gap-2.5">
-                  <BeautyWordmarkImg height={20} />
+                  <BeautyWordLockup height={22} />
                 </div>
                 <span className="w-8 h-8 rounded-full bg-cyan-500/15 text-cyan-600 flex items-center justify-center"><Icon name="badgeCheck" size={16} /></span>
               </div>

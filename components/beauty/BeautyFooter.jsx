@@ -30,8 +30,8 @@ export default function BeautyFooter({ lang }) {
             {/* Beauty's official wordmarks are navy-toned — they disappear on
                 this navy footer, so (like Health.jsx's onDark swap) the whole
                 lockup sits on its own light badge instead of the page bg. */}
-            <span className="inline-flex w-fit items-center rounded-full bg-white/95 py-2 px-3.5">
-              <BeautyWordLockup height={20} />
+            <span className="inline-flex w-fit items-center rounded-full bg-white/95 py-2.5 px-4">
+              <BeautyWordLockup height={30} />
             </span>
             <p className="mt-4 text-[13px] leading-relaxed max-w-xs text-white/60">{t.footer.desc}</p>
             <div className="mt-5 flex flex-wrap gap-2">

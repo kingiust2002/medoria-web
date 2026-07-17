@@ -7,8 +7,6 @@
 // designed type throughout.
 import Image from "next/image";
 
-const BEAUTY_WORD_RATIO = 288 / 866; // Beauty.png intrinsic aspect ratio
-
 export function BeautyMarkImg({ size = 40, priority = false, className = "", opacity }) {
   return (
     <Image
@@ -40,22 +38,45 @@ export function BeautyWordmarkImg({ height = 24, priority = false, className = "
   );
 }
 
-export function BeautyWordLockup({ height = 22 }) {
-  // "Beauty" is set a touch smaller than "Medoria" so the two wordmarks read
-  // as one balanced lockup rather than "Beauty" overpowering it.
-  const beautyHeight = Math.round(height * 0.6);
+// Measured glyph coverage of the official PNGs (opaque-pixel bounds). The
+// "Medoria" beauty wordmark is authored with heavy transparent padding — its
+// text fills only ~28% of the image height — so at a given height it renders
+// ~3x smaller than Health's dense wordmark (~87% fill). We tightly CLIP the
+// transparent margins (no redraw, no recolor, no stretch — the glyphs are
+// pixel-for-pixel the official artwork) so the lockup matches Health's size.
+const MED = { aspect: 702 / 355, fillY: 0.2845, centerY: 0.4761, leftX: 0.1083, fillX: 0.8219 };
+const BTY = { aspect: 866 / 288, fillY: 0.6493, centerY: 0.5174, leftX: 0.0912, fillX: 0.8418 };
+
+// One official wordmark PNG, scaled so its VISIBLE glyphs are `cap` px tall and
+// clipped tight to those glyphs (transparent padding removed via overflow).
+function ClippedWord({ src, alt, cap, m, pad = 1.06 }) {
+  const imgH = cap / m.fillY;
+  const imgW = imgH * m.aspect;
+  const boxH = cap * pad;
+  const boxW = imgW * m.fillX;
   return (
-    <span dir="ltr" translate="no" aria-label="Medoria Beauty" className="inline-flex items-baseline gap-2">
-      <BeautyWordmarkImg height={height} />
-      <Image
-        src="/images/Beauty.png"
-        alt=""
-        aria-hidden="true"
-        width={Math.round(beautyHeight / BEAUTY_WORD_RATIO)}
-        height={beautyHeight}
-        className="select-none object-contain"
-        style={{ height: beautyHeight, width: "auto" }}
+    <span className="relative inline-block overflow-hidden align-middle shrink-0" style={{ height: boxH, width: boxW }}>
+      <img
+        src={src}
+        alt={alt}
+        aria-hidden={alt ? undefined : "true"}
+        className="absolute max-w-none select-none"
+        style={{ height: imgH, width: imgW, top: boxH / 2 - m.centerY * imgH, left: -(m.leftX * imgW) }}
       />
+    </span>
+  );
+}
+
+export function BeautyWordLockup({ height = 30 }) {
+  // `height` mirrors Health's <Brand height> semantics (header 30, footer 32,
+  // card 22). Health's wordmark visually fills ~0.867 of that; we target the
+  // same visible cap so the two houses read at an identical size.
+  const capMedoria = Math.round(height * 0.867);
+  const capBeauty = Math.round(capMedoria * 0.72); // "Beauty" a touch smaller
+  return (
+    <span dir="ltr" translate="no" aria-label="Medoria Beauty" className="inline-flex items-center gap-2">
+      <ClippedWord src="/brand/beauty-wordmark.png" alt="Medoria" cap={capMedoria} m={MED} />
+      <ClippedWord src="/images/Beauty.png" alt="" cap={capBeauty} m={BTY} />
     </span>
   );
 }
