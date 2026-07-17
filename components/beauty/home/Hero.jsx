@@ -37,9 +37,9 @@ export default function Hero({ lang, banner }) {
       const saveData = Boolean(navigator.connection && navigator.connection.saveData);
       const cores = navigator.hardwareConcurrency || 4;
       if (desktop && !reducedMotion && !saveData && cores >= 4) {
-        // Health-parity density so the gathered words read as crisp letters
-        // rather than loose scattered sparkle (a lower count never spelled).
-        setParticleCount(cores >= 8 ? 6000 : 4200);
+        // Dense enough that the gathered words read as solid, legible letters
+        // (above Health parity — beauty words include finer brand logotypes).
+        setParticleCount(cores >= 8 ? 8000 : 5600);
       }
     } catch { /* keep the CSS/gradient fallback */ }
   }, []);
