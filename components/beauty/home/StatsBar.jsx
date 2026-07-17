@@ -2,7 +2,6 @@
 // beauty-ized: same navy band/grid/typography; honest brand values from the
 // beauty i18n tree instead of a product-count fetch.
 import { getBeautyTranslations as getTranslations } from "@/components/beauty/i18n";
-import Aurora from "@/components/shared/Aurora";
 
 export default function StatsBar({ lang }) {
   const t = getTranslations(lang);
@@ -12,7 +11,12 @@ export default function StatsBar({ lang }) {
     <section className="py-10 md:py-14 bg-canvas">
       <div className="container-x">
         <div className="relative bg-navy rounded-[2rem] px-6 py-9 md:px-12 md:py-12 grid grid-cols-2 md:grid-cols-4 gap-y-7 gap-x-4 overflow-hidden noise">
-          <Aurora variant="dark" className="opacity-60" />
+          {/* warm champagne glow instead of the shared violet aurora */}
+          <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{
+            background:
+              "radial-gradient(70% 95% at 12% 0%, rgba(200,125,78,0.30) 0%, transparent 55%)," +
+              "radial-gradient(60% 85% at 90% 100%, rgba(239,200,148,0.20) 0%, transparent 60%)",
+          }} />
           {/* top gradient hairline */}
           <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
 

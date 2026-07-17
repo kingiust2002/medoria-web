@@ -30,7 +30,7 @@ export default function FinalCTA({ lang }) {
 
           <div className="relative grid md:grid-cols-2 gap-8 items-center">
             <div>
-              <div className="text-[10px] font-bold tracking-[0.18em] text-white/70 uppercase mb-3">
+              <div className="text-[10px] font-bold tracking-[0.18em] text-white/70 uppercase mb-3" data-fil-node>
                 {t.home.ctaTag}
               </div>
               <h2 className="font-display text-2xl md:text-4xl font-extrabold text-white mb-4 leading-tight">

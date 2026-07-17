@@ -18,6 +18,7 @@ import Audience from "@/components/beauty/home/Audience";
 import Trust from "@/components/beauty/home/Trust";
 import Procurement from "@/components/beauty/home/Procurement";
 import FinalCTA from "@/components/beauty/home/FinalCTA";
+import FilDorThread from "@/components/beauty/home/FilDorThread";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
 
 export function generateStaticParams() {
@@ -47,7 +48,9 @@ export default function BeautyPage({ params }) {
   if (!LOCALES.includes(lang)) notFound();
   const media = getBeautyMedia();
   return (
-    <>
+    // Relative wrapper so the «Fil d'Or» thread overlay can span every section
+    // it stitches together (stations are marked with data-fil-node).
+    <div className="relative">
       <Hero lang={lang} banner={media["hero-banner"]} />
       <StatsBar lang={lang} />
       <CategoryGrid lang={lang} />
@@ -60,6 +63,7 @@ export default function BeautyPage({ params }) {
       <Trust lang={lang} />
       <Procurement lang={lang} />
       <FinalCTA lang={lang} />
-    </>
+      <FilDorThread />
+    </div>
   );
 }
