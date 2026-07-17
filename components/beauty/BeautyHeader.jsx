@@ -56,7 +56,7 @@ export default function BeautyHeader({ lang }) {
           style={{ background: "linear-gradient(90deg,var(--v-navy),var(--v-copper),var(--v-brand-to))" }} />
         <div className="container-x flex h-[4.5rem] items-center justify-between gap-2">
           <Link href={home} className="shrink-0 min-w-0" aria-label="Medoria Beauty">
-            <BeautyWordLockup height={20} />
+            <BeautyWordLockup height={30} />
           </Link>
 
           {/* Desktop nav */}

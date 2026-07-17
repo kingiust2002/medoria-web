@@ -1,29 +1,26 @@
 // components/beauty/home/BeautyHeroScene.jsx
-// Ambient "champagne dust" field for the Beauty hero: a quiet cloud of fine
-// particles that drifts and gently shimmers — no word-formation. An earlier
-// version tried to gather the cloud into letterforms (mirroring Health's
-// HeroScene), but at this particle density a formed "word" reads as loose
-// scattered sparkle, not legible text, so it's been dropped in favour of a
-// refined, honest ambient effect. Colour now follows the SAME navy->copper->
-// gold direction as the page's own `.gradient-text` (see globals.css), with
-// navy kept as a minority accent — like fine dark mica flecks in gold powder
-// — so the particles read as part of this brand's palette, not generic dust.
+// Beauty hero particle field — now a faithful port of Health's HeroScene: a
+// cloud of fine champagne/copper particles that drift, then gather to spell
+// brand/beauty words over the right-side card, then disperse — repeating, on
+// the SAME cadence as Health (rest 3.0s, word 4.6s). Light-only rendering
+// (NormalBlending on ivory). Colour follows the page's own navy->copper->gold
+// `.gradient-text` direction, biased light so navy stays a rare accent.
+// Lazy + capability-gated by the parent; pauses off-screen/hidden; disposes.
 "use client";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-// Matches .gradient-text's navy -> copper (55%) -> gold direction exactly.
+// Matches .gradient-text's navy -> copper (55%) -> gold direction.
 const STOPS = [
-  [0.973, 0.882, 0.816], // blush champagne (has enough presence against the
-                          // ivory background — the old near-white first stop
-                          // was nearly invisible)
-  [0.953, 0.863, 0.745], // champagne     #F3DCBE  (== --v-champagne)
-  [0.784, 0.490, 0.306], // copper        #C87D4E  (== --v-copper)
-  [0.106, 0.161, 0.318], // deep navy     #1C2951  (== --v-navy) — rare accent
+  [0.973, 0.882, 0.816], // blush champagne
+  [0.953, 0.863, 0.745], // champagne  #F3DCBE
+  [0.784, 0.490, 0.306], // copper     #C87D4E
+  [0.106, 0.161, 0.318], // deep navy  #1C2951 — rare accent
 ];
 const lerp = (a, b, t) => a + (b - a) * t;
+const WORDS = ["MEDORIA", "BEAUTY", "LUXE", "GLOW", "RITUAL"];
 
-export default function BeautyHeroScene({ particleCount = 2600 }) {
+export default function BeautyHeroScene({ particleCount = 6000, rtl = false }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -45,11 +42,11 @@ export default function BeautyHeroScene({ particleCount = 2600 }) {
     camera.position.z = 15;
 
     const N = particleCount;
-    const pos = new Float32Array(N * 3);
-    const base = new Float32Array(N * 3);   // resting position — never changes
+    const pos = new Float32Array(N * 3);   // live positions
+    const cloud = new Float32Array(N * 3); // resting champagne-dust positions
+    const target = new Float32Array(N * 3);
     const col = new Float32Array(N * 3);
     const seed = new Float32Array(N);
-    const sparklePhase = new Float32Array(N);
     for (let i = 0; i < N; i++) {
       const r = 6 + Math.random() * 5.5;
       const th = Math.random() * Math.PI * 2;
@@ -57,16 +54,12 @@ export default function BeautyHeroScene({ particleCount = 2600 }) {
       const x = r * Math.sin(ph) * Math.cos(th) * 1.6;
       const y = r * Math.cos(ph) * 0.8;
       const z = r * Math.sin(ph) * Math.sin(th);
-      base[i * 3] = x; base[i * 3 + 1] = y; base[i * 3 + 2] = z;
+      cloud[i * 3] = x; cloud[i * 3 + 1] = y; cloud[i * 3 + 2] = z;
       pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
+      target[i * 3] = x; target[i * 3 + 1] = y; target[i * 3 + 2] = z;
       seed[i] = Math.random() * Math.PI * 2;
-      sparklePhase[i] = Math.random() * Math.PI * 2;
-
-      // Colour is assigned ONCE, permanently, per particle — there is no
-      // later re-shuffling (the previous bug: word-formation reassigned which
-      // particle sat where, but never touched colour, so letters rendered as
-      // a random mix of every stop instead of a clean tone). Bias the mix
-      // toward the light end so navy stays a rare, deliberate accent.
+      // Colour assigned ONCE per particle, biased toward the light end so navy
+      // stays a rare, deliberate accent (fine dark mica in gold powder).
       const tt = Math.max(0, Math.min(1, x / 9.6 * 0.5 + 0.5));
       const biased = Math.pow(tt, 2.4);
       const s = Math.min(STOPS.length - 2, Math.floor(biased * (STOPS.length - 1)));
@@ -79,18 +72,48 @@ export default function BeautyHeroScene({ particleCount = 2600 }) {
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
     const mat = new THREE.PointsMaterial({
-      size: 0.062,
+      size: 0.07,
       vertexColors: true,
       transparent: true,
       opacity: 0.5,
-      blending: THREE.NormalBlending, // light-only: additive would wash out on white
+      blending: THREE.NormalBlending, // light-only: additive would wash out on ivory
       depthWrite: false,
       sizeAttenuation: true,
     });
     const points = new THREE.Points(geo, mat);
     scene.add(points);
 
-    let raf = 0, running = true;
+    // sample a word into N target positions via an offscreen text canvas
+    const tc = document.createElement("canvas");
+    tc.width = 440; tc.height = 150;
+    const tctx = tc.getContext("2d");
+    function setWord(word) {
+      tctx.clearRect(0, 0, tc.width, tc.height);
+      tctx.fillStyle = "#fff";
+      tctx.textAlign = "center"; tctx.textBaseline = "middle";
+      let fs = 120; tctx.font = `800 ${fs}px Arial, sans-serif`;
+      while (tctx.measureText(word).width > tc.width - 30 && fs > 24) { fs -= 3; tctx.font = `800 ${fs}px Arial, sans-serif`; }
+      tctx.fillText(word, tc.width / 2, tc.height / 2 + 2);
+      const d = tctx.getImageData(0, 0, tc.width, tc.height).data;
+      const pts = [];
+      for (let y = 0; y < tc.height; y += 1) for (let x = 0; x < tc.width; x += 1) {
+        if (d[(y * tc.width + x) * 4 + 3] > 140) pts.push([x, y]);
+      }
+      // even coverage → crisp, legible letters: shuffle then round-robin assign
+      for (let i = pts.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; const tmp = pts[i]; pts[i] = pts[j]; pts[j] = tmp; }
+      // word rests over the right-side hero card zone (mirrored for RTL).
+      const SX = 7, SY = 7 * (tc.height / tc.width);
+      const OX = rtl ? -7 : 7, OY = 6;
+      for (let i = 0; i < N; i++) {
+        const p = pts.length ? pts[i % pts.length] : [tc.width / 2, tc.height / 2];
+        target[i * 3] = (p[0] / tc.width - 0.5) * SX + OX + (Math.random() - 0.5) * 0.035;
+        target[i * 3 + 1] = -(p[1] / tc.height - 0.5) * SY + OY + (Math.random() - 0.5) * 0.035;
+        target[i * 3 + 2] = (Math.random() - 0.5) * 0.16; // flatter → sharper letters
+      }
+    }
+    const toCloud = () => { for (let i = 0; i < N * 3; i++) target[i] = cloud[i]; };
+
+    let inWord = false, phase = 0, wi = -1, raf = 0, running = true;
     let tx = 0, ty = 0, cx = 0, cy = 0;
     const clock = new THREE.Clock();
     const onMove = (e) => { tx = e.clientX / window.innerWidth - 0.5; ty = e.clientY / window.innerHeight - 0.5; };
@@ -100,25 +123,35 @@ export default function BeautyHeroScene({ particleCount = 2600 }) {
       if (!running) return;
       const dt = Math.min(clock.getDelta(), 0.05);
       const t = clock.elapsedTime;
+      phase += dt;
+      // SAME cadence as Health: rest 3.0s, hold the word 4.6s.
+      if (inWord && phase > 4.6) { inWord = false; phase = 0; toCloud(); }
+      else if (!inWord && phase > 3.0) { inWord = true; phase = 0; wi = (wi + 1) % WORDS.length; setWord(WORDS[wi]); }
 
-      // slow, quiet drift — no state machine, no target-chasing
+      // crisp + brighten the dust when it assembles into a word (smaller, denser)
+      mat.size += ((inWord ? 0.085 : 0.07) - mat.size) * 0.08;
+      mat.opacity += ((inWord ? 0.96 : 0.5) - mat.opacity) * 0.08;
+
+      const k = inWord ? 0.07 : 0.03; // settle faster when forming, drift otherwise
       const arr = geo.attributes.position.array;
       for (let i = 0; i < N; i++) {
         const j = i * 3;
-        arr[j] = base[j] + Math.sin(t * 0.35 + seed[i]) * 0.5;
-        arr[j + 1] = base[j + 1] + Math.cos(t * 0.28 + seed[i]) * 0.4;
-        arr[j + 2] = base[j + 2] + Math.sin(t * 0.22 + seed[i] * 1.3) * 0.4;
+        let txp = target[j], typ = target[j + 1], tzp = target[j + 2];
+        if (!inWord) { // gentle champagne drift while resting
+          txp += Math.sin(t * 0.5 + seed[i]) * 0.12;
+          typ += Math.cos(t * 0.4 + seed[i]) * 0.12;
+        }
+        arr[j] += (txp - arr[j]) * k;
+        arr[j + 1] += (typ - arr[j + 1]) * k;
+        arr[j + 2] += (tzp - arr[j + 2]) * k;
       }
       geo.attributes.position.needsUpdate = true;
 
-      // gentle ambient shimmer (breathing opacity) instead of a legible word
-      mat.opacity = 0.42 + Math.sin(t * 0.6) * 0.08;
-
-      points.rotation.y += dt * 0.03;
-      points.rotation.x = Math.sin(t * 0.08) * 0.03;
+      if (inWord) { points.rotation.y += (0 - points.rotation.y) * 0.06; points.rotation.x += (0 - points.rotation.x) * 0.06; }
+      else { points.rotation.y += dt * 0.05; points.rotation.x = Math.sin(t * 0.1) * 0.05; }
 
       cx += (tx - cx) * 0.03; cy += (ty - cy) * 0.03;
-      camera.position.x = cx * 2.4; camera.position.y = -cy * 1.6; camera.lookAt(0, 0, 0);
+      camera.position.x = cx * 3; camera.position.y = -cy * 2; camera.lookAt(0, 0, 0);
       renderer.render(scene, camera);
       raf = requestAnimationFrame(frame);
     };
@@ -143,7 +176,7 @@ export default function BeautyHeroScene({ particleCount = 2600 }) {
       if (io) io.disconnect();
       geo.dispose(); mat.dispose(); renderer.dispose();
     };
-  }, [particleCount]);
+  }, [particleCount, rtl]);
 
   return (
     <canvas
