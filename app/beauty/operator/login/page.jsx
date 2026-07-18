@@ -1,13 +1,10 @@
-// app/beauty/operator/login/page.jsx — public login (redirects in if already
-// signed in with a valid BEAUTY session).
+// app/beauty/operator/login/page.jsx — this direct URL is retired. The
+// Beauty login form now lives at /login/beauty, reachable only through
+// /login (the panel chooser) — never by typing this old path directly.
+// Middleware already redirects here at the edge; this stub is a
+// defense-in-depth fallback in case that's ever bypassed.
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/beauty/operator/auth";
-import LoginForm from "./LoginForm";
 
-export const dynamic = "force-dynamic";
-
-export default async function BeautyLoginPage() {
-  const session = await getSession();
-  if (session) redirect("/beauty/operator");
-  return <LoginForm />;
+export default function RetiredBeautyLoginPage() {
+  redirect("/login");
 }

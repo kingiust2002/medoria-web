@@ -37,7 +37,7 @@ export default function OperatorShell({ children }) {
 
   async function logout() {
     try { await fetch("/api/operator/logout", { method: "POST" }); } catch {}
-    router.push("/operator/login");
+    router.push("/login/health");
     router.refresh();
   }
 

@@ -45,7 +45,7 @@ NEXT_PUBLIC_SUPABASE_URL=... NEXT_PUBLIC_SUPABASE_ANON_KEY=... npm run check:rls
 4. Quote appears in `/operator/quotes`.
 5. Browse home/catalog/product with DevTools console open — no CSP violations
    (if an analytics asset is blocked, allowlist it in `next.config.js` CSP).
-6. `/operator` without a session redirects to `/operator/login`.
+6. `/operator` without a session redirects to `/login/health`; `/beauty/operator` without a session redirects to `/login/beauty`. The old `/operator/login` and `/beauty/operator/login` URLs are retired — both bounce to `/login`, the only entry point, instead of ever rendering a form directly.
 7. `/fa` routes render (Persian stays available, noindexed).
 
 ## Abuse-protection behavior (current)

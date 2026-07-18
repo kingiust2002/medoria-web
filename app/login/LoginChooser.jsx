@@ -78,7 +78,7 @@ export default function LoginChooser() {
           {/* Two panel choices */}
           <div className="grid sm:grid-cols-2 gap-4 md:gap-5">
             <Link
-              href="/operator/login"
+              href="/login/health"
               className="group card card-hover p-6 flex flex-col items-center text-center gap-4 transition-all hover:-translate-y-0.5"
             >
               <span className="grid place-items-center w-14 h-14 rounded-2xl bg-primary/10 text-primary shrink-0">
@@ -95,7 +95,7 @@ export default function LoginChooser() {
             </Link>
 
             <Link
-              href="/beauty/operator/login"
+              href="/login/beauty"
               className="group card card-hover p-6 flex flex-col items-center text-center gap-4 transition-all hover:-translate-y-0.5"
             >
               <span className="grid place-items-center w-14 h-14 rounded-2xl shrink-0"
