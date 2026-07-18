@@ -82,9 +82,9 @@ export default function BeautyHeroScene({ particleCount = 6000, rtl = false, dar
         if (rc < 0.80) { a = GOLD; b = COPPER; }
         else { a = COPPER; b = COPPER_DEEP; }
       } else {
-        if (rc < 0.28) { a = BLUSH; b = NUDE; }
-        else if (rc < 0.50) { a = NUDE; b = CREAM; }
-        else if (rc < 0.72) { a = CREAM; b = COPPER; }
+        if (rc < 0.38) { a = BLUSH; b = NUDE; } // more blush pink, per owner
+        else if (rc < 0.56) { a = NUDE; b = CREAM; }
+        else if (rc < 0.74) { a = CREAM; b = COPPER; }
         else if (rc < 0.92) { a = COPPER; b = COPPER_DEEP; }
         else { a = NAVY_LIGHT; b = NAVY_DEEP; } // small rest-state navy fleck
       }
