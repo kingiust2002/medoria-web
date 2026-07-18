@@ -13,7 +13,6 @@ import * as THREE from "three";
 // Brand-tone stops. The cloud now leans DARK — copper/navy dominant with only
 // a champagne minority — so the gathered words read with real contrast against
 // the ivory canvas (pale champagne alone was near-invisible).
-const CHAMP = [0.953, 0.863, 0.745]; // champagne   #F3DCBE  (light minority)
 const COPPER = [0.784, 0.490, 0.306]; // copper     #C87D4E
 const COPPER_DEEP = [0.612, 0.357, 0.176]; // deep copper #9C5B2D
 const NAVY = [0.106, 0.161, 0.318]; // deep navy    #1C2951
@@ -59,14 +58,13 @@ export default function BeautyHeroScene({ particleCount = 6000, rtl = false }) {
       pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
       target[i * 3] = x; target[i * 3 + 1] = y; target[i * 3 + 2] = z;
       seed[i] = Math.random() * Math.PI * 2;
-      // Colour assigned ONCE per particle — NAVY-dominant so the word reads as
-      // deep ink with only a few warm gold flecks (owner: less yellow, more
-      // navy): ~10% champagne sparkle, ~26% copper, ~64% navy-leaning.
+      // Colour assigned ONCE per particle — ~80% deep navy, ~20% copper (owner
+      // spec). No champagne: the word reads as near-solid navy ink with a few
+      // copper embers, strong contrast on the ivory canvas.
       const rc = Math.random();
       let a, b, m = Math.random();
-      if (rc < 0.10) { a = CHAMP; b = COPPER; }              // few warm sparkles
-      else if (rc < 0.36) { a = COPPER; b = COPPER_DEEP; }   // copper mid-tone
-      else { a = COPPER_DEEP; b = NAVY; m = 0.4 + 0.6 * Math.random(); } // mostly navy
+      if (rc < 0.20) { a = COPPER; b = COPPER_DEEP; }        // 20% copper
+      else { a = COPPER_DEEP; b = NAVY; m = 0.55 + 0.45 * Math.random(); } // 80% navy
       col[i * 3] = lerp(a[0], b[0], m);
       col[i * 3 + 1] = lerp(a[1], b[1], m);
       col[i * 3 + 2] = lerp(a[2], b[2], m);
