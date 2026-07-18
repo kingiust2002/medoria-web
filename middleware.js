@@ -30,6 +30,11 @@ export function middleware(req) {
     return;
   }
 
+  // ── /login: neutral admin entry point (choose Health vs Beauty panel).
+  //    Single-locale, no auth of its own — just leave it alone, same as the
+  //    operator panels, so it never becomes a vertical path either.
+  if (pathname === "/login" || pathname.startsWith("/login/")) return;
+
   const seg1 = pathname.split("/")[1];
 
   // Gateway, framework internals, the vertical trees, and static files: leave be.
