@@ -10,6 +10,13 @@ import BeautyHeader from "@/components/beauty/BeautyHeader";
 import BeautyFooter from "@/components/beauty/BeautyFooter";
 import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
 
+// Beauty's own mark — overrides the root's neutral combined favicon.
+export function generateMetadata({ params }) {
+  const { lang } = params;
+  if (!LOCALES.includes(lang)) return {};
+  return { icons: { icon: "/brand/beauty-mark.png", apple: "/brand/beauty-mark.png" } };
+}
+
 // Exposes --font-beauty (consumed by tailwind.config.js `font-beauty` and the
 // [data-vertical="beauty"] .font-display / .section-h-lg rules in globals.css).
 const playfairDisplay = Playfair_Display({

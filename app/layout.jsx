@@ -14,7 +14,12 @@ export const metadata = {
   title: { default: TITLE, template: "%s | Medoria" },
   description: DESC,
   applicationName: "Medoria",
-  icons: { icon: "/logo-mark.png", apple: "/logo-mark.png" },
+  // Neutral default: the two vertical marks combined, half/half — the
+  // gateway's own light-split motif in miniature. Health and Beauty pages
+  // override this with their OWN single mark (see their layouts); this
+  // combined one is only ever seen on the gateway and other neutral pages
+  // (e.g. /login).
+  icons: { icon: "/brand/gateway-mark-combined.png", apple: "/brand/gateway-mark-combined.png" },
   robots: { index: true, follow: true },
   openGraph: {
     type: "website",

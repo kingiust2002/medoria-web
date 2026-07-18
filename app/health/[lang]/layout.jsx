@@ -22,6 +22,8 @@ export function generateMetadata({ params }) {
     keywords: SEO_KEYWORDS[lang] || SEO_KEYWORDS.en,
     robots: robotsFor(lang),
     openGraph: { locale: lang },
+    // Health's own mark — overrides the root's neutral combined favicon.
+    icons: { icon: "/logo-mark.png", apple: "/logo-mark.png" },
   };
 }
 
