@@ -11,6 +11,10 @@ export default function robots() {
         disallow: [
           "/operator",
           "/operator/",
+          "/beauty/operator",
+          "/beauty/operator/",
+          "/login",
+          "/login/",
           "/api/",
           "/*/compare",
           "/*/wishlist",
