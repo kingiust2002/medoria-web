@@ -380,6 +380,61 @@ html.lenis, html.lenis body { height: auto; }
 [data-vertical="beauty"] .font-display { font-family: var(--font-beauty), Georgia, serif; }
 [data-vertical="beauty"][dir="rtl"] .font-display { font-family: Vazirmatn, Tahoma, serif; }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   BEAUTY DARK THEME — Beauty now opts into the global .dark class (it used to
+   stay light-locked). Night palette: deep ink-navy ground, warm ivory text,
+   copper/champagne accents that carry the glow. These `.dark [data-vertical=
+   "beauty"]` rules (specificity 0,2,0) win over the light [data-vertical]
+   blocks (0,1,0). Health and the gateway are unaffected.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.dark .v-scope { color-scheme: dark; }
+.dark [data-vertical="beauty"] {
+  /* vertical accent tokens */
+  --v-canvas:     17  21  43;
+  --v-surface:    28  34  66;
+  --v-ink:        244 236 224;
+  --v-ink-muted:  183 167 143;
+  --v-line:       44  53  87;
+  --v-ring:       206 140  92;
+  --v-brand-from: #B26E3F;
+  --v-brand-via:  #E0A56C;
+  --v-brand-to:   #F3DCBE;
+  --v-accent:     #E6B182;
+  --v-glow:       rgba(216,154,102,0.22);
+  --v-glass:      rgba(28,34,66,0.72);
+  --v-sheen:      rgba(255,240,222,0.14);
+  --v-shadow:     0 30px 80px -32px rgba(0,0,0,0.60);
+  /* neutral (shared-utility) tokens */
+  --canvas:       17  21  43;
+  --canvas-soft:  23  28  54;
+  --surface:      28  34  66;
+  --surface-2:    35  42  76;
+  --ink:          244 236 224;
+  --ink-soft:     230 218 201;
+  --ink-muted:    183 167 143;
+  --ink-faint:    139 126 108;
+  --line:         44  53  87;
+  --line-soft:    36  42  72;
+  --img-ph-1:     42  37  64;
+  --img-ph-2:     51  41  62;
+  --img-ph-3:     59  46  51;
+}
+/* On dark the copper text-gradient must not start on invisible navy. */
+.dark [data-vertical="beauty"] .gradient-text,
+.dark [data-vertical="beauty"] .gradient-text-animated {
+  background-image: linear-gradient(120deg, var(--v-champagne), var(--v-copper) 55%, var(--v-brand-via));
+}
+.dark [data-vertical="beauty"][dir="rtl"] .gradient-text,
+.dark [data-vertical="beauty"][dir="rtl"] .gradient-text-animated {
+  background-image: linear-gradient(240deg, var(--v-champagne), var(--v-copper) 55%, var(--v-brand-via));
+}
+/* Filled primary button: the navy start would blend into the night ground. */
+.dark [data-vertical="beauty"] .btn-primary {
+  background-image: linear-gradient(120deg, #9C5B2D 0%, #C87D4E 60%, #D99A66 100%);
+  box-shadow: 0 10px 30px -6px rgba(0,0,0,0.5);
+}
+.dark [data-vertical="beauty"] .btn-primary:hover { box-shadow: 0 16px 38px -10px rgba(216,154,102,0.45); }
+
 /* Marquee pauses while offscreen (toggled by an IntersectionObserver). */
 .v-marquee-paused .animate-marquee { animation-play-state: paused; }
 

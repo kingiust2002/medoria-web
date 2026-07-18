@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useReducedMotion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { useTheme } from "next-themes";
 import { getBeautyTranslations as getTranslations, BEAUTY_CATEGORIES as CATEGORIES, getCategoryName } from "@/components/beauty/i18n";
 import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
@@ -20,6 +21,7 @@ const EASE = [0.2, 0.8, 0.2, 1];
 export default function Hero({ lang, banner }) {
   const t = getTranslations(lang);
   const reduce = useReducedMotion();
+  const { resolvedTheme } = useTheme();
   const [q, setQ] = useState("");
   const [searchFocus, setSearchFocus] = useState(false);
 
@@ -88,14 +90,21 @@ export default function Hero({ lang, banner }) {
 
   return (
     <section onMouseMove={onMove} className="relative overflow-hidden isolate text-ink">
-      {/* ── LIGHT base: airy ivory + soft copper bloom ── */}
-      <div className="absolute inset-0 -z-20 bg-white" />
-      <div className="absolute inset-0 -z-10" style={{
+      {/* ── base: airy ivory (light) / deep ink-navy (dark) + copper bloom ── */}
+      <div className="absolute inset-0 -z-20 bg-white dark:bg-[#11152B]" />
+      <div className="absolute inset-0 -z-10 dark:hidden" style={{
         background:
           "radial-gradient(60% 55% at 78% 18%, rgba(200,125,78,0.16) 0%, transparent 60%)," +
           "radial-gradient(55% 50% at 88% 60%, rgba(231,197,151,0.20) 0%, transparent 60%)," +
           "radial-gradient(70% 60% at 10% 90%, rgba(28,41,81,0.10) 0%, transparent 60%)," +
           "linear-gradient(180deg,#FFFFFF 0%,#FAF3EB 60%,#FFFFFF 100%)",
+      }} />
+      <div className="absolute inset-0 -z-10 hidden dark:block" style={{
+        background:
+          "radial-gradient(60% 55% at 78% 18%, rgba(216,154,102,0.24) 0%, transparent 60%)," +
+          "radial-gradient(55% 50% at 88% 60%, rgba(239,200,148,0.15) 0%, transparent 60%)," +
+          "radial-gradient(70% 60% at 10% 90%, rgba(200,125,78,0.12) 0%, transparent 62%)," +
+          "linear-gradient(180deg,#11152B 0%,#141A33 60%,#11152B 100%)",
       }} />
       {/* hero banner photo — drop /beauty/hero/hero-banner-light.webp */}
       {banner && (
@@ -104,13 +113,18 @@ export default function Hero({ lang, banner }) {
         </div>
       )}
 
-      {/* aurora — soft light wash */}
-      <Aurora variant="light" className="-z-10 opacity-90" />
+      {/* aurora — soft light wash (light theme only; dark uses the copper bloom) */}
+      <Aurora variant="light" className="-z-10 opacity-90 dark:hidden" />
 
       {/* champagne dust / pearl dew particle scene — desktop + capable devices
           only; confined to this hero section, never the whole page. */}
       {mounted && particleCount > 0 && (
-        <BeautyHeroScene particleCount={particleCount} rtl={lang === "fa"} />
+        <BeautyHeroScene
+          key={resolvedTheme === "dark" ? "d" : "l"}
+          particleCount={particleCount}
+          rtl={lang === "fa"}
+          dark={resolvedTheme === "dark"}
+        />
       )}
 
       {/* dot grid */}
@@ -218,10 +232,12 @@ export default function Hero({ lang, banner }) {
         <motion.div variants={item} className="relative hidden lg:flex items-center justify-center" style={{ perspective: 1200 }}>
           <motion.div style={reduce ? undefined : { x: cardX, y: cardY, rotateX: rotX, rotateY: rotY }} className="relative w-full max-w-md will-change-transform">
             <div className="absolute inset-0 rounded-[2rem] bg-brand-conic blur-[64px] opacity-20 animate-spin-slow" />
-            <div className="relative rounded-[2rem] p-7 border bg-white/70 border-line shadow-card backdrop-blur-xl bv-sheen">
+            <div className="relative rounded-[2rem] p-7 border bg-white/70 dark:bg-white/[0.055] border-line shadow-card backdrop-blur-xl bv-sheen">
               <div className="flex items-center justify-between gap-3 mb-5">
                 <div dir="ltr" className="flex items-center gap-2.5">
-                  <BeautyWordLockup height={22} />
+                  <span className="inline-flex items-center rounded-full dark:bg-white/90 dark:px-2.5 dark:py-1">
+                    <BeautyWordLockup height={22} />
+                  </span>
                 </div>
                 <span className="w-8 h-8 rounded-full bg-cyan-500/15 text-cyan-600 flex items-center justify-center"><Icon name="badgeCheck" size={16} /></span>
               </div>
