@@ -3,6 +3,7 @@
 export const metadata = {
   title: "پنل اپراتور | Medoria",
   robots: { index: false, follow: false },
+  icons: { icon: "/logo-mark.png", apple: "/logo-mark.png" },
 };
 
 export default function OperatorLayout({ children }) {
