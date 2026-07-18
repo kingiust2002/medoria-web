@@ -15,6 +15,7 @@ idempotent (safe to re-run) and **purely additive** — none delete or overwrite
 | 7 | `07_unique_product_sku_slug.sql` | UNIQUE indexes on `products.slug` and case-insensitive `products.sku` (empty SKU stays allowed). **Stops safely with a list of duplicates** if production data already has any — fix those by hand, nothing is changed automatically |
 | 8 | `08_import_logs.sql` | `import_logs` history table (service-role only, RLS locked) |
 | 9 | `09_security_hardening.sql` | Length/quantity CHECK constraints on `quote_requests` (new rows only), query indexes. Step 3 inside the file (commented out) drops the anon public-insert policy — run that step **only after** the release that submits quotes via the server action is live with `SUPABASE_SERVICE_ROLE_KEY` set |
+| 10 | `10_beauty_catalog.sql` | The **entire Medoria Beauty catalog** in one file (Beauty starts fresh): `beauty_categories` (world-linked), `beauty_products`, `beauty_quote_requests` (born hardened — no anon insert), `beauty_import_logs`, unique slug/SKU indexes, active-only public-read RLS, `increment_beauty_product_views()` RPC, `beauty-product-images` storage bucket, starter category seed. Touches **nothing** in the Health tables |
 
 ## Operator panel — required migrations
 
@@ -30,6 +31,22 @@ The **operator panel** (`/operator`) needs **04** and **05** to be applied, and
 > The operator login uses **environment variables**, not a database table
 > (`OPERATOR_PASSWORD_HASH` + `OPERATOR_SESSION_SECRET`). No `admin_users` table
 > is created in Phase 1. Role-based DB users are a Phase 2 upgrade.
+
+## Beauty operator panel — required setup
+
+The **Beauty panel** (`/beauty/operator`) is fully separate from Health's and
+needs **10** applied, plus its own credentials in the environment:
+
+- `BEAUTY_OPERATOR_USERNAME` — Beauty panel login username.
+- `BEAUTY_OPERATOR_PASSWORD_HASH` — generate with the same script:
+  `node scripts/hash-operator-password.mjs 'YourStrongPassword'`.
+- `BEAUTY_OPERATOR_SESSION_SECRET` — any random string ≥ 16 chars (must be
+  DIFFERENT from `OPERATOR_SESSION_SECRET` so the two panels' sessions are
+  cryptographically independent).
+- `SUPABASE_SERVICE_ROLE_KEY` — shared with Health (same Supabase project).
+
+Image uploads use the separate `beauty-product-images` bucket (created by 10,
+or via Dashboard → Storage like Option B below, with that name).
 
 ## How to run
 

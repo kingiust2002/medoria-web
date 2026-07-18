@@ -435,6 +435,24 @@ html.lenis, html.lenis body { height: auto; }
 }
 .dark [data-vertical="beauty"] .btn-primary:hover { box-shadow: 0 16px 38px -10px rgba(216,154,102,0.45); }
 
+/* ── Beauty operator panel (.bop) ─────────────────────────────────────────────
+   The shared panel primitives (components/operator/ui.jsx) accent in violet;
+   inside the Beauty panel the same classes wear the house copper instead.
+   Scoped to .bop so the public Beauty pages are untouched. The vars come from
+   the [data-vertical="beauty"] scope, so dark mode adapts automatically. */
+.bop .text-brand-violet { color: var(--v-accent); }
+.bop .hover\:text-brand-violet:hover { color: var(--v-accent); }
+.bop .bg-brand-violet { background-color: var(--v-copper); }
+.bop .bg-brand-violet\/5 { background-color: color-mix(in srgb, var(--v-copper) 6%, transparent); }
+.bop .bg-brand-violet\/10,
+.bop .hover\:bg-brand-violet\/10:hover { background-color: color-mix(in srgb, var(--v-copper) 12%, transparent); }
+.bop .bg-brand-violet\/15 { background-color: color-mix(in srgb, var(--v-copper) 16%, transparent); }
+.bop .bg-brand-violet\/\[0\.06\] { background-color: color-mix(in srgb, var(--v-copper) 6%, transparent); }
+.bop .border-brand-violet\/15 { border-color: color-mix(in srgb, var(--v-copper) 18%, transparent); }
+.bop .border-brand-violet\/30 { border-color: color-mix(in srgb, var(--v-copper) 32%, transparent); }
+.bop .hover\:border-brand-violet\/40:hover { border-color: color-mix(in srgb, var(--v-copper) 42%, transparent); }
+.bop .accent-brand-violet { accent-color: var(--v-copper); }
+
 /* Marquee pauses while offscreen (toggled by an IntersectionObserver). */
 .v-marquee-paused .animate-marquee { animation-play-state: paused; }
 
