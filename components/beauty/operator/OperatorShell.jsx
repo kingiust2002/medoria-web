@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useTheme } from "next-themes";
 import Icon from "@/components/shared/Icon";
 import { BeautyWordLockup } from "@/components/beauty/BeautyBrand";
+import { useIdleLogout } from "@/lib/useIdleLogout";
 
 const BASE = "/beauty/operator";
 const NAV = [
@@ -45,6 +46,10 @@ export default function OperatorShell({ children }) {
     router.push(`${BASE}/login`);
     router.refresh();
   }
+
+  // Security: auto-logout after 20 minutes with no click/keypress anywhere
+  // in the panel — a session left open and untouched doesn't stay valid.
+  useIdleLogout(logout);
 
   function NavLinks({ onNavigate }) {
     return (

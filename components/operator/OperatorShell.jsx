@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTheme } from "next-themes";
 import Icon from "@/components/shared/Icon";
+import { useIdleLogout } from "@/lib/useIdleLogout";
 
 const NAV = [
   { href: "/operator", label: "داشبورد", icon: "dashboard" },
@@ -39,6 +40,10 @@ export default function OperatorShell({ children }) {
     router.push("/operator/login");
     router.refresh();
   }
+
+  // Security: auto-logout after 20 minutes with no click/keypress anywhere
+  // in the panel — a session left open and untouched doesn't stay valid.
+  useIdleLogout(logout);
 
   function NavLinks({ onNavigate }) {
     return (
