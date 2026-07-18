@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation";
 import { BeautyWordLockup } from "./BeautyBrand";
 import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
 import Icon from "@/components/shared/Icon";
+import ThemeToggle from "@/components/shared/ThemeToggle";
 import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import { getBeautyTranslations } from "./i18n";
 
@@ -56,7 +57,11 @@ export default function BeautyHeader({ lang }) {
           style={{ background: "linear-gradient(90deg,var(--v-navy),var(--v-copper),var(--v-brand-to))" }} />
         <div className="container-x flex h-[4.5rem] items-center justify-between gap-2">
           <Link href={home} className="shrink-0 min-w-0" aria-label="Medoria Beauty">
-            <BeautyWordLockup height={30} />
+            {/* The official Beauty wordmark is navy-toned (no white variant), so
+                on the dark header it sits on a light plate — like the footer. */}
+            <span className="inline-flex items-center rounded-full dark:bg-white/95 dark:px-3 dark:py-1.5">
+              <BeautyWordLockup height={30} />
+            </span>
           </Link>
 
           {/* Desktop nav */}
@@ -83,6 +88,7 @@ export default function BeautyHeader({ lang }) {
 
           {/* Right side */}
           <div className="flex items-center gap-2.5 shrink-0">
+            <div className="hidden md:block"><ThemeToggle lang={lang} /></div>
             <div className="hidden md:block"><LanguageSwitcher lang={lang} /></div>
             <div className="md:hidden"><LanguageSwitcher lang={lang} variant="dropdown" /></div>
             <a href={waLink(bulkInquiryMessage(lang))} target="_blank" rel="noopener noreferrer" className="hidden md:inline-flex btn-primary size-sm">
@@ -116,8 +122,9 @@ export default function BeautyHeader({ lang }) {
                 );
               })}
             </nav>
+            <div className="mt-6"><ThemeToggle lang={lang} withLabel className="w-full justify-center" /></div>
             <a href={waLink(bulkInquiryMessage(lang))} target="_blank" rel="noopener noreferrer"
-              className="btn-primary size-lg w-full mt-6" onClick={() => setOpen(false)}>
+              className="btn-primary size-lg w-full mt-3" onClick={() => setOpen(false)}>
               <Icon name="chat" size={16} />
               {t.nav.contact}
             </a>

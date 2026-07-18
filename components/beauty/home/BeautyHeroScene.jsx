@@ -13,6 +13,8 @@ import * as THREE from "three";
 // Brand-tone stops. The cloud now leans DARK — copper/navy dominant with only
 // a champagne minority — so the gathered words read with real contrast against
 // the ivory canvas (pale champagne alone was near-invisible).
+const GOLD = [0.984, 0.925, 0.831]; // near-white gold (dark-mode sparkle)
+const CHAMP = [0.953, 0.863, 0.745]; // champagne  #F3DCBE
 const COPPER = [0.784, 0.490, 0.306]; // copper     #C87D4E
 const COPPER_DEEP = [0.612, 0.357, 0.176]; // deep copper #9C5B2D
 const NAVY = [0.106, 0.161, 0.318]; // deep navy    #1C2951
@@ -20,7 +22,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
 // Medoria + Beauty, then luxury houses the boutique carries.
 const WORDS = ["MEDORIA", "BEAUTY", "CHANEL", "DIOR", "GUCCI", "YSL", "LANCOME", "HERMES"];
 
-export default function BeautyHeroScene({ particleCount = 6000, rtl = false }) {
+export default function BeautyHeroScene({ particleCount = 6000, rtl = false, dark = false }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -58,13 +60,19 @@ export default function BeautyHeroScene({ particleCount = 6000, rtl = false }) {
       pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
       target[i * 3] = x; target[i * 3 + 1] = y; target[i * 3 + 2] = z;
       seed[i] = Math.random() * Math.PI * 2;
-      // Colour assigned ONCE per particle — ~80% deep navy, ~20% copper (owner
-      // spec). No champagne: the word reads as near-solid navy ink with a few
-      // copper embers, strong contrast on the ivory canvas.
+      // Colour assigned ONCE per particle. Light theme: ~80% deep navy / ~20%
+      // copper (near-solid ink on ivory). Dark theme: warm champagne/gold dust
+      // that glows on the night-navy ground (navy would be invisible there).
       const rc = Math.random();
       let a, b, m = Math.random();
-      if (rc < 0.20) { a = COPPER; b = COPPER_DEEP; }        // 20% copper
-      else { a = COPPER_DEEP; b = NAVY; m = 0.55 + 0.45 * Math.random(); } // 80% navy
+      if (dark) {
+        if (rc < 0.16) { a = GOLD; b = CHAMP; }              // bright sparkle
+        else if (rc < 0.72) { a = CHAMP; b = COPPER; }       // champagne→copper
+        else { a = COPPER; b = COPPER_DEEP; }                // copper embers
+      } else {
+        if (rc < 0.20) { a = COPPER; b = COPPER_DEEP; }      // 20% copper
+        else { a = COPPER_DEEP; b = NAVY; m = 0.55 + 0.45 * Math.random(); } // 80% navy
+      }
       col[i * 3] = lerp(a[0], b[0], m);
       col[i * 3 + 1] = lerp(a[1], b[1], m);
       col[i * 3 + 2] = lerp(a[2], b[2], m);
@@ -77,7 +85,9 @@ export default function BeautyHeroScene({ particleCount = 6000, rtl = false }) {
       vertexColors: true,
       transparent: true,
       opacity: 0.62,
-      blending: THREE.NormalBlending, // light-only: additive would wash out on ivory
+      // Additive glow reads beautifully on the dark ground; on ivory it would
+      // wash out, so light theme uses normal blending.
+      blending: dark ? THREE.AdditiveBlending : THREE.NormalBlending,
       depthWrite: false,
       sizeAttenuation: true,
     });
@@ -177,7 +187,7 @@ export default function BeautyHeroScene({ particleCount = 6000, rtl = false }) {
       if (io) io.disconnect();
       geo.dispose(); mat.dispose(); renderer.dispose();
     };
-  }, [particleCount, rtl]);
+  }, [particleCount, rtl, dark]);
 
   return (
     <canvas
