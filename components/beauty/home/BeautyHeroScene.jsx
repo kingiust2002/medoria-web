@@ -1,10 +1,9 @@
 // components/beauty/home/BeautyHeroScene.jsx
 // Beauty hero particle field — now a faithful port of Health's HeroScene: a
-// cloud of fine champagne/copper particles that drift, then gather to spell
-// brand/beauty words over the right-side card, then disperse — repeating, on
-// the SAME cadence as Health (rest 3.0s, word 4.6s). Light-only rendering
-// (NormalBlending on ivory). Colour follows the page's own navy->copper->gold
-// `.gradient-text` direction, biased light so navy stays a rare accent.
+// cloud of fine particles that drift, then gather to spell brand/beauty words
+// over the right-side card, then disperse — repeating, on the SAME cadence as
+// Health (rest 3.0s, word 4.6s). Navy/copper in light, gold/copper in dark;
+// NormalBlending in both (see the note above `mat` for why never additive).
 // Lazy + capability-gated by the parent; pauses off-screen/hidden; disposes.
 "use client";
 import { useEffect, useRef } from "react";
@@ -13,8 +12,13 @@ import * as THREE from "three";
 // Brand-tone stops. The cloud now leans DARK — copper/navy dominant with only
 // a champagne minority — so the gathered words read with real contrast against
 // the ivory canvas (pale champagne alone was near-invisible).
-const GOLD = [0.988, 0.902, 0.706]; // warm gold  #FCE6B4 (dark-mode sparkle)
-const CHAMP = [0.918, 0.729, 0.451]; // deep champagne/soft copper-gold
+// NOTE on dark-mode colour: additive blending SUMS overlapping particles'
+// brightness, so a near-white stop (e.g. #FCE6B4) clips to pure white the
+// moment particles cluster densely (exactly the gathered-word moment). Both
+// dark stops below are deliberately saturated gold/copper — never pale cream
+// — and dark rendering uses NormalBlending (see mat below), so the hue stays
+// true gold/copper at every density instead of blowing out to white.
+const GOLD = [0.851, 0.616, 0.192]; // rich amber gold #D99D31 (dark-mode)
 const COPPER = [0.784, 0.490, 0.306]; // copper     #C87D4E
 const COPPER_DEEP = [0.612, 0.357, 0.176]; // deep copper #9C5B2D
 // Rich, saturated navy range — clean royal blues, NOT muddied with copper
@@ -70,7 +74,9 @@ export default function BeautyHeroScene({ particleCount = 6000, rtl = false, dar
       let a, b, m = Math.random();
       if (dark) {
         // 80% golden, 20% copper — a warm gilded cloud on the night ground.
-        if (rc < 0.80) { a = GOLD; b = CHAMP; }
+        // Both stops are saturated gold/copper (never pale) so NormalBlending
+        // keeps the true hue even where particles overlap densely.
+        if (rc < 0.80) { a = GOLD; b = COPPER; }
         else { a = COPPER; b = COPPER_DEEP; }
       } else {
         // 20% copper, 80% rich saturated navy (biased deep, so it never greys).
@@ -89,9 +95,11 @@ export default function BeautyHeroScene({ particleCount = 6000, rtl = false, dar
       vertexColors: true,
       transparent: true,
       opacity: 0.62,
-      // Additive glow reads beautifully on the dark ground; on ivory it would
-      // wash out, so light theme uses normal blending.
-      blending: dark ? THREE.AdditiveBlending : THREE.NormalBlending,
+      // NormalBlending in BOTH themes: additive would sum overlapping
+      // particles' brightness and blow the gold cloud out to white exactly
+      // where it matters most — the densely-gathered word. Normal keeps the
+      // true gold/copper (dark) or navy/copper (light) hue at any density.
+      blending: THREE.NormalBlending,
       depthWrite: false,
       sizeAttenuation: true,
     });
