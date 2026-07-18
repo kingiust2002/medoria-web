@@ -39,9 +39,9 @@ export default function Hero({ lang, banner }) {
       const saveData = Boolean(navigator.connection && navigator.connection.saveData);
       const cores = navigator.hardwareConcurrency || 4;
       if (desktop && !reducedMotion && !saveData && cores >= 4) {
-        // Dense enough that the gathered words read as solid, legible letters
+        // Dense enough that the gathered words read as solid, cohesive letters
         // (above Health parity — beauty words include finer brand logotypes).
-        setParticleCount(cores >= 8 ? 8000 : 5600);
+        setParticleCount(cores >= 8 ? 9000 : 6400);
       }
     } catch { /* keep the CSS/gradient fallback */ }
   }, []);
@@ -232,7 +232,7 @@ export default function Hero({ lang, banner }) {
         <motion.div variants={item} className="relative hidden lg:flex items-center justify-center" style={{ perspective: 1200 }}>
           <motion.div style={reduce ? undefined : { x: cardX, y: cardY, rotateX: rotX, rotateY: rotY }} className="relative w-full max-w-md will-change-transform">
             <div className="absolute inset-0 rounded-[2rem] bg-brand-conic blur-[64px] opacity-20 animate-spin-slow" />
-            <div className="relative rounded-[2rem] p-7 border bg-white/70 dark:bg-white/[0.055] border-line shadow-card backdrop-blur-xl bv-sheen">
+            <div className="relative rounded-[2rem] p-7 border bg-white/70 dark:bg-[#1A2142]/95 border-line shadow-card backdrop-blur-xl bv-sheen">
               <div className="flex items-center justify-between gap-3 mb-5">
                 <div dir="ltr" className="flex items-center gap-2.5">
                   <span className="inline-flex items-center rounded-full dark:bg-white/90 dark:px-2.5 dark:py-1">

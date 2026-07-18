@@ -13,11 +13,14 @@ import * as THREE from "three";
 // Brand-tone stops. The cloud now leans DARK — copper/navy dominant with only
 // a champagne minority — so the gathered words read with real contrast against
 // the ivory canvas (pale champagne alone was near-invisible).
-const GOLD = [0.984, 0.925, 0.831]; // near-white gold (dark-mode sparkle)
-const CHAMP = [0.953, 0.863, 0.745]; // champagne  #F3DCBE
+const GOLD = [0.988, 0.902, 0.706]; // warm gold  #FCE6B4 (dark-mode sparkle)
+const CHAMP = [0.918, 0.729, 0.451]; // deep champagne/soft copper-gold
 const COPPER = [0.784, 0.490, 0.306]; // copper     #C87D4E
 const COPPER_DEEP = [0.612, 0.357, 0.176]; // deep copper #9C5B2D
-const NAVY = [0.106, 0.161, 0.318]; // deep navy    #1C2951
+// Rich, saturated navy range — clean royal blues, NOT muddied with copper
+// (the old copper→navy lerp read grey). This is what makes the word "navy".
+const NAVY_DEEP = [0.055, 0.098, 0.278]; // #0E1947 ink navy
+const NAVY_LIGHT = [0.145, 0.216, 0.478]; // #25377A saturated royal navy
 const lerp = (a, b, t) => a + (b - a) * t;
 // Medoria + Beauty, then luxury houses the boutique carries.
 const WORDS = ["MEDORIA", "BEAUTY", "CHANEL", "DIOR", "GUCCI", "YSL", "LANCOME", "HERMES"];
@@ -66,12 +69,13 @@ export default function BeautyHeroScene({ particleCount = 6000, rtl = false, dar
       const rc = Math.random();
       let a, b, m = Math.random();
       if (dark) {
-        if (rc < 0.16) { a = GOLD; b = CHAMP; }              // bright sparkle
-        else if (rc < 0.72) { a = CHAMP; b = COPPER; }       // champagne→copper
-        else { a = COPPER; b = COPPER_DEEP; }                // copper embers
+        // 80% golden, 20% copper — a warm gilded cloud on the night ground.
+        if (rc < 0.80) { a = GOLD; b = CHAMP; }
+        else { a = COPPER; b = COPPER_DEEP; }
       } else {
-        if (rc < 0.20) { a = COPPER; b = COPPER_DEEP; }      // 20% copper
-        else { a = COPPER_DEEP; b = NAVY; m = 0.55 + 0.45 * Math.random(); } // 80% navy
+        // 20% copper, 80% rich saturated navy (biased deep, so it never greys).
+        if (rc < 0.20) { a = COPPER; b = COPPER_DEEP; }
+        else { a = NAVY_DEEP; b = NAVY_LIGHT; m = 0.12 + 0.5 * Math.random(); }
       }
       col[i * 3] = lerp(a[0], b[0], m);
       col[i * 3 + 1] = lerp(a[1], b[1], m);
@@ -117,9 +121,10 @@ export default function BeautyHeroScene({ particleCount = 6000, rtl = false, dar
       const OX = rtl ? -7 : 7, OY = 6;
       for (let i = 0; i < N; i++) {
         const p = pts.length ? pts[i % pts.length] : [tc.width / 2, tc.height / 2];
-        target[i * 3] = (p[0] / tc.width - 0.5) * SX + OX + (Math.random() - 0.5) * 0.035;
-        target[i * 3 + 1] = -(p[1] / tc.height - 0.5) * SY + OY + (Math.random() - 0.5) * 0.035;
-        target[i * 3 + 2] = (Math.random() - 0.5) * 0.16; // flatter → sharper letters
+        // tighter jitter + flatter depth → dense, cohesive, crisp letters
+        target[i * 3] = (p[0] / tc.width - 0.5) * SX + OX + (Math.random() - 0.5) * 0.018;
+        target[i * 3 + 1] = -(p[1] / tc.height - 0.5) * SY + OY + (Math.random() - 0.5) * 0.018;
+        target[i * 3 + 2] = (Math.random() - 0.5) * 0.07;
       }
     }
     const toCloud = () => { for (let i = 0; i < N * 3; i++) target[i] = cloud[i]; };
@@ -139,11 +144,12 @@ export default function BeautyHeroScene({ particleCount = 6000, rtl = false, dar
       if (inWord && phase > 4.6) { inWord = false; phase = 0; toCloud(); }
       else if (!inWord && phase > 3.0) { inWord = true; phase = 0; wi = (wi + 1) % WORDS.length; setWord(WORDS[wi]); }
 
-      // crisp + fully opaque when it assembles into a word (denser, darker read)
-      mat.size += ((inWord ? 0.105 : 0.08) - mat.size) * 0.08;
-      mat.opacity += ((inWord ? 1.0 : 0.62) - mat.opacity) * 0.08;
+      // Bolder + fully opaque as it assembles — the gathered word deepens in
+      // colour weight (bigger, denser points) vs the airy resting drift.
+      mat.size += ((inWord ? 0.12 : 0.075) - mat.size) * 0.08;
+      mat.opacity += ((inWord ? 1.0 : 0.58) - mat.opacity) * 0.08;
 
-      const k = inWord ? 0.07 : 0.03; // settle faster when forming, drift otherwise
+      const k = inWord ? 0.09 : 0.03; // snap tighter when forming, drift otherwise
       const arr = geo.attributes.position.array;
       for (let i = 0; i < N; i++) {
         const j = i * 3;
