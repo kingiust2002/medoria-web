@@ -43,7 +43,7 @@ export default function OperatorShell({ children }) {
 
   async function logout() {
     try { await fetch("/api/beauty-operator/logout", { method: "POST" }); } catch {}
-    router.push(`${BASE}/login`);
+    router.push("/login/beauty");
     router.refresh();
   }
 

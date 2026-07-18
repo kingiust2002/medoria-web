@@ -9,6 +9,6 @@ export const dynamic = "force-dynamic";
 
 export default async function PanelLayout({ children }) {
   const session = await getSession();
-  if (!session) redirect("/beauty/operator/login");
+  if (!session) redirect("/login/beauty");
   return <OperatorShell>{children}</OperatorShell>;
 }

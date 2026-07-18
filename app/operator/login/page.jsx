@@ -1,12 +1,11 @@
-// app/operator/login/page.jsx — public login (redirects in if already signed in).
+// app/operator/login/page.jsx — this direct URL is retired. The Health
+// login form now lives at /login/health, reachable only through /login
+// (the panel chooser) — never by typing this old path directly. Middleware
+// already redirects here at the edge; this stub is a defense-in-depth
+// fallback in case that's ever bypassed (same belt-and-suspenders pattern
+// as the (panel) layout's own session check).
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/operator/auth";
-import LoginForm from "./LoginForm";
 
-export const dynamic = "force-dynamic";
-
-export default async function LoginPage() {
-  const session = await getSession();
-  if (session) redirect("/operator");
-  return <LoginForm />;
+export default function RetiredHealthLoginPage() {
+  redirect("/login");
 }

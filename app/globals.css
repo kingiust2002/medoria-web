@@ -992,6 +992,11 @@ html.lenis, html.lenis body { height: auto; }
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
   gap: 0.4rem 0.5rem;
 }
+/* CTA always sits on its own row below the language pills — for BOTH
+   verticals alike. Without this, it was flex-wrapping opportunistically
+   (Health's longer label wrapped, Beauty's shorter one often didn't),
+   which read as inconsistent between the two equal sides. */
+.lumen-card-act > .lumen-cta { flex-basis: 100%; }
 .lumen-card .lumen-cta { padding: 0.56rem 1.05rem; font-size: 10.5px; }
 .lumen-card .lumen-lang { padding: 0.5rem 0.72rem; }
 

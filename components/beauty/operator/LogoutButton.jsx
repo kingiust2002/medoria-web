@@ -6,7 +6,7 @@ export default function LogoutButton() {
   const router = useRouter();
   async function logout() {
     try { await fetch("/api/beauty-operator/logout", { method: "POST" }); } catch {}
-    router.push("/beauty/operator/login");
+    router.push("/login/beauty");
     router.refresh();
   }
   return (
