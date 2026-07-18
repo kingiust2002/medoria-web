@@ -9,9 +9,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-// Brand-tone stops. The cloud now leans DARK — copper/navy dominant with only
-// a champagne minority — so the gathered words read with real contrast against
-// the ivory canvas (pale champagne alone was near-invisible).
+// Brand-tone stops.
 // NOTE on dark-mode colour: additive blending SUMS overlapping particles'
 // brightness, so a near-white stop (e.g. #FCE6B4) clips to pure white the
 // moment particles cluster densely (exactly the gathered-word moment). Both
@@ -21,10 +19,16 @@ import * as THREE from "three";
 const GOLD = [0.851, 0.616, 0.192]; // rich amber gold #D99D31 (dark-mode)
 const COPPER = [0.784, 0.490, 0.306]; // copper     #C87D4E
 const COPPER_DEEP = [0.612, 0.357, 0.176]; // deep copper #9C5B2D
-// Rich, saturated navy range — clean royal blues, NOT muddied with copper
-// (the old copper→navy lerp read grey). This is what makes the word "navy".
-const NAVY_DEEP = [0.055, 0.098, 0.278]; // #0E1947 ink navy
+// Light-theme palette — a "sexier", more sensual mix per the owner: blush
+// pink, nude, cream and copper dominate the cloud; navy is a minority accent
+// at rest. Ultra-dark navy is reserved separately (NAVY_RIM below) as a
+// structural accent traced around each gathered letter, not a base colour.
+const BLUSH = [0.851, 0.561, 0.627]; // dusty rose  #D98FA0
+const NUDE = [0.851, 0.682, 0.549]; // warm nude   #D9AE8C
+const CREAM = [0.941, 0.875, 0.753]; // warm cream  #F0DFC0
+const NAVY_DEEP = [0.055, 0.098, 0.278]; // #0E1947 ink navy (rare rest accent)
 const NAVY_LIGHT = [0.145, 0.216, 0.478]; // #25377A saturated royal navy
+const NAVY_RIM = [0.035, 0.051, 0.122]; // #090D1F ultra-dark — the letter outline
 const lerp = (a, b, t) => a + (b - a) * t;
 // Medoria + Beauty, then luxury houses the boutique carries.
 const WORDS = ["MEDORIA", "BEAUTY", "CHANEL", "DIOR", "GUCCI", "YSL", "LANCOME", "HERMES"];
@@ -67,26 +71,36 @@ export default function BeautyHeroScene({ particleCount = 6000, rtl = false, dar
       pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
       target[i * 3] = x; target[i * 3 + 1] = y; target[i * 3 + 2] = z;
       seed[i] = Math.random() * Math.PI * 2;
-      // Colour assigned ONCE per particle. Light theme: ~80% deep navy / ~20%
-      // copper (near-solid ink on ivory). Dark theme: warm champagne/gold dust
-      // that glows on the night-navy ground (navy would be invisible there).
+      // Colour assigned ONCE per particle. Dark theme: warm gold/copper dust
+      // that glows on the night ground. Light theme: blush/nude/cream/copper
+      // dominant with only a rare navy fleck at rest — the bold ultra-dark
+      // navy rim is a SEPARATE, dynamic accent applied only while a word is
+      // gathered (see wordNavyMix / NAVY_RIM below).
       const rc = Math.random();
       let a, b, m = Math.random();
       if (dark) {
-        // 80% golden, 20% copper — a warm gilded cloud on the night ground.
-        // Both stops are saturated gold/copper (never pale) so NormalBlending
-        // keeps the true hue even where particles overlap densely.
         if (rc < 0.80) { a = GOLD; b = COPPER; }
         else { a = COPPER; b = COPPER_DEEP; }
       } else {
-        // 20% copper, 80% rich saturated navy (biased deep, so it never greys).
-        if (rc < 0.20) { a = COPPER; b = COPPER_DEEP; }
-        else { a = NAVY_DEEP; b = NAVY_LIGHT; m = 0.12 + 0.5 * Math.random(); }
+        if (rc < 0.38) { a = BLUSH; b = NUDE; } // more blush pink, per owner
+        else if (rc < 0.56) { a = NUDE; b = CREAM; }
+        else if (rc < 0.74) { a = CREAM; b = COPPER; }
+        else if (rc < 0.92) { a = COPPER; b = COPPER_DEEP; }
+        else { a = NAVY_LIGHT; b = NAVY_DEEP; } // small rest-state navy fleck
       }
       col[i * 3] = lerp(a[0], b[0], m);
       col[i * 3 + 1] = lerp(a[1], b[1], m);
       col[i * 3 + 2] = lerp(a[2], b[2], m);
     }
+    // Immutable per-particle base colour (light theme) + the live rim/interior
+    // navy-accent blend applied only while a word is gathered (0 = pure base
+    // colour, 1 = full NAVY_RIM). `wordNavyMix` is recomputed each time
+    // setWord() runs, since the pixel a particle lands on — and therefore
+    // whether it sits on a letter's edge — changes with every new word.
+    const colBase = new Float32Array(col);
+    const wordNavyMix = new Float32Array(N);
+    const navyBlend = new Float32Array(N);
+
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
@@ -118,9 +132,15 @@ export default function BeautyHeroScene({ particleCount = 6000, rtl = false, dar
       while (tctx.measureText(word).width > tc.width - 30 && fs > 24) { fs -= 3; tctx.font = `800 ${fs}px Arial, sans-serif`; }
       tctx.fillText(word, tc.width / 2, tc.height / 2 + 2);
       const d = tctx.getImageData(0, 0, tc.width, tc.height).data;
+      const isBg = (x, y) => x < 0 || y < 0 || x >= tc.width || y >= tc.height || d[(y * tc.width + x) * 4 + 3] <= 140;
       const pts = [];
+      // Third element: 1 if this pixel sits on the glyph's outer boundary
+      // (any 4-neighbour is background) — the rim the ultra-dark navy traces.
       for (let y = 0; y < tc.height; y += 1) for (let x = 0; x < tc.width; x += 1) {
-        if (d[(y * tc.width + x) * 4 + 3] > 140) pts.push([x, y]);
+        if (d[(y * tc.width + x) * 4 + 3] > 140) {
+          const edge = isBg(x - 1, y) || isBg(x + 1, y) || isBg(x, y - 1) || isBg(x, y + 1);
+          pts.push([x, y, edge ? 1 : 0]);
+        }
       }
       // even coverage → crisp, legible letters: shuffle then round-robin assign
       for (let i = pts.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; const tmp = pts[i]; pts[i] = pts[j]; pts[j] = tmp; }
@@ -128,11 +148,14 @@ export default function BeautyHeroScene({ particleCount = 6000, rtl = false, dar
       const SX = 7, SY = 7 * (tc.height / tc.width);
       const OX = rtl ? -7 : 7, OY = 6;
       for (let i = 0; i < N; i++) {
-        const p = pts.length ? pts[i % pts.length] : [tc.width / 2, tc.height / 2];
+        const p = pts.length ? pts[i % pts.length] : [tc.width / 2, tc.height / 2, 0];
         // tighter jitter + flatter depth → dense, cohesive, crisp letters
         target[i * 3] = (p[0] / tc.width - 0.5) * SX + OX + (Math.random() - 0.5) * 0.018;
         target[i * 3 + 1] = -(p[1] / tc.height - 0.5) * SY + OY + (Math.random() - 0.5) * 0.018;
         target[i * 3 + 2] = (Math.random() - 0.5) * 0.07;
+        // Ultra-dark navy: fully on the rim, a light scatter inside the
+        // letterform, none in dark theme (that palette stays pure gold/copper).
+        wordNavyMix[i] = dark ? 0 : (p[2] ? 1 : (Math.random() < 0.16 ? 0.45 : 0));
       }
     }
     const toCloud = () => { for (let i = 0; i < N * 3; i++) target[i] = cloud[i]; };
@@ -171,6 +194,19 @@ export default function BeautyHeroScene({ particleCount = 6000, rtl = false, dar
         arr[j + 2] += (tzp - arr[j + 2]) * k;
       }
       geo.attributes.position.needsUpdate = true;
+
+      // Trace the ultra-dark navy rim/interior accent in, and fade it back to
+      // the base blush/nude/cream/copper colour as the word disperses.
+      const carr = geo.attributes.color.array;
+      for (let i = 0; i < N; i++) {
+        const j = i * 3;
+        navyBlend[i] += ((inWord ? wordNavyMix[i] : 0) - navyBlend[i]) * 0.09;
+        const nb = navyBlend[i];
+        carr[j] = colBase[j] + (NAVY_RIM[0] - colBase[j]) * nb;
+        carr[j + 1] = colBase[j + 1] + (NAVY_RIM[1] - colBase[j + 1]) * nb;
+        carr[j + 2] = colBase[j + 2] + (NAVY_RIM[2] - colBase[j + 2]) * nb;
+      }
+      geo.attributes.color.needsUpdate = true;
 
       if (inWord) { points.rotation.y += (0 - points.rotation.y) * 0.06; points.rotation.x += (0 - points.rotation.x) * 0.06; }
       else { points.rotation.y += dt * 0.05; points.rotation.x = Math.sin(t * 0.1) * 0.05; }
