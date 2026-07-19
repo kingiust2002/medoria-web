@@ -10,11 +10,13 @@ import BeautyHeader from "@/components/beauty/BeautyHeader";
 import BeautyFooter from "@/components/beauty/BeautyFooter";
 import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
 
-// Beauty's own mark — overrides the root's neutral combined favicon.
+// Beauty's own mark — overrides the root's neutral fused favicon. Tight-
+// cropped to the glyph (the source PNG carries generous transparent
+// padding, which read as a faint, tiny icon at real favicon size).
 export function generateMetadata({ params }) {
   const { lang } = params;
   if (!LOCALES.includes(lang)) return {};
-  return { icons: { icon: "/brand/beauty-mark.png", apple: "/brand/beauty-mark.png" } };
+  return { icons: { icon: { url: "/brand/beauty-mark-icon.webp", type: "image/webp" }, apple: { url: "/brand/beauty-mark-icon.webp", type: "image/webp" } } };
 }
 
 // Exposes --font-beauty (consumed by tailwind.config.js `font-beauty` and the

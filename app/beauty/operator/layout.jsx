@@ -5,7 +5,7 @@
 export const metadata = {
   title: "پنل بیوتی | Medoria Beauty",
   robots: { index: false, follow: false },
-  icons: { icon: "/brand/beauty-mark.png", apple: "/brand/beauty-mark.png" },
+  icons: { icon: { url: "/brand/beauty-mark-icon.webp", type: "image/webp" }, apple: { url: "/brand/beauty-mark-icon.webp", type: "image/webp" } },
 };
 
 export default function BeautyOperatorLayout({ children }) {
