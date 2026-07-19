@@ -767,40 +767,43 @@ html.lenis, html.lenis body { height: auto; }
   scale: 1;
   transition:
     scale 0.18s var(--ease-lux), box-shadow 0.45s var(--ease-lux),
-    border-color 0.45s var(--ease-lux), background-color 0.45s var(--ease-lux);
+    border-color 0.45s var(--ease-lux), background-position 0.45s var(--ease-lux);
 }
 .lumen-cta:active { scale: 0.97; }
 .lumen-cta-arrow { transition: translate 0.35s var(--ease-lux); }
 .lumen-cta:hover .lumen-cta-arrow, .lumen-cta:focus-visible .lumen-cta-arrow { translate: 3px 0; }
+/* Modern solid-filled treatment — same brand spectrum already used by
+   .btn-primary sitewide (Health) and the Beauty admin/footer accent
+   (Beauty), so the gateway's most important tap targets read as
+   confidently "now" rather than an engraved plaque. */
 .lumen-cta-health {
-  color: #16324E;
-  border: 1px solid rgba(48, 86, 128, 0.42);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(236, 245, 252, 0.8));
-  box-shadow: 0 12px 30px -14px rgba(28, 60, 96, 0.45);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background-image: linear-gradient(120deg, #F0289E 0%, #A634E8 38%, #3B82F6 72%, #22D3EE 100%);
+  background-size: 180% 100%; background-position: 0% 50%;
+  box-shadow: 0 14px 32px -12px rgba(88, 40, 158, 0.55);
 }
 .lumen-cta-health:hover, .lumen-cta-health:focus-visible {
-  border-color: rgba(36, 95, 219, 0.6);
-  box-shadow: 0 16px 36px -14px rgba(28, 60, 96, 0.55);
+  background-position: 100% 50%;
+  box-shadow: 0 18px 38px -12px rgba(88, 40, 158, 0.65);
 }
 .lumen-cta-beauty {
-  color: #6E4322;
-  border: 1px solid rgba(156, 91, 45, 0.45);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(250, 239, 227, 0.82));
-  box-shadow: 0 12px 30px -14px rgba(122, 74, 40, 0.45);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background-image: linear-gradient(120deg, #1C2951 0%, #6E4322 55%, #C87D4E 100%);
+  background-size: 180% 100%; background-position: 0% 50%;
+  box-shadow: 0 14px 32px -12px rgba(122, 74, 40, 0.55);
 }
 .lumen-cta-beauty:hover, .lumen-cta-beauty:focus-visible {
-  border-color: rgba(200, 125, 78, 0.68);
-  box-shadow: 0 16px 36px -14px rgba(122, 74, 40, 0.55);
+  background-position: 100% 50%;
+  box-shadow: 0 18px 38px -12px rgba(122, 74, 40, 0.65);
 }
 /* Precise glint: one specular sweep across the plaque CTA. */
 @keyframes lumen-glint { 0% { left: -55%; opacity: 0; } 30% { opacity: 0.9; } 100% { left: 115%; opacity: 0; } }
 .lumen-cta::after {
   content: ""; position: absolute; top: -40%; bottom: -40%; left: -55%; width: 38%;
   transform: skewX(-18deg); opacity: 0; pointer-events: none;
-  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.9), transparent);
-}
-.lumen-cta-beauty::after {
-  background: linear-gradient(105deg, transparent, rgba(247, 224, 188, 0.95), transparent);
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.55), transparent);
 }
 .lumen-cta:hover::after, .lumen-cta:focus-visible::after {
   animation: lumen-glint 0.8s var(--ease-silk);
