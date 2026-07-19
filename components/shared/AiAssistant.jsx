@@ -80,8 +80,11 @@ function Dots() {
   );
 }
 
-export default function AiAssistant({ lang }) {
-  const t = UI[lang] || UI.en;
+// `endpoint` + `ui` are parametrized so the Beauty vertical can reuse this
+// exact widget against /api/beauty-chat with its own copy (defaults keep
+// Health's behavior byte-for-byte).
+export default function AiAssistant({ lang, endpoint = "/api/chat", ui = UI }) {
+  const t = ui[lang] || ui.en;
   const tc = getTranslations(lang).common;
   const reduce = useReducedMotion();
 
@@ -99,12 +102,12 @@ export default function AiAssistant({ lang }) {
   useEffect(() => {
     if (!open || available !== null) return;
     let live = true;
-    fetch("/api/chat")
+    fetch(endpoint)
       .then((r) => r.json())
       .then((d) => live && setAvailable(!!d.available))
       .catch(() => live && setAvailable(false));
     return () => { live = false; };
-  }, [open, available]);
+  }, [open, available, endpoint]);
 
   // Auto-scroll to the newest message.
   useEffect(() => {
@@ -135,7 +138,7 @@ export default function AiAssistant({ lang }) {
       setMessages([...next, { role: "assistant", content: "" }]);
       setStreaming(true);
       try {
-        const res = await fetch("/api/chat", {
+        const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages: next, lang }),
@@ -171,7 +174,7 @@ export default function AiAssistant({ lang }) {
         setStreaming(false);
       }
     },
-    [messages, streaming, lang, t.error]
+    [messages, streaming, lang, t.error, endpoint]
   );
 
   const onKeyDown = (e) => {

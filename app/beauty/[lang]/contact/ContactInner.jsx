@@ -1,11 +1,12 @@
 // app/beauty/[lang]/contact/ContactInner.jsx — Beauty contact page (client).
-// Same trusted infra as Health (submitQuoteRequest + MathCaptcha honeypot +
-// WhatsApp/Telegram channels), self-contained beauty copy, copper/ivory skin.
+// Same trusted infra as Health but its OWN store: submitBeautyQuoteRequest
+// (writes to beauty_quote_requests, not Health's table) + MathCaptcha honeypot
+// + WhatsApp/Telegram channels, self-contained beauty copy, copper/ivory skin.
 "use client";
 import { useState } from "react";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
 import { WA_NUMBER, TG_USER, waLink, tgLink } from "@/lib/whatsapp";
-import { submitQuoteRequest } from "@/lib/actions/quote";
+import { submitBeautyQuoteRequest } from "@/lib/beauty/actions/quote";
 import MathCaptcha, { captchaErrorText } from "@/components/shared/MathCaptcha";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
@@ -132,11 +133,13 @@ function ContactForm({ lang, c }) {
     const composedMessage = [form.subject ? `[${form.subject}] ` : "", form.message, form.email ? `\n${c.form.email}: ${form.email}` : ""].join("");
     let res = null;
     try {
-      res = await submitQuoteRequest({
+      res = await submitBeautyQuoteRequest({
         name: form.name, organization: form.org, phone: form.phone, message: composedMessage,
-        preferredContact: via, language: lang, website: hp, captchaToken: captcha.token, captchaAnswer: captcha.answer,
+        preferredContact: via, language: lang,
+        sourceUrl: typeof window !== "undefined" ? window.location.href : null,
+        website: hp, captchaToken: captcha.token, captchaAnswer: captcha.answer,
       });
-    } catch (err) { console.warn("submitQuoteRequest failed:", err); }
+    } catch (err) { console.warn("submitBeautyQuoteRequest failed:", err); }
 
     if (res && res.ok === false && (res.error === "captcha" || res.error === "rate_limited")) {
       setFormError(captchaErrorText(lang, res.error));

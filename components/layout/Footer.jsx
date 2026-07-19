@@ -83,7 +83,17 @@ export default function Footer({ lang }) {
           </div>
         </div>
 
-        <div className="pt-5 text-[11px] text-white/30">{t.footer.copy}</div>
+        <div className="pt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="text-[11px] text-white/30">{t.footer.copy}</div>
+          {/* Cross-vertical entry — the mirror of Beauty's footer button, in
+              Health's own spectrum accent. */}
+          <Link href={`/beauty/${lang}`}
+            className="group inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] hover:bg-white/[0.12] px-4 py-2 text-[12px] font-semibold text-white/85 hover:text-white transition-colors">
+            <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-pink-500 to-cyan-400" />
+            {t.common.enterBeauty}
+            <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={13} className="transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+          </Link>
+        </div>
       </div>
     </footer>
   );

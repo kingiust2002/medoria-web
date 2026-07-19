@@ -9,6 +9,7 @@ import { LOCALES, LANG_META } from "@/lib/i18n";
 import BeautyHeader from "@/components/beauty/BeautyHeader";
 import BeautyFooter from "@/components/beauty/BeautyFooter";
 import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
+import BeautyAiAssistant from "@/components/beauty/BeautyAiAssistant";
 
 // Beauty's own mark — overrides the root's neutral fused favicon. Tight-
 // cropped to the glyph (the source PNG carries generous transparent
@@ -53,6 +54,7 @@ export default function BeautyLayout({ children, params }) {
       <main>{children}</main>
       <BeautyFooter lang={lang} />
       <FloatingWhatsApp lang={lang} />
+      <BeautyAiAssistant lang={lang} />
     </div>
   );
 }
