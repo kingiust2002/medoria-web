@@ -608,7 +608,7 @@ const WorldDoor = forwardRef(function WorldDoor(
         style={{ "--d": beauty ? "0.62s" : "0.5s" }}
       >
         <span aria-hidden="true" className="lumen-card-sheen" />
-        <WorldLockup vertical={vertical} height={28} className="lumen-card-lockup" />
+        <WorldLockup vertical={vertical} height={40} className="lumen-card-lockup" />
         <div className="lumen-card-act">
           <ul className="lumen-langs" aria-label={`Medoria ${beauty ? "Beauty" : "Health"} languages`}>
             {langs.map((code) => (
