@@ -1,28 +1,17 @@
 // components/home/StatsBar.jsx
 "use client";
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
 import { getTranslations } from "@/lib/i18n";
 import Aurora from "@/components/shared/Aurora";
 import CountUp from "@/components/shared/CountUp";
 
 export default function StatsBar({ lang }) {
   const t = getTranslations(lang);
-  const [productCount, setProductCount] = useState(null);
 
-  useEffect(() => {
-    supabase
-      .from("products")
-      .select("*", { count: "exact", head: true })
-      .then(({ count }) => setProductCount(count));
-  }, []);
-
-  // Use real count if available, else show default
+  // Stats are factual and non-numeric-claim (categories count, languages,
+  // 24/7 online catalog, B2B) — no fabricated product count.
   const stats = [...t.home.stats];
-  if (productCount !== null && productCount > 0) {
-    stats[0] = [`${productCount}+`, t.home.stats[0][1]];
-  }
-  // Show 3 languages (Farsi is being phased out of the count, but stays on the site for now).
+  // Show 3 languages in the switcher count (Farsi stays on the site but is
+  // phased out of the visible selector).
   if (stats[2]) stats[2] = ["3", stats[2][1]];
 
   return (
