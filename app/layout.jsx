@@ -14,12 +14,16 @@ export const metadata = {
   title: { default: TITLE, template: "%s | Medoria" },
   description: DESC,
   applicationName: "Medoria",
-  // Neutral default: the two vertical marks combined, half/half — the
-  // gateway's own light-split motif in miniature. Health and Beauty pages
-  // override this with their OWN single mark (see their layouts); this
-  // combined one is only ever seen on the gateway and other neutral pages
-  // (e.g. /login).
-  icons: { icon: "/brand/gateway-mark-combined.png", apple: "/brand/gateway-mark-combined.png" },
+  // Neutral default: ONE mark fused down the middle — left half in Health's
+  // colors, right half in Beauty's (both marks share the same underlying
+  // ribbon-cross geometry, so the two halves seam into a single shape, not
+  // two icons side by side). Health and Beauty pages override this with
+  // their OWN single-color mark (see their layouts); this fused one is only
+  // ever seen on the gateway and other neutral pages (e.g. /login).
+  icons: {
+    icon: { url: "/brand/gateway-mark-combined.webp", type: "image/webp" },
+    apple: { url: "/brand/gateway-mark-combined.webp", type: "image/webp" },
+  },
   robots: { index: true, follow: true },
   openGraph: {
     type: "website",
