@@ -10,6 +10,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { BEAUTY_CATEGORIES, getCategoryName } from "@/components/beauty/i18n";
 import { WA_NUMBER, TG_USER } from "@/lib/whatsapp";
 import { rateLimit, clientIpFromHeaders, isSameOriginRequest } from "@/lib/security/rateLimit";
+import { verifyChatPass } from "@/lib/security/chatPass";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -192,6 +193,12 @@ export async function POST(req) {
     body = await req.json();
   } catch {
     return Response.json({ error: "Bad request" }, { status: 400 });
+  }
+
+  // Human gate: only a request carrying a valid chat pass (issued after a
+  // solved captcha) may reach the paid model — see /api/chat for rationale.
+  if (!verifyChatPass(body?.pass)) {
+    return Response.json({ error: "captcha_required" }, { status: 401 });
   }
 
   const lang = ["tg", "fa", "ru", "en"].includes(body?.lang) ? body.lang : "en";
