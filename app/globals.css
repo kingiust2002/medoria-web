@@ -755,58 +755,41 @@ html.lenis, html.lenis body { height: auto; }
 }
 @media (min-width: 768px) { .lumen-specimen { display: block; } }
 
-/* ── Plaque CTAs — engraved invitations, not SaaS buttons ────────────────── */
+/* ── Plaque CTA — a quiet, minimal invitation, not a SaaS button ─────────── */
+/* Auto-width (never stretched to the card's full row) and colorless by
+   request — same neutral ink treatment for both verticals, so it reads as
+   understated next to the language pills rather than competing with them. */
 .lumen-cta {
-  position: relative; overflow: hidden;
-  display: inline-flex; align-items: center; gap: 0.75rem;
-  padding: 0.8rem 1.5rem; border-radius: 0.5rem;
-  font-size: 12.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
-  /* magnetic reach (engine-driven vars) + press feedback on the independent
-     scale channel, so the two never fight */
+  position: relative;
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  width: fit-content; max-width: 100%;
+  padding: 0.55rem 1.1rem; border-radius: 999px;
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgba(15, 20, 34, 0.78);
+  border: 1px solid rgba(15, 20, 34, 0.2);
+  background: rgba(255, 255, 255, 0.5);
   transform: translate3d(var(--magx, 0px), var(--magy, 0px), 0);
   scale: 1;
   transition:
-    scale 0.18s var(--ease-lux), box-shadow 0.45s var(--ease-lux),
-    border-color 0.45s var(--ease-lux), background-position 0.45s var(--ease-lux);
+    scale 0.18s var(--ease-lux), border-color 0.3s var(--ease-lux),
+    background-color 0.3s var(--ease-lux), color 0.3s var(--ease-lux);
+}
+.lumen-cta:hover, .lumen-cta:focus-visible {
+  border-color: rgba(15, 20, 34, 0.36);
+  background: rgba(255, 255, 255, 0.75);
+  color: rgba(15, 20, 34, 0.92);
 }
 .lumen-cta:active { scale: 0.97; }
 .lumen-cta-arrow { transition: translate 0.35s var(--ease-lux); }
 .lumen-cta:hover .lumen-cta-arrow, .lumen-cta:focus-visible .lumen-cta-arrow { translate: 3px 0; }
-/* Modern solid-filled treatment — same brand spectrum already used by
-   .btn-primary sitewide (Health) and the Beauty admin/footer accent
-   (Beauty), so the gateway's most important tap targets read as
-   confidently "now" rather than an engraved plaque. */
-.lumen-cta-health {
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  background-image: linear-gradient(120deg, #F0289E 0%, #A634E8 38%, #3B82F6 72%, #22D3EE 100%);
-  background-size: 180% 100%; background-position: 0% 50%;
-  box-shadow: 0 14px 32px -12px rgba(88, 40, 158, 0.55);
+.dark .lumen-cta {
+  color: rgba(240, 244, 252, 0.85);
+  border-color: rgba(240, 244, 252, 0.22);
+  background: rgba(20, 24, 40, 0.35);
 }
-.lumen-cta-health:hover, .lumen-cta-health:focus-visible {
-  background-position: 100% 50%;
-  box-shadow: 0 18px 38px -12px rgba(88, 40, 158, 0.65);
-}
-.lumen-cta-beauty {
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background-image: linear-gradient(120deg, #1C2951 0%, #6E4322 55%, #C87D4E 100%);
-  background-size: 180% 100%; background-position: 0% 50%;
-  box-shadow: 0 14px 32px -12px rgba(122, 74, 40, 0.55);
-}
-.lumen-cta-beauty:hover, .lumen-cta-beauty:focus-visible {
-  background-position: 100% 50%;
-  box-shadow: 0 18px 38px -12px rgba(122, 74, 40, 0.65);
-}
-/* Precise glint: one specular sweep across the plaque CTA. */
-@keyframes lumen-glint { 0% { left: -55%; opacity: 0; } 30% { opacity: 0.9; } 100% { left: 115%; opacity: 0; } }
-.lumen-cta::after {
-  content: ""; position: absolute; top: -40%; bottom: -40%; left: -55%; width: 38%;
-  transform: skewX(-18deg); opacity: 0; pointer-events: none;
-  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.55), transparent);
-}
-.lumen-cta:hover::after, .lumen-cta:focus-visible::after {
-  animation: lumen-glint 0.8s var(--ease-silk);
+.dark .lumen-cta:hover, .dark .lumen-cta:focus-visible {
+  border-color: rgba(240, 244, 252, 0.4);
+  background: rgba(20, 24, 40, 0.5);
 }
 
 /* ── Language rail — compact, crawlable, comfortable to tap ──────────────── */
@@ -990,17 +973,18 @@ html.lenis, html.lenis body { height: auto; }
   backdrop-filter: blur(22px) saturate(1.35);
 }
 .lumen-card-lockup { position: relative; z-index: 1; }
+/* Column stack — langs row, then the CTA — so the CTA is never stretched to
+   the card's full width (it stays auto/content-sized, capped by the langs
+   row via max-width below) while still always sitting on its own line
+   under the languages, for BOTH verticals alike. */
 .lumen-card-act {
   position: relative; z-index: 1;
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
-  gap: 0.4rem 0.5rem;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 0.5rem;
 }
-/* CTA always sits on its own row below the language pills — for BOTH
-   verticals alike. Without this, it was flex-wrapping opportunistically
-   (Health's longer label wrapped, Beauty's shorter one often didn't),
-   which read as inconsistent between the two equal sides. */
-.lumen-card-act > .lumen-cta { flex-basis: 100%; }
-.lumen-card .lumen-cta { padding: 0.56rem 1.05rem; font-size: 10.5px; }
+.lumen-card-act > .lumen-langs { max-width: 100%; }
+.lumen-card-act > .lumen-cta { max-width: 100%; }
+.lumen-card .lumen-cta { padding: 0.5rem 1rem; font-size: 10px; }
 .lumen-card .lumen-lang { padding: 0.5rem 0.72rem; }
 
 /* liquid-glass sheen: a slow specular sweep on hover/focus */
