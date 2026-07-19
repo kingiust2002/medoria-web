@@ -3,15 +3,18 @@ import { Reveal, Stagger, StaggerItem } from "@/components/shared/Reveal";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
 
+// Reframed from certification/authenticity claims to a considered
+// information approach — no "genuine", "verified", inspection or replacement
+// promises (§5.5 of the copy deck). Same 4-card layout.
 const COPY = {
-  fa: { tag: "کیفیت و اصالت", title: "تأمین مطابق استانداردهای کیفیت",
-    items: [["shield", "کنترل کیفیت", "بازبینی هر محموله پیش از ارسال"], ["badgeCheck", "کالای اصل", "تنها از تأمین‌کنندگان معتبر"], ["award", "استانداردهای بین‌المللی", "هم‌راستا با الزامات کیفیت"], ["shieldPlus", "ضمانت", "تعویض در صورت مغایرت"]] },
-  ru: { tag: "КАЧЕСТВО И ПОДЛИННОСТЬ", title: "Поставки по стандартам качества",
-    items: [["shield", "Контроль качества", "Проверка каждой партии перед отправкой"], ["badgeCheck", "Оригинальная продукция", "Только проверенные поставщики"], ["award", "Международные стандарты", "Соответствие требованиям качества"], ["shieldPlus", "Гарантия", "Замена при несоответствии"]] },
-  tg: { tag: "СИФАТ ВА АСЛӢ", title: "Таъминот мутобиқи стандартҳои сифат",
-    items: [["shield", "Назорати сифат", "Тафтиши ҳар маҳмула пеш аз фиристодан"], ["badgeCheck", "Маҳсулоти аслӣ", "Танҳо аз таъминкунандагони боэътимод"], ["award", "Стандартҳои байналмилалӣ", "Мутобиқи талаботи сифат"], ["shieldPlus", "Кафолат", "Иваз дар сурати номутобиқатӣ"]] },
-  en: { tag: "QUALITY & AUTHENTICITY", title: "Supplied to recognised quality standards",
-    items: [["shield", "Quality control", "Every shipment inspected before dispatch"], ["badgeCheck", "Genuine products", "Only from verified suppliers"], ["award", "International standards", "Aligned with quality requirements"], ["shieldPlus", "Assurance", "Replacement on any discrepancy"]] },
+  fa: { tag: "رویکردی سنجیده", title: "اطلاعات محصول، پیش از وعده",
+    items: [["sparkles", "گزینش متمرکز", "کاتالوگی متمرکز برای کشف حرفه‌ای."], ["eye", "زمینه‌ی روشن", "اطلاعات محصول و دسته با ظرافت و بدون شلوغی."], ["badgeCheck", "تأیید موجودی", "گزینه‌های روز هنگام استعلام تأیید می‌شود."], ["chat", "گفت‌وگوی حرفه‌ای", "پرسش‌ها و جزئیات تجاری مستقیم بررسی می‌شود."]] },
+  ru: { tag: "ВЗВЕШЕННЫЙ ПОДХОД", title: "Информация о товаре, а не обещания",
+    items: [["sparkles", "Отобранный ассортимент", "Сфокусированный каталог для профессионального выбора."], ["eye", "Ясный контекст", "Информация о товаре и категории — сдержанно, без лишнего."], ["badgeCheck", "Наличие подтверждается", "Актуальные варианты подтверждаются при запросе."], ["chat", "Профессиональный диалог", "Вопросы и коммерческие детали обсуждаются напрямую."]] },
+  tg: { tag: "РАВИШИ СНЖИДА", title: "Маълумоти маҳсулот, на ваъда",
+    items: [["sparkles", "Интихоби мутамарказ", "Каталоги мутамарказ барои кашфи касбӣ."], ["eye", "Заминаи равшан", "Маълумоти маҳсулот ва самт — бо назокат, бе изофагӣ."], ["badgeCheck", "Тасдиқи мавҷудӣ", "Имконоти ҷорӣ ҳангоми дархост тасдиқ мешавад."], ["chat", "Гуфтугӯи касбӣ", "Саволҳо ва тафсилоти тиҷоратӣ мустақим муҳокима мешаванд."]] },
+  en: { tag: "A CONSIDERED APPROACH", title: "Product information before promises",
+    items: [["sparkles", "Selected range", "A focused catalog built for professional discovery."], ["eye", "Clear context", "Product and category information presented with restraint."], ["badgeCheck", "Availability confirmed", "Current options are confirmed when you inquire."], ["chat", "Professional conversation", "Questions and commercial details are discussed directly."]] },
 };
 
 export default function Certifications({ lang }) {

@@ -6,11 +6,9 @@ import StatsBar from "@/components/home/StatsBar";
 import CategoryGrid from "@/components/home/CategoryGrid";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import Showcase from "@/components/home/Showcase";
-import Brands from "@/components/home/Brands";
 import Certifications from "@/components/home/Certifications";
 import WhyMedoria from "@/components/home/WhyMedoria";
 import Audience from "@/components/home/Audience";
-import Trust from "@/components/home/Trust";
 import Procurement from "@/components/home/Procurement";
 import FinalCTA from "@/components/home/FinalCTA";
 
@@ -40,11 +38,9 @@ export default function HomePage({ params }) {
       <CategoryGrid lang={lang} />
       <FeaturedProducts lang={lang} />
       <Showcase lang={lang} />
-      <Brands lang={lang} />
       <Certifications lang={lang} />
       <WhyMedoria lang={lang} />
       <Audience lang={lang} />
-      <Trust lang={lang} />
       <Procurement lang={lang} />
       <FinalCTA lang={lang} />
     </>

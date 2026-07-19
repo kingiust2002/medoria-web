@@ -11,11 +11,9 @@ import StatsBar from "@/components/beauty/home/StatsBar";
 import CategoryGrid from "@/components/beauty/home/CategoryGrid";
 import FeaturedProducts from "@/components/beauty/home/FeaturedProducts";
 import Showcase from "@/components/beauty/home/Showcase";
-import Brands from "@/components/beauty/home/Brands";
 import Certifications from "@/components/beauty/home/Certifications";
 import WhyMedoria from "@/components/beauty/home/WhyMedoria";
 import Audience from "@/components/beauty/home/Audience";
-import Trust from "@/components/beauty/home/Trust";
 import Procurement from "@/components/beauty/home/Procurement";
 import FinalCTA from "@/components/beauty/home/FinalCTA";
 import FilDorThread from "@/components/beauty/home/FilDorThread";
@@ -56,11 +54,9 @@ export default function BeautyPage({ params }) {
       <CategoryGrid lang={lang} />
       <FeaturedProducts lang={lang} />
       <Showcase lang={lang} />
-      <Brands lang={lang} />
       <Certifications lang={lang} />
       <WhyMedoria lang={lang} />
       <Audience lang={lang} />
-      <Trust lang={lang} />
       <Procurement lang={lang} />
       <FinalCTA lang={lang} />
       <FilDorThread />

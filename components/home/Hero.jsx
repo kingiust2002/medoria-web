@@ -78,7 +78,7 @@ export default function Hero({ lang }) {
     : [];
 
   const trust = [
-    { icon: "package", label: lang === "fa" ? "۱۰۰۰+ محصول" : lang === "ru" ? "1000+ товаров" : lang === "tg" ? "1000+ мол" : "1000+ products" },
+    { icon: "package", label: lang === "fa" ? "کاتالوگ حرفه‌ای" : lang === "ru" ? "Профессиональный каталог" : lang === "tg" ? "Каталоги касбӣ" : "Professional catalog" },
     { icon: "truck", label: lang === "fa" ? "تحویل سریع" : lang === "ru" ? "Быстрая доставка" : lang === "tg" ? "Расондани зуд" : "Fast delivery" },
     { icon: "badgeCheck", label: lang === "fa" ? "تأمین‌کننده‌ی معتبر" : lang === "ru" ? "Проверенный поставщик" : lang === "tg" ? "Боэътимод" : "Verified supplier" },
   ];
