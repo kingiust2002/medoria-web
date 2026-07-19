@@ -17,6 +17,7 @@ import Icon from "@/components/shared/Icon";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import BeautyProductCard from "@/components/beauty/catalog/BeautyProductCard";
 import BeautyGallery from "./BeautyGallery";
+import BeautyQuoteButton from "@/components/beauty/BeautyQuoteButton";
 import BeautyViewTracker from "./BeautyViewTracker";
 
 export const revalidate = 300;
@@ -28,10 +29,10 @@ export async function generateStaticParams() {
 }
 
 const COPY = {
-  tg: { sku: "Код (SKU)", brand: "Бренд", category: "Самт", minOrder: "Ҳадди ақалли фармоиш", inStock: "Дар анбор ҳаст", outStock: "Дар анбор нест", specs: "Хусусиятҳо", related: "Аз ҳамин самт", back: "Ба коллексия", requestPrice: "Нархро пурсед", ask: "Дархост тавассути WhatsApp", askTg: "Дархост тавассути Telegram" },
-  ru: { sku: "Код (SKU)", brand: "Бренд", category: "Направление", minOrder: "Мин. заказ", inStock: "В наличии", outStock: "Нет в наличии", specs: "Характеристики", related: "Из этого направления", back: "В коллекцию", requestPrice: "Запросить цену", ask: "Запрос в WhatsApp", askTg: "Запрос в Telegram" },
-  en: { sku: "SKU", brand: "Brand", category: "Category", minOrder: "Min. order", inStock: "In stock", outStock: "Out of stock", specs: "Details", related: "From this world", back: "Back to collection", requestPrice: "Request price", ask: "Inquire on WhatsApp", askTg: "Inquire on Telegram" },
-  fa: { sku: "کد (SKU)", brand: "برند", category: "دسته", minOrder: "حداقل سفارش", inStock: "موجود", outStock: "ناموجود", specs: "مشخصات", related: "از همین دنیا", back: "بازگشت به کالکشن", requestPrice: "استعلام قیمت", ask: "استعلام در واتساپ", askTg: "استعلام در تلگرام" },
+  tg: { sku: "Код (SKU)", brand: "Бренд", category: "Самт", minOrder: "Ҳадди ақалли фармоиш", inStock: "Дар анбор ҳаст", outStock: "Дар анбор нест", specs: "Хусусиятҳо", related: "Аз ҳамин самт", back: "Ба коллексия", requestPrice: "Нархро пурсед", requestQuote: "Дархости нарх", ask: "Дархост тавассути WhatsApp", askTg: "Дархост тавассути Telegram" },
+  ru: { sku: "Код (SKU)", brand: "Бренд", category: "Направление", minOrder: "Мин. заказ", inStock: "В наличии", outStock: "Нет в наличии", specs: "Характеристики", related: "Из этого направления", back: "В коллекцию", requestPrice: "Запросить цену", requestQuote: "Запросить цену", ask: "Запрос в WhatsApp", askTg: "Запрос в Telegram" },
+  en: { sku: "SKU", brand: "Brand", category: "Category", minOrder: "Min. order", inStock: "In stock", outStock: "Out of stock", specs: "Details", related: "From this world", back: "Back to collection", requestPrice: "Request price", requestQuote: "Request a quotation", ask: "Inquire on WhatsApp", askTg: "Inquire on Telegram" },
+  fa: { sku: "کد (SKU)", brand: "برند", category: "دسته", minOrder: "حداقل سفارش", inStock: "موجود", outStock: "ناموجود", specs: "مشخصات", related: "از همین دنیا", back: "بازگشت به کالکشن", requestPrice: "استعلام قیمت", requestQuote: "درخواست استعلام قیمت", ask: "استعلام در واتساپ", askTg: "استعلام در تلگرام" },
 };
 
 export async function generateMetadata({ params }) {
@@ -173,6 +174,9 @@ export default async function BeautyProductPage({ params }) {
                 <a href={tgLink(inquiry)} target="_blank" rel="noopener noreferrer" className="btn-tg size-lg flex-1">
                   <Icon name="send" size={17} /> {c.askTg}
                 </a>
+              </div>
+              <div className="mt-2.5">
+                <BeautyQuoteButton product={product} lang={lang} label={c.requestQuote} />
               </div>
             </div>
 
