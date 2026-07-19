@@ -9,7 +9,17 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { getTranslations } from "@/lib/i18n";
 import { TG_USER, waLink, bulkInquiryMessage } from "@/lib/whatsapp";
+import { requestChatPass } from "@/lib/actions/chatPass";
+import MathCaptcha, { captchaErrorText } from "./MathCaptcha";
 import Icon from "./Icon";
+
+// One-time human-check copy for the chat gate (keeps bots off the paid model).
+const GATE = {
+  tg: { title: "Санҷиши кӯтоҳ", sub: "Барои оғози сӯҳбат ба саволи зерин ҷавоб диҳед.", start: "Оғози сӯҳбат", again: "Санҷиш нав шуд — боз ҷавоб диҳед." },
+  fa: { title: "بررسی کوتاه", sub: "برای شروع گفتگو به سؤال زیر پاسخ دهید.", start: "شروع گفتگو", again: "بررسی تازه شد — دوباره پاسخ دهید." },
+  ru: { title: "Быстрая проверка", sub: "Ответьте на вопрос ниже, чтобы начать чат.", start: "Начать чат", again: "Проверка обновлена — ответьте снова." },
+  en: { title: "Quick check", sub: "Answer the question below to start the chat.", start: "Start chat", again: "Check refreshed — please answer again." },
+};
 
 const UI = {
   tg: {
@@ -85,6 +95,7 @@ function Dots() {
 // Health's behavior byte-for-byte).
 export default function AiAssistant({ lang, endpoint = "/api/chat", ui = UI }) {
   const t = ui[lang] || ui.en;
+  const g = GATE[lang] || GATE.en;
   const tc = getTranslations(lang).common;
   const reduce = useReducedMotion();
 
@@ -94,6 +105,36 @@ export default function AiAssistant({ lang, endpoint = "/api/chat", ui = UI }) {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [errored, setErrored] = useState(false);
+
+  // Human gate: a chat pass (obtained by solving one captcha) is required
+  // before any message reaches the paid model. Kept in memory for the session.
+  const [pass, setPass] = useState(null);
+  const [captcha, setCaptcha] = useState({ token: "", answer: "" });
+  const [captchaReset, setCaptchaReset] = useState(0);
+  const [gateError, setGateError] = useState(null);
+  const [verifying, setVerifying] = useState(false);
+
+  async function unlock(e) {
+    e?.preventDefault?.();
+    if (verifying) return;
+    setVerifying(true);
+    setGateError(null);
+    try {
+      const res = await requestChatPass({ captchaToken: captcha.token, captchaAnswer: captcha.answer });
+      if (res?.ok && res.pass) {
+        setPass(res.pass);
+        inputRef.current?.focus();
+      } else {
+        setGateError(captchaErrorText(lang, res?.error === "rate_limited" ? "rate_limited" : "captcha"));
+        setCaptchaReset((k) => k + 1);
+      }
+    } catch {
+      setGateError(captchaErrorText(lang, "captcha"));
+      setCaptchaReset((k) => k + 1);
+    } finally {
+      setVerifying(false);
+    }
+  }
 
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
@@ -132,6 +173,7 @@ export default function AiAssistant({ lang, endpoint = "/api/chat", ui = UI }) {
     async (raw) => {
       const text = (raw ?? "").trim();
       if (!text || streaming) return;
+      if (!pass) return; // gate not cleared yet — the captcha panel is showing
       setErrored(false);
       setInput("");
       const next = [...messages, { role: "user", content: text }];
@@ -141,11 +183,19 @@ export default function AiAssistant({ lang, endpoint = "/api/chat", ui = UI }) {
         const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: next, lang }),
+          body: JSON.stringify({ messages: next, lang, pass }),
         });
         if (res.status === 503) {
           setAvailable(false);
           setMessages(messages); // roll back the optimistic turns
+          return;
+        }
+        if (res.status === 401) {
+          // Pass expired or invalid → drop it and re-show the captcha gate.
+          setPass(null);
+          setCaptchaReset((k) => k + 1);
+          setMessages(messages); // roll back the optimistic turns
+          setInput(text);        // let the visitor resend after re-verifying
           return;
         }
         if (!res.ok || !res.body) throw new Error("bad response");
@@ -174,7 +224,7 @@ export default function AiAssistant({ lang, endpoint = "/api/chat", ui = UI }) {
         setStreaming(false);
       }
     },
-    [messages, streaming, lang, t.error, endpoint]
+    [messages, streaming, lang, t.error, endpoint, pass]
   );
 
   const onKeyDown = (e) => {
@@ -285,7 +335,7 @@ export default function AiAssistant({ lang, endpoint = "/api/chat", ui = UI }) {
                           <button
                             key={s}
                             onClick={() => send(s)}
-                            disabled={available === null}
+                            disabled={available === null || !pass}
                             className="text-xs px-3 py-1.5 rounded-full border border-line bg-surface text-ink-muted hover:text-brand-violet hover:border-brand-violet/40 transition-colors disabled:opacity-50"
                           >
                             {s}
@@ -315,7 +365,30 @@ export default function AiAssistant({ lang, endpoint = "/api/chat", ui = UI }) {
                   })}
                 </div>
 
-                {/* Input */}
+                {/* Human gate: solve one captcha to unlock the session. */}
+                {available && !pass ? (
+                  <form onSubmit={unlock} className="border-t border-line bg-surface px-3.5 pt-3 pb-3">
+                    <div className="flex items-center gap-2 mb-2 text-ink">
+                      <span className="grid place-items-center w-7 h-7 rounded-lg bg-brand-violet/10 text-brand-violet shrink-0">
+                        <Icon name="shield" size={15} />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-[13px] font-semibold leading-tight">{g.title}</div>
+                        <div className="text-[11px] text-ink-muted leading-tight">{g.sub}</div>
+                      </div>
+                    </div>
+                    <MathCaptcha lang={lang} value={captcha} onChange={setCaptcha} resetKey={captchaReset} invalid={Boolean(gateError)} />
+                    {gateError && <p role="alert" className="text-[11px] text-warn mt-2">{gateError}</p>}
+                    <button
+                      type="submit"
+                      disabled={verifying || !captcha.answer}
+                      className="btn-primary size-md w-full mt-2.5 disabled:opacity-60"
+                    >
+                      <Icon name={verifying ? "refresh" : "chat"} size={15} className={verifying ? "animate-spin" : ""} />
+                      {g.start}
+                    </button>
+                  </form>
+                ) : (
                 <div className="border-t border-line bg-surface px-3 pt-2.5 pb-2">
                   <div className="flex items-end gap-2">
                     <textarea
@@ -325,7 +398,7 @@ export default function AiAssistant({ lang, endpoint = "/api/chat", ui = UI }) {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={onKeyDown}
                       placeholder={t.placeholder}
-                      disabled={streaming || available === null}
+                      disabled={streaming || available === null || !pass}
                       className="flex-1 resize-none max-h-28 bg-canvas border border-line rounded-xl px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none focus:border-brand-violet/50 focus:ring-2 focus:ring-brand-violet/15 disabled:opacity-60"
                     />
                     <button
@@ -339,6 +412,7 @@ export default function AiAssistant({ lang, endpoint = "/api/chat", ui = UI }) {
                   </div>
                   <p className="text-[10px] text-ink-muted/80 text-center mt-1.5">{t.disclaimer}</p>
                 </div>
+                )}
               </>
             )}
           </motion.div>

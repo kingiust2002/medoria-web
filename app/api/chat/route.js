@@ -14,6 +14,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { CATEGORIES, getCategoryName } from "@/lib/i18n";
 import { WA_NUMBER, TG_USER } from "@/lib/whatsapp";
 import { rateLimit, clientIpFromHeaders, isSameOriginRequest } from "@/lib/security/rateLimit";
+import { verifyChatPass } from "@/lib/security/chatPass";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -207,6 +208,14 @@ export async function POST(req) {
     body = await req.json();
   } catch {
     return Response.json({ error: "Bad request" }, { status: 400 });
+  }
+
+  // Human gate: only a request carrying a valid chat pass (issued after a
+  // solved captcha) may reach the paid model. Bots that can't solve the
+  // captcha never obtain a pass. Expired/invalid → 401, and the widget
+  // silently re-prompts the captcha.
+  if (!verifyChatPass(body?.pass)) {
+    return Response.json({ error: "captcha_required" }, { status: 401 });
   }
 
   const lang = ["tg", "fa", "ru", "en"].includes(body?.lang) ? body.lang : "en";
