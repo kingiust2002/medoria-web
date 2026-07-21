@@ -18,7 +18,7 @@ export function getCategoryName(slug, lang) {
 
 const T = {
   tg: {
-    nav: { home: "Асосӣ", collections: "Каталог", worlds: "Категорияҳо", about: "Дар бораи мо", partnership: "Барои мутахассисон", contact: "Тамос", health: "Medoria Health", gateway: "Дарвоза" },
+    nav: { home: "Асосӣ", collections: "Коллексия", worlds: "Самтҳо", about: "Дар бораи мо", partnership: "Барои мутахассисон", contact: "Тамос", health: "Medoria Health", gateway: "Дарвоза" },
     common: {
       brand: "Medoria Beauty",
       categories: "Категорияҳо", search: "Ҷустуҷӯ", contactUs: "Гуфтугӯро оғоз кунед",
@@ -73,7 +73,7 @@ const T = {
     },
   },
   ru: {
-    nav: { home: "Главная", collections: "Каталог", worlds: "Категории", about: "О нас", partnership: "Для специалистов", contact: "Контакт", health: "Medoria Health", gateway: "Портал" },
+    nav: { home: "Главная", collections: "Коллекция", worlds: "Направления", about: "О нас", partnership: "Для специалистов", contact: "Контакт", health: "Medoria Health", gateway: "Портал" },
     common: {
       brand: "Medoria Beauty",
       categories: "Категории", search: "Поиск", contactUs: "Начать диалог",
@@ -128,7 +128,7 @@ const T = {
     },
   },
   en: {
-    nav: { home: "Home", collections: "Catalog", worlds: "Categories", about: "About", partnership: "For professionals", contact: "Contact", health: "Medoria Health", gateway: "Gateway" },
+    nav: { home: "Home", collections: "Collection", worlds: "Worlds", about: "About", partnership: "For professionals", contact: "Contact", health: "Medoria Health", gateway: "Gateway" },
     common: {
       brand: "Medoria Beauty",
       categories: "Categories", search: "Search", contactUs: "Start a conversation",
@@ -183,7 +183,7 @@ const T = {
     },
   },
   fa: {
-    nav: { home: "خانه", collections: "کاتالوگ", worlds: "دسته‌بندی‌ها", about: "درباره ما", partnership: "برای متخصصان", contact: "تماس", health: "مدوریا هلث", gateway: "درگاه" },
+    nav: { home: "خانه", collections: "کالکشن", worlds: "دنیاها", about: "درباره ما", partnership: "برای متخصصان", contact: "تماس", health: "مدوریا هلث", gateway: "درگاه" },
     common: {
       brand: "مدوریا بیوتی",
       categories: "دسته‌بندی‌ها", search: "جستجو", contactUs: "شروع گفتگو",
