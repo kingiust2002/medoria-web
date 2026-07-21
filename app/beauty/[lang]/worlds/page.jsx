@@ -16,14 +16,14 @@ export function generateStaticParams() {
 }
 
 const COPY = {
-  tg: { title: "Се ҷаҳони зебоӣ", subtitle: "Ҳар самт — интихоби алоҳида бо ҳисси худ.", view: "Дидани самт", askTitle: "Он чиро, ки мехоҳед намеёбед?",
-    details: { skincare: "Кремҳо, сыворотка ва нигоҳубини касбии пӯст аз брендҳои шинохта.", makeup: "Косметикаи декоративии люкс барои визажистҳо ва салонҳо.", tools: "Асбоб ва маводи касбии зебоӣ бо шартҳои махсус." } },
-  ru: { title: "Три мира красоты", subtitle: "Каждое направление — отдельный отбор со своим характером.", view: "Смотреть направление", askTitle: "Не нашли нужное?",
-    details: { skincare: "Кремы, сыворотки и профессиональный уход от известных брендов.", makeup: "Люксовая декоративная косметика для визажистов и салонов.", tools: "Профессиональные бьюти-инструменты на особых условиях." } },
-  en: { title: "Three worlds of beauty", subtitle: "Each world is its own curation with its own character.", view: "View world", askTitle: "Can't find what you're looking for?",
-    details: { skincare: "Creams, serums and professional skincare from known houses.", makeup: "Luxe colour cosmetics for makeup artists and salons.", tools: "Professional beauty tools and materials on special terms." } },
-  fa: { title: "سه دنیای زیبایی", subtitle: "هر دنیا انتخابی جدا با حس خودش.", view: "دیدن دنیا", askTitle: "آنچه می‌خواهید را پیدا نمی‌کنید؟",
-    details: { skincare: "کرم، سرم و مراقبت حرفه‌ای پوست از برندهای شناخته‌شده.", makeup: "آرایش دکوراتیو لوکس برای میکاپ‌آرتیست‌ها و سالن‌ها.", tools: "ابزار و مواد حرفه‌ای زیبایی با شرایط ویژه." } },
+  tg: { title: "Категорияҳои касбии зебоӣ", subtitle: "Нигоҳубини пӯст, ороиш ва абзорҳоро тавассути як каталоги андешидашуда кашф кунед.", view: "Кашфи категория", askTitle: "Чизи мушаххасе меҷӯед?",
+    details: { skincare: "Маҳсулоти касбии нигоҳубин ва дастгирии табобат барои равандҳои муосири салон ва студия.", makeup: "Асосҳои ранг ва тарҳи рӯй, интихобшуда барои ҳунар, иҷро ва пешниҳод.", tools: "Абзор ва маводи амалӣ барои хидматрасонии мунтазам ва хушсифат." } },
+  ru: { title: "Профессиональные категории красоты", subtitle: "Изучите уход, макияж и инструменты через один продуманный каталог.", view: "Открыть категорию", askTitle: "Ищете что-то конкретное?",
+    details: { skincare: "Профессиональные средства ухода и поддержки процедур для современных салонных и студийных практик.", makeup: "Основы цвета и колористики, отобранные для творчества, исполнения и презентации.", tools: "Практичные инструменты и расходники для стабильного, аккуратного оказания услуг." } },
+  en: { title: "Professional beauty categories", subtitle: "Explore skincare, makeup and tools through one considered catalog.", view: "Explore category", askTitle: "Looking for something specific?",
+    details: { skincare: "Professional skincare and treatment-support products for modern salon and studio routines.", makeup: "Colour and complexion essentials selected for artistry, performance and presentation.", tools: "Practical tools and consumables for consistent, polished service delivery." } },
+  fa: { title: "دسته‌بندی‌های حرفه‌ای زیبایی", subtitle: "مراقبت پوست، آرایش و ابزار را از طریق یک کاتالوگ سنجیده کشف کنید.", view: "کشف دسته‌بندی", askTitle: "دنبال چیز خاصی هستید؟",
+    details: { skincare: "محصولات حرفه‌ای مراقبت و پشتیبانی درمان برای روال‌های مدرن سالن و استودیو.", makeup: "اصول رنگ و فرم صورت، منتخب برای هنر، اجرا و ارائه.", tools: "ابزار و مواد مصرفی عملی برای ارائه خدمات باثبات و حرفه‌ای." } },
 };
 
 export async function generateMetadata({ params }) {

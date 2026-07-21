@@ -29,10 +29,10 @@ export async function generateStaticParams() {
 }
 
 const COPY = {
-  tg: { sku: "Код (SKU)", brand: "Бренд", category: "Самт", minOrder: "Ҳадди ақалли фармоиш", inStock: "Дар анбор ҳаст", outStock: "Дар анбор нест", specs: "Хусусиятҳо", related: "Аз ҳамин самт", back: "Ба коллексия", requestPrice: "Нархро пурсед", requestQuote: "Дархости нарх", ask: "Дархост тавассути WhatsApp", askTg: "Дархост тавассути Telegram" },
-  ru: { sku: "Код (SKU)", brand: "Бренд", category: "Направление", minOrder: "Мин. заказ", inStock: "В наличии", outStock: "Нет в наличии", specs: "Характеристики", related: "Из этого направления", back: "В коллекцию", requestPrice: "Запросить цену", requestQuote: "Запросить цену", ask: "Запрос в WhatsApp", askTg: "Запрос в Telegram" },
-  en: { sku: "SKU", brand: "Brand", category: "Category", minOrder: "Min. order", inStock: "In stock", outStock: "Out of stock", specs: "Details", related: "From this world", back: "Back to collection", requestPrice: "Request price", requestQuote: "Request a quotation", ask: "Inquire on WhatsApp", askTg: "Inquire on Telegram" },
-  fa: { sku: "کد (SKU)", brand: "برند", category: "دسته", minOrder: "حداقل سفارش", inStock: "موجود", outStock: "ناموجود", specs: "مشخصات", related: "از همین دنیا", back: "بازگشت به کالکشن", requestPrice: "استعلام قیمت", requestQuote: "درخواست استعلام قیمت", ask: "استعلام در واتساپ", askTg: "استعلام در تلگرام" },
+  tg: { sku: "Код (SKU)", brand: "Бренд", category: "Категория", minOrder: "Ҳадди ақалли фармоиш", inStock: "Дар анбор ҳаст", outStock: "Дар анбор нест", specs: "Хусусиятҳо", related: "Бештар аз ин категория", back: "Бозгашт ба каталог", requestPrice: "Дархости нарх", requestQuote: "Дархости нарх", ask: "Дархост тавассути WhatsApp", askTg: "Дархост тавассути Telegram" },
+  ru: { sku: "Код (SKU)", brand: "Бренд", category: "Категория", minOrder: "Мин. заказ", inStock: "В наличии", outStock: "Нет в наличии", specs: "Характеристики", related: "Больше из этой категории", back: "Назад в каталог", requestPrice: "Запросить цену", requestQuote: "Запросить цену", ask: "Запрос в WhatsApp", askTg: "Запрос в Telegram" },
+  en: { sku: "SKU", brand: "Brand", category: "Category", minOrder: "Min. order", inStock: "In stock", outStock: "Out of stock", specs: "Details", related: "More from this category", back: "Back to catalog", requestPrice: "Request pricing", requestQuote: "Request a quotation", ask: "Inquire on WhatsApp", askTg: "Inquire on Telegram" },
+  fa: { sku: "کد (SKU)", brand: "برند", category: "دسته", minOrder: "حداقل سفارش", inStock: "موجود", outStock: "ناموجود", specs: "مشخصات", related: "بیشتر از همین دسته", back: "بازگشت به کاتالوگ", requestPrice: "استعلام قیمت", requestQuote: "درخواست استعلام قیمت", ask: "استعلام در واتساپ", askTg: "استعلام در تلگرام" },
 };
 
 export async function generateMetadata({ params }) {

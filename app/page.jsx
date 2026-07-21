@@ -12,16 +12,16 @@ import { gatewayLumenMedia } from "@/lib/gateway/media";
 import { DEFAULT_LOCALE, LANG_META } from "@/lib/i18n";
 
 export const metadata = {
-  title: "Medoria — Health & Beauty in Tajikistan",
+  title: "Medoria — Professional Health & Beauty in Tajikistan",
   description:
-    "Як бренд, ду ҷаҳони касбӣ — Medoria Health барои маводи тиббӣ ва Medoria Beauty барои косметикаи премиум.",
+    "Ду каталоги касбӣ — Medoria Health барои маводи тиббӣ ва Medoria Beauty барои нигоҳубини пӯст, ороиш ва абзорҳои зебоӣ дар Тоҷикистон.",
   alternates: { canonical: "/" },
   robots: { index: true, follow: true },
   openGraph: {
     type: "website",
     siteName: "Medoria",
     title: "Medoria — Health & Beauty",
-    description: "Medoria Health for medical supplies. Medoria Beauty for premium cosmetics.",
+    description: "Explore professional medical supply and a considered edit of professional beauty.",
     images: [{ url: "/og/health.jpg", width: 1200, height: 630, alt: "Medoria — Health & Beauty" }],
   },
 };

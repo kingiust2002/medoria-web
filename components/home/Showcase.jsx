@@ -6,36 +6,36 @@ import { Reveal } from "@/components/shared/Reveal";
 
 const LABELS = {
   fa: {
-    tag: "نگاهی به مدوریا",
-    title: "از انبار تا درِ کلینیک شما",
-    sub: "تصاویر واقعی انبار، محصولات و تیم ما به‌زودی اینجا قرار می‌گیرد — جای هر عکس آماده است.",
-    tiles: ["انبار و لجستیک", "محصولات اصل", "کنترل کیفیت", "تیم فروش و پشتیبانی"],
+    tag: "مدوریا در عمل",
+    title: "ساخته‌شده حول افرادی که پشت مراقبت هستند",
+    sub: "کاتالوگی حرفه‌ای که اطلاعات محصول، نیازهای خرید و پشتیبانی مستقیم را در یک تجربه شفاف گرد می‌آورد.",
+    tiles: ["ملزومات بالینی", "اطلاعات شفاف محصول", "استعلام‌های هماهنگ", "پشتیبانی انسانی"],
     stat: "تحویل در سراسر تاجیکستان",
   },
   ru: {
-    tag: "ЗНАКОМЬТЕСЬ — MEDORIA",
-    title: "От склада до дверей вашей клиники",
-    sub: "Здесь скоро появятся реальные фото склада, товаров и команды — место под каждое фото уже готово.",
-    tiles: ["Склад и логистика", "Оригинальные товары", "Контроль качества", "Отдел продаж"],
+    tag: "MEDORIA НА ПРАКТИКЕ",
+    title: "Всё вокруг людей, стоящих за заботой о здоровье",
+    sub: "Профессиональный каталог, который объединяет информацию о товарах, потребности закупки и прямую поддержку в одном понятном опыте.",
+    tiles: ["Клинические расходники", "Понятная информация о товаре", "Согласованные запросы", "Человеческая поддержка"],
     stat: "Доставка по Таджикистану",
   },
   tg: {
-    tag: "ШИНОСОӢ — MEDORIA",
-    title: "Аз анбор то дари клиникаи шумо",
-    sub: "Дар ин ҷо ба зудӣ расмҳои воқеии анбор, маҳсулот ва даста ҷойгир мешаванд.",
-    tiles: ["Анбор ва логистика", "Маҳсулоти аслӣ", "Назорати сифат", "Дастаи фурӯш"],
+    tag: "MEDORIA ДАР АМАЛ",
+    title: "Дар атрофи одамони пушти нигоҳубини тандурустӣ сохта шуда",
+    sub: "Каталоги касбие, ки маълумоти мол, ниёзҳои харид ва дастгирии мустақимро дар як таҷрибаи равшан муттаҳид мекунад.",
+    tiles: ["Маводи клиникӣ", "Маълумоти равшани мол", "Дархостҳои мутаносиб", "Дастгирии инсонӣ"],
     stat: "Расондан дар Тоҷикистон",
   },
   en: {
-    tag: "MEET MEDORIA",
-    title: "From our warehouse to your clinic's door",
-    sub: "Real photos of our facility, products and team will live here — every image slot is ready.",
-    tiles: ["Warehouse & logistics", "Original products", "Quality control", "Sales & support team"],
+    tag: "MEDORIA IN PRACTICE",
+    title: "Built around the people behind care",
+    sub: "A professional catalog designed to bring product information, purchasing requirements and direct support into one clear experience.",
+    tiles: ["Clinical essentials", "Clear product information", "Coordinated inquiries", "Human support"],
     stat: "Delivery across Tajikistan",
   },
 };
 
-const TILE_ICONS = ["truck", "package", "shieldPlus", "handshake"];
+const TILE_ICONS = ["package", "shield", "chat", "handshake"];
 
 export default function Showcase({ lang }) {
   const L = LABELS[lang] || LABELS.en;
