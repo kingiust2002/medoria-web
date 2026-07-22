@@ -6,17 +6,18 @@
 // text join on the brand name, so the row shows how many products carry it.
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Icon from "@/components/shared/Icon";
 import { beautyBrandLogoUrl as logoUrl } from "@/lib/beauty/catalog";
 import { createBrand, updateBrand, deleteBrand, uploadBrandLogo } from "@/lib/beauty/operator/actions";
 import { slugify } from "@/lib/operator/validation";
 import { PageHeader, Field, Input, Toggle, Badge, EmptyState, Spinner } from "@/components/operator/ui";
+import BrandProductsModal from "./BrandProductsModal";
 
-export default function BrandsManager({ brands }) {
+export default function BrandsManager({ brands, products }) {
   const router = useRouter();
   const [editing, setEditing] = useState(null);   // null | {} (new) | brand
   const [deleting, setDeleting] = useState(null);
+  const [managing, setManaging] = useState(null); // null | brand — product roster modal
   const [msg, setMsg] = useState(null);
   const flash = (text, ok) => { setMsg({ text, ok }); setTimeout(() => setMsg(null), 4000); };
 
@@ -64,14 +65,9 @@ export default function BrandsManager({ brands }) {
                 {b.is_featured && <Badge tone="violet" className="hidden sm:inline-flex">ویژه</Badge>}
                 <Badge tone={b.logo_url ? "ok" : "muted"} className="hidden md:inline-flex">{b.logo_url ? "لوگو دارد" : "بدون لوگو"}</Badge>
                 <Badge tone={active ? "ok" : "muted"} className="hidden sm:inline-flex">{active ? "فعال" : "غیرفعال"}</Badge>
-                {b.product_count > 0 && (
-                  <Link href={`/beauty/operator/products?brand=${encodeURIComponent(b.name)}`} className="hidden lg:grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-brand-violet/10 hover:text-brand-violet transition-colors shrink-0" title="دیدن محصولات این برند">
-                    <Icon name="package" size={16} />
-                  </Link>
-                )}
-                <Link href={`/beauty/operator/products/new?brand=${encodeURIComponent(b.name)}`} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-ok/10 hover:text-ok transition-colors shrink-0" title="افزودن محصول برای این برند">
-                  <Icon name="plus" size={16} />
-                </Link>
+                <button onClick={() => setManaging(b)} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-ok/10 hover:text-ok transition-colors shrink-0" title="مدیریت محصولات این برند">
+                  <Icon name="package" size={16} />
+                </button>
                 <button onClick={() => setEditing(b)} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-brand-violet/10 hover:text-brand-violet transition-colors shrink-0" title="ویرایش"><Icon name="edit" size={16} /></button>
                 <button onClick={() => setDeleting(b)} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors shrink-0" title="حذف"><Icon name="trash" size={16} /></button>
               </div>
@@ -93,6 +89,14 @@ export default function BrandsManager({ brands }) {
           brand={deleting}
           onClose={() => setDeleting(null)}
           onDone={() => { setDeleting(null); flash("برند حذف شد.", true); router.refresh(); }}
+        />
+      )}
+
+      {managing !== null && (
+        <BrandProductsModal
+          brand={managing}
+          products={products}
+          onClose={() => setManaging(null)}
         />
       )}
     </>
