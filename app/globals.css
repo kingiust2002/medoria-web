@@ -500,6 +500,21 @@ html.lenis, html.lenis body { height: auto; }
   [data-vertical="beauty"] .bv-sheen::after { display: none; }
 }
 
+/* «The Edit» (worlds page) — cinematic slow drift on the world banners.
+   Transform-only (GPU-cheap), ~48s alternate loop = stillness, not busyness.
+   Fully disabled for reduced-motion users (static image remains). */
+[data-vertical="beauty"] .edit-drift {
+  animation: editDrift 48s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes editDrift {
+  from { transform: scale(1.03); }
+  to   { transform: scale(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-vertical="beauty"] .edit-drift { animation: none; }
+}
+
 .bv-thread {
   position: absolute;
   inset: 0;
