@@ -500,6 +500,53 @@ html.lenis, html.lenis body { height: auto; }
   [data-vertical="beauty"] .bv-sheen::after { display: none; }
 }
 
+/* «The Edit» (worlds page) — cinematic slow drift on the world banners.
+   Transform-only (GPU-cheap), ~48s alternate loop = stillness, not busyness.
+   Fully disabled for reduced-motion users (static image remains). */
+[data-vertical="beauty"] .edit-drift {
+  animation: editDrift 48s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes editDrift {
+  from { transform: scale(1.03); }
+  to   { transform: scale(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-vertical="beauty"] .edit-drift { animation: none; }
+}
+
+/* «MAISONS» brands hero — a slow cinematic gradient band (navy→copper→
+   champagne) that pans, with a silk light-streak gliding across. Transform +
+   background-position only; static under reduced-motion. Pure CSS, no video. */
+[data-vertical="beauty"] .brand-hero {
+  background-image: linear-gradient(115deg,
+    #0E1947 0%, #1C2951 22%, #8A4E2A 48%, #C87D4E 66%, #EFC894 84%, #F3DCBE 100%);
+  background-size: 280% 280%;
+  animation: brandHeroPan 26s ease-in-out infinite alternate;
+}
+@keyframes brandHeroPan {
+  from { background-position: 0% 50%; }
+  to   { background-position: 100% 50%; }
+}
+[data-vertical="beauty"] .brand-hero-streak {
+  position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+}
+[data-vertical="beauty"] .brand-hero-streak::before {
+  content: ""; position: absolute; top: -30%; bottom: -30%; left: -40%; width: 30%;
+  background: linear-gradient(105deg, transparent, rgba(255,255,255,0.28) 50%, transparent);
+  transform: skewX(-14deg);
+  animation: brandHeroStreak 9s ease-in-out infinite;
+}
+@keyframes brandHeroStreak {
+  0%, 100% { left: -40%; opacity: 0; }
+  45%      { opacity: 1; }
+  60%      { left: 120%; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-vertical="beauty"] .brand-hero { animation: none; background-position: 30% 50%; }
+  [data-vertical="beauty"] .brand-hero-streak::before { display: none; }
+}
+
 .bv-thread {
   position: absolute;
   inset: 0;
