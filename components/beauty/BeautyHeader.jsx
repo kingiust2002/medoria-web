@@ -38,6 +38,7 @@ export default function BeautyHeader({ lang }) {
     { href: home, label: t.nav.home },
     { href: `${home}/catalog`, label: t.nav.collections },
     { href: `${home}/worlds`, label: t.nav.worlds },
+    { href: `${home}/brands`, label: t.nav.brands },
     { href: `${home}/about`, label: t.nav.about },
     { href: `${home}/contact`, label: t.nav.contact },
   ];
