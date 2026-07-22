@@ -10,13 +10,13 @@ import {
   PageHeader, Input, Select, Badge, EmptyState, Spinner, productDisplayName, priceText, isOnRequest,
 } from "@/components/operator/ui";
 
-export default function ProductsTable({ products, categories }) {
+export default function ProductsTable({ products, categories, initialQuery = "" }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState(null);
   const [msg, setMsg] = useState(null);
 
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(initialQuery);
   const [world, setWorld] = useState("");
   const [cat, setCat] = useState("");
   const [stock, setStock] = useState("");
