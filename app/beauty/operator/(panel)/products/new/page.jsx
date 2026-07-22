@@ -4,7 +4,8 @@ import ProductForm from "@/components/beauty/operator/ProductForm";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewProductPage() {
+export default async function NewProductPage({ searchParams }) {
   const categories = await getAdminBeautyCategories();
-  return <ProductForm mode="new" categories={categories} />;
+  const initialBrand = typeof searchParams?.brand === "string" ? searchParams.brand.slice(0, 120) : "";
+  return <ProductForm mode="new" categories={categories} initialBrand={initialBrand} />;
 }

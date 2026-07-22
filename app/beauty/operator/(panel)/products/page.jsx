@@ -4,7 +4,8 @@ import ProductsTable from "@/components/beauty/operator/ProductsTable";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProductsPage() {
+export default async function ProductsPage({ searchParams }) {
   const [products, categories] = await Promise.all([getAdminBeautyProducts(), getAdminBeautyCategories()]);
-  return <ProductsTable products={products} categories={categories} />;
+  const initialQuery = typeof searchParams?.brand === "string" ? searchParams.brand.slice(0, 120) : "";
+  return <ProductsTable products={products} categories={categories} initialQuery={initialQuery} />;
 }

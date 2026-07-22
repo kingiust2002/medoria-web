@@ -40,7 +40,7 @@ function CategoryOptions({ cats }) {
 // Unsaved NEW-product draft (never edit pages, never secrets) survives reloads.
 const DRAFT_KEY = "medoria_beauty_operator_product_draft_v1";
 
-export default function ProductForm({ mode, product, categories }) {
+export default function ProductForm({ mode, product, categories, initialBrand = "" }) {
   const router = useRouter();
   const editing = mode === "edit";
   const galleryRef = useRef(null);
@@ -50,7 +50,7 @@ export default function ProductForm({ mode, product, categories }) {
     name_ru: product?.name_ru || "", name_tg: product?.name_tg || "",
     description_fa: product?.description_fa || "", description_en: product?.description_en || "",
     description_ru: product?.description_ru || "", description_tg: product?.description_tg || "",
-    slug: product?.slug || "", sku: product?.sku || "", brand: product?.brand || "",
+    slug: product?.slug || "", sku: product?.sku || "", brand: product?.brand || initialBrand || "",
     category_id: product?.category_id != null ? String(product.category_id) : "",
     price: product?.price != null ? String(product.price) : "",
     unit: product?.unit || "", min_order_qty: product?.min_order_qty != null ? String(product.min_order_qty) : "1",
@@ -262,6 +262,13 @@ export default function ProductForm({ mode, product, categories }) {
         </div>
         <div className="hidden sm:flex items-center gap-2"><SaveAndNextButton /><SaveButton /></div>
       </div>
+
+      {!editing && initialBrand && (
+        <div className="mb-5 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-brand-violet/[0.06] text-ink-soft">
+          <Icon name="award" size={16} className="text-brand-violet shrink-0" />
+          در حال افزودن محصول برای برند <b dir="ltr">«{initialBrand}»</b> — فیلد برند از پیش پر شده است.
+        </div>
+      )}
 
       {draftFound && (
         <div className="mb-5 text-sm rounded-xl px-3 py-2.5 flex flex-wrap items-center gap-2 bg-primary/10 text-primary">
