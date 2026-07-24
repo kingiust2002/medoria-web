@@ -76,13 +76,13 @@ INSERT INTO beauty_categories (slug, parent_id, level, world, name_tg, name_ru, 
     icon=EXCLUDED.icon, sort_order=EXCLUDED.sort_order;
 
 INSERT INTO beauty_categories (slug, parent_id, level, world, name_tg, name_ru, name_en, name_fa, icon, sort_order, is_active) VALUES
-  ('perfume-spray', (SELECT id FROM beauty_categories WHERE slug='perfume'), 2, 'perfume', 'Спрей', 'Спрей', 'Spray', 'اسپری', NULL, 90, true)
+  ('perfume-spray', (SELECT id FROM beauty_categories WHERE slug='perfume'), 2, 'perfume', 'Атрпош', 'Спрей', 'Spray', 'اسپری', NULL, 90, true)
   ON CONFLICT (slug) DO UPDATE SET parent_id=EXCLUDED.parent_id, level=EXCLUDED.level, world=EXCLUDED.world,
     name_tg=EXCLUDED.name_tg, name_ru=EXCLUDED.name_ru, name_en=EXCLUDED.name_en, name_fa=EXCLUDED.name_fa,
     icon=EXCLUDED.icon, sort_order=EXCLUDED.sort_order;
 
 INSERT INTO beauty_categories (slug, parent_id, level, world, name_tg, name_ru, name_en, name_fa, icon, sort_order, is_active) VALUES
-  ('body-splash', (SELECT id FROM beauty_categories WHERE slug='perfume'), 2, 'perfume', 'Боди-сплэш', 'Боди-сплэш', 'Body Splash', 'بادی اسپلش', NULL, 100, true)
+  ('body-splash', (SELECT id FROM beauty_categories WHERE slug='perfume'), 2, 'perfume', 'Оби хушбӯи бадан', 'Боди-сплэш', 'Body Splash', 'بادی اسپلش', NULL, 100, true)
   ON CONFLICT (slug) DO UPDATE SET parent_id=EXCLUDED.parent_id, level=EXCLUDED.level, world=EXCLUDED.world,
     name_tg=EXCLUDED.name_tg, name_ru=EXCLUDED.name_ru, name_en=EXCLUDED.name_en, name_fa=EXCLUDED.name_fa,
     icon=EXCLUDED.icon, sort_order=EXCLUDED.sort_order;
@@ -526,7 +526,7 @@ INSERT INTO beauty_categories (slug, parent_id, level, world, name_tg, name_ru, 
     icon=EXCLUDED.icon, sort_order=EXCLUDED.sort_order;
 
 INSERT INTO beauty_categories (slug, parent_id, level, world, name_tg, name_ru, name_en, name_fa, icon, sort_order, is_active) VALUES
-  ('concealer', (SELECT id FROM beauty_categories WHERE slug='face-makeup'), 3, 'makeup', 'Консилер', 'Консилер', 'Concealer', 'کانسیلر', NULL, 10, true)
+  ('concealer', (SELECT id FROM beauty_categories WHERE slug='face-makeup'), 3, 'makeup', 'Пинҳонкунак', 'Консилер', 'Concealer', 'کانسیلر', NULL, 10, true)
   ON CONFLICT (slug) DO UPDATE SET parent_id=EXCLUDED.parent_id, level=EXCLUDED.level, world=EXCLUDED.world,
     name_tg=EXCLUDED.name_tg, name_ru=EXCLUDED.name_ru, name_en=EXCLUDED.name_en, name_fa=EXCLUDED.name_fa,
     icon=EXCLUDED.icon, sort_order=EXCLUDED.sort_order;
@@ -1006,7 +1006,7 @@ INSERT INTO beauty_categories (slug, parent_id, level, world, name_tg, name_ru, 
     icon=EXCLUDED.icon, sort_order=EXCLUDED.sort_order;
 
 INSERT INTO beauty_categories (slug, parent_id, level, world, name_tg, name_ru, name_en, name_fa, icon, sort_order, is_active) VALUES
-  ('epilator', (SELECT id FROM beauty_categories WHERE slug='elec-shaving'), 3, 'electrical', 'Эпилятор', 'Эпилятор', 'Epilator', 'اپیلاتور', NULL, 10, true)
+  ('epilator', (SELECT id FROM beauty_categories WHERE slug='elec-shaving'), 3, 'electrical', 'Мӯйканак', 'Эпилятор', 'Epilator', 'اپیلاتور', NULL, 10, true)
   ON CONFLICT (slug) DO UPDATE SET parent_id=EXCLUDED.parent_id, level=EXCLUDED.level, world=EXCLUDED.world,
     name_tg=EXCLUDED.name_tg, name_ru=EXCLUDED.name_ru, name_en=EXCLUDED.name_en, name_fa=EXCLUDED.name_fa,
     icon=EXCLUDED.icon, sort_order=EXCLUDED.sort_order;
