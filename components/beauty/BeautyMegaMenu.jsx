@@ -1,46 +1,54 @@
 "use client";
 // components/beauty/BeautyMegaMenu.jsx
-// The Beauty "World" browse dropdown for the desktop top bar — a luxury mega-menu
-// over the 3-level category tree (migration 12). Right rail = departments; hover
-// a department to reveal its groups + subgroups on the left. Every category is a
-// real <Link> in the SSR HTML (crawlable, works before hydration); the panel is
-// just shown/hidden on hover/focus. RTL-aware via logical properties.
+// The Beauty "World" browse dropdown for the desktop top bar — a progressive,
+// cascading drill-down over the 3-level category tree (migration 12):
+//   column 1 = departments → hover one → column 2 = its groups → hover one →
+//   column 3 = that group's subgroups. Only one narrow column per level opens
+//   at a time (no giant scrolling panel, never overflows the viewport). Every
+//   category is a real <Link> in the SSR HTML (crawlable, works pre-hydrate).
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
 const nameOf = (c, lang) => c?.[`name_${lang}`] || c?.name_en || c?.name_tg || c?.name_fa || c?.slug || "";
+const hasKids = (c) => (c?.children?.length || 0) > 0;
+
+function Caret() {
+  // points toward the inline-end (where the next column opens); mirrored in RTL
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="shrink-0 opacity-50 rtl:-scale-x-100" aria-hidden>
+      <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 export default function BeautyMegaMenu({ tree = [], lang, home, label, active, allLabel, viewAllLabel }) {
   const depts = tree;
   const [open, setOpen] = useState(false);
-  const [activeId, setActiveId] = useState(depts[0]?.id ?? null);
+  const [deptId, setDeptId] = useState(depts[0]?.id ?? null);
+  const [groupId, setGroupId] = useState(null);
   const closeTimer = useRef(null);
 
   const openNow = () => { clearTimeout(closeTimer.current); setOpen(true); };
-  const closeSoon = () => { closeTimer.current = setTimeout(() => setOpen(false), 140); };
+  const closeSoon = () => { closeTimer.current = setTimeout(() => { setOpen(false); }, 160); };
 
-  const activeDept = useMemo(() => depts.find((d) => d.id === activeId) || depts[0], [depts, activeId]);
+  const dept = useMemo(() => depts.find((d) => d.id === deptId) || depts[0] || null, [depts, deptId]);
+  const group = useMemo(() => (dept?.children || []).find((g) => g.id === groupId) || null, [dept, groupId]);
   const catHref = (slug) => `${home}/catalog?cat=${encodeURIComponent(slug)}`;
 
-  // If the dropdown has no data yet (migration not run), fall back to a plain link.
   if (!depts.length) {
     return (
-      <Link href={`${home}/worlds`} className={navLinkClass(active)}>
-        {label}
-        <Underline active={active} />
-      </Link>
+      <Link href={`${home}/worlds`} className={navLinkClass(active)}>{label}<Underline active={active} /></Link>
     );
   }
 
-  const grouped = (activeDept?.children || []).some((c) => c.children?.length);
+  const col = "w-56 shrink-0 max-h-[68vh] overflow-y-auto py-2";
+  const rowBase = "flex items-center gap-2 px-4 py-2.5 text-[13.5px] transition-colors";
 
   return (
-    <div className="relative" onMouseEnter={openNow} onMouseLeave={closeSoon}>
+    <div className="static" onMouseEnter={openNow} onMouseLeave={closeSoon}>
       <Link
-        href={`${home}/worlds`}
-        aria-haspopup="true" aria-expanded={open}
-        onFocus={openNow} onBlur={closeSoon}
-        className={navLinkClass(active)}
+        href={`${home}/worlds`} aria-haspopup="true" aria-expanded={open}
+        onFocus={openNow} onBlur={closeSoon} className={navLinkClass(active)}
       >
         {label}
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className={`transition-transform ${open ? "rotate-180" : ""}`} aria-hidden>
@@ -49,88 +57,81 @@ export default function BeautyMegaMenu({ tree = [], lang, home, label, active, a
         <Underline active={active} />
       </Link>
 
-      {/* Panel */}
+      {/* Centered, fixed panel — never overflows regardless of nav position/direction */}
       <div
         className={[
-          "absolute top-full mt-2 z-[70] transition-all duration-200 origin-top",
+          "fixed left-1/2 -translate-x-1/2 top-[4.5rem] z-[70] transition-all duration-200",
           open ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-1 pointer-events-none",
         ].join(" ")}
-        style={{ insetInlineStart: "50%", transform: open ? "translateX(50%)" : "translateX(50%) translateY(-4px)" }}
       >
-        <div className="w-[min(52rem,90vw)] rounded-2xl border border-line bg-canvas/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+        <div className="max-w-[92vw] rounded-2xl border border-line bg-canvas/97 backdrop-blur-xl overflow-hidden"
           style={{ boxShadow: "0 24px 60px -20px rgba(20,20,46,.35)" }}>
-          <div className="grid grid-cols-[13rem_1fr]">
-            {/* Right rail — departments (RTL puts this visually on the right) */}
-            <ul className="border-e border-line bg-surface/60 py-2 max-h-[70vh] overflow-y-auto">
+          <div className="flex divide-x divide-line rtl:divide-x-reverse">
+            {/* Column 1 — departments */}
+            <ul className={col}>
               {depts.map((d) => {
-                const on = d.id === activeDept?.id;
+                const on = d.id === dept?.id;
                 return (
                   <li key={d.id}>
-                    <Link
-                      href={catHref(d.slug)}
-                      onMouseEnter={() => setActiveId(d.id)}
-                      onFocus={() => setActiveId(d.id)}
-                      className={[
-                        "flex items-center gap-2 px-4 py-2.5 text-[13.5px] transition-colors",
-                        on ? "bg-canvas text-[color:var(--v-accent)] font-semibold" : "text-ink-soft hover:text-ink",
-                      ].join(" ")}
-                    >
+                    <Link href={catHref(d.slug)}
+                      onMouseEnter={() => { setDeptId(d.id); setGroupId(null); }}
+                      onFocus={() => { setDeptId(d.id); setGroupId(null); }}
+                      className={`${rowBase} ${on ? "bg-surface text-[color:var(--v-accent)] font-semibold" : "text-ink-soft hover:text-ink hover:bg-surface/60"}`}>
                       <span className="truncate flex-1">{nameOf(d, lang)}</span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0 rtl:rotate-180 opacity-60" aria-hidden>
-                        <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
+                      {hasKids(d) && <Caret />}
                     </Link>
                   </li>
                 );
               })}
             </ul>
 
-            {/* Active department content */}
-            <div className="p-5 max-h-[70vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[15px] font-bold text-ink">{nameOf(activeDept, lang)}</h3>
-                <Link href={catHref(activeDept.slug)} className="text-[12px] font-semibold text-[color:var(--v-accent)] hover:opacity-80">
-                  {allLabel} ←
-                </Link>
-              </div>
-
-              {grouped ? (
-                <div className="columns-2 lg:columns-3 gap-5 [column-fill:balance]">
-                  {(activeDept.children || []).map((g) => (
-                    <div key={g.id} className="break-inside-avoid mb-4">
-                      <Link href={catHref(g.slug)} className="block text-[13px] font-semibold text-ink hover:text-[color:var(--v-accent)] mb-1.5">
-                        {nameOf(g, lang)}
+            {/* Column 2 — the hovered department's groups (or its direct leaves) */}
+            {dept && hasKids(dept) && (
+              <ul className={`${col} bg-surface/40`}>
+                <li className="px-4 pt-1 pb-2 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-ink-faint truncate">{nameOf(dept, lang)}</span>
+                  <Link href={catHref(dept.slug)} className="text-[11px] font-semibold text-[color:var(--v-accent)] hover:opacity-80 shrink-0">{allLabel}</Link>
+                </li>
+                {dept.children.map((g) => {
+                  const on = g.id === group?.id;
+                  const groupNode = hasKids(g);
+                  return (
+                    <li key={g.id}>
+                      <Link href={catHref(g.slug)}
+                        onMouseEnter={() => setGroupId(groupNode ? g.id : null)}
+                        onFocus={() => setGroupId(groupNode ? g.id : null)}
+                        className={`${rowBase} ${on ? "bg-canvas text-[color:var(--v-accent)] font-semibold" : "text-ink-soft hover:text-ink hover:bg-canvas/70"}`}>
+                        <span className="truncate flex-1">{nameOf(g, lang)}</span>
+                        {groupNode && <Caret />}
                       </Link>
-                      {g.children?.length > 0 && (
-                        <ul className="space-y-1">
-                          {g.children.map((leaf) => (
-                            <li key={leaf.id}>
-                              <Link href={catHref(leaf.slug)} className="block text-[12.5px] text-ink-muted hover:text-ink transition-colors truncate">
-                                {nameOf(leaf, lang)}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-1.5">
-                  {(activeDept.children || []).map((leaf) => (
-                    <Link key={leaf.id} href={catHref(leaf.slug)} className="block text-[12.5px] text-ink-muted hover:text-ink transition-colors truncate py-0.5">
-                      {nameOf(leaf, lang)}
-                    </Link>
-                  ))}
-                </div>
-              )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
 
-              <div className="mt-4 pt-3 border-t border-line">
-                <Link href={`${home}/worlds`} className="text-[12.5px] font-semibold text-ink-soft hover:text-[color:var(--v-accent)]">
-                  {viewAllLabel} →
-                </Link>
-              </div>
-            </div>
+            {/* Column 3 — the hovered group's subgroups */}
+            {group && hasKids(group) && (
+              <ul className={`${col} bg-surface/70`}>
+                <li className="px-4 pt-1 pb-2 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-ink-faint truncate">{nameOf(group, lang)}</span>
+                  <Link href={catHref(group.slug)} className="text-[11px] font-semibold text-[color:var(--v-accent)] hover:opacity-80 shrink-0">{allLabel}</Link>
+                </li>
+                {group.children.map((leaf) => (
+                  <li key={leaf.id}>
+                    <Link href={catHref(leaf.slug)} className={`${rowBase} text-ink-muted hover:text-ink hover:bg-canvas/70`}>
+                      <span className="truncate flex-1">{nameOf(leaf, lang)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="border-t border-line px-4 py-2.5 bg-surface/40">
+            <Link href={`${home}/worlds`} className="text-[12.5px] font-semibold text-ink-soft hover:text-[color:var(--v-accent)]">
+              {viewAllLabel} →
+            </Link>
           </div>
         </div>
       </div>
@@ -144,7 +145,6 @@ function navLinkClass(active) {
     active ? "text-[color:var(--v-accent)]" : "text-ink-muted hover:text-[color:var(--v-accent)]",
   ].join(" ");
 }
-
 function Underline({ active }) {
   return (
     <span className={[
