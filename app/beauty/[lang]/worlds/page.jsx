@@ -1,175 +1,146 @@
-// app/beauty/[lang]/worlds/page.jsx — «The Edit»: the three Beauty worlds as a
-// short editorial spread (magazine, not shop). Each world is one full-bleed
-// mood banner — Stitch-generated brand imagery (no people, no logos, no text
-// baked in) + a serif line + a quiet hand-off into the real catalog filtered
-// to that world. Server-rendered and crawlable; the only motion is a CSS-only
-// slow drift (edit-drift, reduced-motion-safe) and the shared Reveal fades.
+// app/beauty/[lang]/worlds/page.jsx — «World»: the image-driven browse over the
+// migration-12 category tree. Server-rendered and crawlable, drills in via GET
+// query params (works JS-off):
+//   /worlds                    → the 7 departments, two across
+//   /worlds?dept=makeup        → that department's groups (or direct leaves)
+//   /worlds?dept=personal-care&group=face-care → that group's subgroups
+// Each tile shows the category's uploaded image (beauty_categories.image_url)
+// or, until one exists, an on-brand champagne/copper gradient placeholder with
+// the category's icon — never an empty box. Leaves link into the filtered
+// catalog. No fake claims, no baked-in text (brand law).
 import Link from "next/link";
-import { LOCALES } from "@/lib/i18n";
-import { getBeautyTranslations, BEAUTY_CATEGORIES, getCategoryName } from "@/components/beauty/i18n";
 import Icon from "@/components/shared/Icon";
 import Breadcrumb from "@/components/shared/Breadcrumb";
-import SplitText from "@/components/shared/SplitText";
 import { Reveal } from "@/components/shared/Reveal";
+import { LOCALES } from "@/lib/i18n";
+import { getBeautyCategoryTree, beautyImageUrl } from "@/lib/beauty/catalog";
+import { getBeautyTranslations } from "@/components/beauty/i18n";
 
-export function generateStaticParams() {
-  return LOCALES.map((lang) => ({ lang }));
-}
+export const dynamic = "force-dynamic";
 
-// Editorial copy only — mood language, no efficacy/authenticity/logistics
-// claims (brand law). «дунё/дنیا/world» wording is intentional: the owner
-// keeps the "worlds" idea; THE EDIT stays a Latin micro-label per locale law.
+const nameOf = (c, lang) => c?.[`name_${lang}`] || c?.name_en || c?.name_tg || c?.name_fa || c?.slug || "";
+const hasKids = (c) => (c?.children?.length || 0) > 0;
+
+// On-brand placeholder gradients (warm ivory→champagne→copper family, subtle
+// per-department hue shift so tiles read as distinct without leaving the palette).
+const GRADS = [
+  "linear-gradient(135deg,#e9dcc8,#c8a06f)",
+  "linear-gradient(135deg,#e6dccf,#a9b7c6)",
+  "linear-gradient(135deg,#efd9d2,#c98a86)",
+  "linear-gradient(135deg,#ece0cf,#c2a06a)",
+  "linear-gradient(135deg,#e3e0d8,#9fa3ad)",
+  "linear-gradient(135deg,#e8dcd0,#b79bb0)",
+  "linear-gradient(135deg,#e2e2d2,#9cbfae)",
+];
+const gradFor = (i) => GRADS[((i % GRADS.length) + GRADS.length) % GRADS.length];
+
 const COPY = {
-  tg: {
-    title: "Се ҷаҳони зебоӣ",
-    sub: "Нигоҳубини пӯст, ороиш ва абзорҳои касбӣ — ҳар яке ҷаҳони худ, бо равшанӣ ва назокат.",
-    explore: "Дидани ин ҷаҳон",
-    askTitle: "Чизи мушаххасе меҷӯед?",
-    worlds: {
-      skincare: { title: "Бофт ва нур.", line: "Ҷаҳони нигоҳубини касбӣ — ором, бе ғавғо." },
-      makeup: { title: "Ранг, андешида.", line: "Пигмент ва дақиқӣ барои ҳунари касбӣ — ранг ҳамчун сохтор, на ғавғо." },
-      tools: { title: "Дақиқӣ дар тарҳ.", line: "Меъмории оини зебоӣ — абзорҳои амалӣ барои кори ҳамвор ва покиза." },
-    },
-  },
-  ru: {
-    title: "Три мира красоты",
-    sub: "Уход, макияж и профессиональные инструменты — каждый как отдельный мир, с ясностью и сдержанностью.",
-    explore: "Смотреть этот мир",
-    askTitle: "Ищете что-то конкретное?",
-    worlds: {
-      skincare: { title: "Текстура и свет.", line: "Мир профессионального ухода — спокойно, без шума." },
-      makeup: { title: "Цвет, продуманно.", line: "Пигмент и точность для профессионального мастерства — цвет как структура, а не шум." },
-      tools: { title: "Точность в замысле.", line: "Архитектура ритуала — практичные инструменты для ровной, аккуратной работы." },
-    },
-  },
-  en: {
-    title: "Three worlds of beauty",
-    sub: "Skincare, makeup and professional tools — each its own world, seen with clarity and restraint.",
-    explore: "Explore this world",
-    askTitle: "Looking for something specific?",
-    worlds: {
-      skincare: { title: "Texture and light.", line: "A world of professional care — presented calmly, without noise." },
-      makeup: { title: "Colour, considered.", line: "Pigment and precision for professional artistry — colour as structure, not noise." },
-      tools: { title: "Precision, by design.", line: "The architecture of the ritual — practical tools for consistent, polished work." },
-    },
-  },
-  fa: {
-    title: "سه دنیای زیبایی",
-    sub: "مراقبت پوست، آرایش و ابزار حرفه‌ای — هر یک دنیایی جدا، با شفافیت و خویشتن‌داری.",
-    explore: "دیدن این دنیا",
-    askTitle: "دنبال چیز خاصی هستید؟",
-    worlds: {
-      skincare: { title: "بافت و نور.", line: "دنیای مراقبت حرفه‌ای — آرام و بی‌هیاهو." },
-      makeup: { title: "رنگ، سنجیده.", line: "رنگ‌دانه و دقت برای هنر حرفه‌ای — رنگ همچون ساختار، نه شلوغی." },
-      tools: { title: "دقت، در طراحی.", line: "معماریِ آیین زیبایی — ابزارهای کاربردی برای کاری یکدست و پاکیزه." },
-    },
-  },
+  tg: { root: "Ҷаҳонҳо", rootSub: "Ҳафт ҷаҳони зебоӣ — яке-якеро кушоед.", back: "Бозгашт", browseAll: "Ҳамаи маҳсулот", empty: "Ин бахш ҳоло холист.", items: "бахш", worlds: "Ҷаҳонҳо" },
+  ru: { root: "Миры", rootSub: "Семь миров красоты — откройте каждый.", back: "Назад", browseAll: "Все товары", empty: "Этот раздел пока пуст.", items: "разделов", worlds: "Миры" },
+  en: { root: "Worlds", rootSub: "Seven worlds of beauty — step into each.", back: "Back", browseAll: "All products", empty: "This section is empty for now.", items: "sections", worlds: "Worlds" },
+  fa: { root: "دنیاها", rootSub: "هفت دنیای زیبایی — هرکدام را باز کنید.", back: "بازگشت", browseAll: "همه‌ی محصولات", empty: "این بخش فعلاً خالی است.", items: "بخش", worlds: "دنیاها" },
 };
 
-// Center-safe focal point per image (tools is a 1:1 source inside wide crops).
-const IMG = {
-  skincare: { src: "/beauty/edit/edit-skincare.webp", pos: "50% 55%" },
-  makeup: { src: "/beauty/edit/edit-makeup.webp", pos: "50% 50%" },
-  tools: { src: "/beauty/edit/edit-tools.webp", pos: "50% 45%" },
-};
-
-export async function generateMetadata({ params }) {
+export default async function WorldPage({ params, searchParams }) {
   const { lang } = params;
-  if (!LOCALES.includes(lang)) return {};
-  const c = COPY[lang] || COPY.en;
+  if (!LOCALES.includes(lang)) return null;
   const t = getBeautyTranslations(lang);
-  return {
-    title: `${c.title} — ${t.common.brand}`,
-    description: c.sub,
-    robots: lang === "fa" ? { index: false, follow: true } : undefined,
+  const c = COPY[lang] || COPY.tg;
+  const home = `/beauty/${lang}`;
+  const sp = searchParams || {};
+
+  const tree = await getBeautyCategoryTree();
+  const deptIndex = tree.findIndex((d) => d.slug === sp.dept);
+  const dept = deptIndex >= 0 ? tree[deptIndex] : null;
+  const group = dept ? (dept.children || []).find((g) => g.slug === sp.group) : null;
+
+  const catHref = (slug) => `${home}/catalog?cat=${encodeURIComponent(slug)}`;
+
+  let items, heading, sub, grad, backHref, crumbs;
+  if (!dept) {
+    items = tree;
+    heading = c.root; sub = c.rootSub; grad = null; backHref = null;
+    crumbs = [{ label: t.nav.home, href: home }, { label: c.worlds }];
+  } else if (!group) {
+    items = dept.children || [];
+    heading = nameOf(dept, lang); sub = null; grad = gradFor(deptIndex); backHref = `${home}/worlds`;
+    crumbs = [{ label: t.nav.home, href: home }, { label: c.worlds, href: `${home}/worlds` }, { label: heading }];
+  } else {
+    items = group.children || [];
+    heading = nameOf(group, lang); sub = null; grad = gradFor(deptIndex);
+    backHref = `${home}/worlds?dept=${encodeURIComponent(dept.slug)}`;
+    crumbs = [{ label: t.nav.home, href: home }, { label: c.worlds, href: `${home}/worlds` }, { label: nameOf(dept, lang), href: backHref }, { label: heading }];
+  }
+
+  const tileHref = (node) => {
+    if (!dept) return `${home}/worlds?dept=${encodeURIComponent(node.slug)}`;
+    if (!group && hasKids(node)) return `${home}/worlds?dept=${encodeURIComponent(dept.slug)}&group=${encodeURIComponent(node.slug)}`;
+    return catHref(node.slug);
   };
-}
 
-export default function BeautyWorldsPage({ params }) {
-  const { lang } = params;
-  const t = getBeautyTranslations(lang);
-  const c = COPY[lang] || COPY.en;
-  const arrow = lang === "fa" ? "arrowL" : "arrow";
+  const twoWide = !dept;
 
   return (
-    <div className="bg-canvas-soft min-h-screen">
-      {/* Header */}
-      <div className="bg-canvas-soft border-b border-line relative overflow-hidden">
-        <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{
-          background: "radial-gradient(50% 60% at 85% 0%, var(--v-glow), transparent 60%), radial-gradient(40% 50% at 8% 100%, rgba(28,41,81,0.07), transparent 60%)",
-        }} />
-        <div className="container-x pt-12 md:pt-16 pb-14 md:pb-20 relative">
-          <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.nav.home, href: `/beauty/${lang}` }, { label: t.nav.worlds }]} />
-          {/* Latin micro-label (locale law) — the editorial signature */}
-          <div className="section-tag mb-4" dir="ltr">THE EDIT</div>
-          <h1 className="bv-display section-h-lg mb-3 leading-[1.15] pb-1"><SplitText text={c.title} delay={0.1} /></h1>
-          <p className="text-base md:text-lg text-ink-muted max-w-xl leading-relaxed">{c.sub}</p>
+    <div className="pb-20">
+      <div className="container-x pt-8 pb-6">
+        <Breadcrumb lang={lang} crumbs={crumbs} />
+        <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-[12px] font-semibold tracking-[0.22em] uppercase text-[color:var(--v-accent)] mb-2">THE EDIT</p>
+            <h1 className="bv-display text-4xl sm:text-5xl font-bold text-ink">{heading}</h1>
+            {sub && <p className="mt-3 text-ink-muted max-w-xl leading-relaxed">{sub}</p>}
+          </div>
+          <div className="flex items-center gap-2">
+            {backHref && (
+              <Link href={backHref} className="btn-ghost size-md"><Icon name="arrow" size={16} className="rtl:rotate-180" /> {c.back}</Link>
+            )}
+            {dept && (
+              <Link href={catHref((group || dept).slug)} className="btn-primary size-md">
+                {c.browseAll} <Icon name="arrowUpRight" size={16} />
+              </Link>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* The three worlds — full-bleed editorial banners */}
-      <div className="container-x py-10 md:py-16 space-y-8 md:space-y-12">
-        {BEAUTY_CATEGORIES.map((cat, i) => {
-          const w = c.worlds[cat.slug] || {};
-          const img = IMG[cat.slug];
-          const name = getCategoryName(cat.slug, lang);
-          const end = i % 2 === 1; // alternate the text side for magazine rhythm
-          return (
-            <Reveal key={cat.slug} delay={0.05}>
-              <Link
-                href={`/beauty/${lang}/catalog?world=${cat.slug}`}
-                className="group relative block overflow-hidden rounded-[2rem] shadow-card bv-sheen aspect-[4/5] sm:aspect-[16/9] xl:aspect-[21/10] bg-navy"
-              >
-                {/* Mood image — CSS-only slow drift, static under reduced motion */}
-                <img
-                  src={img.src}
-                  alt={name}
-                  loading={i === 0 ? "eager" : "lazy"}
-                  fetchPriority={i === 0 ? "high" : undefined}
-                  className="edit-drift absolute inset-0 w-full h-full object-cover"
-                  style={{ objectPosition: img.pos }}
-                />
-                {/* Legibility scrim (works in both themes — text sits on image) */}
-                <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
-                {/* Thin brand hairline at the top edge */}
-                <div aria-hidden="true" className="absolute inset-x-10 top-0 h-px opacity-70"
-                  style={{ background: "linear-gradient(90deg, transparent, var(--v-copper), transparent)" }} />
-
-                {/* Editorial index */}
-                <div className="absolute top-5 end-6 text-[11px] font-semibold tracking-[0.3em] text-white/60 tabular" dir="ltr">
-                  {String(i + 1).padStart(2, "0")}
-                </div>
-
-                {/* Text block — bottom-start / bottom-end alternating */}
-                <div className={`absolute inset-x-0 bottom-0 p-6 sm:p-9 md:p-12 flex ${end ? "justify-end text-end" : "justify-start text-start"}`}>
-                  <div className="max-w-md">
-                    <div className="text-[10px] font-bold tracking-[0.22em] uppercase text-[color:#EFC894] mb-2.5">
-                      {name}
+      <div className="container-x">
+        {items.length === 0 ? (
+          <p className="text-ink-faint text-center py-16 rounded-2xl border border-dashed border-line">{c.empty}</p>
+        ) : (
+          <div className={`grid gap-4 sm:gap-5 ${twoWide ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
+            {items.map((node, i) => {
+              const img = beautyImageUrl(node.image_url);
+              const g = grad || gradFor(i);
+              const drill = !group && hasKids(node) && dept;
+              const isDept = !dept;
+              return (
+                <Reveal key={node.id} delay={i * 40}>
+                  <Link href={tileHref(node)} className="group block relative overflow-hidden rounded-2xl border border-line focus-ring">
+                    <div className={`relative ${isDept ? "aspect-[16/10]" : "aspect-[4/3]"}`}>
+                      {img ? (
+                        <img src={img} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.05]" />
+                      ) : (
+                        <div className="absolute inset-0 grid place-items-center transition-transform duration-700 group-hover:scale-[1.05]" style={{ background: g }}>
+                          <Icon name={node.icon || "sparkles"} size={isDept ? 40 : 30} className="text-white/70" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(20,20,46,.62) 0%, rgba(20,20,46,.12) 42%, transparent 70%)" }} />
+                      <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 flex items-end justify-between gap-3">
+                        <div className="min-w-0">
+                          <h3 className={`text-white font-bold drop-shadow ${isDept ? "text-xl sm:text-2xl bv-display" : "text-[15px]"}`}>{nameOf(node, lang)}</h3>
+                          {hasKids(node) && <p className="text-white/75 text-[11px] mt-0.5">{node.children.length} {c.items}</p>}
+                        </div>
+                        <span className="shrink-0 grid place-items-center w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm text-white transition-colors group-hover:bg-white/30">
+                          <Icon name={drill ? "chevronLeft" : "arrowUpRight"} size={16} className={drill ? "rtl:rotate-180" : ""} />
+                        </span>
+                      </div>
                     </div>
-                    <h2 className="bv-display text-3xl sm:text-4xl md:text-[2.75rem] text-white leading-[1.08] mb-3">
-                      {w.title}
-                    </h2>
-                    <p className="text-[13px] sm:text-[14px] text-white/80 leading-relaxed mb-5">
-                      {w.line}
-                    </p>
-                    <span className="inline-flex items-center gap-2 h-11 px-5 rounded-2xl text-[13px] font-semibold text-white border border-white/35 backdrop-blur-sm bg-white/[0.06] transition-colors group-hover:bg-white/15 group-hover:border-white/55">
-                      {c.explore}
-                      <Icon name={arrow} size={14} />
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            </Reveal>
-          );
-        })}
-      </div>
-
-      {/* Hand-off */}
-      <div className="container-x pb-14 md:pb-20 text-center">
-        <p className="text-[14px] text-ink-muted mb-4">{c.askTitle}</p>
-        <Link href={`/beauty/${lang}/contact`} className="btn-primary size-lg">
-          {t.common.contactUs} <Icon name={arrow} size={15} />
-        </Link>
+                  </Link>
+                </Reveal>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
