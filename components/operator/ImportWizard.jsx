@@ -1,9 +1,11 @@
 "use client";
 // components/operator/ImportWizard.jsx — Excel/CSV product import.
-// Flow: template → upload → client parse → SERVER dry-run (authoritative
-// preview) → confirm → chunked commit (server re-validates every chunk) →
-// final report (+ downloadable CSV). XLSX is deliberately not parsed in v1 —
-// operators save as "CSV UTF-8" from Excel; this avoids a ~1MB client dep.
+// Flow: template → upload → parse → SERVER dry-run (authoritative preview) →
+// confirm → chunked commit (server re-validates every chunk) → final report
+// (+ downloadable CSV). A real .xlsx/.xls is parsed on the SERVER (SheetJS,
+// server-only — never shipped to the browser, so the public bundle stays
+// light); .csv is parsed in the browser (no library needed). Uploaded files
+// are read in memory and never stored.
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,7 +15,9 @@ import {
   IMPORT_COLUMNS, IMPORT_COLUMN_KEYS, MAX_ROWS_PER_FILE,
   normalizeRow, findInFileDuplicates,
 } from "@/lib/operator/importCore";
-import { dryRunProductRows, commitProductRows, finalizeProductBatch, exportProductsCsv } from "@/lib/operator/importActions";
+import { dryRunProductRows, commitProductRows, finalizeProductBatch, exportProductsCsv, parseSpreadsheet } from "@/lib/operator/importActions";
+
+const UPLOAD_ACCEPT = ".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel";
 import { PageHeader, SectionCard, Badge, Spinner } from "@/components/operator/ui";
 
 const DRY_CHUNK = 100;
@@ -50,6 +54,7 @@ export default function ImportWizard({ recentLogs = [] }) {
   const [filter, setFilter] = useState("all");
   const [err, setErr] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [parsing, setParsing] = useState(false);
 
   // ── template + export ───────────────────────────────────────────────────────
   function downloadTemplate() {
@@ -66,6 +71,14 @@ export default function ImportWizard({ recentLogs = [] }) {
   }
 
   // ── file pick + parse ───────────────────────────────────────────────────────
+  // Shared: turn { headers, rows } (from either the browser CSV reader or the
+  // server-side Excel parser) into the wizard's file state.
+  function applyRows(name, headers, rows, truncated) {
+    if (!rows.length) { setErr("هیچ ردیف داده‌ای در فایل پیدا نشد (سطر اول باید عنوان ستون‌ها باشد)."); return; }
+    const unknownHeaders = headers.filter((h) => h && !IMPORT_COLUMN_KEYS.includes(h));
+    setFile({ name, rows: rows.slice(0, MAX_ROWS_PER_FILE), unknownHeaders, truncated: !!truncated });
+  }
+
   async function onFile(e) {
     setErr("");
     setDry(null);
@@ -73,22 +86,29 @@ export default function ImportWizard({ recentLogs = [] }) {
     const f = e.target.files?.[0];
     e.target.value = "";
     if (!f) return;
+
+    // Real Excel workbook → parse on the server (SheetJS never ships to the browser).
     if (/\.xlsx?$/i.test(f.name)) {
-      setErr("فایل Excel را اول با «Save As → CSV UTF-8» ذخیره کنید و همان CSV را آپلود کنید (پشتیبانی مستقیم XLSX در این نسخه نیست).");
+      setParsing(true);
+      try {
+        const fd = new FormData();
+        fd.append("file", f);
+        const res = await parseSpreadsheet(fd);
+        if (!res?.ok) { setErr(res?.error || "خواندن فایل اکسل ناموفق بود."); return; }
+        applyRows(f.name, res.headers, res.rows, res.truncated);
+      } catch {
+        setErr("خواندن فایل اکسل ناموفق بود.");
+      } finally {
+        setParsing(false);
+      }
       return;
     }
+
+    // CSV → parse in the browser (no library, keeps things light).
     let text;
     try { text = await f.text(); } catch { setErr("خواندن فایل ناموفق بود."); return; }
     const { headers, rows } = parseCsvWithHeader(text);
-    if (!rows.length) { setErr("هیچ ردیف داده‌ای در فایل پیدا نشد (سطر اول باید عنوان ستون‌ها باشد)."); return; }
-    const unknownHeaders = headers.filter((h) => h && !IMPORT_COLUMN_KEYS.includes(h));
-    const truncated = rows.length > MAX_ROWS_PER_FILE;
-    setFile({
-      name: f.name,
-      rows: rows.slice(0, MAX_ROWS_PER_FILE),
-      unknownHeaders,
-      truncated,
-    });
+    applyRows(f.name, headers, rows, rows.length > MAX_ROWS_PER_FILE);
   }
 
   // rows that are in-file SKU duplicates (client-detected, excluded everywhere)
@@ -224,14 +244,16 @@ export default function ImportWizard({ recentLogs = [] }) {
       <div className="grid lg:grid-cols-[1fr_300px] gap-6 items-start">
         <div className="flex flex-col gap-5 min-w-0">
           {/* Step 1 — file */}
-          <SectionCard title="۱) فایل" desc="قالب را دانلود کنید، در Excel پر کنید، با «CSV UTF-8» ذخیره و همین‌جا آپلود کنید" icon="upload">
+          <SectionCard title="۱) فایل" desc="قالب را دانلود کنید، در Excel پر کنید و همین‌جا آپلود کنید — فایل Excel (‎.xlsx‎) یا CSV، هر دو مستقیم پشتیبانی می‌شوند" icon="upload">
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={downloadTemplate} className="btn-ghost size-md"><Icon name="download" size={16} /> دانلود قالب CSV</button>
-              <button type="button" onClick={() => fileRef.current?.click()} className="btn-primary size-md"><Icon name="upload" size={16} /> آپلود فایل CSV</button>
+              <button type="button" onClick={downloadTemplate} className="btn-ghost size-md"><Icon name="download" size={16} /> دانلود قالب</button>
+              <button type="button" onClick={() => fileRef.current?.click()} disabled={parsing} className="btn-primary size-md disabled:opacity-60">
+                {parsing ? <Spinner /> : <Icon name="upload" size={16} />} {parsing ? "در حال خواندن…" : "آپلود فایل Excel یا CSV"}
+              </button>
               <button type="button" onClick={doExport} disabled={exporting} className="btn-ghost size-md disabled:opacity-60">
                 {exporting ? <Spinner /> : <Icon name="download" size={16} />} خروجی محصولات فعلی
               </button>
-              <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={onFile} />
+              <input ref={fileRef} type="file" accept={UPLOAD_ACCEPT} className="hidden" onChange={onFile} />
             </div>
             {file && (
               <div className="mt-4 text-sm rounded-xl px-3 py-2.5 bg-canvas-soft border border-line flex flex-wrap items-center gap-x-3 gap-y-1">
