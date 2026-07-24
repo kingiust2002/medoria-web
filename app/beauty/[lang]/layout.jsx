@@ -6,6 +6,7 @@
 import { notFound } from "next/navigation";
 import { Playfair_Display } from "next/font/google";
 import { LOCALES, LANG_META } from "@/lib/i18n";
+import { getBeautyCategoryTree } from "@/lib/beauty/catalog";
 import BeautyHeader from "@/components/beauty/BeautyHeader";
 import BeautyFooter from "@/components/beauty/BeautyFooter";
 import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
@@ -34,10 +35,15 @@ export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
 }
 
-export default function BeautyLayout({ children, params }) {
+// ISR: the header mega-menu reads the live category tree; refresh every 2 min
+// (panel edits also revalidate beauty paths on save for near-instant updates).
+export const revalidate = 120;
+
+export default async function BeautyLayout({ children, params }) {
   const { lang } = params;
   if (!LOCALES.includes(lang)) notFound();
   const dir = LANG_META[lang].dir;
+  const categoryTree = await getBeautyCategoryTree();
   return (
     <div
       lang={lang}
@@ -50,7 +56,7 @@ export default function BeautyLayout({ children, params }) {
           __html: `document.documentElement.lang="${lang}";document.documentElement.dir="${dir}";`,
         }}
       />
-      <BeautyHeader lang={lang} />
+      <BeautyHeader lang={lang} categoryTree={categoryTree} />
       <main>{children}</main>
       <BeautyFooter lang={lang} />
       <FloatingWhatsApp lang={lang} />
