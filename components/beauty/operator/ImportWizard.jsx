@@ -15,7 +15,7 @@ import {
   IMPORT_COLUMNS, IMPORT_COLUMN_KEYS, MAX_ROWS_PER_FILE,
   normalizeRow, findInFileDuplicates,
 } from "@/lib/operator/importCore";
-import { dryRunProductRows, commitProductRows, finalizeProductBatch, exportProductsCsv, parseSpreadsheet } from "@/lib/beauty/operator/importActions";
+import { dryRunProductRows, commitProductRows, finalizeProductBatch, exportProductsCsv, parseSpreadsheet, downloadTemplateXlsx } from "@/lib/beauty/operator/importActions";
 
 const UPLOAD_ACCEPT = ".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel";
 import { PageHeader, SectionCard, Badge, Spinner } from "@/components/operator/ui";
@@ -40,6 +40,17 @@ function downloadText(name, text) {
   URL.revokeObjectURL(a.href);
 }
 
+function downloadBase64(name, b64, mime) {
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([arr], { type: mime }));
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 export default function ImportWizard({ recentLogs = [] }) {
   const router = useRouter();
   const fileRef = useRef(null);
@@ -55,12 +66,17 @@ export default function ImportWizard({ recentLogs = [] }) {
   const [err, setErr] = useState("");
   const [exporting, setExporting] = useState(false);
   const [parsing, setParsing] = useState(false);
+  const [tplBusy, setTplBusy] = useState(false);
+  const [autoTranslate, setAutoTranslate] = useState(true);
 
   // ── template + export ───────────────────────────────────────────────────────
-  function downloadTemplate() {
-    const headers = IMPORT_COLUMN_KEYS;
-    const example = IMPORT_COLUMNS.map((c) => c.example || "");
-    downloadText("medoria-products-template.csv", toCsv(headers, [example]));
+  // Styled .xlsx template (colour-coded, sized, with dropdowns) — built server-side.
+  async function downloadTemplate() {
+    setTplBusy(true);
+    const res = await downloadTemplateXlsx();
+    setTplBusy(false);
+    if (res?.ok) downloadBase64(res.filename || "medoria-beauty-products-template.xlsx", res.base64, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    else setErr(res?.error || "ساخت قالب ناموفق بود.");
   }
   async function doExport() {
     setExporting(true);
@@ -169,7 +185,7 @@ export default function ImportWizard({ recentLogs = [] }) {
       const chunk = sendable.slice(i, i + COMMIT_CHUNK);
       let res;
       try {
-        res = await commitProductRows(chunk.map((x) => x.raw), { mode, autoCreateCategories: autoCreate, strict, startRow: 1 });
+        res = await commitProductRows(chunk.map((x) => x.raw), { mode, autoCreateCategories: autoCreate, autoTranslate, strict, startRow: 1 });
       } catch { res = null; }
       if (!res?.ok) { connectionError = res?.error || "ارتباط قطع شد — ردیف‌های باقی‌مانده وارد نشدند."; break; }
       if (res.aborted) { connectionError = res.error || "حالت سخت‌گیرانه: این بخش به‌خاطر خطا ذخیره نشد."; }
@@ -246,7 +262,7 @@ export default function ImportWizard({ recentLogs = [] }) {
           {/* Step 1 — file */}
           <SectionCard title="۱) فایل" desc="قالب را دانلود کنید، در Excel پر کنید و همین‌جا آپلود کنید — فایل Excel (‎.xlsx‎) یا CSV، هر دو مستقیم پشتیبانی می‌شوند" icon="upload">
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={downloadTemplate} className="btn-ghost size-md"><Icon name="download" size={16} /> دانلود قالب</button>
+              <button type="button" onClick={downloadTemplate} disabled={tplBusy} className="btn-ghost size-md disabled:opacity-60">{tplBusy ? <Spinner /> : <Icon name="download" size={16} />} دانلود قالب Excel</button>
               <button type="button" onClick={() => fileRef.current?.click()} disabled={parsing} className="btn-primary size-md disabled:opacity-60">
                 {parsing ? <Spinner /> : <Icon name="upload" size={16} />} {parsing ? "در حال خواندن…" : "آپلود فایل Excel یا CSV"}
               </button>
@@ -267,9 +283,17 @@ export default function ImportWizard({ recentLogs = [] }) {
             )}
             <details className="mt-4 group">
               <summary className="cursor-pointer text-xs font-semibold text-brand-violet inline-flex items-center gap-1">راهنمای ستون‌ها <Icon name="chevronDown" size={14} className="group-open:rotate-180 transition-transform" /></summary>
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px]" dir="rtl">
+                <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full inline-block bg-warn" /> اجباری</span>
+                <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full inline-block bg-ok" /> خودکار (خالی بگذاری، خودش پر می‌کند)</span>
+                <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full inline-block bg-brand-violet" /> اختیاری</span>
+              </div>
               <div className="mt-3 grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-[12px] text-ink-soft" dir="rtl">
                 {IMPORT_COLUMNS.map((c) => (
-                  <div key={c.key} className="flex gap-2"><code className="text-brand-violet shrink-0" dir="ltr">{c.key}</code><span className="text-ink-muted">{c.label}</span></div>
+                  <div key={c.key} className="flex gap-2 items-baseline">
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 translate-y-1 ${c.tier === "required" ? "bg-warn" : c.tier === "auto" ? "bg-ok" : "bg-brand-violet"}`} />
+                    <code className="text-brand-violet shrink-0" dir="ltr">{c.key}</code><span className="text-ink-muted">{c.label}</span>
+                  </div>
                 ))}
               </div>
               <p className="text-[11px] text-ink-faint mt-3 leading-relaxed">قیمت خالی = استعلام قیمت · بولین‌ها: yes/no یا بله/خیر یا 1/0 · جداکنندهٔ لیست‌ها: | · در حالت بروزرسانی، سلول خالی یعنی «بدون تغییر».</p>
@@ -296,6 +320,10 @@ export default function ImportWizard({ recentLogs = [] }) {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" className="accent-brand-violet w-4 h-4" checked={strict} onChange={(e) => setStrict(e.target.checked)} />
                   <span>حالت سخت‌گیرانه <span className="text-ink-faint">(با وجود هر خطا، هیچ ردیفی وارد نشود)</span></span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" className="accent-brand-violet w-4 h-4" checked={autoTranslate} onChange={(e) => setAutoTranslate(e.target.checked)} />
+                  <span>ترجمهٔ خودکار زبان‌های خالی <span className="text-ink-faint">(نام و توضیحات محصولات تازه — از زبانی که پر کرده‌ای)</span></span>
                 </label>
               </div>
               <div className="flex items-center gap-3 mt-5">
