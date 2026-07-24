@@ -14,12 +14,23 @@ import Icon from "@/components/shared/Icon";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import { getBeautyTranslations } from "./i18n";
+import BeautyMegaMenu from "./BeautyMegaMenu";
 
-export default function BeautyHeader({ lang }) {
+const MEGA = {
+  tg: { all: "Дидани ҳама", viewAll: "Ҳамаи дунёҳо" },
+  ru: { all: "Смотреть все", viewAll: "Все категории" },
+  en: { all: "View all", viewAll: "Browse everything" },
+  fa: { all: "دیدن همه", viewAll: "همه‌ی دنیاها" },
+};
+const megaName = (c, lang) => c?.[`name_${lang}`] || c?.name_en || c?.name_fa || c?.slug || "";
+
+export default function BeautyHeader({ lang, categoryTree = [] }) {
   const t = getBeautyTranslations(lang);
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [mobileDept, setMobileDept] = useState(null);
+  const mega = MEGA[lang] || MEGA.tg;
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 16);
@@ -34,10 +45,10 @@ export default function BeautyHeader({ lang }) {
   }, [open]);
 
   const home = `/beauty/${lang}`;
+  // Collection + Worlds are merged into one "دنیاها/World" browse entry powered
+  // by the category mega-menu.
   const nav = [
     { href: home, label: t.nav.home },
-    { href: `${home}/catalog`, label: t.nav.collections },
-    { href: `${home}/worlds`, label: t.nav.worlds },
     { href: `${home}/brands`, label: t.nav.brands },
     { href: `${home}/about`, label: t.nav.about },
     { href: `${home}/contact`, label: t.nav.contact },
@@ -45,6 +56,7 @@ export default function BeautyHeader({ lang }) {
 
   const isActive = (href) =>
     href === home ? pathname === home || pathname === `${home}/` : pathname === href || pathname.startsWith(`${href}/`);
+  const worldActive = pathname.startsWith(`${home}/worlds`) || pathname.startsWith(`${home}/catalog`);
 
   return (
     <>
@@ -67,7 +79,21 @@ export default function BeautyHeader({ lang }) {
 
           {/* Desktop nav */}
           <nav className="hidden lg:flex items-center gap-1">
-            {nav.map((item) => {
+            {(() => { const item = nav[0]; const active = isActive(item.href); return (
+              <Link href={item.href} aria-current={active ? "page" : undefined}
+                className={["group relative px-4 py-2.5 text-[14px] font-medium rounded-lg transition-colors",
+                  active ? "text-[color:var(--v-accent)]" : "text-ink-muted hover:text-[color:var(--v-accent)]"].join(" ")}>
+                {item.label}
+                <span className={["pointer-events-none absolute inset-x-3 bottom-1 h-[2px] rounded-full origin-center transition-transform duration-300",
+                  active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"].join(" ")}
+                  style={{ background: "linear-gradient(90deg,var(--v-navy),var(--v-copper))" }} />
+              </Link>
+            ); })()}
+
+            <BeautyMegaMenu tree={categoryTree} lang={lang} home={home} label={t.nav.worlds}
+              active={worldActive} allLabel={mega.all} viewAllLabel={mega.viewAll} />
+
+            {nav.slice(1).map((item) => {
               const active = isActive(item.href);
               return (
                 <Link key={item.href} href={item.href}
@@ -108,7 +134,57 @@ export default function BeautyHeader({ lang }) {
         <div className="fixed inset-0 top-[4.5rem] z-50 lg:hidden bg-canvas overflow-y-auto">
           <div className="container-x py-6">
             <nav className="flex flex-col">
-              {nav.map((item) => {
+              {/* Home */}
+              <Link href={nav[0].href} onClick={() => setOpen(false)}
+                aria-current={isActive(nav[0].href) ? "page" : undefined}
+                className={["py-3.5 text-base font-semibold border-b border-line flex items-center justify-between transition-colors",
+                  isActive(nav[0].href) ? "text-[color:var(--v-accent)]" : "text-ink"].join(" ")}>
+                {nav[0].label}
+              </Link>
+
+              {/* World — department accordion (merged Collection + Worlds) */}
+              <div className="border-b border-line">
+                <Link href={`${home}/worlds`} onClick={() => setOpen(false)}
+                  className={["py-3.5 text-base font-semibold flex items-center justify-between",
+                    worldActive ? "text-[color:var(--v-accent)]" : "text-ink"].join(" ")}>
+                  {t.nav.worlds}
+                </Link>
+                {categoryTree.length > 0 && (
+                  <ul className="pb-2">
+                    {categoryTree.map((d) => {
+                      const exp = mobileDept === d.id;
+                      const kids = d.children || [];
+                      return (
+                        <li key={d.id} className="border-t border-line/60">
+                          <div className="flex items-center">
+                            <Link href={`${home}/catalog?cat=${encodeURIComponent(d.slug)}`} onClick={() => setOpen(false)}
+                              className="flex-1 py-2.5 ps-3 text-[14px] text-ink-soft">{megaName(d, lang)}</Link>
+                            {kids.length > 0 && (
+                              <button type="button" onClick={() => setMobileDept(exp ? null : d.id)} aria-expanded={exp}
+                                className="p-2 text-ink-muted" aria-label="expand">
+                                <Icon name="chevronDown" size={18} className={`transition-transform ${exp ? "rotate-180" : ""}`} />
+                              </button>
+                            )}
+                          </div>
+                          {exp && kids.length > 0 && (
+                            <ul className="ps-5 pb-2">
+                              {kids.map((g) => (
+                                <li key={g.id}>
+                                  <Link href={`${home}/catalog?cat=${encodeURIComponent(g.slug)}`} onClick={() => setOpen(false)}
+                                    className="block py-2 text-[13px] text-ink-muted hover:text-ink">{megaName(g, lang)}</Link>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+
+              {/* Brands / About / Contact */}
+              {nav.slice(1).map((item) => {
                 const active = isActive(item.href);
                 return (
                   <Link key={item.href} href={item.href} onClick={() => setOpen(false)}
