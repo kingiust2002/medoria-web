@@ -17,6 +17,10 @@ export default function ImagePlaceholder({
   className = "",
   rounded = "rounded-3xl",
   showHint = true,
+  // Callers that render into a known-narrow slot should pass their real
+  // measurements — the default assumes a half-width hero-ish slot, which
+  // over-declares (and so over-downloads) inside multi-column grids.
+  sizes = "(max-width: 768px) 100vw, 50vw",
 }) {
   const [failed, setFailed] = useState(false);
   const showImg = src && !failed;
@@ -29,7 +33,7 @@ export default function ImagePlaceholder({
             src={src}
             alt={alt}
             fill
-            sizes="(max-width: 768px) 100vw, 50vw"
+            sizes={sizes}
             onError={() => setFailed(true)}
             className={`object-cover ${srcDark ? "dark:hidden" : ""}`}
           />
@@ -38,7 +42,7 @@ export default function ImagePlaceholder({
               src={srcDark}
               alt={alt}
               fill
-              sizes="(max-width: 768px) 100vw, 50vw"
+              sizes={sizes}
               onError={() => setFailed(true)}
               className="object-cover hidden dark:block"
             />

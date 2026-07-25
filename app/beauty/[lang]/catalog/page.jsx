@@ -18,7 +18,11 @@ import SplitText from "@/components/shared/SplitText";
 
 // Filters come from searchParams; the grid must always reflect the operator's
 // latest saves (revalidatePath from the panel also lands here).
-export const dynamic = "force-dynamic";
+// The filter searchParams already force a per-request render; force-dynamic
+// only added a Data Cache opt-out on top, re-querying Supabase for the
+// category tree and brand list on every hit. Keep the dynamic render, keep the
+// cache.
+export const revalidate = 300;
 
 const SORTS = ["newest", "price_asc", "price_desc", "popular"];
 

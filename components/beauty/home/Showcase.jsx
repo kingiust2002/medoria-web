@@ -55,7 +55,7 @@ export default function Showcase({ lang }) {
         <Reveal delay={0.1} className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           {/* Skincare edit (carries the "created for beauty professionals" stat chip) */}
           <div className="relative">
-            <ImagePlaceholder src="/beauty/showcase/showcase-01.webp" alt={L.tiles[0]} icon={TILE_ICONS[0]} label={L.tiles[0]} className="aspect-square w-full" rounded="rounded-3xl" />
+            <ImagePlaceholder src="/beauty/showcase/showcase-01.webp" alt={L.tiles[0]} icon={TILE_ICONS[0]} label={L.tiles[0]} className="aspect-square w-full" rounded="rounded-3xl" sizes="(max-width: 767px) 50vw, 25vw" />
             <div className="absolute bottom-3 start-3 glass rounded-2xl px-3.5 py-2 flex items-center gap-2.5">
               <span className="w-8 h-8 rounded-xl bg-brand-gradient text-white flex items-center justify-center shadow-brand">
                 <Icon name="sparkles" size={16} />
@@ -65,13 +65,13 @@ export default function Showcase({ lang }) {
           </div>
 
           <div className="relative">
-            <ImagePlaceholder src="/beauty/showcase/showcase-02.webp" alt={L.tiles[1]} icon={TILE_ICONS[1]} label={L.tiles[1]} className="aspect-square w-full" rounded="rounded-3xl" />
+            <ImagePlaceholder src="/beauty/showcase/showcase-02.webp" alt={L.tiles[1]} icon={TILE_ICONS[1]} label={L.tiles[1]} className="aspect-square w-full" rounded="rounded-3xl" sizes="(max-width: 767px) 50vw, 25vw" />
           </div>
           <div className="relative">
-            <ImagePlaceholder src="/beauty/showcase/showcase-03.webp" alt={L.tiles[2]} icon={TILE_ICONS[2]} label={L.tiles[2]} className="aspect-square w-full" rounded="rounded-3xl" />
+            <ImagePlaceholder src="/beauty/showcase/showcase-03.webp" alt={L.tiles[2]} icon={TILE_ICONS[2]} label={L.tiles[2]} className="aspect-square w-full" rounded="rounded-3xl" sizes="(max-width: 767px) 50vw, 25vw" />
           </div>
           <div className="relative">
-            <ImagePlaceholder src="/beauty/showcase/showcase-04.webp" alt={L.tiles[3]} icon={TILE_ICONS[3]} label={L.tiles[3]} className="aspect-square w-full" rounded="rounded-3xl" />
+            <ImagePlaceholder src="/beauty/showcase/showcase-04.webp" alt={L.tiles[3]} icon={TILE_ICONS[3]} label={L.tiles[3]} className="aspect-square w-full" rounded="rounded-3xl" sizes="(max-width: 767px) 50vw, 25vw" />
           </div>
         </Reveal>
       </div>
