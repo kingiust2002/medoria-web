@@ -6,7 +6,7 @@
 import { notFound } from "next/navigation";
 import { Playfair_Display } from "next/font/google";
 import { LOCALES, LANG_META } from "@/lib/i18n";
-import { getBeautyCategoryTree } from "@/lib/beauty/catalog";
+import { getBeautyNavTree } from "@/lib/beauty/catalog";
 import BeautyHeader from "@/components/beauty/BeautyHeader";
 import BeautyFooter from "@/components/beauty/BeautyFooter";
 import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
@@ -43,7 +43,9 @@ export default async function BeautyLayout({ children, params }) {
   const { lang } = params;
   if (!LOCALES.includes(lang)) notFound();
   const dir = LANG_META[lang].dir;
-  const categoryTree = await getBeautyCategoryTree();
+  // Slim projection: the nav is a client component in this shared layout, so
+  // its props are serialised into every Beauty page's HTML for hydration.
+  const categoryTree = await getBeautyNavTree(lang);
   return (
     <div
       lang={lang}
