@@ -9,7 +9,6 @@
 import Link from "next/link";
 import Icon from "@/components/shared/Icon";
 import Breadcrumb from "@/components/shared/Breadcrumb";
-import { Reveal } from "@/components/shared/Reveal";
 import { beautyImageUrl } from "@/lib/beauty/catalog";
 import { nameOf, hasKids, gradFor, DEPT_IMG, copyFor } from "@/lib/beauty/worlds";
 
@@ -68,7 +67,16 @@ export default function WorldGrid({
               const g = grad || gradFor(i);
               const drills = hasKids(node) && !isDept;
               return (
-                <Reveal key={node.id} delay={i * 40}>
+                // CSS-only entrance (see .world-tile-in in globals.css). The
+                // JS Reveal primitive used to wrap this, which meant the tiles
+                // were served as inline opacity:0 and stayed invisible until
+                // framer-motion hydrated — and its delay is Framer's, in
+                // SECONDS, so the `i * 40` passed here staggered them FORTY
+                // seconds apart (the seventh tile was four minutes late). That
+                // is what made the page look like it opened one tile at a time,
+                // and why only the first department ever seemed to exist.
+                // animationDelay below is a real CSS time string, so ms is ms.
+                <div key={node.id} className="world-tile-in" style={{ animationDelay: `${i * 45}ms` }}>
                   <Link href={hrefFor(node)} className="group block relative overflow-hidden rounded-2xl border border-line focus-ring">
                     <div className={`relative ${isDept ? "aspect-[16/10]" : "aspect-[4/3]"}`}>
                       {img ? (
@@ -105,7 +113,7 @@ export default function WorldGrid({
                       </div>
                     </div>
                   </Link>
-                </Reveal>
+                </div>
               );
             })}
           </div>

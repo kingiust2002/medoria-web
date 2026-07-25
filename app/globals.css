@@ -1144,3 +1144,21 @@ html.lenis, html.lenis body { height: auto; }
   color: rgba(255,255,255,0.92); text-shadow: 0 1px 6px rgba(0,0,0,0.45);
   pointer-events: none;
 }
+
+/* ── World browse tile entrance ───────────────────────────────────────────────
+   A CSS-only cascade for the «World» category tiles. Deliberately NOT the JS
+   Reveal primitive: Reveal renders its initial state as inline `opacity:0` in
+   the SSR HTML, so the tiles — the primary content of the page — stayed
+   invisible until framer-motion hydrated. A stylesheet is a render-blocking
+   resource that always arrives, so keying the animation to CSS means the tiles
+   are painted with the first frame instead of waiting on the JS bundle.
+   The per-tile stagger is set inline via animationDelay (a CSS time string, so
+   `ms` really is milliseconds here). The global prefers-reduced-motion rule
+   above collapses the duration, leaving the resting state. */
+@keyframes worldTileIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+.world-tile-in {
+  animation: worldTileIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
