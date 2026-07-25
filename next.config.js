@@ -62,6 +62,21 @@ const nextConfig = {
     return [
       { source: "/:path*", has: [{ type: "host", value: "medoria.com" }], destination: "https://medoria.tj/:path*", permanent: true },
       { source: "/:path*", has: [{ type: "host", value: "www.medoria.com" }], destination: "https://medoria.tj/:path*", permanent: true },
+      // «World» drill-down moved from query params to route segments so the
+      // pages can be statically prerendered (?dept= forced a per-request render
+      // on every hit). Keep the old shape working for anything already linked.
+      {
+        source: "/beauty/:lang(tg|ru|en|fa)/worlds",
+        has: [{ type: "query", key: "dept", value: "(?<dept>[^&]+)" }, { type: "query", key: "group", value: "(?<group>[^&]+)" }],
+        destination: "/beauty/:lang/worlds/:dept/:group",
+        permanent: true,
+      },
+      {
+        source: "/beauty/:lang(tg|ru|en|fa)/worlds",
+        has: [{ type: "query", key: "dept", value: "(?<dept>[^&]+)" }],
+        destination: "/beauty/:lang/worlds/:dept",
+        permanent: true,
+      },
       // Vertical-first migration: old locale-first public routes are now Medoria
       // Health. Permanent, single-hop, path-tail preserved. The locale enum keeps
       // these from ever matching /health, /beauty, /operator, /api or /.
