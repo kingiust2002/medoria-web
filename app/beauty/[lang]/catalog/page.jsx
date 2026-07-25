@@ -9,7 +9,7 @@ import Link from "next/link";
 import { LOCALES } from "@/lib/i18n";
 import { waLink, tgLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import { getBeautyTranslations, BEAUTY_CATEGORIES, getCategoryName } from "@/components/beauty/i18n";
-import { getBeautyCategories, getBeautyBrands, getBeautyProducts } from "@/lib/beauty/catalog";
+import { getBeautyCategoryTree, getBeautyCategoryPath, getBeautyBrands, getBeautyProducts } from "@/lib/beauty/catalog";
 import BeautyProductCard from "@/components/beauty/catalog/BeautyProductCard";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
@@ -20,7 +20,6 @@ import SplitText from "@/components/shared/SplitText";
 // latest saves (revalidatePath from the panel also lands here).
 export const dynamic = "force-dynamic";
 
-const WORLD_SLUGS = BEAUTY_CATEGORIES.map((c) => c.slug);
 const SORTS = ["newest", "price_asc", "price_desc", "popular"];
 
 const COPY = {
@@ -74,18 +73,17 @@ export default async function BeautyCatalogPage({ params, searchParams }) {
   const c = COPY[lang] || COPY.en;
   const sp = searchParams || {};
 
-  const world = WORLD_SLUGS.includes(sp.world) ? sp.world : "";
   const catSlug = str(sp.cat, 80);
   const brand = str(sp.brand, 120);
   const q = str(sp.q, 80);
   const sort = SORTS.includes(sp.sort) ? sp.sort : "default";
-  const hasFilters = Boolean(world || catSlug || brand || q);
+  const hasFilters = Boolean(catSlug || brand || q);
 
-  const [cats, brands, products] = await Promise.all([
-    getBeautyCategories(),
+  const [tree, path, brands, products] = await Promise.all([
+    getBeautyCategoryTree(),
+    catSlug ? getBeautyCategoryPath(catSlug) : Promise.resolve(null),
     getBeautyBrands(),
     getBeautyProducts({
-      world: world || undefined,
       categorySlug: catSlug || undefined,
       brand: brand || undefined,
       search: q || undefined,
@@ -96,12 +94,19 @@ export default async function BeautyCatalogPage({ params, searchParams }) {
   // Live once anything is published; before that, the honest pre-launch state.
   const live = products.length > 0 || hasFilters;
 
-  // Category chips: scoped to the selected world (or all worlds).
-  const chipCats = world ? cats.filter((x) => x.world === world) : cats;
+  // Tree-aware taxonomy (migration 12): department chips → the active
+  // department's children → the active group's children. `trail` is root→…→current.
+  const trail = path?.trail || [];
+  const current = path?.node || null;
+  const deptSlug = trail[0]?.slug || "";
+  const deptNode = tree.find((d) => d.slug === deptSlug) || null;
+  const lvl2Slug = trail[1]?.slug || "";
+  const groupNode = deptNode ? (deptNode.children || []).find((g) => g.slug === lvl2Slug && g.children?.length) : null;
+  const lvl3Slug = trail[2]?.slug || "";
 
   // GET-link builder that preserves the other active filters.
   const href = (patch) => {
-    const merged = { world, cat: catSlug, brand, q, sort: sort === "default" ? "" : sort, ...patch };
+    const merged = { cat: catSlug, brand, q, sort: sort === "default" ? "" : sort, ...patch };
     const p = new URLSearchParams();
     for (const [k, v] of Object.entries(merged)) if (v) p.set(k, v);
     const s = p.toString();
@@ -109,6 +114,9 @@ export default async function BeautyCatalogPage({ params, searchParams }) {
   };
 
   const catName = (x) => x[`name_${lang}`] || x.name_en || x.slug;
+  const pillCls = (active) => `pill text-[12px] font-semibold inline-flex items-center gap-1.5 transition-colors ${active ? "text-white" : "bg-surface border border-line text-ink-muted hover:text-ink"}`;
+  const pillStyle = (active) => (active ? { background: "linear-gradient(120deg,var(--v-navy),var(--v-copper))" } : undefined);
+  const tagCls = (active) => `tag transition-colors ${active ? "bg-[color:var(--v-accent)]/10 text-[color:var(--v-accent)]" : "bg-line-soft text-ink-muted hover:text-ink"}`;
 
   return (
     <div className="bg-canvas-soft min-h-screen">
@@ -118,8 +126,13 @@ export default async function BeautyCatalogPage({ params, searchParams }) {
           background: "radial-gradient(50% 60% at 85% 0%, var(--v-glow), transparent 60%)",
         }} />
         <div className="container-x py-10 md:py-14 relative">
-          <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.nav.home, href: `/beauty/${lang}` }, { label: t.nav.collections }]} />
-          <h1 className="section-h-lg mb-2"><SplitText text={c.title} delay={0.1} /></h1>
+          <Breadcrumb lang={lang} className="mb-4" crumbs={[
+            { label: t.nav.home, href: `/beauty/${lang}` },
+            { label: t.nav.worlds, href: `/beauty/${lang}/worlds` },
+            ...trail.map((n, i) => ({ label: catName(n), href: i < trail.length - 1 ? href({ cat: n.slug }) : undefined })),
+            ...(trail.length ? [] : [{ label: t.nav.collections }]),
+          ]} />
+          <h1 className="section-h-lg mb-2"><SplitText text={current ? catName(current) : c.title} delay={0.1} /></h1>
           <p className="text-base text-ink-muted max-w-xl">{c.subtitle}</p>
         </div>
       </div>
@@ -127,47 +140,37 @@ export default async function BeautyCatalogPage({ params, searchParams }) {
       <div className="container-x py-10 md:py-14">
         {live ? (
           <>
-            {/* World chips (top taxonomy level) */}
+            {/* Department chips (tree level 1) */}
             <div className="flex flex-wrap items-center gap-2 mb-4">
-              <Link href={href({ world: "", cat: "" })}
-                className={`pill text-[12px] font-semibold transition-colors ${!world ? "text-white" : "bg-surface border border-line text-ink-muted hover:text-ink"}`}
-                style={!world ? { background: "linear-gradient(120deg,var(--v-navy),var(--v-copper))" } : undefined}>
-                {c.allWorlds}
-              </Link>
-              {BEAUTY_CATEGORIES.map((w) => {
-                const active = world === w.slug;
-                return (
-                  <Link key={w.slug} href={href({ world: active ? "" : w.slug, cat: "" })}
-                    className={`pill text-[12px] font-semibold inline-flex items-center gap-1.5 transition-colors ${active ? "text-white" : "bg-surface border border-line text-ink-muted hover:text-ink"}`}
-                    style={active ? { background: "linear-gradient(120deg,var(--v-navy),var(--v-copper))" } : undefined}>
-                    <Icon name={w.icon} size={13} /> {getCategoryName(w.slug, lang)}
-                  </Link>
-                );
-              })}
+              <Link href={href({ cat: "" })} className={pillCls(!catSlug)} style={pillStyle(!catSlug)}>{c.allWorlds}</Link>
+              {tree.map((d) => (
+                <Link key={d.id} href={href({ cat: deptSlug === d.slug ? "" : d.slug })} className={pillCls(deptSlug === d.slug)} style={pillStyle(deptSlug === d.slug)}>
+                  {d.icon && <Icon name={d.icon} size={13} />} {catName(d)}
+                </Link>
+              ))}
             </div>
 
-            {/* Category chips (second level, world-scoped) */}
-            {chipCats.length > 0 && (
+            {/* Active department's children (tree level 2) */}
+            {deptNode && deptNode.children?.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <Link href={href({ cat: deptNode.slug })} className={tagCls(catSlug === deptNode.slug)}>{c.allCats}</Link>
+                {deptNode.children.map((g) => (
+                  <Link key={g.id} href={href({ cat: g.slug })} className={tagCls(lvl2Slug === g.slug)}>{catName(g)}</Link>
+                ))}
+              </div>
+            )}
+
+            {/* Active group's children (tree level 3) */}
+            {groupNode && (
               <div className="flex flex-wrap items-center gap-2 mb-6">
-                <Link href={href({ cat: "" })}
-                  className={`tag transition-colors ${!catSlug ? "bg-[color:var(--v-accent)]/10 text-[color:var(--v-accent)]" : "bg-line-soft text-ink-muted hover:text-ink"}`}>
-                  {c.allCats}
-                </Link>
-                {chipCats.map((x) => {
-                  const active = catSlug === x.slug;
-                  return (
-                    <Link key={x.slug} href={href({ cat: active ? "" : x.slug })}
-                      className={`tag transition-colors ${active ? "bg-[color:var(--v-accent)]/10 text-[color:var(--v-accent)]" : "bg-line-soft text-ink-muted hover:text-ink"}`}>
-                      {catName(x)}
-                    </Link>
-                  );
-                })}
+                {groupNode.children.map((leaf) => (
+                  <Link key={leaf.id} href={href({ cat: leaf.slug })} className={tagCls(lvl3Slug === leaf.slug)}>{catName(leaf)}</Link>
+                ))}
               </div>
             )}
 
             {/* Search / brand / sort — plain GET form, works JS-off */}
             <form method="GET" className="card-flat p-3 mb-6 flex flex-wrap items-center gap-2">
-              {world && <input type="hidden" name="world" value={world} />}
               {catSlug && <input type="hidden" name="cat" value={catSlug} />}
               <div className="relative flex-1 min-w-[200px]">
                 <span className="absolute start-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"><Icon name="search" size={16} /></span>
