@@ -19,15 +19,20 @@ the department icon — never an empty box.
 
 ## Status
 
+All 7 departments now have brand-safe Stitch-generated mood imagery in
+`public/beauty/edit/` (wired via `DEPT_IMG` in the World page). Regenerate or
+replace any one from the panel (upload an image to the department) or by
+dropping a new webp in and updating `DEPT_IMG`.
+
 | # | department | slug | image |
 |---|---|---|---|
-| 1 | عطر Perfume | `perfume` | needed |
-| 2 | بهداشتی Personal Care | `personal-care` | ✅ reuses `edit-skincare.webp` |
-| 3 | آرایشی Makeup | `makeup` | ✅ reuses `edit-makeup.webp` |
-| 4 | مو Hair | `hair` | needed |
-| 5 | لوازم برقی Electrical | `electrical` | needed |
-| 6 | مد و فشن Fashion | `fashion` | needed |
-| 7 | مکمل غذایی Supplements | `supplements` | needed |
+| 1 | عطر Perfume | `perfume` | ✅ `edit-perfume.webp` |
+| 2 | بهداشتی Personal Care | `personal-care` | ✅ `edit-skincare.webp` |
+| 3 | آرایشی Makeup | `makeup` | ✅ `edit-makeup.webp` |
+| 4 | مو Hair | `hair` | ✅ `edit-hair.webp` |
+| 5 | لوازم برقی Electrical | `electrical` | ✅ `edit-electrical.webp` |
+| 6 | مد و فشن Fashion | `fashion` | ✅ `edit-fashion.webp` |
+| 7 | مکمل غذایی Supplements | `supplements` | ✅ `edit-supplements.webp` |
 
 ## Global spec (every image)
 

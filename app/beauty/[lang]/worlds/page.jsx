@@ -38,8 +38,13 @@ const gradFor = (i) => GRADS[((i % GRADS.length) + GRADS.length) % GRADS.length]
 // where they fit; the rest fall back to gradient until an image is uploaded in
 // the panel). An uploaded beauty_categories.image_url always wins over these.
 const DEPT_IMG = {
+  perfume: "/beauty/edit/edit-perfume.webp",
   "personal-care": "/beauty/edit/edit-skincare.webp",
   makeup: "/beauty/edit/edit-makeup.webp",
+  hair: "/beauty/edit/edit-hair.webp",
+  electrical: "/beauty/edit/edit-electrical.webp",
+  fashion: "/beauty/edit/edit-fashion.webp",
+  supplements: "/beauty/edit/edit-supplements.webp",
 };
 
 const COPY = {
