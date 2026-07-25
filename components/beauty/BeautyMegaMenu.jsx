@@ -24,14 +24,16 @@ function Caret() {
 export default function BeautyMegaMenu({ tree = [], lang, home, label, active, allLabel, viewAllLabel }) {
   const depts = tree;
   const [open, setOpen] = useState(false);
-  const [deptId, setDeptId] = useState(depts[0]?.id ?? null);
+  // Nothing pre-opened: the panel first shows just the departments; each one's
+  // groups appear when you hover it (and a group's subgroups when you hover it).
+  const [deptId, setDeptId] = useState(null);
   const [groupId, setGroupId] = useState(null);
   const closeTimer = useRef(null);
 
   const openNow = () => { clearTimeout(closeTimer.current); setOpen(true); };
   const closeSoon = () => { closeTimer.current = setTimeout(() => { setOpen(false); }, 160); };
 
-  const dept = useMemo(() => depts.find((d) => d.id === deptId) || depts[0] || null, [depts, deptId]);
+  const dept = useMemo(() => depts.find((d) => d.id === deptId) || null, [depts, deptId]);
   const group = useMemo(() => (dept?.children || []).find((g) => g.id === groupId) || null, [dept, groupId]);
   const catHref = (slug) => `${home}/catalog?cat=${encodeURIComponent(slug)}`;
 
