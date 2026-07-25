@@ -9,7 +9,10 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
-const nameOf = (c, lang) => c?.[`name_${lang}`] || c?.name_en || c?.name_tg || c?.name_fa || c?.slug || "";
+// Names arrive pre-resolved for the active locale (lib/beauty/catalog.js
+// getBeautyNavTree) so this client component is not handed all four locale
+// columns for ~193 categories on every page.
+const nameOf = (c) => c?.name || c?.slug || "";
 const hasKids = (c) => (c?.children?.length || 0) > 0;
 
 function Caret() {
@@ -79,7 +82,7 @@ export default function BeautyMegaMenu({ tree = [], lang, home, label, active, a
                       onMouseEnter={() => { setDeptId(d.id); setGroupId(null); }}
                       onFocus={() => { setDeptId(d.id); setGroupId(null); }}
                       className={`${rowBase} ${on ? "bg-surface text-[color:var(--v-accent)] font-semibold" : "text-ink-soft hover:text-ink hover:bg-surface"}`}>
-                      <span className="truncate flex-1">{nameOf(d, lang)}</span>
+                      <span className="truncate flex-1">{nameOf(d)}</span>
                       {hasKids(d) && <Caret />}
                     </Link>
                   </li>
@@ -91,7 +94,7 @@ export default function BeautyMegaMenu({ tree = [], lang, home, label, active, a
             {dept && hasKids(dept) && (
               <ul className={col}>
                 <li className="px-5 pt-1.5 pb-2 flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-ink-faint truncate">{nameOf(dept, lang)}</span>
+                  <span className="text-[11px] font-bold text-ink-faint truncate">{nameOf(dept)}</span>
                   <Link href={catHref(dept.slug)} className="text-[11px] font-semibold text-[color:var(--v-accent)] hover:opacity-80 shrink-0">{allLabel}</Link>
                 </li>
                 {dept.children.map((g) => {
@@ -103,7 +106,7 @@ export default function BeautyMegaMenu({ tree = [], lang, home, label, active, a
                         onMouseEnter={() => setGroupId(groupNode ? g.id : null)}
                         onFocus={() => setGroupId(groupNode ? g.id : null)}
                         className={`${rowBase} ${on ? "bg-surface text-[color:var(--v-accent)] font-semibold" : "text-ink-soft hover:text-ink hover:bg-surface"}`}>
-                        <span className="truncate flex-1">{nameOf(g, lang)}</span>
+                        <span className="truncate flex-1">{nameOf(g)}</span>
                         {groupNode && <Caret />}
                       </Link>
                     </li>
@@ -116,13 +119,13 @@ export default function BeautyMegaMenu({ tree = [], lang, home, label, active, a
             {group && hasKids(group) && (
               <ul className={col}>
                 <li className="px-5 pt-1.5 pb-2 flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-ink-faint truncate">{nameOf(group, lang)}</span>
+                  <span className="text-[11px] font-bold text-ink-faint truncate">{nameOf(group)}</span>
                   <Link href={catHref(group.slug)} className="text-[11px] font-semibold text-[color:var(--v-accent)] hover:opacity-80 shrink-0">{allLabel}</Link>
                 </li>
                 {group.children.map((leaf) => (
                   <li key={leaf.id}>
                     <Link href={catHref(leaf.slug)} className={`${rowBase} text-ink-muted hover:text-ink hover:bg-surface`}>
-                      <span className="truncate flex-1">{nameOf(leaf, lang)}</span>
+                      <span className="truncate flex-1">{nameOf(leaf)}</span>
                     </Link>
                   </li>
                 ))}

@@ -22,7 +22,8 @@ const MEGA = {
   en: { all: "View all", viewAll: "Browse everything" },
   fa: { all: "دیدن همه", viewAll: "همه‌ی دنیاها" },
 };
-const megaName = (c, lang) => c?.[`name_${lang}`] || c?.name_en || c?.name_fa || c?.slug || "";
+// Pre-resolved for the active locale by getBeautyNavTree (see the layout).
+const megaName = (c) => c?.name || c?.slug || "";
 
 export default function BeautyHeader({ lang, categoryTree = [] }) {
   const t = getBeautyTranslations(lang);
@@ -158,7 +159,7 @@ export default function BeautyHeader({ lang, categoryTree = [] }) {
                         <li key={d.id} className="border-t border-line/60">
                           <div className="flex items-center">
                             <Link href={`${home}/catalog?cat=${encodeURIComponent(d.slug)}`} onClick={() => setOpen(false)}
-                              className="flex-1 py-2.5 ps-3 text-[14px] text-ink-soft">{megaName(d, lang)}</Link>
+                              className="flex-1 py-2.5 ps-3 text-[14px] text-ink-soft">{megaName(d)}</Link>
                             {kids.length > 0 && (
                               <button type="button" onClick={() => setMobileDept(exp ? null : d.id)} aria-expanded={exp}
                                 className="p-2 text-ink-muted" aria-label="expand">
@@ -171,7 +172,7 @@ export default function BeautyHeader({ lang, categoryTree = [] }) {
                               {kids.map((g) => (
                                 <li key={g.id}>
                                   <Link href={`${home}/catalog?cat=${encodeURIComponent(g.slug)}`} onClick={() => setOpen(false)}
-                                    className="block py-2 text-[13px] text-ink-muted hover:text-ink">{megaName(g, lang)}</Link>
+                                    className="block py-2 text-[13px] text-ink-muted hover:text-ink">{megaName(g)}</Link>
                                 </li>
                               ))}
                             </ul>
