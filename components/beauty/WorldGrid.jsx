@@ -9,6 +9,7 @@
 import Link from "next/link";
 import Icon from "@/components/shared/Icon";
 import Breadcrumb from "@/components/shared/Breadcrumb";
+import { Stagger, StaggerItem } from "@/components/shared/Reveal";
 import { beautyImageUrl } from "@/lib/beauty/catalog";
 import { nameOf, hasKids, gradFor, DEPT_IMG, copyFor } from "@/lib/beauty/worlds";
 
@@ -61,22 +62,22 @@ export default function WorldGrid({
         {items.length === 0 ? (
           <p className="text-ink-faint text-center py-16 rounded-2xl border border-dashed border-line">{c.empty}</p>
         ) : (
-          <div className={`grid gap-4 sm:gap-5 ${isDept ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
+          <Stagger className={`grid gap-4 sm:gap-5 ${isDept ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
             {items.map((node, i) => {
               const img = beautyImageUrl(node.image_url) || (isDept ? DEPT_IMG[node.slug] : null) || null;
               const g = grad || gradFor(i);
               const drills = hasKids(node) && !isDept;
               return (
-                // CSS-only entrance (see .world-tile-in in globals.css). The
-                // JS Reveal primitive used to wrap this, which meant the tiles
-                // were served as inline opacity:0 and stayed invisible until
-                // framer-motion hydrated — and its delay is Framer's, in
-                // SECONDS, so the `i * 40` passed here staggered them FORTY
-                // seconds apart (the seventh tile was four minutes late). That
-                // is what made the page look like it opened one tile at a time,
-                // and why only the first department ever seemed to exist.
-                // animationDelay below is a real CSS time string, so ms is ms.
-                <div key={node.id} className="world-tile-in" style={{ animationDelay: `${i * 45}ms` }}>
+                // Same scroll-reveal cascade the rest of the site uses (see
+                // components/beauty/home/CategoryGrid.jsx and the brands page):
+                // Stagger drives staggerChildren on whileInView, so the tiles
+                // ease in as they scroll into view instead of on a fixed clock.
+                // Note there is deliberately NO per-item delay prop here — the
+                // previous hand-rolled `delay={i * 40}` was passing Framer
+                // Motion SECONDS, which spaced the tiles 40s apart and left the
+                // seventh four minutes late. Letting the primitive own the
+                // timing makes that class of unit bug impossible.
+                <StaggerItem key={node.id}>
                   <Link href={hrefFor(node)} className="group block relative overflow-hidden rounded-2xl border border-line focus-ring">
                     <div className={`relative ${isDept ? "aspect-[16/10]" : "aspect-[4/3]"}`}>
                       {img ? (
@@ -113,10 +114,10 @@ export default function WorldGrid({
                       </div>
                     </div>
                   </Link>
-                </div>
+                </StaggerItem>
               );
             })}
-          </div>
+          </Stagger>
         )}
       </div>
     </div>
