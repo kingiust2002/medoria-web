@@ -12,6 +12,7 @@ import Breadcrumb from "@/components/shared/Breadcrumb";
 import { Stagger, StaggerItem } from "@/components/shared/Reveal";
 import { beautyImageUrl } from "@/lib/beauty/catalog";
 import { nameOf, hasKids, gradFor, DEPT_IMG, copyFor } from "@/lib/beauty/worlds";
+import { CATEGORY_IMG } from "@/lib/beauty/categoryImages";
 
 export default function WorldGrid({
   lang,
@@ -64,7 +65,15 @@ export default function WorldGrid({
         ) : (
           <Stagger className={`grid gap-4 sm:gap-5 ${isDept ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
             {items.map((node, i) => {
-              const img = beautyImageUrl(node.image_url) || (isDept ? DEPT_IMG[node.slug] : null) || null;
+              // Resolution order, most specific first: an image uploaded to this
+              // category in the operator panel, then a tile composited from
+              // official product shots (scripts/build_category_tiles.mjs), then
+              // the department mood shot, then the gradient placeholder.
+              const img =
+                beautyImageUrl(node.image_url) ||
+                CATEGORY_IMG[node.slug] ||
+                (isDept ? DEPT_IMG[node.slug] : null) ||
+                null;
               const g = grad || gradFor(i);
               const drills = hasKids(node) && !isDept;
               return (
