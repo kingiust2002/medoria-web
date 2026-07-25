@@ -1,10 +1,19 @@
 // components/beauty/BeautyBrand.jsx — OFFICIAL Medoria Beauty brand assets.
-// Renders the untouched PNGs with their intrinsic aspect ratios (mark
-// 500×500, wordmark 702×355) — never recolored, stretched or redrawn.
+// Renders the untouched artwork at its intrinsic aspect ratios (mark 500×500,
+// wordmark 702×355) — never recolored, stretched or redrawn.
 // `BeautyWordLockup` pairs the "Medoria" wordmark with the official "Beauty"
-// wordmark (public/images/Beauty.png — shares the same navy+copper ribbon-
+// wordmark (public/images/Beauty.webp — shares the same navy+copper ribbon-
 // wave motif as the mark), not a CSS-drawn label, so the lockup is real
 // designed type throughout.
+//
+// The two wordmarks are served as LOSSLESS webp re-encodes of the official
+// PNG masters (which stay in the repo alongside them): same dimensions, the
+// alpha channel bit-identical, and RGB identical on every visible pixel — so
+// the glyphs are still pixel-for-pixel the official artwork, at ~44% of the
+// bytes. This matters because ClippedWord below uses a plain <img> (its exact
+// pixel geometry is load-bearing, see the metrics comment), which means no
+// next/image optimization: whatever file is named here goes over the wire
+// as-is, and these two are on every Beauty page via the header lockup.
 import Image from "next/image";
 
 export function BeautyMarkImg({ size = 40, priority = false, className = "", opacity }) {
@@ -27,7 +36,7 @@ export function BeautyWordmarkImg({ height = 24, priority = false, className = "
   const width = Math.round(height * (702 / 355));
   return (
     <Image
-      src="/brand/beauty-wordmark.png"
+      src="/brand/beauty-wordmark.webp"
       alt="Medoria"
       width={width}
       height={height}
@@ -79,8 +88,8 @@ export function BeautyWordLockup({ height = 30 }) {
   const capBeauty = Math.round(capMedoria * 0.62);
   return (
     <span dir="ltr" translate="no" aria-label="Medoria Beauty" className="inline-flex items-end gap-2">
-      <ClippedWord src="/brand/beauty-wordmark.png" alt="Medoria" cap={capMedoria} m={MED} />
-      <ClippedWord src="/images/Beauty.png" alt="" cap={capBeauty} m={BTY} />
+      <ClippedWord src="/brand/beauty-wordmark.webp" alt="Medoria" cap={capMedoria} m={MED} />
+      <ClippedWord src="/images/Beauty.webp" alt="" cap={capBeauty} m={BTY} />
     </span>
   );
 }

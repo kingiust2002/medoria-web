@@ -9,9 +9,11 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans:    ['Inter',          'system-ui', 'sans-serif'],
-        display: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
-        farsi:   ['Vazirmatn',      'Tahoma',    'sans-serif'],
+        // Self-hosted via next/font (app/layout.jsx) — each var resolves to
+        // next/font's scoped @font-face, not a literal Google/system name.
+        sans:    ['var(--font-sans)',    'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'var(--font-sans)', 'sans-serif'],
+        farsi:   ['var(--font-farsi)',   'Tahoma',    'sans-serif'],
         // Self-hosted via next/font (app/beauty/[lang]/layout.jsx) — the var
         // resolves to next/font's scoped font-face, not the literal Google name.
         beauty:  ['var(--font-beauty)', 'Georgia', 'serif'],
