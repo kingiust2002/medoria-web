@@ -1,7 +1,8 @@
 const isDev = process.env.NODE_ENV === "development";
 
 // Content-Security-Policy tuned to exactly what the app loads:
-//   • Supabase (REST + storage images) • Google Fonts • GA4 • Yandex Metrica
+//   • Supabase (REST + storage images) • GA4 • Yandex Metrica
+//   (fonts are self-hosted via next/font, so no Google Fonts origins here)
 //   • Vercel Analytics (same-origin /_vercel + vitals endpoint)
 // 'unsafe-inline' for scripts/styles is required by Next.js inline runtime
 // chunks, styled-jsx and the GA/YM bootstrap snippets (no nonce infra — nonces
@@ -11,9 +12,9 @@ const isDev = process.env.NODE_ENV === "development";
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://www.googletagmanager.com https://mc.yandex.ru https://va.vercel-scripts.com`,
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://*.supabase.co https://www.googletagmanager.com https://www.google-analytics.com https://mc.yandex.ru",
-  "font-src 'self' data: https://fonts.gstatic.com",
+  "font-src 'self' data:",
   `connect-src 'self'${isDev ? " ws: wss:" : ""} https://*.supabase.co https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://mc.yandex.ru https://mc.yandex.com https://vitals.vercel-insights.com`,
   "frame-src 'self' https://mc.yandex.ru",
   "worker-src 'self' blob:",

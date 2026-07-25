@@ -3,6 +3,7 @@
 // reskin scope (data-vertical) + a self-hosted Playfair Display serif (latin +
 // cyrillic, via next/font — no external Google Fonts request at runtime, no
 // font-swap flash, only loaded on beauty routes).
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { Playfair_Display } from "next/font/google";
 import { LOCALES, LANG_META } from "@/lib/i18n";
@@ -39,13 +40,27 @@ export function generateStaticParams() {
 // (panel edits also revalidate beauty paths on save for near-instant updates).
 export const revalidate = 120;
 
-export default async function BeautyLayout({ children, params }) {
-  const { lang } = params;
-  if (!LOCALES.includes(lang)) notFound();
-  const dir = LANG_META[lang].dir;
+// The nav's category tree, resolved in its own Suspense boundary. Keeping this
+// out of the layout body is what lets the rest of the shell — crucially
+// `children`, and therefore each page's loading.jsx — stream immediately. When
+// the layout itself awaited this, React could not flush ANY of the shell until
+// the tree resolved, so the World page's skeleton never actually got to show
+// and the browser sat on a blank document for the whole round trip.
+// The fallback renders the real header with an empty tree: BeautyMegaMenu
+// degrades to a plain link to /worlds and the mobile drawer hides its
+// accordion, so the header is complete and usable from the first paint and
+// only the mega-menu contents arrive a beat later.
+async function BeautyNav({ lang }) {
   // Slim projection: the nav is a client component in this shared layout, so
   // its props are serialised into every Beauty page's HTML for hydration.
   const categoryTree = await getBeautyNavTree(lang);
+  return <BeautyHeader lang={lang} categoryTree={categoryTree} />;
+}
+
+export default function BeautyLayout({ children, params }) {
+  const { lang } = params;
+  if (!LOCALES.includes(lang)) notFound();
+  const dir = LANG_META[lang].dir;
   return (
     <div
       lang={lang}
@@ -58,7 +73,9 @@ export default async function BeautyLayout({ children, params }) {
           __html: `document.documentElement.lang="${lang}";document.documentElement.dir="${dir}";`,
         }}
       />
-      <BeautyHeader lang={lang} categoryTree={categoryTree} />
+      <Suspense fallback={<BeautyHeader lang={lang} categoryTree={[]} />}>
+        <BeautyNav lang={lang} />
+      </Suspense>
       <main>{children}</main>
       <BeautyFooter lang={lang} />
       <FloatingWhatsApp lang={lang} />

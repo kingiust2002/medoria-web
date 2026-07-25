@@ -15,7 +15,12 @@ import Icon from "@/components/shared/Icon";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import { Reveal, Stagger, StaggerItem } from "@/components/shared/Reveal";
 
-export const dynamic = "force-dynamic";
+// ISR, not force-dynamic: this page reads no searchParams and no request
+// state, so it can be prerendered and served from the CDN edge nearest the
+// visitor instead of invoking a function in one fixed region on every hit.
+// Operator saves call revalidatePath on the beauty routes, so edits still land
+// immediately rather than waiting out the window.
+export const revalidate = 600;
 
 const COPY = {
   tg: {

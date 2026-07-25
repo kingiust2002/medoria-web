@@ -16,7 +16,12 @@ import { LOCALES } from "@/lib/i18n";
 import { getBeautyCategoryTree, beautyImageUrl } from "@/lib/beauty/catalog";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
 
-export const dynamic = "force-dynamic";
+// Reading searchParams (dept/group) already makes this route render per
+// request, so force-dynamic added nothing — except that it ALSO opted the whole
+// segment out of the Data Cache, which meant the cached category tree
+// (lib/beauty/catalog.js) was re-fetched from Supabase on every single hit.
+// Dropping it keeps the per-request render but lets the cache do its job.
+export const revalidate = 600;
 
 const nameOf = (c, lang) => c?.[`name_${lang}`] || c?.name_en || c?.name_tg || c?.name_fa || c?.slug || "";
 const hasKids = (c) => (c?.children?.length || 0) > 0;
@@ -53,6 +58,30 @@ const COPY = {
   en: { root: "Worlds", rootSub: "Seven worlds of beauty — step into each.", back: "Back", browseAll: "All products", empty: "This section is empty for now.", items: "sections", worlds: "Worlds" },
   fa: { root: "دنیاها", rootSub: "هفت دنیای زیبایی — هرکدام را باز کنید.", back: "بازگشت", browseAll: "همه‌ی محصولات", empty: "این بخش فعلاً خالی است.", items: "بخش", worlds: "دنیاها" },
 };
+
+// Without this the route fell through to the ROOT layout's metadata, so the
+// live page announced itself as "Medoria — Medical Supplies & Consumables in
+// Tajikistan" with the Health OG image and description — Health branding on a
+// Beauty surface, which brand law forbids. It also had no canonical.
+export function generateMetadata({ params }) {
+  const { lang } = params;
+  if (!LOCALES.includes(lang)) return {};
+  const c = COPY[lang] || COPY.tg;
+  const title = `${c.root} — Medoria Beauty`;
+  return {
+    title,
+    description: c.rootSub,
+    robots: { index: false, follow: true },
+    alternates: { canonical: `/beauty/${lang}/worlds` },
+    openGraph: {
+      type: "website",
+      siteName: "Medoria",
+      title,
+      description: c.rootSub,
+      images: [{ url: "/og/beauty.jpg", width: 1200, height: 630, alt: "Medoria Beauty" }],
+    },
+  };
+}
 
 export default async function WorldPage({ params, searchParams }) {
   const { lang } = params;
