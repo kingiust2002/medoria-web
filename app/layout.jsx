@@ -1,9 +1,41 @@
 // app/layout.jsx — root document + global metadata, OG defaults, analytics.
 import "./globals.css";
+import { Inter, Plus_Jakarta_Sans, Vazirmatn } from "next/font/google";
 import { Providers } from "./providers";
 import { Analytics } from "@vercel/analytics/react";
 import AnalyticsScripts from "@/components/shared/AnalyticsScripts";
 import { SITE_URL, ogImage } from "@/lib/seo";
+
+// Self-hosted at build time via next/font (same approach as the Playfair
+// display face in app/beauty/[lang]/layout.jsx). Previously these three
+// families were pulled at runtime from fonts.googleapis.com by a
+// render-blocking <link>: two extra origins to resolve + handshake before the
+// browser could paint any text, and 14 woff2 files (~371 KB) from a third
+// party — routinely slow or throttled on the networks our Tajik/Persian
+// audience browses from. next/font emits the @font-face CSS inline, serves the
+// woff2 from our own origin, and preloads it, so first paint no longer waits
+// on Google. Each exposes a CSS variable consumed by tailwind.config.js
+// (`font-sans` / `font-display` / `font-farsi`) and globals.css.
+// Cyrillic ships with the sans face because Tajik (the default locale) is
+// written in Cyrillic; Vazirmatn carries the Arabic subset for fa/RTL.
+const inter = Inter({
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-sans",
+  display: "swap",
+});
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+  variable: "--font-display",
+  display: "swap",
+});
+const vazirmatn = Vazirmatn({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-farsi",
+  display: "swap",
+});
 
 const TITLE = "Medoria — Medical Supplies & Consumables in Tajikistan";
 const DESC =
@@ -46,15 +78,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&family=Vazirmatn:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html suppressHydrationWarning className={`${inter.variable} ${plusJakartaSans.variable} ${vazirmatn.variable}`}>
       <body>
         <Providers>{children}</Providers>
         <AnalyticsScripts />

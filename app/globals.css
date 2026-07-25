@@ -303,7 +303,7 @@ html.lenis, html.lenis body { height: auto; }
 
 /* Persian route: the beauty serif has no Arabic glyphs — headings fall back to
    Vazirmatn so RTL never renders with a mismatched system serif. */
-[dir="rtl"] .font-beauty { font-family: Vazirmatn, Tahoma, serif; }
+[dir="rtl"] .font-beauty { font-family: var(--font-farsi), Tahoma, serif; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    BEAUTY RESKIN OF THE SHARED SYSTEM (structure = Health, skin = Beauty)
@@ -332,7 +332,7 @@ html.lenis, html.lenis body { height: auto; }
 [data-vertical="beauty"] .section-h,
 [data-vertical="beauty"] .section-h-lg { font-family: var(--font-beauty), Georgia, serif; font-weight: 600; }
 [data-vertical="beauty"][dir="rtl"] .section-h,
-[data-vertical="beauty"][dir="rtl"] .section-h-lg { font-family: Vazirmatn, Tahoma, serif; }
+[data-vertical="beauty"][dir="rtl"] .section-h-lg { font-family: var(--font-farsi), Tahoma, serif; }
 [data-vertical="beauty"] .gradient-text,
 [data-vertical="beauty"] .gradient-text-animated {
   background-image: linear-gradient(120deg, var(--v-navy), var(--v-copper) 55%, var(--v-brand-to));
@@ -378,7 +378,7 @@ html.lenis, html.lenis body { height: auto; }
 }
 [data-vertical="beauty"] .hover\:border-primary\/30:hover { border-color: rgb(var(--v-ring)); }
 [data-vertical="beauty"] .font-display { font-family: var(--font-beauty), Georgia, serif; }
-[data-vertical="beauty"][dir="rtl"] .font-display { font-family: Vazirmatn, Tahoma, serif; }
+[data-vertical="beauty"][dir="rtl"] .font-display { font-family: var(--font-farsi), Tahoma, serif; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    BEAUTY DARK THEME — Beauty now opts into the global .dark class (it used to
@@ -475,7 +475,7 @@ html.lenis, html.lenis body { height: auto; }
   font-weight: 700;
   letter-spacing: -0.01em;
 }
-[data-vertical="beauty"][dir="rtl"] .bv-display { font-family: Vazirmatn, Tahoma, serif; }
+[data-vertical="beauty"][dir="rtl"] .bv-display { font-family: var(--font-farsi), Tahoma, serif; }
 [data-vertical="beauty"] .bv-display-accent { font-style: italic; font-weight: 600; }
 [data-vertical="beauty"][dir="rtl"] .bv-display-accent { font-style: normal; }
 
