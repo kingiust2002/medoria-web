@@ -34,6 +34,14 @@ const GRADS = [
 ];
 const gradFor = (i) => GRADS[((i % GRADS.length) + GRADS.length) % GRADS.length];
 
+// Static department imagery (reuses the existing brand-safe Edit mood shots
+// where they fit; the rest fall back to gradient until an image is uploaded in
+// the panel). An uploaded beauty_categories.image_url always wins over these.
+const DEPT_IMG = {
+  "personal-care": "/beauty/edit/edit-skincare.webp",
+  makeup: "/beauty/edit/edit-makeup.webp",
+};
+
 const COPY = {
   tg: { root: "Ҷаҳонҳо", rootSub: "Ҳафт ҷаҳони зебоӣ — яке-якеро кушоед.", back: "Бозгашт", browseAll: "Ҳамаи маҳсулот", empty: "Ин бахш ҳоло холист.", items: "бахш", worlds: "Ҷаҳонҳо" },
   ru: { root: "Миры", rootSub: "Семь миров красоты — откройте каждый.", back: "Назад", browseAll: "Все товары", empty: "Этот раздел пока пуст.", items: "разделов", worlds: "Миры" },
@@ -109,7 +117,7 @@ export default async function WorldPage({ params, searchParams }) {
         ) : (
           <div className={`grid gap-4 sm:gap-5 ${twoWide ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
             {items.map((node, i) => {
-              const img = beautyImageUrl(node.image_url);
+              const img = beautyImageUrl(node.image_url) || (!dept ? DEPT_IMG[node.slug] : null) || null;
               const g = grad || gradFor(i);
               const drill = !group && hasKids(node) && dept;
               const isDept = !dept;
