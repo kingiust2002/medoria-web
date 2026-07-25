@@ -10,8 +10,9 @@ import Icon from "@/components/shared/Icon";
 import { PageHeader, Input, Field, Toggle, Spinner } from "@/components/operator/ui";
 import {
   setCategoryFlags, setCategorySubtreeActive,
-  createCategory, updateCategory, deleteCategorySafe,
+  createCategory, updateCategory, deleteCategorySafe, uploadCategoryImage,
 } from "@/lib/beauty/operator/actions";
+import { beautyImageUrl } from "@/lib/beauty/catalog";
 
 const LEVEL_LABEL = { 1: "دپارتمان", 2: "گروه", 3: "زیرگروه" };
 const nameOf = (c) => c.name_fa || c.name_en || c.name_tg || c.name_ru || c.slug;
@@ -136,9 +137,15 @@ export default function CategoryTree({ tree }) {
                     </button>
                   ) : <span className="w-6 shrink-0" />}
 
-                  <span className={`grid place-items-center w-7 h-7 rounded-lg shrink-0 ${depth === 0 ? "bg-brand-violet/10 text-brand-violet" : "bg-line-soft text-ink-muted"}`}>
-                    <Icon name={node.icon || (depth === 0 ? "layers" : "tag")} size={14} />
-                  </span>
+                  {node.image_url ? (
+                    <span className="w-7 h-7 rounded-lg overflow-hidden shrink-0 bg-line-soft">
+                      <img src={beautyImageUrl(node.image_url)} alt="" className="w-full h-full object-cover" />
+                    </span>
+                  ) : (
+                    <span className={`grid place-items-center w-7 h-7 rounded-lg shrink-0 ${depth === 0 ? "bg-brand-violet/10 text-brand-violet" : "bg-line-soft text-ink-muted"}`}>
+                      <Icon name={node.icon || (depth === 0 ? "layers" : "tag")} size={14} />
+                    </span>
+                  )}
 
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
@@ -210,10 +217,23 @@ function CategoryModal({ modal, onClose, onDone, onError }) {
     slug: src?.slug || "",
     name_fa: src?.name_fa || "", name_en: src?.name_en || "",
     name_ru: src?.name_ru || "", name_tg: src?.name_tg || "",
-    icon: src?.icon || "",
+    icon: src?.icon || "", image_url: src?.image_url || "",
   });
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
+
+  async function uploadImage(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    const fd = new FormData(); fd.append("file", file);
+    const res = await uploadCategoryImage(fd);
+    setUploading(false);
+    if (res?.ok) setF((s) => ({ ...s, image_url: res.path }));
+    else onError(res?.error || "آپلود ناموفق بود.");
+  }
 
   async function save() {
     setBusy(true);
@@ -251,6 +271,18 @@ function CategoryModal({ modal, onClose, onDone, onError }) {
             <Field label="نام انگلیسی"><Input value={f.name_en} onChange={set("name_en")} placeholder="Facial Serum" dir="ltr" /></Field>
           </div>
           <Field label="آیکن (نام Lucide، اختیاری)"><Input value={f.icon} onChange={set("icon")} placeholder="droplet" dir="ltr" /></Field>
+          <Field label="تصویر دسته (اختیاری) — روی صفحهٔ World نمایش داده می‌شود">
+            <div className="flex items-center gap-3">
+              <span className="w-16 h-16 rounded-xl overflow-hidden bg-line-soft grid place-items-center shrink-0">
+                {f.image_url ? <img src={beautyImageUrl(f.image_url)} alt="" className="w-full h-full object-cover" /> : <Icon name="image" size={20} className="text-ink-faint" />}
+              </span>
+              <label className="btn-ghost size-sm cursor-pointer disabled:opacity-60">
+                {uploading ? <Spinner /> : <Icon name="upload" size={15} />} {uploading ? "در حال آپلود…" : "آپلود تصویر"}
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" className="hidden" onChange={uploadImage} disabled={uploading} />
+              </label>
+              {f.image_url && <button type="button" onClick={() => setF((s) => ({ ...s, image_url: "" }))} className="btn-ghost size-sm text-warn"><Icon name="trash" size={15} /> حذف</button>}
+            </div>
+          </Field>
         </div>
         <div className="flex items-center justify-end gap-2 p-5 border-t border-line">
           <button type="button" onClick={onClose} className="btn-ghost size-md">انصراف</button>
