@@ -138,6 +138,11 @@ export default async function WorldPage({ params, searchParams }) {
                         </div>
                       )}
                       <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(20,20,46,.62) 0%, rgba(20,20,46,.12) 42%, transparent 70%)" }} />
+                      {isDept && (
+                        <span className="absolute top-3 start-3 sm:top-4 sm:start-4 inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-white/20 backdrop-blur-sm text-white text-[11px] font-bold tracking-wide">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                      )}
                       <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 flex items-end justify-between gap-3">
                         <div className="min-w-0">
                           <h3 className={`text-white font-bold drop-shadow ${isDept ? "text-xl sm:text-2xl bv-display" : "text-[15px]"}`}>{nameOf(node, lang)}</h3>
