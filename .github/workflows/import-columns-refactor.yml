@@ -1,0 +1,74 @@
+name: Refactor import column schema
+
+on:
+  pull_request:
+    branches:
+      - infra/self-hosting
+    paths:
+      - .github/workflows/import-columns-refactor.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    if: github.head_ref == 'upgrade/next15-self-hosting'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout upgrade branch
+        uses: actions/checkout@v4
+        with:
+          ref: upgrade/next15-self-hosting
+
+      - name: Extract shared import-column schema
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const file = 'lib/operator/importCore.js';
+          let source = fs.readFileSync(file, 'utf8');
+
+          const importAnchor = 'import { slugify, normalizeDigits, parseBool, parsePrice, normalizeUrl, validateString, toStringArray } from "@/lib/operator/validation";\n';
+          if (!source.includes(importAnchor)) {
+            throw new Error('importCore validation import anchor was not found');
+          }
+
+          const sharedImport = `${importAnchor}import { IMPORT_COLUMNS, IMPORT_COLUMN_KEYS } from "@/lib/operator/importColumns";\n\nexport { IMPORT_COLUMNS, IMPORT_COLUMN_KEYS };\n`;
+          source = source.replace(importAnchor, sharedImport);
+
+          const block = /\/\/ Single source of truth for BOTH the downloadable template and import parsing\.[\s\S]*?export const IMPORT_COLUMN_KEYS = IMPORT_COLUMNS\.map\(\(c\) => c\.key\);\n\n/;
+          if (!block.test(source)) {
+            throw new Error('importCore column block was not found');
+          }
+          source = source.replace(block, '');
+
+          fs.writeFileSync(file, source);
+          NODE
+
+      - name: Verify refactor boundaries
+        shell: bash
+        run: |
+          git diff -- lib/operator/importCore.js
+          changed=$(git diff --name-only)
+          if [[ "$changed" != "lib/operator/importCore.js" ]]; then
+            echo "unexpected changed paths:" >&2
+            echo "$changed" >&2
+            exit 1
+          fi
+          grep -q 'from "@/lib/operator/importColumns"' lib/operator/importCore.js
+          grep -q 'export { IMPORT_COLUMNS, IMPORT_COLUMN_KEYS }' lib/operator/importCore.js
+          if grep -q 'Single source of truth for BOTH' lib/operator/importCore.js; then
+            echo "duplicate inline column schema remains" >&2
+            exit 1
+          fi
+
+      - name: Commit refactor
+        shell: bash
+        run: |
+          git add lib/operator/importCore.js
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "refactor: share import column schema across pipeline"
+          git push origin HEAD:upgrade/next15-self-hosting
