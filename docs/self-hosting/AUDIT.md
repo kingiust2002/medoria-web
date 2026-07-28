@@ -51,22 +51,30 @@ This is the lowest-risk time to migrate. The schema and import workflow should b
 Owner-confirmed domain state and decision:
 
 - `medoria.tj` is not owned by the project and must not remain a production fallback or redirect target.
-- `medoria.co` is owned and selected as the primary canonical domain.
-- `medoriaco.com` is owned and should redirect permanently to `medoria.co` after cutover.
+- `medoria.co` is owned, registered at GoDaddy, and selected as the primary canonical domain.
+- `medoriaco.com` is owned, registered at IranServer, and should redirect permanently to `medoria.co` after cutover.
 - The registrant and project owner are the same person: Erfan Sajedi.
-- Both domains are registered and DNS-managed through IranServer.
-- The owner has direct registrar-panel access and can change DNS records.
+- The owner has direct access to both registrar accounts.
+- DNS has not yet been configured for the new production target.
 
 Current code still falls back to `https://medoria.tj` in `lib/seo.js`, and `next.config.js` redirects `medoria.com`/`www.medoria.com` to `medoria.tj`. This is a release blocker. The correction will be prepared only on this branch and will not be merged or deployed without approval.
 
 ### Domain-control requirements before cutover
 
+For `medoriaco.com` at IranServer:
+
 - Keep domain lock enabled.
-- Do not request or share the EPP/auth code unless a registrar transfer is intentionally initiated.
-- Enable two-factor authentication on the IranServer account.
-- Confirm access to the account email and recovery method.
-- Confirm renewal responsibility and expiration dates for both domains.
-- Confirm that DNS records can be edited from the same account.
+- Do not request or share the EPP/auth code unless an intentional registrar transfer is started.
+- Enable two-factor authentication.
+- Confirm account email, recovery access, renewal responsibility, expiration date, and DNS-edit access.
+
+For `medoria.co` at GoDaddy:
+
+- Keep domain lock enabled.
+- Enable two-step verification.
+- Confirm account recovery and automatic renewal.
+- Keep current nameservers unchanged until the VPS and staging endpoint are ready.
+- Do not transfer the domain during the infrastructure migration. Registrar transfer, if desired later, is a separate project.
 
 ## Initial application-container changes required
 
@@ -95,7 +103,7 @@ The following can be collected later and secret values must not be posted public
 
 - Whether the Anthropic-backed route is enabled in production.
 - Final list of required Supabase services before sizing the VPS.
-- Confirmation that two-factor authentication and account recovery are configured on IranServer.
+- Confirmation that two-factor authentication and recovery are configured on both registrar accounts.
 
 ## Immediate next implementation step
 
