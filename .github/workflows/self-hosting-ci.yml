@@ -55,11 +55,11 @@ jobs:
       - name: Verify destructive-operation guards
         shell: bash
         run: |
-          if scripts/self-host/restore-self-hosted-db.sh /tmp/missing-backup 2>/dev/null; then
+          if bash scripts/self-host/restore-self-hosted-db.sh /tmp/missing-backup 2>/dev/null; then
             echo "restore script ran without required environment guards" >&2
             exit 1
           fi
-          if scripts/self-host/copy-storage.sh 2>/dev/null; then
+          if bash scripts/self-host/copy-storage.sh 2>/dev/null; then
             echo "storage script unexpectedly ran without required tools/remotes" >&2
             exit 1
           fi
