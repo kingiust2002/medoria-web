@@ -1,0 +1,33 @@
+# Git and editor metadata
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# Dependencies and build output
+node_modules
+.next
+out
+build
+coverage
+
+# Local secrets and runtime state
+.env
+.env.*
+!.env.example
+!deploy/*.env.example
+*.pem
+*.key
+*.crt
+
+# Logs and local artifacts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+screenshots
+_shoot.mjs
+
+# Documentation is not needed in the runtime build context
+docs
