@@ -1,0 +1,87 @@
+name: Self-hosting checks
+
+on:
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "app/**"
+      - "lib/**"
+      - "next.config.js"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/check-self-host-env.mjs"
+      - "deploy/**"
+      - ".github/workflows/self-hosting-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Syntax checks
+        run: |
+          node --check scripts/check-self-host-env.mjs
+          node --check next.config.js
+          node --check app/api/health/route.js
+
+      - name: Create non-production CI environment
+        shell: bash
+        run: |
+          cat > deploy/.env <<'ENV'
+          STAGING_HOST=staging-ci.medoria.invalid
+          ACME_EMAIL=ci@medoria.invalid
+          NEXT_PUBLIC_SITE_URL=https://staging-ci.medoria.invalid
+          NEXT_PUBLIC_SUPABASE_URL=https://ci-project.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=ci-public-anon-key-not-for-production
+          NEXT_PUBLIC_EMAIL=
+          NEXT_PUBLIC_PHONE=
+          NEXT_PUBLIC_TG_USERNAME=
+          NEXT_PUBLIC_WA_NUMBER=
+          NEXT_PUBLIC_GA_MEASUREMENT_ID=
+          NEXT_PUBLIC_YANDEX_METRICA_ID=
+          NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=
+          NEXT_PUBLIC_YANDEX_VERIFICATION=
+          SUPABASE_SERVICE_ROLE_KEY=ci-service-role-key-not-for-production
+          OPERATOR_USERNAME=ci-health-operator
+          OPERATOR_PASSWORD_HASH=ci-password-hash
+          OPERATOR_SESSION_SECRET=ci-health-session-secret-00000000000000000000
+          BEAUTY_OPERATOR_USERNAME=ci-beauty-operator
+          BEAUTY_OPERATOR_PASSWORD_HASH=ci-password-hash
+          BEAUTY_OPERATOR_SESSION_SECRET=ci-beauty-session-secret-00000000000000000000
+          CAPTCHA_SECRET=ci-captcha-secret
+          UPSTASH_REDIS_REST_URL=
+          UPSTASH_REDIS_REST_TOKEN=
+          ANTHROPIC_API_KEY=
+          HUGGING_FACE_API_KEY=
+          GOOGLE_TRANSLATE_API_KEY=
+          ENV
+
+      - name: Validate environment contract
+        run: npm run check:self-host-env -- deploy/.env
+
+      - name: Validate Compose rendering
+        run: docker compose --env-file deploy/.env -f deploy/compose.app.yml config --quiet
