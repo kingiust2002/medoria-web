@@ -233,6 +233,8 @@ Do not start database migration until all conditions are true:
 - staging runs for at least 48 hours without unexplained restarts.
 - the required Supabase services are inventoried.
 
-## Known cleanup before final merge
+## Automated verification already implemented
 
-`@vercel/analytics` is no longer rendered but remains in `package.json` and `package-lock.json` until the lockfile is regenerated in a normal npm environment. It is inert in the self-hosted runtime. Remove it before final merge.
+The self-hosting CI runs on Node.js 22 and validates dependency installation, lint, unit tests, JavaScript syntax, the environment contract, the standalone Next.js build, Compose rendering, production Docker image construction, `sharp` loading inside the final image, and the running container health endpoint. `@vercel/analytics` has been removed from both package manifests and `sharp@0.34.5` is a lockfile-managed production dependency.
+
+These automated checks do not replace deployment on a real VPS, external TLS/DNS validation, application smoke tests with the real staging environment, or the 48-hour observation period.
