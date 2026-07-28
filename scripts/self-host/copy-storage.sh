@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-if ! command -v rclone >/dev/null 2>&1; then
-  echo "error: rclone is required and was not found in PATH" >&2
-  exit 1
-fi
+for command_name in rclone jq; do
+  if ! command -v "$command_name" >/dev/null 2>&1; then
+    echo "error: $command_name is required and was not found in PATH" >&2
+    exit 1
+  fi
+done
 
 source_remote="${SOURCE_RCLONE_REMOTE:-platform}"
 destination_remote="${DESTINATION_RCLONE_REMOTE:-self-hosted}"
@@ -75,10 +77,10 @@ for bucket in "${buckets[@]}"; do
   source_json="$(rclone size "${source_remote}:${bucket}" --json)"
   destination_json="$(rclone size "${destination_remote}:${bucket}" --json)"
 
-  source_count="$(printf '%s' "$source_json" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).count))")"
-  source_bytes="$(printf '%s' "$source_json" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).bytes))")"
-  destination_count="$(printf '%s' "$destination_json" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).count))")"
-  destination_bytes="$(printf '%s' "$destination_json" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).bytes))")"
+  source_count="$(jq -r '.count' <<<"$source_json")"
+  source_bytes="$(jq -r '.bytes' <<<"$source_json")"
+  destination_count="$(jq -r '.count' <<<"$destination_json")"
+  destination_bytes="$(jq -r '.bytes' <<<"$destination_json")"
 
   printf '%s: source=%s objects/%s bytes destination=%s objects/%s bytes\n' \
     "$bucket" "$source_count" "$source_bytes" "$destination_count" "$destination_bytes"
