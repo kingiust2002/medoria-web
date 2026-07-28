@@ -40,18 +40,6 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-# sharp is installed in a separate stage because the current repository lockfile
-# does not declare it yet. Pinning the exact version keeps the image reproducible.
-# Copy the complete node_modules tree from this stage: sharp has runtime helpers
-# and platform-specific optional packages that must stay together.
-FROM node:22.23.1-bookworm-slim AS sharp-runtime
-WORKDIR /opt/sharp
-ENV NPM_CONFIG_AUDIT=false \
-    NPM_CONFIG_FUND=false
-RUN --mount=type=cache,target=/root/.npm \
-    npm init -y >/dev/null 2>&1 \
-    && npm install --omit=dev --package-lock=false sharp@0.34.5
-
 FROM node:22.23.1-bookworm-slim AS runner
 WORKDIR /app
 
@@ -66,7 +54,6 @@ RUN groupadd --system --gid 1001 nodejs \
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=sharp-runtime --chown=nextjs:nodejs /opt/sharp/node_modules ./node_modules
 
 RUN mkdir -p .next/cache /tmp \
     && chown -R nextjs:nodejs .next/cache /tmp
