@@ -22,7 +22,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 55
 
     steps:
       - name: Checkout
@@ -36,6 +36,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Lint
         run: npm run lint
@@ -133,6 +136,15 @@ jobs:
       - name: Validate Compose rendering
         run: docker compose --env-file deploy/.env -f deploy/compose.app.yml config --quiet
 
+      - name: Validate Caddy configuration
+        run: |
+          docker run --rm \
+            -e STAGING_HOST=staging-ci.medoria.invalid \
+            -e ACME_EMAIL=ci@medoria.invalid \
+            -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            caddy:2.11.4-alpine \
+            validate --config /etc/caddy/Caddyfile
+
       - name: Build production container
         run: |
           docker build \
@@ -141,6 +153,19 @@ jobs:
             --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=ci-public-anon-key-not-for-production \
             --tag medoria-web:self-host-ci \
             .
+
+      - name: Scan production container
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$HOME/.cache/trivy:/root/.cache/" \
+            aquasec/trivy:0.70.0 \
+            image \
+            --scanners vuln \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            medoria-web:self-host-ci
 
       - name: Verify sharp runtime
         run: docker run --rm medoria-web:self-host-ci node -e "require('sharp'); console.log('sharp runtime ok')"
