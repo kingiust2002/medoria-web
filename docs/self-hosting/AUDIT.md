@@ -156,7 +156,7 @@ The GitHub Actions self-hosting workflow validates:
 - `sharp` loading inside the final image;
 - running container health endpoint.
 
-A completed full run passed the application container pipeline. The current run additionally validates the new migration scripts and corrected service inventory. The PR remains draft until the current executable head is green and real staging succeeds.
+The complete executable pipeline passed on the current code head, including the migration-script guards, corrected Supabase service inventory, standalone build, production Docker image, `sharp` runtime, and live container health check. The PR remains draft because automated checks do not replace deployment and observation on a real VPS.
 
 ## Still required before production cutover
 
