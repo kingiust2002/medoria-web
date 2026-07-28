@@ -87,9 +87,11 @@ The standard thresholds are:
 
 - at least 8 vCPU;
 - at least 15,000 MB visible RAM;
-- at least 150 GiB root filesystem;
+- at least 145 GiB root filesystem for an advertised 160 GB disk;
 - `amd64`/`x86_64` architecture;
 - PostgreSQL and pooler ports not publicly listening.
+
+Providers usually advertise decimal GB, while Linux reports binary GiB. A 160 GB disk is about 149 GiB before partition and filesystem overhead; the 145 GiB floor avoids rejecting a correctly provisioned 160 GB plan.
 
 ## Performance acceptance tests
 
