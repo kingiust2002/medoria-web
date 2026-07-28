@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "node --test tests/*.test.mjs",
-    "check:rls": "node scripts/check-rls.mjs"
+    "check:rls": "node scripts/check-rls.mjs",
+    "check:self-host-env": "node scripts/check-self-host-env.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.69.0",
