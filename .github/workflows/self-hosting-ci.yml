@@ -99,6 +99,7 @@ jobs:
           bash -n scripts/self-host/copy-storage.sh
           bash -n scripts/self-host/bootstrap-vps.sh
           bash -n scripts/self-host/verify-vps.sh
+          bash -n scripts/self-host/smoke-production-container.sh
 
       - name: Verify destructive-operation guards
         shell: bash
@@ -213,18 +214,5 @@ jobs:
       - name: Verify sharp runtime
         run: docker run --rm medoria-web:self-host-ci node -e "require('sharp'); console.log('sharp runtime ok')"
 
-      - name: Smoke-test container health
-        shell: bash
-        run: |
-          container_id=$(docker run -d --env-file deploy/.env -p 127.0.0.1:3000:3000 medoria-web:self-host-ci)
-          trap 'docker logs "$container_id" || true; docker rm -f "$container_id" >/dev/null 2>&1 || true' EXIT
-
-          for attempt in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:3000/api/health | grep -q '"status":"ok"'; then
-              exit 0
-            fi
-            sleep 2
-          done
-
-          echo "container health endpoint did not become ready" >&2
-          exit 1
+      - name: Smoke-test production container routes
+        run: bash scripts/self-host/smoke-production-container.sh medoria-web:self-host-ci deploy/.env
