@@ -1,23 +1,14 @@
-// app/layout.jsx — root document + global metadata, OG defaults, analytics.
+// app/layout.jsx — root document + global metadata and analytics.
 import "./globals.css";
 import { Inter, Plus_Jakarta_Sans, Vazirmatn } from "next/font/google";
 import { Providers } from "./providers";
-import { Analytics } from "@vercel/analytics/react";
 import AnalyticsScripts from "@/components/shared/AnalyticsScripts";
 import { SITE_URL, ogImage } from "@/lib/seo";
 
-// Self-hosted at build time via next/font (same approach as the Playfair
-// display face in app/beauty/[lang]/layout.jsx). Previously these three
-// families were pulled at runtime from fonts.googleapis.com by a
-// render-blocking <link>: two extra origins to resolve + handshake before the
-// browser could paint any text, and 14 woff2 files (~371 KB) from a third
-// party — routinely slow or throttled on the networks our Tajik/Persian
-// audience browses from. next/font emits the @font-face CSS inline, serves the
-// woff2 from our own origin, and preloads it, so first paint no longer waits
-// on Google. Each exposes a CSS variable consumed by tailwind.config.js
-// (`font-sans` / `font-display` / `font-farsi`) and globals.css.
-// Cyrillic ships with the sans face because Tajik (the default locale) is
-// written in Cyrillic; Vazirmatn carries the Arabic subset for fa/RTL.
+// Self-hosted at build time via next/font. The generated font files are served
+// from this application origin, so browsers do not depend on Google Fonts at
+// runtime. Cyrillic ships with the sans face for Tajik; Vazirmatn carries the
+// Arabic subset for fa/RTL.
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
   weight: ["400", "500", "600", "700", "800"],
@@ -46,12 +37,6 @@ export const metadata = {
   title: { default: TITLE, template: "%s | Medoria" },
   description: DESC,
   applicationName: "Medoria",
-  // Neutral default: ONE mark fused down the middle — left half in Health's
-  // colors, right half in Beauty's (both marks share the same underlying
-  // ribbon-cross geometry, so the two halves seam into a single shape, not
-  // two icons side by side). Health and Beauty pages override this with
-  // their OWN single-color mark (see their layouts); this fused one is only
-  // ever seen on the gateway and other neutral pages (e.g. /login).
   icons: {
     icon: { url: "/brand/gateway-mark-combined.webp", type: "image/webp" },
     apple: { url: "/brand/gateway-mark-combined.webp", type: "image/webp" },
@@ -82,7 +67,6 @@ export default function RootLayout({ children }) {
       <body>
         <Providers>{children}</Providers>
         <AnalyticsScripts />
-        <Analytics />
       </body>
     </html>
   );
