@@ -1,0 +1,65 @@
+name: medoria-app
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?set NEXT_PUBLIC_SITE_URL}
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?set NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:?set NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_EMAIL: ${NEXT_PUBLIC_EMAIL:-}
+        NEXT_PUBLIC_PHONE: ${NEXT_PUBLIC_PHONE:-}
+        NEXT_PUBLIC_TG_USERNAME: ${NEXT_PUBLIC_TG_USERNAME:-}
+        NEXT_PUBLIC_WA_NUMBER: ${NEXT_PUBLIC_WA_NUMBER:-}
+        NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID:-}
+        NEXT_PUBLIC_YANDEX_METRICA_ID: ${NEXT_PUBLIC_YANDEX_METRICA_ID:-}
+        NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION:-}
+        NEXT_PUBLIC_YANDEX_VERIFICATION: ${NEXT_PUBLIC_YANDEX_VERIFICATION:-}
+    env_file:
+      - ./app.env
+    restart: unless-stopped
+    init: true
+    expose:
+      - "3000"
+    volumes:
+      - next_cache:/app/.next/cache
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    stop_grace_period: 30s
+    networks:
+      - web
+
+  caddy:
+    image: caddy:2.8.4-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      STAGING_HOST: ${STAGING_HOST:?set STAGING_HOST}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - web
+
+networks:
+  web:
+    driver: bridge
+
+volumes:
+  next_cache:
+  caddy_data:
+  caddy_config:
