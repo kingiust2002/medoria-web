@@ -46,6 +46,7 @@ jobs:
       - name: Syntax checks
         run: |
           node --check scripts/check-self-host-env.mjs
+          node --check scripts/self-host/audit-supabase-services.mjs
           node --check next.config.js
           node --check app/api/health/route.js
           bash -n scripts/self-host/backup-platform-db.sh
@@ -63,6 +64,17 @@ jobs:
             echo "storage script unexpectedly ran without required tools/remotes" >&2
             exit 1
           fi
+
+      - name: Generate Supabase service inventory
+        run: npm run audit:supabase -- artifacts/supabase-service-audit.json
+
+      - name: Upload Supabase service inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-service-audit
+          path: artifacts/supabase-service-audit.json
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Create non-production CI environment
         shell: bash
