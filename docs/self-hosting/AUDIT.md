@@ -53,23 +53,20 @@ Owner-confirmed domain state and decision:
 - `medoria.tj` is not owned by the project and must not remain a production fallback or redirect target.
 - `medoria.co` is owned and selected as the primary canonical domain.
 - `medoriaco.com` is owned and should redirect permanently to `medoria.co` after cutover.
-- The registrant/owner currently recorded for both owned domains is Erfan Sajedi.
-- The registrar and DNS provider are still unknown.
+- The registrant and project owner are the same person: Erfan Sajedi.
+- Both domains are registered and DNS-managed through IranServer.
+- The owner has direct registrar-panel access and can change DNS records.
 
 Current code still falls back to `https://medoria.tj` in `lib/seo.js`, and `next.config.js` redirects `medoria.com`/`www.medoria.com` to `medoria.tj`. This is a release blocker. The correction will be prepared only on this branch and will not be merged or deployed without approval.
 
-### Domain-control risk
+### Domain-control requirements before cutover
 
-Personal ownership is not automatically a problem, but the project must confirm operational control before cutover:
-
-- Access to the registrar account.
-- Access to the account email and recovery method.
-- Ability to change nameservers and DNS records.
-- Ability to unlock and transfer the domains.
-- Renewal responsibility and payment continuity.
-- Two-factor authentication on the registrar account.
-
-The canonical production domain must not depend on an unreachable third party. If the domains are intended to be company assets, ownership should eventually be moved into an account controlled by the company or by at least two authorized administrators.
+- Keep domain lock enabled.
+- Do not request or share the EPP/auth code unless a registrar transfer is intentionally initiated.
+- Enable two-factor authentication on the IranServer account.
+- Confirm access to the account email and recovery method.
+- Confirm renewal responsibility and expiration dates for both domains.
+- Confirm that DNS records can be edited from the same account.
 
 ## Initial application-container changes required
 
@@ -96,10 +93,9 @@ The canonical production domain must not depend on an unreachable third party. I
 
 The following can be collected later and secret values must not be posted publicly:
 
-- Registrar/DNS provider for `medoriaco.com` and `medoria.co`.
-- Confirmation that the project owner has registrar-account access, recovery access, and permission to change DNS.
 - Whether the Anthropic-backed route is enabled in production.
 - Final list of required Supabase services before sizing the VPS.
+- Confirmation that two-factor authentication and account recovery are configured on IranServer.
 
 ## Immediate next implementation step
 
