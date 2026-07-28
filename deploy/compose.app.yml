@@ -1,5 +1,11 @@
 name: medoria-app
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   app:
     build:
@@ -25,11 +31,14 @@ services:
       - "3000"
     volumes:
       - next_cache:/app/.next/cache
+    tmpfs:
+      - /tmp:size=128m,mode=1777
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
     stop_grace_period: 30s
+    logging: *default-logging
     networks:
       - web
 
@@ -52,6 +61,7 @@ services:
       - caddy_config:/config
     security_opt:
       - no-new-privileges:true
+    logging: *default-logging
     networks:
       - web
 
