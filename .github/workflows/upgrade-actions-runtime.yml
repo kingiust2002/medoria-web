@@ -1,0 +1,64 @@
+name: Upgrade permanent Actions runtime
+
+on:
+  pull_request:
+    branches:
+      - infra/self-hosting
+    paths:
+      - .github/workflows/upgrade-actions-runtime.yml
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade:
+    if: github.head_ref == 'upgrade/next15-self-hosting'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout upgrade branch
+        uses: actions/checkout@v6
+        with:
+          ref: upgrade/next15-self-hosting
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Upgrade permanent workflow actions
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const file = '.github/workflows/self-hosting-ci.yml';
+          let source = fs.readFileSync(file, 'utf8');
+          const before = source;
+          source = source.replaceAll('actions/checkout@v4', 'actions/checkout@v6');
+          source = source.replaceAll('actions/setup-node@v4', 'actions/setup-node@v6');
+          if (source === before) throw new Error('no action runtime references were upgraded');
+          fs.writeFileSync(file, source);
+          NODE
+
+          git rm .github/workflows/upgrade-actions-runtime.yml
+
+          changed=$(git status --short | awk '{print $2}' | sort)
+          expected=$(printf '%s\n' \
+            .github/workflows/self-hosting-ci.yml \
+            .github/workflows/upgrade-actions-runtime.yml | sort)
+          if [[ "$changed" != "$expected" ]]; then
+            echo "unexpected changed paths:" >&2
+            git status --short >&2
+            exit 1
+          fi
+
+      - name: Commit runtime upgrade and self-cleanup
+        shell: bash
+        run: |
+          git add .github/workflows/self-hosting-ci.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "ci: move permanent checks to current action runtimes"
+          git push origin HEAD:upgrade/next15-self-hosting
