@@ -1,0 +1,65 @@
+name: Next.js 15 async API codemod
+
+on:
+  pull_request:
+    branches:
+      - infra/self-hosting
+    paths:
+      - .github/workflows/next15-async-api-codemod.yml
+
+permissions:
+  contents: write
+
+jobs:
+  codemod:
+    if: github.head_ref == 'upgrade/next15-self-hosting'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout upgrade branch
+        uses: actions/checkout@v4
+        with:
+          ref: upgrade/next15-self-hosting
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run official async request API codemod
+        env:
+          CI: "1"
+        run: npx --yes @next/codemod@canary next-async-request-api .
+
+      - name: Reject changes outside runtime source
+        shell: bash
+        run: |
+          changed=$(git diff --name-only)
+          printf '%s\n' "$changed"
+
+          unexpected=$(printf '%s\n' "$changed" | grep -Ev '^(app/|components/|lib/|middleware\.(js|jsx|ts|tsx)$)' || true)
+          if [[ -n "$unexpected" ]]; then
+            echo "codemod changed unexpected paths:" >&2
+            echo "$unexpected" >&2
+            exit 1
+          fi
+
+      - name: Commit codemod output
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "no additional async API changes were required"
+            exit 0
+          fi
+
+          git add app components lib middleware.js middleware.jsx middleware.ts middleware.tsx 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "refactor: migrate Next.js async request APIs"
+          git push origin HEAD:upgrade/next15-self-hosting
