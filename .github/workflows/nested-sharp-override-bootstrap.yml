@@ -1,0 +1,73 @@
+name: Bootstrap patched nested sharp
+
+on:
+  pull_request:
+    branches:
+      - infra/self-hosting
+    paths:
+      - .github/workflows/nested-sharp-override-bootstrap.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-lockfile:
+    if: github.head_ref == 'upgrade/next15-self-hosting'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout upgrade branch
+        uses: actions/checkout@v4
+        with:
+          ref: upgrade/next15-self-hosting
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install current lockfile
+        run: npm ci
+
+      - name: Force all sharp consumers onto the patched direct version
+        run: |
+          npm pkg set overrides.sharp=0.35.3
+          npm install
+          npm ls sharp --all
+
+      - name: Verify no vulnerable nested sharp remains
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const bad = Object.entries(lock.packages || {})
+            .filter(([path, value]) => path.endsWith('/sharp') && value.version !== '0.35.3');
+          if (bad.length) {
+            console.error(bad);
+            throw new Error('non-patched sharp version remains in package-lock.json');
+          }
+          console.log('all locked sharp packages resolve to 0.35.3');
+          NODE
+
+      - name: Commit package manifests only
+        shell: bash
+        run: |
+          git add package.json package-lock.json
+          unexpected=$(git diff --cached --name-only | grep -Ev '^(package.json|package-lock.json)$' || true)
+          if [[ -n "$unexpected" ]]; then
+            echo "unexpected generated paths:" >&2
+            echo "$unexpected" >&2
+            exit 1
+          fi
+
+          if git diff --cached --quiet; then
+            echo "sharp override already applied"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "security: pin Next.js nested sharp to patched release"
+          git push origin HEAD:upgrade/next15-self-hosting
