@@ -1,0 +1,64 @@
+name: Bootstrap Next.js 15 upgrade
+
+on:
+  push:
+    branches:
+      - upgrade/next15-self-hosting
+    paths:
+      - .github/workflows/next15-upgrade-bootstrap.yml
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade-manifests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout upgrade branch
+        uses: actions/checkout@v4
+        with:
+          ref: upgrade/next15-self-hosting
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install patched maintenance-LTS framework versions
+        run: |
+          npm install --save-exact \
+            next@15.5.21 \
+            react@19 \
+            react-dom@19
+          npm install --save-dev --save-exact eslint-config-next@15.5.21
+
+      - name: Record resolved versions
+        run: |
+          node -e "const p=require('./package.json'); console.log({next:p.dependencies.next,react:p.dependencies.react,reactDom:p.dependencies['react-dom'],eslintConfigNext:p.devDependencies['eslint-config-next']})"
+          npm ls next react react-dom eslint-config-next --depth=0
+
+      - name: Commit package manifests only
+        shell: bash
+        run: |
+          git add package.json package-lock.json
+          git diff --cached --name-only
+
+          unexpected=$(git diff --cached --name-only | grep -Ev '^(package.json|package-lock.json)$' || true)
+          if [[ -n "$unexpected" ]]; then
+            echo "unexpected generated files:" >&2
+            echo "$unexpected" >&2
+            exit 1
+          fi
+
+          if git diff --cached --quiet; then
+            echo "package manifests already upgraded"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: upgrade to Next.js 15 maintenance LTS"
+          git push origin HEAD:upgrade/next15-self-hosting
