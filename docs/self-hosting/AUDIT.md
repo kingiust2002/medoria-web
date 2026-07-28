@@ -19,33 +19,64 @@ Completed on the migration branch:
 - `@vercel/analytics` was removed from `package.json` and `package-lock.json`.
 - `vercel.json` was removed.
 - Vercel Analytics CSP origins were removed.
-- The application can run as a standard standalone Node.js container.
+- The application can run as a standalone Node.js container.
 
-The existing Vercel production project and domain assignments remain unchanged as rollback targets.
+The existing Vercel production project, DNS delegation, and domain assignments remain unchanged as rollback targets.
 
-## Supabase coupling
+## Verified Supabase runtime inventory
 
-- Data access uses `@supabase/supabase-js` and PostgREST-style queries.
-- Product images use Supabase Storage public URLs.
-- Protected server writes use a Supabase service-role credential.
-- Database behavior includes RLS and at least one RPC used for product-view counting.
-- Supabase Auth is not required by the operator login implementation.
+A deterministic CI audit scanned 215 application runtime files.
 
-The safest database migration target remains self-hosted Supabase because it preserves the current API surface and avoids a broad data-layer rewrite.
+Required:
+
+- PostgreSQL;
+- PostgREST;
+- Storage API;
+- API gateway compatible with the current Supabase client;
+- service-role access for protected server writes;
+- RLS, policies, functions, and triggers.
+
+Detected usage:
+
+- 95 PostgREST-style data API locations;
+- 11 Storage locations;
+- 14 service-role credential references;
+- two RPC calls.
+
+Detected buckets:
+
+- `product-images`;
+- `beauty-product-images`;
+- `beauty-brand-logos`.
+
+Detected RPCs:
+
+- `increment_product_views`;
+- `increment_beauty_product_views`.
+
+Not detected in runtime source:
+
+- Supabase Auth: `0` calls;
+- Realtime: `0` calls;
+- Edge Functions: `0` calls.
+
+The operator login implementation uses application-owned signed cookie sessions. Auth, Realtime, and Edge Runtime are therefore not current application runtime dependencies, but service removal must still be validated against the restored official stack and database schemas.
+
+The full baseline and removal sequence are documented in `SUPABASE_SERVICE_INVENTORY.md`.
 
 ## Other external services
 
 - Upstash Redis REST is configured in the current Vercel production environment. Secret values were not collected.
 - Google Analytics and Yandex Metrica are optional and controlled by public environment variables.
-- Anthropic, Hugging Face, and Google Translate credentials are represented as optional server-only values; active production routes still need final inventory before cutover.
+- Anthropic, Hugging Face, and Google Translate credentials are optional server-only values; active routes still require final functional testing during staging.
 
 ## Current data footprint
 
 Owner-reported usage:
 
-- PostgreSQL database: approximately `11 MB`.
-- Supabase Storage: approximately `59 KB`.
-- Product data is not populated yet.
+- PostgreSQL database: approximately `11 MB`;
+- Supabase Storage: approximately `59 KB`;
+- product data is not populated yet.
 
 This is the lowest-risk migration window. Schema and import behavior should be validated on the new stack before bulk product entry.
 
@@ -89,6 +120,24 @@ Implemented:
 15. Environment preflight validation that does not print values.
 16. Operational runbook and rollback procedure.
 
+## Database and Storage migration tooling
+
+Implemented:
+
+- Supabase CLI roles/schema/data backup script;
+- restrictive backup permissions and SHA-256 checksums;
+- guarded self-hosted restore script;
+- refusal to restore without an explicit destructive-operation flag;
+- refusal to restore into a non-empty public schema without a separate override;
+- database verification report covering extensions, tables, row counts, RLS, policies, functions, triggers, buckets, and RPCs;
+- guarded rclone Storage copy with dry-run default;
+- destination-bucket preflight;
+- post-copy object-count and byte-total comparison;
+- migration runbook covering release pinning, restore, Storage transfer, restore drill, cutover, and rollback;
+- `.gitignore` protection for backups, generated audits, and local credential files.
+
+The scripts do not connect to production automatically. Credentials and explicit execution are required on the controlled migration machine.
+
 ## Automated validation
 
 The GitHub Actions self-hosting workflow validates:
@@ -96,7 +145,9 @@ The GitHub Actions self-hosting workflow validates:
 - `npm ci`;
 - lint;
 - unit tests;
-- JavaScript syntax;
+- JavaScript and shell syntax;
+- destructive-operation guards;
+- Supabase runtime service inventory generation;
 - environment-variable contract;
 - standalone Next.js production build;
 - presence of `.next/standalone/server.js`;
@@ -105,7 +156,7 @@ The GitHub Actions self-hosting workflow validates:
 - `sharp` loading inside the final image;
 - running container health endpoint.
 
-The latest completed full run before this documentation-only update passed every automated step. A final run against the current code head must remain green before the PR leaves draft status.
+A completed full run passed the application container pipeline. The current run additionally validates the new migration scripts and corrected service inventory. The PR remains draft until the current executable head is green and real staging succeeds.
 
 ## Still required before production cutover
 
@@ -116,9 +167,8 @@ The latest completed full run before this documentation-only update passed every
 - Test public routes, both operator panels, CAPTCHA, quote submission, image transformations, ISR, redirects, SEO, and Upstash behavior.
 - Confirm proxy client-IP extraction and secure-cookie behavior.
 - Observe staging for at least 48 hours.
-- Inventory the exact Supabase services required.
-- Build self-hosted Supabase staging.
-- Test database and Storage copy, RLS, RPCs, backups, and restore.
+- Deploy a recorded official Supabase release to staging.
+- Test database and Storage copy, RLS, RPCs, backups, and a complete restore drill.
 - Restore GoDaddy access before the final `medoria.co` cutover.
 
 ## Domain-control requirements
