@@ -6,7 +6,7 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
     NPM_CONFIG_AUDIT=false \
     NPM_CONFIG_FUND=false
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm npm ci
 
 FROM node:20-bookworm-slim AS builder
 WORKDIR /app
@@ -40,14 +40,16 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-# Keep sharp isolated from the application lockfile until package manifests are
-# regenerated in a normal npm environment. The runtime image copies only sharp
-# and its native/runtime dependencies, not the complete build dependency tree.
+# sharp is installed in a separate stage because the current repository lockfile
+# does not declare it yet. Pinning the exact version keeps the image reproducible.
+# Copy the complete node_modules tree from this stage: sharp has runtime helpers
+# and platform-specific optional packages that must stay together.
 FROM node:20-bookworm-slim AS sharp-runtime
 WORKDIR /opt/sharp
 ENV NPM_CONFIG_AUDIT=false \
     NPM_CONFIG_FUND=false
-RUN npm init -y >/dev/null 2>&1 \
+RUN --mount=type=cache,target=/root/.npm \
+    npm init -y >/dev/null 2>&1 \
     && npm install --omit=dev --package-lock=false sharp@0.33.5
 
 FROM node:20-bookworm-slim AS runner
@@ -64,11 +66,7 @@ RUN groupadd --system --gid 1001 nodejs \
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-COPY --from=sharp-runtime --chown=nextjs:nodejs /opt/sharp/node_modules/sharp ./node_modules/sharp
-COPY --from=sharp-runtime --chown=nextjs:nodejs /opt/sharp/node_modules/@img ./node_modules/@img
-COPY --from=sharp-runtime --chown=nextjs:nodejs /opt/sharp/node_modules/detect-libc ./node_modules/detect-libc
-COPY --from=sharp-runtime --chown=nextjs:nodejs /opt/sharp/node_modules/semver ./node_modules/semver
+COPY --from=sharp-runtime --chown=nextjs:nodejs /opt/sharp/node_modules ./node_modules
 
 RUN mkdir -p .next/cache /tmp \
     && chown -R nextjs:nodejs .next/cache /tmp
