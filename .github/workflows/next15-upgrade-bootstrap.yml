@@ -1,17 +1,20 @@
 name: Bootstrap Next.js 15 upgrade
 
 on:
-  push:
+  pull_request:
     branches:
-      - upgrade/next15-self-hosting
+      - infra/self-hosting
     paths:
       - .github/workflows/next15-upgrade-bootstrap.yml
+      - package.json
+      - package-lock.json
 
 permissions:
   contents: write
 
 jobs:
   upgrade-manifests:
+    if: github.head_ref == 'upgrade/next15-self-hosting'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
