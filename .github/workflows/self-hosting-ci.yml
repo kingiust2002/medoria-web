@@ -185,7 +185,7 @@ jobs:
             -e ACME_EMAIL=ci@medoria.invalid \
             -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" \
             caddy:2.11.4-alpine \
-            validate --config /etc/caddy/Caddyfile
+            validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
       - name: Build production container
         run: |
