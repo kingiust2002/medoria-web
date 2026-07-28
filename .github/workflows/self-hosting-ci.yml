@@ -181,6 +181,7 @@ jobs:
       - name: Validate Caddy configuration
         run: |
           docker run --rm \
+            --add-host app:127.0.0.1 \
             -e STAGING_HOST=staging-ci.medoria.invalid \
             -e ACME_EMAIL=ci@medoria.invalid \
             -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" \
