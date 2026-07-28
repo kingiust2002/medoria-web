@@ -1,119 +1,144 @@
-# Initial self-hosting audit
+# Self-hosting audit
 
-Scope: repository configuration only. No production systems were changed.
+Scope: repository preparation and automated validation only. No production system, DNS record, Vercel domain, or Supabase Cloud resource has been changed.
 
-## Current application baseline
+## Application baseline
 
-- Next.js `14.2.35` using the App Router.
+- Next.js `14.2.35` with the App Router.
 - React `18.3.1`.
 - Supabase JS client `2.108.1`.
-- The production build currently uses the default Next.js output; standalone output is not enabled.
-- `sharp` is not declared as a direct dependency.
+- Docker build and runtime use Node.js `22.23.1`.
+- Next.js standalone output is enabled.
+- `sharp@0.34.5` is a direct, exact, lockfile-managed production dependency.
 
-## Confirmed Vercel coupling
+## Vercel coupling status
 
-1. `@vercel/analytics` is installed and rendered by the root layout.
-2. `vercel.json` pins functions to `fra1`.
-3. The Content Security Policy explicitly allows:
-   - `https://va.vercel-scripts.com`
-   - `https://vitals.vercel-insights.com`
-4. Comments and operational assumptions in configuration refer to Vercel proxy behavior.
+Completed on the migration branch:
 
-These are low-complexity removals. They are not blockers to self-hosting.
+- `@vercel/analytics` rendering was removed.
+- `@vercel/analytics` was removed from `package.json` and `package-lock.json`.
+- `vercel.json` was removed.
+- Vercel Analytics CSP origins were removed.
+- The application can run as a standard standalone Node.js container.
 
-## Confirmed Supabase coupling
+The existing Vercel production project and domain assignments remain unchanged as rollback targets.
 
-- Application data access uses `@supabase/supabase-js` and PostgREST-style queries.
-- Product images are resolved through Supabase Storage public URLs.
-- Server-side protected writes use the Supabase service-role credential.
+## Supabase coupling
+
+- Data access uses `@supabase/supabase-js` and PostgREST-style queries.
+- Product images use Supabase Storage public URLs.
+- Protected server writes use a Supabase service-role credential.
 - Database behavior includes RLS and at least one RPC used for product-view counting.
+- Supabase Auth is not required by the operator login implementation.
 
-The safest migration target is self-hosted Supabase because it preserves the existing client API and minimizes application rewrites.
+The safest database migration target remains self-hosted Supabase because it preserves the current API surface and avoids a broad data-layer rewrite.
 
-## Confirmed external service coupling
+## Other external services
 
 - Upstash Redis REST is configured in the current Vercel production environment. Secret values were not collected.
 - Google Analytics and Yandex Metrica are optional and controlled by public environment variables.
-- The repository contains an Anthropic SDK dependency; all server routes using it must be identified before production deployment.
+- Anthropic, Hugging Face, and Google Translate credentials are represented as optional server-only values; active production routes still need final inventory before cutover.
 
 ## Current data footprint
 
-Owner-reported current usage:
+Owner-reported usage:
 
 - PostgreSQL database: approximately `11 MB`.
 - Supabase Storage: approximately `59 KB`.
 - Product data is not populated yet.
 
-This is the lowest-risk time to migrate. The schema and import workflow should be stabilized first, but bulk product entry should happen after the self-hosted staging stack is validated. Waiting until the catalog is populated would only increase the value and volume of data that must be moved and reconciled.
+This is the lowest-risk migration window. Schema and import behavior should be validated on the new stack before bulk product entry.
 
-## Domain and canonical-host correction
+## Domain state
 
-Owner-confirmed domain state and decision:
-
-- `medoria.tj` is not owned by the project and must not remain a production fallback or redirect target.
-- `medoria.co` is owned, registered at GoDaddy, and selected as the primary canonical domain.
-- `medoriaco.com` is owned, registered at IranServer, and should redirect permanently to `medoria.co` after cutover.
+- `medoria.tj` is not owned by the project and must not be used as a fallback or redirect target.
+- `medoria.co` is registered at GoDaddy and selected as the future primary canonical domain.
+- GoDaddy account access is temporarily unavailable; DNS inspection is deferred.
+- `medoriaco.com` is registered at IranServer and will redirect to `medoria.co` after cutover.
 - The registrant and project owner are the same person: Erfan Sajedi.
-- The owner has direct access to the IranServer account; GoDaddy account access is temporarily unavailable and DNS inspection is deferred.
-- `medoriaco.com` is currently delegated to Vercel DNS via `ns1.vercel-dns.com` and `ns2.vercel-dns.com`; IranServer is acting as registrar, not the active authoritative DNS host.
-- In the current Vercel project, `www.medoriaco.com` is the production domain.
-- The apex `medoriaco.com` has a valid configuration and returns a permanent `308` redirect to `www.medoriaco.com`.
-- `medoria-web.vercel.app` is also attached as a production domain.
-- `medoria.co` has not yet been configured for the new production target.
+- `medoriaco.com` currently delegates authoritative DNS to Vercel through `ns1.vercel-dns.com` and `ns2.vercel-dns.com`.
+- `www.medoriaco.com` is the current Vercel production domain.
+- The apex `medoriaco.com` currently returns a permanent `308` redirect to `www.medoriaco.com`.
+- `medoria-web.vercel.app` remains attached as a production domain.
 
-Current code still falls back to `https://medoria.tj` in `lib/seo.js`, and `next.config.js` redirects `medoria.com`/`www.medoria.com` to `medoria.tj`. This is a release blocker. The correction will be prepared only on this branch and will not be merged or deployed without approval.
+Implemented only on the migration branch:
 
-### Domain-control requirements before cutover
+- canonical fallback changed to `https://medoria.co`;
+- future permanent redirects prepared from `medoriaco.com`, `www.medoriaco.com`, and `www.medoria.co` to `medoria.co`.
 
-For `medoriaco.com` at IranServer:
+No DNS record or production domain behavior has been changed.
 
-- Keep domain lock enabled.
-- Do not request or share the EPP/auth code unless an intentional registrar transfer is started.
-- Enable two-factor authentication.
-- Confirm account email, recovery access, renewal responsibility, expiration date, and DNS-edit access.
-- Keep the current Vercel nameservers unchanged until the VPS and replacement DNS records are ready.
-- At cutover, either move authoritative DNS to IranServer/another selected DNS provider or replace the Vercel-hosted records in a controlled migration.
-- Do not remove either Vercel domain assignment until the new stack is validated and the rollback window has expired.
+## Application-only staging implementation
 
-For `medoria.co` at GoDaddy:
+Implemented:
 
-- No action is required until account access is restored.
-- When access is available, keep domain lock enabled.
-- Enable two-step verification.
-- Confirm account recovery and automatic renewal.
-- Keep current nameservers unchanged until the VPS and staging endpoint are ready.
-- Do not transfer the domain during the infrastructure migration. Registrar transfer, if desired later, is a separate project.
+1. Multi-stage production Dockerfile.
+2. Non-root runtime user.
+3. Standalone Next.js server.
+4. Exact Node.js 22 runtime image.
+5. Lockfile-managed `sharp` runtime.
+6. Dynamic no-cache `/api/health` endpoint.
+7. Docker health check.
+8. Caddy `2.11.4` reverse proxy with automatic TLS configuration.
+9. Docker Compose staging stack.
+10. Persistent Next.js cache volume.
+11. Bounded Docker JSON logs.
+12. Read-only Caddy configuration mount.
+13. `no-new-privileges` and dropped Linux capabilities for the application container.
+14. Secret-free environment template.
+15. Environment preflight validation that does not print values.
+16. Operational runbook and rollback procedure.
 
-## Initial application-container changes required
+## Automated validation
 
-1. Enable `output: "standalone"`.
-2. Add a reproducible production Dockerfile.
-3. Run the application as a non-root user.
-4. Add a health endpoint and Docker health check.
-5. Decide how ISR/Data Cache persistence is handled on the VPS.
-6. Add `sharp` as a pinned runtime dependency and update the lockfile through a normal package-manager install.
-7. Remove Vercel Analytics and Vercel-specific CSP origins.
-8. Retain the current Supabase Cloud environment during the first staging deployment.
-9. Verify proxy headers for IP extraction and secure cookies behind the chosen reverse proxy.
-10. Replace hard-coded/fallback canonical-domain behavior with `medoria.co` and redirect `medoriaco.com` to it.
+The GitHub Actions self-hosting workflow validates:
 
-## Infrastructure assumptions to validate before purchase
+- `npm ci`;
+- lint;
+- unit tests;
+- JavaScript syntax;
+- environment-variable contract;
+- standalone Next.js production build;
+- presence of `.next/standalone/server.js`;
+- Docker Compose rendering;
+- final production Docker image build;
+- `sharp` loading inside the final image;
+- running container health endpoint.
 
-- One VPS is acceptable for the initial stage, provided it has enough RAM and NVMe storage and backups are stored elsewhere.
-- PostgreSQL must not be publicly exposed.
-- Supabase API and the application must be served through HTTPS.
-- Storage and database volumes must be persistent and included in tested backup procedures.
-- The provider account, DNS account, and backup account should not share one failure domain where avoidable.
+The latest completed full run before this documentation-only update passed every automated step. A final run against the current code head must remain green before the PR leaves draft status.
 
-## Information still required
+## Still required before production cutover
 
-The following can be collected later and secret values must not be posted publicly:
+- Buy and provision a staging VPS.
+- Add only a temporary staging DNS record after the VPS IP exists.
+- Enter secrets directly on the server.
+- Deploy the app-only stack while retaining Supabase Cloud.
+- Test public routes, both operator panels, CAPTCHA, quote submission, image transformations, ISR, redirects, SEO, and Upstash behavior.
+- Confirm proxy client-IP extraction and secure-cookie behavior.
+- Observe staging for at least 48 hours.
+- Inventory the exact Supabase services required.
+- Build self-hosted Supabase staging.
+- Test database and Storage copy, RLS, RPCs, backups, and restore.
+- Restore GoDaddy access before the final `medoria.co` cutover.
 
-- Whether the Anthropic-backed route is enabled in production.
-- Final list of required Supabase services before sizing the VPS.
-- Confirmation that two-factor authentication and recovery are configured on IranServer.
-- GoDaddy DNS state and account-security status after access is restored.
+## Domain-control requirements
 
-## Immediate next implementation step
+For IranServer:
 
-Prepare the application-only containerization on this branch while keeping Supabase Cloud unchanged. Then deploy self-hosted Supabase staging, validate the schema and product-import workflow, and move bulk product entry to the new environment before production cutover.
+- keep domain lock enabled;
+- enable two-factor authentication;
+- confirm account recovery and renewal responsibility;
+- do not request or share the EPP code;
+- keep Vercel nameservers unchanged until replacement DNS is ready.
+
+For GoDaddy after access is restored:
+
+- keep domain lock enabled;
+- enable two-step verification;
+- confirm recovery and automatic renewal;
+- inspect current DNS without changing it;
+- do not combine registrar transfer with infrastructure migration.
+
+## Immediate next phase
+
+Provision an isolated VPS for application-only staging, deploy the tested Docker/Compose stack against the existing Supabase Cloud project, and complete the documented smoke-test and observation period. Production remains on Vercel until that phase succeeds.
