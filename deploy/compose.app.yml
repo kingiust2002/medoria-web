@@ -18,7 +18,7 @@ services:
         NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION:-}
         NEXT_PUBLIC_YANDEX_VERIFICATION: ${NEXT_PUBLIC_YANDEX_VERIFICATION:-}
     env_file:
-      - ./app.env
+      - ./.env
     restart: unless-stopped
     init: true
     expose:
