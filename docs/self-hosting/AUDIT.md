@@ -32,9 +32,20 @@ The safest migration target is self-hosted Supabase first, because it preserves 
 
 ## Confirmed external service coupling
 
-- Upstash Redis REST is optional. When credentials are absent, rate limiting falls back to in-process memory.
+- Upstash Redis REST is configured in the current Vercel production environment. Secret values were not collected.
 - Google Analytics and Yandex Metrica are optional and controlled by public environment variables.
 - The repository contains an Anthropic SDK dependency; all server routes using it must be identified before production deployment.
+
+## Domain and canonical-host correction
+
+Owner-confirmed domain state:
+
+- `medoria.tj` is not owned by the project and must not remain a production fallback or redirect target.
+- `medoriaco.com` is currently owned.
+- `medoria.co` is also owned but has not yet been configured.
+- The final primary canonical domain is still to be selected explicitly before DNS or SEO changes.
+
+Current code still falls back to `https://medoria.tj` in `lib/seo.js`, and `next.config.js` redirects `medoria.com`/`www.medoria.com` to `medoria.tj`. This is a release blocker. The correction will be prepared only on this branch and will not be merged or deployed without approval.
 
 ## Initial application-container changes required
 
@@ -47,6 +58,7 @@ The safest migration target is self-hosted Supabase first, because it preserves 
 7. Remove Vercel Analytics and Vercel-specific CSP origins.
 8. Retain the current Supabase Cloud environment during the first staging deployment.
 9. Verify proxy headers for IP extraction and secure cookies behind the chosen reverse proxy.
+10. Replace hard-coded/fallback canonical-domain behavior after the owner selects the primary domain.
 
 ## Infrastructure assumptions to validate before purchase
 
@@ -58,13 +70,12 @@ The safest migration target is self-hosted Supabase first, because it preserves 
 
 ## Information still required
 
-The following can be collected later and must not be posted publicly:
+The following can be collected later and secret values must not be posted publicly:
 
-- Complete production environment-variable names, without secret values.
 - Current database size and row counts.
 - Current Storage bucket names, object counts, and total size.
-- Domain registrar/DNS provider.
-- Whether Upstash is currently configured in production.
+- Registrar/DNS provider for `medoriaco.com` and `medoria.co`.
+- Explicit choice of the primary canonical domain.
 - Whether the Anthropic-backed route is enabled in production.
 
 ## Immediate next implementation step
