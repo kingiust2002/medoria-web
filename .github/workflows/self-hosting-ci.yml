@@ -37,6 +37,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate spreadsheet dependency usage audit
+        run: node scripts/self-host/audit-spreadsheet-dependencies.mjs artifacts/spreadsheet-dependency-audit.json
+
+      - name: Print spreadsheet dependency usage summary
+        run: node -e "const r=require('./artifacts/spreadsheet-dependency-audit.json'); console.log(r.counts); for (const [name,items] of Object.entries(r.findings)) for (const item of items) console.log(name,item.file+':'+item.line,item.snippet)"
+
+      - name: Upload spreadsheet dependency usage audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: spreadsheet-dependency-audit
+          path: artifacts/spreadsheet-dependency-audit.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Capture production dependency audit
         shell: bash
         run: |
@@ -64,6 +78,7 @@ jobs:
         run: |
           node --check scripts/check-self-host-env.mjs
           node --check scripts/self-host/audit-supabase-services.mjs
+          node --check scripts/self-host/audit-spreadsheet-dependencies.mjs
           node --check scripts/self-host/summarize-npm-audit.mjs
           node --check next.config.js
           node --check app/api/health/route.js
