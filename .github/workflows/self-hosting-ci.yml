@@ -37,8 +37,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=high
+      - name: Capture production dependency audit
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          npm audit --omit=dev --json > artifacts/npm-audit.json || true
+
+      - name: Upload production dependency audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-production-audit
+          path: artifacts/npm-audit.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Enforce production dependency audit
+        run: node scripts/self-host/summarize-npm-audit.mjs artifacts/npm-audit.json
 
       - name: Lint
         run: npm run lint
@@ -50,6 +64,7 @@ jobs:
         run: |
           node --check scripts/check-self-host-env.mjs
           node --check scripts/self-host/audit-supabase-services.mjs
+          node --check scripts/self-host/summarize-npm-audit.mjs
           node --check next.config.js
           node --check app/api/health/route.js
           bash -n scripts/self-host/backup-platform-db.sh
