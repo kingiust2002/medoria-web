@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
+const sourceRoots = ["app", "components", "lib"];
+const optionalRootFiles = ["middleware.js", "middleware.jsx", "middleware.ts", "middleware.tsx"];
 const allowedExtensions = new Set([
   ".js",
   ".jsx",
@@ -9,15 +11,12 @@ const allowedExtensions = new Set([
   ".cjs",
   ".ts",
   ".tsx",
-  ".sql",
 ]);
 const ignoredDirectories = new Set([
   ".git",
   ".next",
   "node_modules",
   "coverage",
-  "docs",
-  "backups",
 ]);
 
 const checks = {
@@ -31,6 +30,8 @@ const checks = {
 };
 
 function walk(directory, files = []) {
+  if (!fs.existsSync(directory)) return files;
+
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     if (entry.isDirectory() && ignoredDirectories.has(entry.name)) continue;
 
@@ -48,11 +49,20 @@ function lineNumberAt(text, index) {
   return text.slice(0, index).split("\n").length;
 }
 
+const runtimeFiles = [];
+for (const sourceRoot of sourceRoots) {
+  walk(path.join(root, sourceRoot), runtimeFiles);
+}
+for (const rootFile of optionalRootFiles) {
+  const absolute = path.join(root, rootFile);
+  if (fs.existsSync(absolute)) runtimeFiles.push(absolute);
+}
+
 const findings = Object.fromEntries(Object.keys(checks).map((key) => [key, []]));
 const bucketNames = new Set();
 const rpcNames = new Set();
 
-for (const absolute of walk(root)) {
+for (const absolute of runtimeFiles) {
   const relative = path.relative(root, absolute).split(path.sep).join("/");
   const text = fs.readFileSync(absolute, "utf8");
 
@@ -73,12 +83,6 @@ for (const absolute of walk(root)) {
   for (const match of text.matchAll(/\.rpc\s*\(\s*["'`]([^"'`]+)["'`]/g)) {
     rpcNames.add(match[1]);
   }
-
-  if (relative.endsWith(".sql")) {
-    for (const match of text.matchAll(/storage\.buckets[\s\S]{0,400}?["']([a-zA-Z0-9_-]+)["']/g)) {
-      bucketNames.add(match[1]);
-    }
-  }
 }
 
 for (const values of Object.values(findings)) {
@@ -96,6 +100,7 @@ const required = {
 
 const report = {
   generatedAt: new Date().toISOString(),
+  scannedRuntimeFiles: runtimeFiles.length,
   required,
   detectedBucketNames: [...bucketNames].sort(),
   detectedRpcNames: [...rpcNames].sort(),
