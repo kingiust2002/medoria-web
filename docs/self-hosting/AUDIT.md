@@ -54,7 +54,7 @@ Owner-confirmed domain state and decision:
 - `medoria.co` is owned, registered at GoDaddy, and selected as the primary canonical domain.
 - `medoriaco.com` is owned, registered at IranServer, and should redirect permanently to `medoria.co` after cutover.
 - The registrant and project owner are the same person: Erfan Sajedi.
-- The owner has direct access to both registrar accounts.
+- The owner has direct access to the IranServer account; GoDaddy account access is temporarily unavailable and DNS inspection is deferred.
 - `medoriaco.com` is currently delegated to Vercel DNS via `ns1.vercel-dns.com` and `ns2.vercel-dns.com`; IranServer is acting as registrar, not the active authoritative DNS host.
 - In the current Vercel project, `www.medoriaco.com` is the production domain.
 - The apex `medoriaco.com` has a valid configuration and returns a permanent `308` redirect to `www.medoriaco.com`.
@@ -77,7 +77,8 @@ For `medoriaco.com` at IranServer:
 
 For `medoria.co` at GoDaddy:
 
-- Keep domain lock enabled.
+- No action is required until account access is restored.
+- When access is available, keep domain lock enabled.
 - Enable two-step verification.
 - Confirm account recovery and automatic renewal.
 - Keep current nameservers unchanged until the VPS and staging endpoint are ready.
@@ -110,7 +111,8 @@ The following can be collected later and secret values must not be posted public
 
 - Whether the Anthropic-backed route is enabled in production.
 - Final list of required Supabase services before sizing the VPS.
-- Confirmation that two-factor authentication and recovery are configured on both registrar accounts.
+- Confirmation that two-factor authentication and recovery are configured on IranServer.
+- GoDaddy DNS state and account-security status after access is restored.
 
 ## Immediate next implementation step
 
