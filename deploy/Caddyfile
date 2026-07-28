@@ -1,0 +1,21 @@
+{
+  admin off
+  email {$ACME_EMAIL}
+}
+
+{$STAGING_HOST} {
+  encode zstd gzip
+
+  reverse_proxy app:3000 {
+    header_up X-Real-IP {remote_host}
+  }
+
+  header {
+    -Server
+  }
+
+  log {
+    output stdout
+    format json
+  }
+}
