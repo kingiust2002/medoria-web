@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:20-bookworm-slim AS deps
+FROM node:22.23.1-bookworm-slim AS deps
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1 \
     NPM_CONFIG_AUDIT=false \
@@ -8,7 +8,7 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci
 
-FROM node:20-bookworm-slim AS builder
+FROM node:22.23.1-bookworm-slim AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -44,15 +44,15 @@ RUN npm run build
 # does not declare it yet. Pinning the exact version keeps the image reproducible.
 # Copy the complete node_modules tree from this stage: sharp has runtime helpers
 # and platform-specific optional packages that must stay together.
-FROM node:20-bookworm-slim AS sharp-runtime
+FROM node:22.23.1-bookworm-slim AS sharp-runtime
 WORKDIR /opt/sharp
 ENV NPM_CONFIG_AUDIT=false \
     NPM_CONFIG_FUND=false
 RUN --mount=type=cache,target=/root/.npm \
     npm init -y >/dev/null 2>&1 \
-    && npm install --omit=dev --package-lock=false sharp@0.33.5
+    && npm install --omit=dev --package-lock=false sharp@0.34.5
 
-FROM node:20-bookworm-slim AS runner
+FROM node:22.23.1-bookworm-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production \
