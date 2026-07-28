@@ -3,7 +3,9 @@ set -Eeuo pipefail
 
 required_cpu="${MIN_VCPU:-8}"
 required_ram_mb="${MIN_RAM_MB:-15000}"
-required_disk_gb="${MIN_DISK_GB:-150}"
+# Providers advertise decimal GB. A 160 GB disk is about 149 GiB before
+# partition/filesystem overhead, so 145 GiB is the correct acceptance floor.
+required_disk_gib="${MIN_DISK_GIB:-145}"
 failures=0
 warnings=0
 
@@ -53,12 +55,12 @@ else
 fi
 
 root_disk_bytes="$(df -B1 --output=size / | tail -n 1 | tr -d ' ')"
-root_disk_gb="$((root_disk_bytes / 1024 / 1024 / 1024))"
-printf 'Root filesystem size: %s GiB\n' "$root_disk_gb"
-if (( root_disk_gb >= required_disk_gb )); then
-  pass "root filesystem >= ${required_disk_gb} GiB"
+root_disk_gib="$((root_disk_bytes / 1024 / 1024 / 1024))"
+printf 'Root filesystem size: %s GiB\n' "$root_disk_gib"
+if (( root_disk_gib >= required_disk_gib )); then
+  pass "root filesystem >= ${required_disk_gib} GiB"
 else
-  fail "root filesystem ${root_disk_gb} GiB is below required ${required_disk_gb} GiB"
+  fail "root filesystem ${root_disk_gib} GiB is below required ${required_disk_gib} GiB"
 fi
 
 filesystem_type="$(findmnt -n -o FSTYPE / 2>/dev/null || true)"
