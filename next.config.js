@@ -82,7 +82,8 @@ const nextConfig = {
   },
   // xlsx (SheetJS) is parsed server-side only (lib/operator/spreadsheetServer.js).
   // Marking it external keeps the CJS lib out of the client graph entirely.
-  experimental: { typedRoutes: false, serverComponentsExternalPackages: ["xlsx", "exceljs"] },
+  serverExternalPackages: ["xlsx", "exceljs"],
+  experimental: { typedRoutes: false },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
