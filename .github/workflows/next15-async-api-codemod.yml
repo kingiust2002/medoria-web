@@ -58,7 +58,13 @@ jobs:
             exit 0
           fi
 
-          git add app components lib middleware.js middleware.jsx middleware.ts middleware.tsx 2>/dev/null || true
+          git add app components lib
+          for middleware_file in middleware.js middleware.jsx middleware.ts middleware.tsx; do
+            if [[ -e "$middleware_file" ]]; then
+              git add "$middleware_file"
+            fi
+          done
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "refactor: migrate Next.js async request APIs"
