@@ -1,6 +1,6 @@
 // app/[lang]/wishlist/page.jsx — saved products (localStorage, no account).
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useWishlist } from "@/lib/wishlist";
 import { supabase } from "@/lib/supabase";
@@ -18,7 +18,8 @@ const COPY = {
   en: { title: "Wishlist", sub: "Your saved products", empty: "Nothing saved yet.", emptySub: "Tap the star on any product to save it here.", go: "Browse catalog", clear: "Clear all" },
 };
 
-export default function WishlistPage({ params }) {
+export default function WishlistPage(props) {
+  const params = use(props.params);
   const { lang } = params;
   const t = getTranslations(lang);
   const c = COPY[lang] || COPY.en;

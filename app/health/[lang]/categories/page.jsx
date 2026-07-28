@@ -1,6 +1,6 @@
 // app/[lang]/categories/page.jsx
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
@@ -13,7 +13,8 @@ import SplitText from "@/components/shared/SplitText";
 
 export const dynamic = "force-dynamic";
 
-export default function CategoriesPage({ params }) {
+export default function CategoriesPage(props) {
+  const params = use(props.params);
   const { lang } = params;
   const t = getTranslations(lang);
   const [counts, setCounts] = useState({});

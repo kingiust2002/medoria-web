@@ -12,7 +12,8 @@ import Audience from "@/components/home/Audience";
 import Procurement from "@/components/home/Procurement";
 import FinalCTA from "@/components/home/FinalCTA";
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const { lang } = params;
   if (!LOCALES.includes(lang)) return {};
   const t = getTranslations(lang);
@@ -29,7 +30,8 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function HomePage({ params }) {
+export default async function HomePage(props) {
+  const params = await props.params;
   const { lang } = params;
   return (
     <>

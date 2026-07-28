@@ -13,7 +13,8 @@ export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
 }
 
-export function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const { lang } = params;
   if (!LOCALES.includes(lang)) return {};
   const t = getTranslations(lang);
@@ -27,7 +28,13 @@ export function generateMetadata({ params }) {
   };
 }
 
-export default function LangLayout({ children, params }) {
+export default async function LangLayout(props) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   const { lang } = params;
   if (!LOCALES.includes(lang)) notFound();
   const dir = LANG_META[lang].dir;

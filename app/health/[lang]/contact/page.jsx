@@ -3,7 +3,8 @@ import { LOCALES, getTranslations } from "@/lib/i18n";
 import { buildAlternates } from "@/lib/seo";
 import ContactInner from "./ContactInner";
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const { lang } = params;
   if (!LOCALES.includes(lang)) return {};
   const t = getTranslations(lang);
@@ -14,6 +15,7 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function ContactPage({ params }) {
+export default async function ContactPage(props) {
+  const params = await props.params;
   return <ContactInner lang={params.lang} />;
 }

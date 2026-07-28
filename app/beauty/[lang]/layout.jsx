@@ -16,7 +16,8 @@ import BeautyAiAssistant from "@/components/beauty/BeautyAiAssistant";
 // Beauty's own mark — overrides the root's neutral fused favicon. Tight-
 // cropped to the glyph (the source PNG carries generous transparent
 // padding, which read as a faint, tiny icon at real favicon size).
-export function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const { lang } = params;
   if (!LOCALES.includes(lang)) return {};
   return { icons: { icon: { url: "/brand/beauty-mark-icon.webp", type: "image/webp" }, apple: { url: "/brand/beauty-mark-icon.webp", type: "image/webp" } } };
@@ -57,7 +58,13 @@ async function BeautyNav({ lang }) {
   return <BeautyHeader lang={lang} categoryTree={categoryTree} />;
 }
 
-export default function BeautyLayout({ children, params }) {
+export default async function BeautyLayout(props) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   const { lang } = params;
   if (!LOCALES.includes(lang)) notFound();
   const dir = LANG_META[lang].dir;

@@ -68,6 +68,6 @@ export async function POST(req) {
   const token = await signSession({ role: "admin", ver: credentialsVersion() });
   if (!token) return NextResponse.json({ error: UNAVAILABLE }, { status: 503 });
 
-  cookies().set(OP_COOKIE, token, sessionCookieOptions());
+  (await cookies()).set(OP_COOKIE, token, sessionCookieOptions());
   return NextResponse.json({ ok: true });
 }

@@ -23,7 +23,8 @@ export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
 }
 
-export function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const { lang } = params;
   const t = getBeautyTranslations(lang);
   return {
@@ -41,7 +42,8 @@ export function generateMetadata({ params }) {
   };
 }
 
-export default function BeautyPage({ params }) {
+export default async function BeautyPage(props) {
+  const params = await props.params;
   const { lang } = params;
   if (!LOCALES.includes(lang)) notFound();
   const media = getBeautyMedia();
