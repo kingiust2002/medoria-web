@@ -126,3 +126,18 @@ jobs:
 
           echo "container health endpoint did not become ready" >&2
           exit 1
+
+      - name: Generate cleaned dependency manifests
+        run: |
+          npm uninstall @vercel/analytics
+          npm install --save-exact sharp@0.34.5
+
+      - name: Upload cleaned dependency manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: cleaned-dependency-manifests
+          path: |
+            package.json
+            package-lock.json
+          if-no-files-found: error
+          retention-days: 1
