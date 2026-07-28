@@ -100,7 +100,7 @@ order by id;
 select
   b.id as bucket_id,
   count(o.id)::bigint as object_count,
-  coalesce(sum((o.metadata ->> 'size')::bigint), 0)::bigint as metadata_bytes
+  coalesce(sum(nullif(o.metadata ->> 'size', '')::bigint), 0)::bigint as metadata_bytes
 from storage.buckets b
 left join storage.objects o on o.bucket_id = b.id
 group by b.id
@@ -121,12 +121,32 @@ from expected e
 left join storage.buckets b on b.id = e.bucket_id
 order by e.bucket_id;
 
-\echo '=== key RPC check ==='
+\echo '=== expected Medoria RPCs ==='
+with expected(routine_name) as (
+  values
+    ('increment_product_views'::text),
+    ('increment_beauty_product_views'::text)
+), actual as (
+  select
+    p.proname as routine_name,
+    string_agg(
+      pg_get_function_identity_arguments(p.oid),
+      ' | '
+      order by pg_get_function_identity_arguments(p.oid)
+    ) as identity_arguments
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and p.proname in (
+      'increment_product_views',
+      'increment_beauty_product_views'
+    )
+  group by p.proname
+)
 select
-  n.nspname as schema_name,
-  p.proname as routine_name,
-  pg_get_function_identity_arguments(p.oid) as identity_arguments
-from pg_proc p
-join pg_namespace n on n.oid = p.pronamespace
-where n.nspname = 'public'
-  and p.proname = 'increment_product_views';
+  e.routine_name,
+  (a.routine_name is not null) as present,
+  a.identity_arguments
+from expected e
+left join actual a using (routine_name)
+order by e.routine_name;
