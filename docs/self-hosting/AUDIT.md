@@ -55,7 +55,8 @@ Owner-confirmed domain state and decision:
 - `medoriaco.com` is owned, registered at IranServer, and should redirect permanently to `medoria.co` after cutover.
 - The registrant and project owner are the same person: Erfan Sajedi.
 - The owner has direct access to both registrar accounts.
-- DNS has not yet been configured for the new production target.
+- `medoriaco.com` is currently delegated to Vercel DNS via `ns1.vercel-dns.com` and `ns2.vercel-dns.com`; IranServer is acting as registrar, not the active authoritative DNS host.
+- `medoria.co` has not yet been configured for the new production target.
 
 Current code still falls back to `https://medoria.tj` in `lib/seo.js`, and `next.config.js` redirects `medoria.com`/`www.medoria.com` to `medoria.tj`. This is a release blocker. The correction will be prepared only on this branch and will not be merged or deployed without approval.
 
@@ -67,6 +68,8 @@ For `medoriaco.com` at IranServer:
 - Do not request or share the EPP/auth code unless an intentional registrar transfer is started.
 - Enable two-factor authentication.
 - Confirm account email, recovery access, renewal responsibility, expiration date, and DNS-edit access.
+- Keep the current Vercel nameservers unchanged until the VPS and replacement DNS records are ready.
+- At cutover, either move authoritative DNS to IranServer/another selected DNS provider or replace the Vercel-hosted records in a controlled migration.
 
 For `medoria.co` at GoDaddy:
 
