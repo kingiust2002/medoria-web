@@ -37,6 +37,12 @@ export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
 }
 
+// Next.js 15 defaults unconfigured server fetches to no-store. Supabase JS
+// uses fetch internally, so retain the previous public-catalog cache semantics.
+// This layout's `revalidate` value and mutation-side revalidatePath calls remain
+// authoritative. Operator/API routes are outside this layout and stay uncached.
+export const fetchCache = "default-cache";
+
 // ISR: the header mega-menu reads the live category tree; refresh every 2 min
 // (panel edits also revalidate beauty paths on save for near-instant updates).
 export const revalidate = 120;
