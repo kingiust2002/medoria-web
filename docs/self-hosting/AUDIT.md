@@ -56,6 +56,9 @@ Owner-confirmed domain state and decision:
 - The registrant and project owner are the same person: Erfan Sajedi.
 - The owner has direct access to both registrar accounts.
 - `medoriaco.com` is currently delegated to Vercel DNS via `ns1.vercel-dns.com` and `ns2.vercel-dns.com`; IranServer is acting as registrar, not the active authoritative DNS host.
+- In the current Vercel project, `www.medoriaco.com` is the production domain.
+- The apex `medoriaco.com` has a valid configuration and returns a permanent `308` redirect to `www.medoriaco.com`.
+- `medoria-web.vercel.app` is also attached as a production domain.
 - `medoria.co` has not yet been configured for the new production target.
 
 Current code still falls back to `https://medoria.tj` in `lib/seo.js`, and `next.config.js` redirects `medoria.com`/`www.medoria.com` to `medoria.tj`. This is a release blocker. The correction will be prepared only on this branch and will not be merged or deployed without approval.
@@ -70,6 +73,7 @@ For `medoriaco.com` at IranServer:
 - Confirm account email, recovery access, renewal responsibility, expiration date, and DNS-edit access.
 - Keep the current Vercel nameservers unchanged until the VPS and replacement DNS records are ready.
 - At cutover, either move authoritative DNS to IranServer/another selected DNS provider or replace the Vercel-hosted records in a controlled migration.
+- Do not remove either Vercel domain assignment until the new stack is validated and the rollback window has expired.
 
 For `medoria.co` at GoDaddy:
 
