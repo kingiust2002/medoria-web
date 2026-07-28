@@ -80,9 +80,8 @@ const nextConfig = {
     formats: ["image/avif", "image/webp"],
     remotePatterns: supabaseRemotePatterns,
   },
-  // xlsx (SheetJS) is parsed server-side only (lib/operator/spreadsheetServer.js).
-  // Marking it external keeps the CJS lib out of the client graph entirely.
-  serverExternalPackages: ["xlsx", "exceljs"],
+  // xlsx (SheetJS) parses operator uploads server-side only.
+  serverExternalPackages: ["xlsx"],
   experimental: { typedRoutes: false },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
