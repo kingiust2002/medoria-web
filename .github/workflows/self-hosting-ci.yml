@@ -52,6 +52,8 @@ jobs:
           bash -n scripts/self-host/backup-platform-db.sh
           bash -n scripts/self-host/restore-self-hosted-db.sh
           bash -n scripts/self-host/copy-storage.sh
+          bash -n scripts/self-host/bootstrap-vps.sh
+          bash -n scripts/self-host/verify-vps.sh
 
       - name: Verify destructive-operation guards
         shell: bash
@@ -62,6 +64,10 @@ jobs:
           fi
           if bash scripts/self-host/copy-storage.sh 2>/dev/null; then
             echo "storage script unexpectedly ran without required tools/remotes" >&2
+            exit 1
+          fi
+          if bash scripts/self-host/bootstrap-vps.sh 2>/dev/null; then
+            echo "VPS bootstrap ran without explicit authorization" >&2
             exit 1
           fi
 
