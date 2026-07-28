@@ -9,6 +9,13 @@ import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
 import AiAssistant from "@/components/shared/AiAssistant";
 import ScrollProgress from "@/components/shared/ScrollProgress";
 
+// Next.js 15 changed unconfigured server fetches to no-store. Supabase JS uses
+// fetch internally, so preserve the previous public-catalog behavior here:
+// individual pages still control freshness through their static `revalidate`
+// values and operator mutations continue to call revalidatePath. Operator and
+// API routes are outside this layout and remain uncached.
+export const fetchCache = "default-cache";
+
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
 }
@@ -48,23 +55,15 @@ export default async function LangLayout(props) {
       "@type": "Organization",
       name: "Medoria",
       url: SITE_URL,
-      logo: `${SITE_URL}/logo.png`,
-      description: t.footer.desc,
-      areaServed: { "@type": "Country", name: "Tajikistan" },
-      contactPoint: [{
-        "@type": "ContactPoint",
-        contactType: "sales",
-        availableLanguage: ["en", "ru", "tg"],
-        ...(phone ? { telephone: phone } : {}),
-        ...(email ? { email } : {}),
-      }],
+      logo: `${SITE_URL}/logo-mark.png`,
+      contactPoint: phone ? [{ "@type": "ContactPoint", telephone: phone, contactType: "sales", availableLanguage: ["English", "Russian", "Tajik"] }] : undefined,
+      email: email || undefined,
     },
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
       name: "Medoria",
       url: SITE_URL,
-      inLanguage: ["en", "ru", "tg"],
       potentialAction: {
         "@type": "SearchAction",
         target: `${SITE_URL}/health/${lang}/catalog?q={search_term_string}`,
@@ -74,26 +73,14 @@ export default async function LangLayout(props) {
   ];
 
   return (
-    <div lang={lang} dir={dir} data-vertical="health" className={dir === "rtl" ? "font-farsi" : "font-sans"}>
-      {/* Set html attributes via script to avoid SSR mismatch */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `document.documentElement.lang="${lang}";document.documentElement.dir="${dir}";`,
-        }}
-      />
+    <div dir={dir} data-lang={lang} data-vertical="health" className="min-h-screen flex flex-col bg-white text-slate-900">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
       <ScrollProgress />
-      {/* subtle film-grain overlay — premium textured feel, never blocks input */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-[70] opacity-[0.035] mix-blend-soft-light"
-        style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }}
-      />
-      <Header lang={lang} />
-      <main>{children}</main>
-      <Footer lang={lang} />
-      <FloatingWhatsApp lang={lang} />
+      <Header lang={lang} t={t} />
+      <main className="flex-1">{children}</main>
+      <Footer lang={lang} t={t} />
       <AiAssistant lang={lang} />
+      <FloatingWhatsApp />
     </div>
   );
 }
