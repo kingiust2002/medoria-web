@@ -1,158 +1,238 @@
-# App-only staging runbook
+# Application-only staging runbook
 
-This phase moves only the Next.js application to a VPS. Supabase Cloud and the existing production site remain unchanged.
+This runbook deploys the Next.js application to a VPS while keeping Supabase Cloud, Vercel production, and production DNS unchanged.
 
 ## Safety boundary
 
 - Do not merge this branch into `main` before review.
-- Do not change production DNS.
-- Do not delete the Vercel project.
-- Do not change Supabase Cloud keys or data.
-- Do not place secrets in Git, issue comments, pull requests, or chat.
+- Do not change `medoriaco.com` nameservers or remove its Vercel domain assignments.
+- Do not change `medoria.co` until GoDaddy access is restored and the new stack is validated.
+- Do not rotate or delete Supabase Cloud credentials during app-only staging.
+- Do not paste secrets into chat, GitHub, screenshots, issue comments, or shell commands that remain in history.
 
 ## Required server baseline
 
-- Ubuntu 24.04 LTS or another currently supported Linux distribution
-- Docker Engine with Docker Compose v2
+- Ubuntu 24.04 LTS or Debian 12
+- Docker Engine and Docker Compose v2
 - Public IPv4 address
-- TCP ports 22, 80, and 443 reachable
-- At least 4 vCPU, 8 GB RAM, and 80 GB NVMe for app-only staging
+- inbound TCP 22, 80, and 443
+- optional inbound UDP 443 for HTTP/3
+- at least 4 vCPU, 8 GB RAM, and 80 GB NVMe for app-only staging
 
-The final combined application + self-hosted Supabase server will be sized separately.
+The final combined application and self-hosted Supabase server will be sized separately.
 
 ## Temporary staging DNS
 
-Use a non-production hostname such as `staging.medoriaco.com`.
+Use a non-production hostname such as `staging.medoriaco.com` only after the VPS IP is known.
 
-The current `medoriaco.com` nameservers are managed by Vercel. Creating one temporary `A` record for `staging` does not require changing the nameservers or the existing production records.
+The current `medoriaco.com` authoritative DNS is hosted by Vercel. Adding one staging `A` record later does not require changing nameservers or existing production records. Do not create or modify any DNS record until the server is ready.
 
-Do not create the record until the VPS public IP is known.
+## 1. Secure server access
 
-## Server preparation
-
-Run as a sudo-capable user. Do not use password-only SSH for long-term operation.
+Use a sudo-capable non-root administrator. Install an SSH public key and test key login from a second terminal before disabling password authentication. Never send the private key to anyone.
 
 ```bash
 sudo apt update
 sudo apt install -y ca-certificates curl git ufw
-```
-
-Install Docker from Docker's official repository, then verify:
-
-```bash
-docker --version
-docker compose version
-```
-
-Firewall baseline:
-
-```bash
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow OpenSSH
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
+sudo ufw allow 443/udp
 sudo ufw enable
 sudo ufw status verbose
 ```
 
-## Repository checkout
+Install Docker Engine and the Docker Compose plugin from Docker's official repository, then verify:
 
 ```bash
-git clone https://github.com/kingiust2002/medoria-web.git
+sudo docker version
+sudo docker compose version
+```
+
+Membership in the `docker` group is effectively root access. Use `sudo docker` unless that tradeoff is explicitly accepted.
+
+## 2. Check out the staging branch
+
+```bash
+git clone --branch infra/self-hosting --single-branch \
+  https://github.com/kingiust2002/medoria-web.git
 cd medoria-web
-git checkout infra/self-hosting
 ```
 
-For a private repository, authenticate with a short-lived GitHub credential or deploy key. Do not store a personal access token in shell history.
+For a private repository, use a short-lived deploy key or GitHub App credential. Do not place a personal access token in the clone URL.
 
-## Environment file
+## 3. Create the server environment file
 
 ```bash
-cd deploy
-cp .env.example .env
-chmod 600 .env
+cp deploy/.env.example deploy/.env
+chmod 600 deploy/.env
+nano deploy/.env
 ```
 
-Edit `.env` directly on the VPS. Use the existing production values only for the app-only staging phase. Public `NEXT_PUBLIC_*` values are embedded during the Docker build; changing them requires rebuilding the image.
+Rules:
 
-Never send these values through chat:
+- `STAGING_HOST` is the exact temporary hostname.
+- `NEXT_PUBLIC_SITE_URL` is `https://` plus that exact hostname.
+- Supabase URL and keys still point to Supabase Cloud during this phase.
+- `NEXT_PUBLIC_*` values are embedded during build; changing them requires rebuilding.
+- Server-only credentials are loaded at runtime from `deploy/.env`.
+- Never commit `deploy/.env`.
 
-- service-role keys
-- operator password hashes
-- session secrets
-- captcha secret
-- Redis token
-- AI provider keys
-
-## Build and start
-
-From the `deploy` directory:
+Run the preflight check before Docker:
 
 ```bash
-docker compose -f compose.app.yml config
-docker compose -f compose.app.yml build --pull
-docker compose -f compose.app.yml up -d
+npm ci
+npm run check:self-host-env -- deploy/.env
 ```
 
-Inspect status and logs:
+The checker reports variable names and validation failures only. It never prints secret values.
+
+## 4. Prepare staging DNS
+
+After the VPS is reachable and before starting Caddy, add only the temporary staging record in the current DNS provider:
+
+```text
+staging.medoriaco.com  A  <VPS_IPV4>
+```
+
+Wait until the hostname resolves to the VPS. Production records and nameservers remain unchanged.
+
+## 5. Validate and start the Compose stack
+
+From the repository root:
 
 ```bash
-docker compose -f compose.app.yml ps
-docker compose -f compose.app.yml logs --tail=200 app
-docker compose -f compose.app.yml logs --tail=200 caddy
+sudo docker compose \
+  --env-file deploy/.env \
+  -f deploy/compose.app.yml \
+  config
 ```
 
-Health checks:
+Confirm that port 3000 is not published publicly and that only Caddy binds ports 80 and 443.
+
+Build and start:
 
 ```bash
-curl -fsS https://${STAGING_HOST}/api/health
-curl -I https://${STAGING_HOST}/
+sudo docker compose \
+  --env-file deploy/.env \
+  -f deploy/compose.app.yml \
+  up -d --build
 ```
 
-## Application smoke tests
+Inspect status:
 
-Test all of the following on the staging hostname:
+```bash
+sudo docker compose \
+  --env-file deploy/.env \
+  -f deploy/compose.app.yml \
+  ps
+```
+
+The application must report healthy before Caddy is considered ready.
+
+## 6. Inspect bounded logs
+
+```bash
+sudo docker compose \
+  --env-file deploy/.env \
+  -f deploy/compose.app.yml \
+  logs --tail=200 app caddy
+```
+
+Compose retains at most five 10 MB JSON log files per service to prevent unbounded disk use.
+
+## 7. External health checks
+
+Run from another machine:
+
+```bash
+curl -fsS https://staging.medoriaco.com/api/health
+curl -I https://staging.medoriaco.com/
+```
+
+The health endpoint must return HTTP 200 with `status: ok` and no cacheable response.
+
+## 8. Application smoke tests
+
+Verify all of the following on the staging hostname:
 
 - gateway `/`
-- Health locales and catalog routes
-- Beauty locales and world/category routes
-- product pages and remote images
-- Health operator login and session persistence
-- Beauty operator login and session persistence
-- quote/captcha flow
-- spreadsheet import in a non-destructive test
-- redirects from old locale-first routes
-- metadata, canonical URLs, sitemap, robots, and OG image
+- Health English, Russian, and Tajik routes
+- Beauty English, Russian, and Tajik routes
+- catalog search, filters, pagination, and product pages
+- remote Supabase images and Next.js image transformation through `sharp`
+- quote/inquiry submission with valid and invalid CAPTCHA
+- Health operator login, secure cookie, session persistence, logout, and protected routes
+- Beauty operator login, secure cookie, session persistence, logout, and protected routes
+- spreadsheet import only in a non-destructive test
+- ISR and revalidation after a controlled content change
+- old locale-first redirects
+- canonical URLs, sitemap, robots, Open Graph image, and hreflang
 - WhatsApp and Telegram handoffs
-- rate limiting with the existing Upstash configuration
+- Upstash rate limiting without in-memory fallback warnings
 
-Do not perform destructive imports or bulk product entry during this test.
+Do not perform destructive imports or bulk product entry during app-only staging.
 
-## Update procedure
+## 9. Observe resources for at least 48 hours
+
+```bash
+sudo docker stats --no-stream
+sudo docker system df
+sudo df -h
+sudo free -h
+```
+
+Record and investigate:
+
+- any container restart
+- sustained memory above 70%
+- disk or Docker-volume growth
+- slow image transformations
+- failed Server Actions
+- rate-limit fallback warnings
+- secure-cookie or client-IP errors behind Caddy
+
+## 10. Update procedure
 
 ```bash
 cd /path/to/medoria-web
 git fetch origin
 git checkout infra/self-hosting
 git pull --ff-only
-cd deploy
-docker compose -f compose.app.yml build --pull
-docker compose -f compose.app.yml up -d
+npm ci
+npm run check:self-host-env -- deploy/.env
+sudo docker compose --env-file deploy/.env -f deploy/compose.app.yml build --pull app
+sudo docker compose --env-file deploy/.env -f deploy/compose.app.yml up -d
+sudo docker compose --env-file deploy/.env -f deploy/compose.app.yml ps
 ```
 
-Keep the previous application image until the new container passes health and smoke tests.
+Check health and logs after every update. Keep the previous image until the new container passes smoke tests.
 
-## Rollback for app-only staging
+## 11. App-only rollback
 
-App-only staging has no production cutover. Rollback is simply:
+This phase does not replace production. Rollback is:
 
 ```bash
-docker compose -f compose.app.yml down
+sudo docker compose --env-file deploy/.env -f deploy/compose.app.yml down
 ```
 
-The existing Vercel production site and Supabase Cloud project remain unchanged.
+Vercel and Supabase Cloud continue serving production.
 
-## Current known limitation
+## Exit criteria for Supabase staging
 
-`@vercel/analytics` is no longer rendered by the application, but it remains in `package.json` and `package-lock.json` until the lockfile is regenerated through a normal npm install. It is inert and not required at runtime. This cleanup must happen before the final merge.
+Do not start database migration until all conditions are true:
+
+- Docker image builds reproducibly.
+- health checks remain stable.
+- all public and operator routes pass.
+- image optimization works with `sharp`.
+- proxy client-IP and secure-cookie behavior are verified.
+- no production DNS was changed.
+- staging runs for at least 48 hours without unexplained restarts.
+- the required Supabase services are inventoried.
+
+## Known cleanup before final merge
+
+`@vercel/analytics` is no longer rendered but remains in `package.json` and `package-lock.json` until the lockfile is regenerated in a normal npm environment. It is inert in the self-hosted runtime. Remove it before final merge.
