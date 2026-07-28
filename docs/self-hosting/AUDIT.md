@@ -28,7 +28,7 @@ These are low-complexity removals. They are not blockers to self-hosting.
 - Server-side protected writes use the Supabase service-role credential.
 - Database behavior includes RLS and at least one RPC used for product-view counting.
 
-The safest migration target is self-hosted Supabase first, because it preserves the existing client API and minimizes application rewrites.
+The safest migration target is self-hosted Supabase because it preserves the existing client API and minimizes application rewrites.
 
 ## Confirmed external service coupling
 
@@ -36,14 +36,23 @@ The safest migration target is self-hosted Supabase first, because it preserves 
 - Google Analytics and Yandex Metrica are optional and controlled by public environment variables.
 - The repository contains an Anthropic SDK dependency; all server routes using it must be identified before production deployment.
 
+## Current data footprint
+
+Owner-reported current usage:
+
+- PostgreSQL database: approximately `11 MB`.
+- Supabase Storage: approximately `59 KB`.
+- Product data is not populated yet.
+
+This is the lowest-risk time to migrate. The schema and import workflow should be stabilized first, but bulk product entry should happen after the self-hosted staging stack is validated. Waiting until the catalog is populated would only increase the value and volume of data that must be moved and reconciled.
+
 ## Domain and canonical-host correction
 
-Owner-confirmed domain state:
+Owner-confirmed domain state and decision:
 
 - `medoria.tj` is not owned by the project and must not remain a production fallback or redirect target.
-- `medoriaco.com` is currently owned.
-- `medoria.co` is also owned but has not yet been configured.
-- The final primary canonical domain is still to be selected explicitly before DNS or SEO changes.
+- `medoria.co` is owned and selected as the primary canonical domain.
+- `medoriaco.com` is owned and should redirect permanently to `medoria.co` after cutover.
 
 Current code still falls back to `https://medoria.tj` in `lib/seo.js`, and `next.config.js` redirects `medoria.com`/`www.medoria.com` to `medoria.tj`. This is a release blocker. The correction will be prepared only on this branch and will not be merged or deployed without approval.
 
@@ -58,7 +67,7 @@ Current code still falls back to `https://medoria.tj` in `lib/seo.js`, and `next
 7. Remove Vercel Analytics and Vercel-specific CSP origins.
 8. Retain the current Supabase Cloud environment during the first staging deployment.
 9. Verify proxy headers for IP extraction and secure cookies behind the chosen reverse proxy.
-10. Replace hard-coded/fallback canonical-domain behavior after the owner selects the primary domain.
+10. Replace hard-coded/fallback canonical-domain behavior with `medoria.co` and redirect `medoriaco.com` to it.
 
 ## Infrastructure assumptions to validate before purchase
 
@@ -72,12 +81,10 @@ Current code still falls back to `https://medoria.tj` in `lib/seo.js`, and `next
 
 The following can be collected later and secret values must not be posted publicly:
 
-- Current database size and row counts.
-- Current Storage bucket names, object counts, and total size.
 - Registrar/DNS provider for `medoriaco.com` and `medoria.co`.
-- Explicit choice of the primary canonical domain.
 - Whether the Anthropic-backed route is enabled in production.
+- Final list of required Supabase services before sizing the VPS.
 
 ## Immediate next implementation step
 
-Prepare the application-only containerization on this branch while keeping Supabase Cloud unchanged. This allows a staging deployment on a VPS without any database migration or production DNS change.
+Prepare the application-only containerization on this branch while keeping Supabase Cloud unchanged. Then deploy self-hosted Supabase staging, validate the schema and product-import workflow, and move bulk product entry to the new environment before production cutover.
