@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -26,6 +26,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -131,6 +133,21 @@ jobs:
         run: |
           npm uninstall @vercel/analytics
           npm install --save-exact sharp@0.34.5
+
+      - name: Commit cleaned dependency manifests
+        if: github.event_name == 'pull_request' && github.head_ref == 'infra/self-hosting'
+        shell: bash
+        run: |
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo "dependency manifests already clean"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: finalize self-host runtime dependencies"
+          git push origin HEAD:${GITHUB_HEAD_REF}
 
       - name: Upload cleaned dependency manifests
         uses: actions/upload-artifact@v4
