@@ -51,6 +51,17 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Verify generated XLSX template
+        run: node scripts/self-host/verify-xlsx-template.mjs
+
+      - name: Upload verified XLSX template
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-products-template
+          path: artifacts/verified-products-template.xlsx
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Capture production dependency audit
         shell: bash
         run: |
@@ -80,6 +91,7 @@ jobs:
           node --check scripts/self-host/audit-supabase-services.mjs
           node --check scripts/self-host/audit-spreadsheet-dependencies.mjs
           node --check scripts/self-host/summarize-npm-audit.mjs
+          node --check scripts/self-host/verify-xlsx-template.mjs
           node --check next.config.js
           node --check app/api/health/route.js
           bash -n scripts/self-host/backup-platform-db.sh
