@@ -76,7 +76,7 @@ export default async function LangLayout(props) {
     <div dir={dir} data-lang={lang} data-vertical="health" className="min-h-screen flex flex-col bg-white text-slate-900">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
       <ScrollProgress />
-      <Header lang={lang} t={t} />
+      <Header lang={lang} />
       <main className="flex-1">{children}</main>
       <Footer lang={lang} t={t} />
       <AiAssistant lang={lang} />
