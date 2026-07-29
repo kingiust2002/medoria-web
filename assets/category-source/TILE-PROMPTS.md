@@ -38,10 +38,30 @@ hence the shell below is verbatim, not a summary.
 
 ## Output format
 
-1600×900 export → cover-cropped and resized to **1376×768**, WebP quality 80
-(≈20–30 KB). That matches the two tiles the owner approved first. Tiles are
-displayed at `aspect-[4/3]` with `object-cover`, so **keep the subject
-centred** — roughly 25% is cropped off each side on the site.
+**1376×768**, WebP quality 80 (≈20–30 KB) — Stitch's `DESKTOP` screens come out
+at exactly that size, so no resampling is needed.
+
+Tiles are displayed at `aspect-[4/3]` with `object-cover`, so the page throws
+away **13% off each side**. Two things follow, and both were learned the hard
+way on `perfume-gift-set`, whose first version lost its gift box entirely and
+rendered as a near-empty frame:
+
+- Say **"grouped tightly in the CENTRE of the frame, filling most of the frame
+  height"** and **"nothing placed near the left or right edges"** in the
+  subject line. A generator left to itself spreads objects edge to edge.
+- Always check the tile the way the grid will actually crop it, not the way it
+  came out of the generator.
+
+## Choosing between candidates
+
+Generate two per group and pick one; more than two is wasted tokens. What
+decides it, in order:
+
+1. **Survives the 4:3 crop** — nothing important near an edge.
+2. **Scale** — objects should fill the frame. The common failure is a correct
+   but timid still life sitting small with dead headroom.
+3. **Palette discipline** — anything drifting gold-heavy or cool breaks the
+   set. Ivory first, gold as accent.
 
 ## The shell
 
@@ -81,7 +101,7 @@ Status: ✅ = tile committed · ⬜ = still to generate.
 - ✅ `perfume-unisex` — four sculptural unbranded unisex fragrance bottles in a row: a matte ivory ceramic-look bottle with a flat stone cap, a clear glass cube with a slim gold stem cap, a frosted cylinder with a rounded champagne cap, and a smooth pebble-shaped bottle in warm sand glass
 - ✅ `perfume-kids` — four small unbranded children's fragrance bottles in a row: a small squat rounded bottle with a domed cream cap, a tiny teardrop bottle in pale peach glass, a small cylindrical spray with a soft gold collar, and a little rounded flask with a smooth ivory stopper. Delicate and playful in scale but elegant and grown-up in finish — no cartoons, no characters, no decoration
 - ✅ `air-freshener` — four unbranded home fragrance vessels in a row: a ribbed clear glass reed diffuser with a bundle of natural rattan reeds fanning out, a tall cylindrical room spray with a brushed gold collar, a squat frosted diffuser bottle with a wooden neck, and a smooth ivory ceramic vessel
-- ✅ `perfume-gift-set` — an unbranded fragrance gift presentation: a rigid ivory gift box with its lid resting ajar against it and pale silk lining just visible inside, a faceted crystal flacon with a gold cap standing beside the box, a smaller matching travel spray, and a loose champagne satin ribbon curling across the marble
+- ✅ `perfume-gift-set` — an unbranded fragrance gift presentation grouped tightly together in the CENTRE of the frame, filling most of the frame height: a rigid ivory gift box standing upright with its lid resting ajar against it and pale silk lining visible inside, a large faceted crystal flacon with a polished gold cap standing immediately beside the box, a smaller matching travel spray in front, and a champagne satin ribbon curling across the marble between them. The objects are large in frame and touch each other; nothing is placed near the left or right edges
 - ⬜ `body-mist` — four tall slim unbranded body-mist bottles in a row: larger volume spray bottles in frosted pale-cream, pale peach and clear glass with fine-mist caps in matte ivory and soft gold, one with a slender pump collar
 - ⬜ `perfume-spray` — four unbranded perfume atomisers in a row: a small purse atomiser in polished gold, a refillable travel spray in brushed champagne metal, a tall clear glass pump spray with a gold collar, and a vintage-style bulb atomiser with a silk tassel and a soft ivory bulb
 - ⬜ `body-splash` — four large unbranded body-splash bottles in a row: wide cylindrical clear glass bottles with broad screw caps in ivory and brushed gold, one with pale golden liquid inside, one frosted, generous casual proportions rather than fine-fragrance proportions
