@@ -1,8 +1,8 @@
-// app/[lang]/catalog/page.jsx — server wrapper (SEO) + client catalog.
-// Category views are self-canonical & indexable; search/filter views are
-// canonicalised to the clean catalog and noindexed (thin/duplicate control).
+// app/health/[lang]/catalog/page.jsx — server wrapper (SEO) + client catalog.
 import { Suspense } from "react";
-import { LOCALES, CATEGORIES, getTranslations, getCategoryName } from "@/lib/i18n";
+import { LOCALES, getTranslations } from "@/lib/i18n";
+import { getCategories } from "@/lib/supabase";
+import { buildHealthCategoryTree, findHealthCategory, healthCategoryName } from "@/lib/health/categories";
 import { buildAlternates } from "@/lib/seo";
 import CatalogInner from "./CatalogInner";
 
@@ -13,9 +13,17 @@ export async function generateMetadata(props) {
   if (!LOCALES.includes(lang)) return {};
   const t = getTranslations(lang);
 
-  const category = typeof searchParams?.category === "string" ? searchParams.category : null;
-  const validCat = category && CATEGORIES.some((c) => c.slug === category) ? category : null;
-  const isThin = Boolean(searchParams?.q) || (category && !validCat) || Boolean(searchParams?.brand) || Boolean(searchParams?.badge);
+  const categorySlug = typeof searchParams?.category === "string" ? searchParams.category : null;
+  let category = null;
+  if (categorySlug) {
+    const rows = await getCategories();
+    category = findHealthCategory(buildHealthCategoryTree(rows, { activeOnly: true }), categorySlug);
+  }
+
+  const isThin = Boolean(searchParams?.q)
+    || Boolean(categorySlug && !category)
+    || Boolean(searchParams?.brand)
+    || Boolean(searchParams?.badge);
 
   if (isThin) {
     return {
@@ -26,9 +34,9 @@ export async function generateMetadata(props) {
     };
   }
 
-  const path = validCat ? `/catalog?category=${validCat}` : "/catalog";
+  const path = category ? `/catalog?category=${category.slug}` : "/catalog";
   return {
-    title: validCat ? `${getCategoryName(validCat, lang)} — ${t.common.brand}` : `${t.catalog.title} — ${t.common.brand}`,
+    title: category ? `${healthCategoryName(category, lang)} — ${t.common.brand}` : `${t.catalog.title} — ${t.common.brand}`,
     description: t.catalog.subtitle,
     alternates: buildAlternates(lang, path),
   };
