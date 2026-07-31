@@ -8,10 +8,8 @@ import {
   rollupHealthCategoryCounts,
 } from "@/lib/health/categories";
 import Icon from "@/components/shared/Icon";
-import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import PageHeaderVisual from "@/components/shared/PageHeaderVisual";
-import SpotlightCard from "@/components/shared/SpotlightCard";
 import SplitText from "@/components/shared/SplitText";
 
 export const dynamic = "force-dynamic";
@@ -24,17 +22,21 @@ const FALLBACK_DESCRIPTION = {
 };
 
 function countLabel(count, lang) {
-  if (!count) return lang === "fa" ? "به‌زودی" : lang === "tg" ? "ба зудӣ" : lang === "ru" ? "скоро" : "coming soon";
+  if (!count) return lang === "fa" ? "بدون محصول" : lang === "tg" ? "бе маҳсулот" : lang === "ru" ? "нет товаров" : "no products";
   const noun = { fa: "محصول", tg: "мол", ru: count === 1 ? "товар" : "товаров", en: count === 1 ? "product" : "products" };
   return `${count} ${noun[lang] || noun.en}`;
 }
 
-function subcategoryHeading(lang) {
-  return lang === "fa" ? "زیرگروه‌های این بخش" : lang === "tg" ? "Зергурӯҳҳои ин бахш" : lang === "ru" ? "Подкатегории раздела" : "Subcategories";
+function allProductsLabel(lang) {
+  return lang === "fa" ? "همه محصولات" : lang === "tg" ? "Ҳамаи маҳсулот" : lang === "ru" ? "Все товары" : "All products";
 }
 
-function moreLabel(count, lang) {
-  return lang === "fa" ? `${count} زیرگروه دیگر` : lang === "tg" ? `${count} зергурӯҳи дигар` : lang === "ru" ? `Ещё ${count}` : `${count} more`;
+function groupsLabel(lang) {
+  return lang === "fa" ? "گروه‌ها و دسته‌های محصول" : lang === "tg" ? "Гурӯҳҳо ва категорияҳои маҳсулот" : lang === "ru" ? "Группы и категории товаров" : "Product groups and categories";
+}
+
+function quickAccessLabel(lang) {
+  return lang === "fa" ? "دسترسی سریع" : lang === "tg" ? "Дастрасии зуд" : lang === "ru" ? "Быстрый переход" : "Quick access";
 }
 
 export default async function CategoriesPage(props) {
@@ -43,6 +45,7 @@ export default async function CategoriesPage(props) {
   const [categories, products] = await Promise.all([getCategories(), getProducts()]);
   const tree = buildHealthCategoryTree(categories, { activeOnly: true });
   const counts = new Map();
+
   for (const product of products) {
     if (product.category_id != null) {
       const key = String(product.category_id);
@@ -64,7 +67,7 @@ export default async function CategoriesPage(props) {
           <Breadcrumb lang={lang} className="mb-4" crumbs={[{ label: t.common.home, href: `/health/${lang}` }, { label: t.common.categories }]} />
           <div className="eyebrow mb-4"><span className="gradient-text">{t.home.catTag}</span></div>
           <h1 className="section-h-lg mb-3 leading-[1.2] pb-1"><SplitText text={t.categories.title} delay={0.1} /></h1>
-          <p className="text-base text-ink-muted max-w-xl">{t.categories.subtitle}</p>
+          <p className="text-base text-ink-muted max-w-2xl">{t.categories.subtitle}</p>
         </div>
       </div>
 
@@ -74,86 +77,119 @@ export default async function CategoriesPage(props) {
             {lang === "fa" ? "هنوز دسته فعالی منتشر نشده است." : lang === "tg" ? "Ҳоло гурӯҳи фаъол нашр нашудааст." : lang === "ru" ? "Активные категории пока не опубликованы." : "No active categories have been published yet."}
           </div>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-            {tree.map((category) => {
-              const hasChildren = Boolean(category.children?.length);
-              const href = hasChildren ? `/health/${lang}/categories/${category.slug}` : `/health/${lang}/catalog?category=${category.slug}`;
-              const visibleChildren = category.children?.slice(0, 6) || [];
-              const remainingChildren = Math.max(0, (category.children?.length || 0) - visibleChildren.length);
+          <>
+            <nav aria-label={quickAccessLabel(lang)} className="card p-4 md:p-5 mb-7 md:mb-9">
+              <div className="flex items-center gap-2 mb-3 text-[11px] font-bold uppercase tracking-wide text-ink-faint">
+                <Icon name="layers" size={14} />
+                {quickAccessLabel(lang)}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {tree.map((department) => (
+                  <a
+                    key={department.slug}
+                    href={`#${department.slug}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-line bg-canvas-soft px-3 py-2 text-[11px] font-semibold text-ink-muted transition-all hover:border-brand-violet/40 hover:bg-brand-violet/[0.06] hover:text-brand-violet"
+                  >
+                    <Icon name={department.icon || "layers"} size={12} strokeWidth={2} />
+                    {healthCategoryName(department, lang)}
+                  </a>
+                ))}
+              </div>
+            </nav>
 
-              return (
-                <TiltCard key={category.slug} className="h-full rounded-2xl" max={5}>
-                  <SpotlightCard className="h-full rounded-2xl">
-                    <article className="card card-hover overflow-hidden group h-full flex flex-col sm:flex-row">
-                      <Link
-                        href={href}
-                        aria-label={healthCategoryName(category, lang)}
-                        className="h-28 sm:h-auto sm:w-36 md:w-40 shrink-0 img-ph flex items-center justify-center text-brand-violet group-hover:bg-brand-gradient group-hover:text-white transition-colors"
-                      >
-                        <Icon name={category.icon || "layers"} size={56} strokeWidth={1.3} className="relative" />
-                      </Link>
-
-                      <div className="p-5 md:p-6 flex-1 flex flex-col min-w-0">
-                        <Link href={href} className="block">
-                          <div className="flex items-start justify-between gap-3 mb-2">
-                            <h2 className="font-display text-lg md:text-xl font-bold text-ink group-hover:text-brand-violet transition-colors">
-                              {healthCategoryName(category, lang)}
-                            </h2>
-                            <span className="text-[11px] text-ink-faint shrink-0 pt-1">{countLabel(category.total_count, lang)}</span>
-                          </div>
-                          <p className="text-[13px] text-ink-muted leading-relaxed">
-                            {healthCategoryDescription(category, lang) || FALLBACK_DESCRIPTION[lang] || FALLBACK_DESCRIPTION.en}
+            <div className="space-y-6 md:space-y-8">
+              {tree.map((department) => (
+                <section
+                  key={department.slug}
+                  id={department.slug}
+                  className="card overflow-hidden scroll-mt-24"
+                >
+                  <div className="p-5 md:p-7 border-b border-line bg-canvas-soft/70">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                      <div className="flex items-start gap-4 min-w-0">
+                        <span className="w-13 h-13 md:w-14 md:h-14 rounded-2xl bg-brand-violet/[0.09] text-brand-violet grid place-items-center shrink-0">
+                          <Icon name={department.icon || "layers"} size={27} strokeWidth={1.5} />
+                        </span>
+                        <div className="min-w-0">
+                          <h2 className="font-display text-xl md:text-2xl font-extrabold text-ink leading-tight">
+                            {healthCategoryName(department, lang)}
+                          </h2>
+                          <p className="mt-2 text-[13px] text-ink-muted leading-relaxed max-w-3xl">
+                            {healthCategoryDescription(department, lang) || FALLBACK_DESCRIPTION[lang] || FALLBACK_DESCRIPTION.en}
                           </p>
-                        </Link>
-
-                        {hasChildren && (
-                          <div className="mt-5 pt-4 border-t border-line/80">
-                            <div className="flex items-center justify-between gap-3 mb-3">
-                              <span className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">
-                                {subcategoryHeading(lang)}
-                              </span>
-                              <span className="text-[10px] text-ink-faint">{category.children.length}</span>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {visibleChildren.map((child) => {
-                                const childHasChildren = Boolean(child.children?.length);
-                                const childHref = childHasChildren
-                                  ? `/health/${lang}/categories/${child.slug}`
-                                  : `/health/${lang}/catalog?category=${child.slug}`;
-                                return (
-                                  <Link
-                                    key={child.slug}
-                                    href={childHref}
-                                    className="inline-flex items-center gap-1.5 rounded-full border border-line bg-canvas-soft px-3 py-2 text-[11px] font-semibold text-ink-muted transition-all hover:border-brand-violet/40 hover:bg-brand-violet/[0.06] hover:text-brand-violet"
-                                  >
-                                    <Icon name={child.icon || "package"} size={12} strokeWidth={2} />
-                                    <span>{healthCategoryName(child, lang)}</span>
-                                  </Link>
-                                );
-                              })}
-                              {remainingChildren > 0 && (
-                                <Link
-                                  href={href}
-                                  className="inline-flex items-center rounded-full px-3 py-2 text-[11px] font-semibold text-brand-violet hover:underline"
-                                >
-                                  + {moreLabel(remainingChildren, lang)}
-                                </Link>
-                              )}
-                            </div>
+                          <div className="mt-2 text-[11px] text-ink-faint">
+                            {(department.children || []).length} {groupsLabel(lang)} · {countLabel(department.total_count, lang)}
                           </div>
-                        )}
-
-                        <Link href={href} className="mt-5 inline-flex items-center gap-1 text-[12px] font-semibold text-brand-violet self-start">
-                          {hasChildren ? (lang === "fa" ? "مشاهده همه زیرگروه‌ها" : lang === "tg" ? "Дидани ҳамаи зергурӯҳҳо" : lang === "ru" ? "Смотреть все подкатегории" : "View all subcategories") : t.categories.viewProducts}
-                          <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={12} />
-                        </Link>
+                        </div>
                       </div>
-                    </article>
-                  </SpotlightCard>
-                </TiltCard>
-              );
-            })}
-          </div>
+
+                      <Link
+                        href={`/health/${lang}/catalog?category=${department.slug}`}
+                        className="btn-ghost size-sm shrink-0"
+                      >
+                        {allProductsLabel(lang)}
+                        <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={13} />
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {(department.children || []).map((group) => (
+                      <article key={group.slug} id={group.slug} className="rounded-2xl border border-line bg-canvas p-4 md:p-5 scroll-mt-24">
+                        <div className="flex items-start justify-between gap-3">
+                          <Link
+                            href={`/health/${lang}/catalog?category=${group.slug}`}
+                            className="group/link min-w-0 flex items-start gap-3"
+                          >
+                            <span className="w-10 h-10 rounded-xl bg-brand-violet/[0.07] text-brand-violet grid place-items-center shrink-0 group-hover/link:bg-brand-gradient group-hover/link:text-white transition-colors">
+                              <Icon name={group.icon || "package"} size={19} strokeWidth={1.7} />
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block font-display font-bold text-[15px] text-ink leading-snug group-hover/link:text-brand-violet transition-colors">
+                                {healthCategoryName(group, lang)}
+                              </span>
+                              <span className="block mt-1 text-[10px] text-ink-faint">{countLabel(group.total_count, lang)}</span>
+                            </span>
+                          </Link>
+                          <Link
+                            href={`/health/${lang}/catalog?category=${group.slug}`}
+                            aria-label={`${allProductsLabel(lang)} — ${healthCategoryName(group, lang)}`}
+                            className="w-8 h-8 rounded-lg border border-line text-ink-faint hover:text-brand-violet hover:border-brand-violet/30 grid place-items-center shrink-0 transition-colors"
+                          >
+                            <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={13} />
+                          </Link>
+                        </div>
+
+                        {group.children?.length ? (
+                          <div className="mt-4 pt-4 border-t border-line/80 flex flex-wrap gap-2">
+                            {group.children.map((leaf) => (
+                              <Link
+                                key={leaf.slug}
+                                href={`/health/${lang}/catalog?category=${leaf.slug}`}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-canvas-soft px-3 py-2 text-[11px] font-medium text-ink-muted transition-all hover:border-brand-violet/40 hover:bg-brand-violet/[0.06] hover:text-brand-violet"
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-brand-violet/55 shrink-0" />
+                                <span>{healthCategoryName(leaf, lang)}</span>
+                                {leaf.total_count > 0 && <span className="text-[9px] text-ink-faint">{leaf.total_count}</span>}
+                              </Link>
+                            ))}
+                          </div>
+                        ) : (
+                          <Link
+                            href={`/health/${lang}/catalog?category=${group.slug}`}
+                            className="mt-4 pt-4 border-t border-line/80 inline-flex items-center gap-1 text-[11px] font-semibold text-brand-violet"
+                          >
+                            {allProductsLabel(lang)}
+                            <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={11} />
+                          </Link>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </>
         )}
 
         <div className="mt-14 text-center">
