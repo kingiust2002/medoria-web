@@ -1,10 +1,10 @@
 // app/operator/(panel)/categories/page.jsx
-import { getCategoriesWithCounts } from "@/lib/operator/data";
-import CategoriesManager from "@/components/operator/CategoriesManager";
+import HealthCategoryTree from "@/components/operator/HealthCategoryTree";
+import { getHealthCategoryTreeAdmin } from "@/lib/operator/categoryTreeData";
 
 export const dynamic = "force-dynamic";
 
 export default async function CategoriesPage() {
-  const categories = await getCategoriesWithCounts();
-  return <CategoriesManager categories={categories} />;
+  const tree = await getHealthCategoryTreeAdmin();
+  return <HealthCategoryTree tree={tree} />;
 }
