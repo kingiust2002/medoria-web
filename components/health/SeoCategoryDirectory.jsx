@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Icon from "@/components/shared/Icon";
+import HealthCategoryIcon, { resolveHealthCategoryIcons } from "@/components/health/HealthCategoryIcon";
 import { flattenHealthCategoryTree, healthCategoryName } from "@/lib/health/categories";
 
 function labels(lang, count) {
@@ -19,6 +20,7 @@ export default function SeoCategoryDirectory({ lang, tree = [], previewCount = 6
   const flat = flattenHealthCategoryTree(tree).map(({ node, depth }) => ({ node, depth }));
   const copy = labels(lang, flat.length);
   const preview = flat.slice(0, previewCount);
+  const previewIcons = resolveHealthCategoryIcons(preview.map(({ node }) => node));
 
   if (!flat.length) return null;
 
@@ -30,13 +32,13 @@ export default function SeoCategoryDirectory({ lang, tree = [], previewCount = 6
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        {preview.map(({ node }) => (
+        {preview.map(({ node }, index) => (
           <Link
             key={`preview-${node.slug}`}
             href={hrefFor(node, lang)}
             className="inline-flex items-center gap-1.5 rounded-full border border-line bg-canvas-soft px-3 py-2 text-[11px] font-semibold text-ink-muted transition-all hover:border-brand-violet/40 hover:bg-brand-violet/[0.06] hover:text-brand-violet"
           >
-            <Icon name={node.icon || "package"} size={12} strokeWidth={2} />
+            <HealthCategoryIcon name={previewIcons[index]} size={12} strokeWidth={2} />
             {healthCategoryName(node, lang)}
           </Link>
         ))}
