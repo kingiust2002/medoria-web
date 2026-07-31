@@ -4,7 +4,7 @@
 // progressive World menu: department -> group -> detailed category. Every row
 // is a real catalog link; hovering or focusing opens the next column without
 // navigating away from the current page.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
 const nameOf = (node) => node?.name || node?.slug || "";
@@ -20,7 +20,6 @@ function Caret() {
 
 export default function HealthCollectionMegaMenu({
   tree = [],
-  lang,
   home,
   label,
   active,
@@ -58,17 +57,6 @@ export default function HealthCollectionMegaMenu({
     closeTimer.current = setTimeout(closeNow, 160);
   };
 
-  useEffect(() => {
-    const onKeyDown = (event) => {
-      if (event.key === "Escape") closeNow();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      clearTimeout(closeTimer.current);
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, []);
-
   if (!departments.length) {
     return (
       <Link href={`${home}/catalog`} className={navLinkClass(active)}>
@@ -82,13 +70,25 @@ export default function HealthCollectionMegaMenu({
   const rowClass = "flex items-center gap-2 px-5 py-3 text-[14px] transition-colors";
 
   return (
-    <div className="static" onMouseEnter={openNow} onMouseLeave={closeSoon}>
+    <div
+      className="static"
+      onMouseEnter={openNow}
+      onMouseLeave={closeSoon}
+      onFocus={openNow}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) closeSoon();
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeNow();
+        }
+      }}
+    >
       <Link
         href={`${home}/catalog`}
         aria-haspopup="true"
         aria-expanded={open}
-        onFocus={openNow}
-        onBlur={closeSoon}
         className={navLinkClass(active)}
       >
         {label}
