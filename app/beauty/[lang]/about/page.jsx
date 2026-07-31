@@ -105,7 +105,8 @@ const COPY = {
   },
 };
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const { lang } = params;
   if (!LOCALES.includes(lang)) return {};
   const c = COPY[lang] || COPY.en;
@@ -117,7 +118,8 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function BeautyAboutPage({ params }) {
+export default async function BeautyAboutPage(props) {
+  const params = await props.params;
   const { lang } = params;
   const t = getBeautyTranslations(lang);
   const c = COPY[lang] || COPY.en;

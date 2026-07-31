@@ -61,7 +61,8 @@ const COPY = {
   },
 };
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const { lang } = params;
   if (!LOCALES.includes(lang)) return {};
   const c = COPY[lang] || COPY.en;
@@ -71,7 +72,9 @@ export async function generateMetadata({ params }) {
 
 const str = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 
-export default async function BeautyCatalogPage({ params, searchParams }) {
+export default async function BeautyCatalogPage(props) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const { lang } = params;
   const t = getBeautyTranslations(lang);
   const c = COPY[lang] || COPY.en;

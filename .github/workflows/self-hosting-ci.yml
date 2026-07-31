@@ -22,7 +22,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 55
 
     steps:
       - name: Checkout
@@ -37,6 +37,48 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate spreadsheet dependency usage audit
+        run: node scripts/self-host/audit-spreadsheet-dependencies.mjs artifacts/spreadsheet-dependency-audit.json
+
+      - name: Print spreadsheet dependency usage summary
+        run: node -e "const r=require('./artifacts/spreadsheet-dependency-audit.json'); console.log(r.counts); for (const [name,items] of Object.entries(r.findings)) for (const item of items) console.log(name,item.file+':'+item.line,item.snippet)"
+
+      - name: Upload spreadsheet dependency usage audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: spreadsheet-dependency-audit
+          path: artifacts/spreadsheet-dependency-audit.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Verify generated XLSX template
+        run: node scripts/self-host/verify-xlsx-template.mjs
+
+      - name: Upload verified XLSX template
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-products-template
+          path: artifacts/verified-products-template.xlsx
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Capture production dependency audit
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          npm audit --omit=dev --json > artifacts/npm-audit.json || true
+
+      - name: Upload production dependency audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-production-audit
+          path: artifacts/npm-audit.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Enforce production dependency audit
+        run: node scripts/self-host/summarize-npm-audit.mjs artifacts/npm-audit.json
+
       - name: Lint
         run: npm run lint
 
@@ -47,6 +89,9 @@ jobs:
         run: |
           node --check scripts/check-self-host-env.mjs
           node --check scripts/self-host/audit-supabase-services.mjs
+          node --check scripts/self-host/audit-spreadsheet-dependencies.mjs
+          node --check scripts/self-host/summarize-npm-audit.mjs
+          node --check scripts/self-host/verify-xlsx-template.mjs
           node --check next.config.js
           node --check app/api/health/route.js
           bash -n scripts/self-host/backup-platform-db.sh
@@ -54,6 +99,7 @@ jobs:
           bash -n scripts/self-host/copy-storage.sh
           bash -n scripts/self-host/bootstrap-vps.sh
           bash -n scripts/self-host/verify-vps.sh
+          bash -n scripts/self-host/smoke-production-container.sh
 
       - name: Verify destructive-operation guards
         shell: bash
@@ -133,6 +179,16 @@ jobs:
       - name: Validate Compose rendering
         run: docker compose --env-file deploy/.env -f deploy/compose.app.yml config --quiet
 
+      - name: Validate Caddy configuration
+        run: |
+          docker run --rm \
+            --add-host app:127.0.0.1 \
+            -e STAGING_HOST=staging-ci.medoria.invalid \
+            -e ACME_EMAIL=ci@medoria.invalid \
+            -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            caddy:2.11.4-alpine \
+            validate --config /etc/caddy/Caddyfile --adapter caddyfile
+
       - name: Build production container
         run: |
           docker build \
@@ -142,21 +198,21 @@ jobs:
             --tag medoria-web:self-host-ci \
             .
 
+      - name: Scan production container
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$HOME/.cache/trivy:/root/.cache/" \
+            aquasec/trivy:0.70.0 \
+            image \
+            --scanners vuln \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            medoria-web:self-host-ci
+
       - name: Verify sharp runtime
         run: docker run --rm medoria-web:self-host-ci node -e "require('sharp'); console.log('sharp runtime ok')"
 
-      - name: Smoke-test container health
-        shell: bash
-        run: |
-          container_id=$(docker run -d --env-file deploy/.env -p 127.0.0.1:3000:3000 medoria-web:self-host-ci)
-          trap 'docker logs "$container_id" || true; docker rm -f "$container_id" >/dev/null 2>&1 || true' EXIT
-
-          for attempt in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:3000/api/health | grep -q '"status":"ok"'; then
-              exit 0
-            fi
-            sleep 2
-          done
-
-          echo "container health endpoint did not become ready" >&2
-          exit 1
+      - name: Smoke-test production container routes
+        run: bash scripts/self-host/smoke-production-container.sh medoria-web:self-host-ci deploy/.env

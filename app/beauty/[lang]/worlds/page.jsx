@@ -15,7 +15,8 @@ import { copyFor, deptHref, worldsHref, worldsLangParams } from "@/lib/beauty/wo
 export const revalidate = 600;
 export const generateStaticParams = worldsLangParams;
 
-export function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const { lang } = params;
   if (!LOCALES.includes(lang)) return {};
   const c = copyFor(lang);
@@ -35,7 +36,8 @@ export function generateMetadata({ params }) {
   };
 }
 
-export default async function WorldsPage({ params }) {
+export default async function WorldsPage(props) {
+  const params = await props.params;
   const { lang } = params;
   if (!LOCALES.includes(lang)) notFound();
   const t = getBeautyTranslations(lang);

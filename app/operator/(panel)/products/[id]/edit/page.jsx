@@ -5,7 +5,8 @@ import ProductForm from "@/components/operator/ProductForm";
 
 export const dynamic = "force-dynamic";
 
-export default async function EditProductPage({ params }) {
+export default async function EditProductPage(props) {
+  const params = await props.params;
   const [product, categories] = await Promise.all([
     getAdminProduct(params.id),
     getAdminCategories(),

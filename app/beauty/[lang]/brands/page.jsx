@@ -61,7 +61,8 @@ const COPY = {
   },
 };
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const { lang } = params;
   if (!LOCALES.includes(lang)) return {};
   const c = COPY[lang] || COPY.en;
@@ -86,7 +87,8 @@ function monogram(name) {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-export default async function BeautyBrandsPage({ params }) {
+export default async function BeautyBrandsPage(props) {
+  const params = await props.params;
   const { lang } = params;
   const t = getBeautyTranslations(lang);
   const c = COPY[lang] || COPY.en;
@@ -109,11 +111,10 @@ export default async function BeautyBrandsPage({ params }) {
           <p className="text-[14px] md:text-lg text-white/85 leading-relaxed max-w-2xl">{c.sub}</p>
         </div>
       </section>
-
       <div className="container-x py-12 md:py-16">
         {brands.length === 0 ? (
           // Honest pre-launch state — no fabricated placeholder tiles.
-          <div className="relative overflow-hidden rounded-[2rem] border border-line bg-surface p-8 md:p-14 text-center max-w-2xl mx-auto">
+          (<div className="relative overflow-hidden rounded-[2rem] border border-line bg-surface p-8 md:p-14 text-center max-w-2xl mx-auto">
             <div aria-hidden="true" className="absolute inset-0 pointer-events-none img-ph opacity-50" />
             <div className="relative">
               <div className="w-16 h-16 mx-auto rounded-2xl bg-brand-violet/[0.08] text-brand-violet grid place-items-center mb-4">
@@ -130,7 +131,7 @@ export default async function BeautyBrandsPage({ params }) {
                 </a>
               </div>
             </div>
-          </div>
+          </div>)
         ) : (
           <>
             <Stagger className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
