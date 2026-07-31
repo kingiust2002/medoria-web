@@ -29,6 +29,14 @@ function countLabel(count, lang) {
   return `${count} ${noun[lang] || noun.en}`;
 }
 
+function subcategoryHeading(lang) {
+  return lang === "fa" ? "زیرگروه‌های این بخش" : lang === "tg" ? "Зергурӯҳҳои ин бахш" : lang === "ru" ? "Подкатегории раздела" : "Subcategories";
+}
+
+function moreLabel(count, lang) {
+  return lang === "fa" ? `${count} زیرگروه دیگر` : lang === "tg" ? `${count} зергурӯҳи дигар` : lang === "ru" ? `Ещё ${count}` : `${count} more`;
+}
+
 export default async function CategoriesPage(props) {
   const { lang } = await props.params;
   const t = getTranslations(lang);
@@ -66,29 +74,81 @@ export default async function CategoriesPage(props) {
             {lang === "fa" ? "هنوز دسته فعالی منتشر نشده است." : lang === "tg" ? "Ҳоло гурӯҳи фаъол нашр нашудааст." : lang === "ru" ? "Активные категории пока не опубликованы." : "No active categories have been published yet."}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
             {tree.map((category) => {
               const hasChildren = Boolean(category.children?.length);
               const href = hasChildren ? `/health/${lang}/categories/${category.slug}` : `/health/${lang}/catalog?category=${category.slug}`;
+              const visibleChildren = category.children?.slice(0, 6) || [];
+              const remainingChildren = Math.max(0, (category.children?.length || 0) - visibleChildren.length);
+
               return (
                 <TiltCard key={category.slug} className="h-full rounded-2xl" max={5}>
                   <SpotlightCard className="h-full rounded-2xl">
-                    <Link href={href} className="card card-hover overflow-hidden group flex h-full">
-                      <div className="w-32 md:w-40 shrink-0 img-ph flex items-center justify-center text-brand-violet group-hover:bg-brand-gradient group-hover:text-white transition-colors">
+                    <article className="card card-hover overflow-hidden group h-full flex flex-col sm:flex-row">
+                      <Link
+                        href={href}
+                        aria-label={healthCategoryName(category, lang)}
+                        className="h-28 sm:h-auto sm:w-36 md:w-40 shrink-0 img-ph flex items-center justify-center text-brand-violet group-hover:bg-brand-gradient group-hover:text-white transition-colors"
+                      >
                         <Icon name={category.icon || "layers"} size={56} strokeWidth={1.3} className="relative" />
-                      </div>
-                      <div className="p-5 md:p-6 flex-1 flex flex-col">
-                        <div className="flex items-baseline justify-between gap-3 mb-2">
-                          <h2 className="font-display text-lg md:text-xl font-bold text-ink group-hover:text-brand-violet transition-colors">{healthCategoryName(category, lang)}</h2>
-                          <span className="text-[11px] text-ink-faint shrink-0">{countLabel(category.total_count, lang)}</span>
-                        </div>
-                        <p className="text-[13px] text-ink-muted leading-relaxed mb-4 flex-1">{healthCategoryDescription(category, lang) || FALLBACK_DESCRIPTION[lang] || FALLBACK_DESCRIPTION.en}</p>
-                        <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-brand-violet">
-                          {hasChildren ? (lang === "fa" ? "مشاهده زیردسته‌ها" : lang === "tg" ? "Дидани зергурӯҳҳо" : lang === "ru" ? "Смотреть подкатегории" : "View subcategories") : t.categories.viewProducts}
+                      </Link>
+
+                      <div className="p-5 md:p-6 flex-1 flex flex-col min-w-0">
+                        <Link href={href} className="block">
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <h2 className="font-display text-lg md:text-xl font-bold text-ink group-hover:text-brand-violet transition-colors">
+                              {healthCategoryName(category, lang)}
+                            </h2>
+                            <span className="text-[11px] text-ink-faint shrink-0 pt-1">{countLabel(category.total_count, lang)}</span>
+                          </div>
+                          <p className="text-[13px] text-ink-muted leading-relaxed">
+                            {healthCategoryDescription(category, lang) || FALLBACK_DESCRIPTION[lang] || FALLBACK_DESCRIPTION.en}
+                          </p>
+                        </Link>
+
+                        {hasChildren && (
+                          <div className="mt-5 pt-4 border-t border-line/80">
+                            <div className="flex items-center justify-between gap-3 mb-3">
+                              <span className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">
+                                {subcategoryHeading(lang)}
+                              </span>
+                              <span className="text-[10px] text-ink-faint">{category.children.length}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {visibleChildren.map((child) => {
+                                const childHasChildren = Boolean(child.children?.length);
+                                const childHref = childHasChildren
+                                  ? `/health/${lang}/categories/${child.slug}`
+                                  : `/health/${lang}/catalog?category=${child.slug}`;
+                                return (
+                                  <Link
+                                    key={child.slug}
+                                    href={childHref}
+                                    className="inline-flex items-center gap-1.5 rounded-full border border-line bg-canvas-soft px-3 py-2 text-[11px] font-semibold text-ink-muted transition-all hover:border-brand-violet/40 hover:bg-brand-violet/[0.06] hover:text-brand-violet"
+                                  >
+                                    <Icon name={child.icon || "package"} size={12} strokeWidth={2} />
+                                    <span>{healthCategoryName(child, lang)}</span>
+                                  </Link>
+                                );
+                              })}
+                              {remainingChildren > 0 && (
+                                <Link
+                                  href={href}
+                                  className="inline-flex items-center rounded-full px-3 py-2 text-[11px] font-semibold text-brand-violet hover:underline"
+                                >
+                                  + {moreLabel(remainingChildren, lang)}
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <Link href={href} className="mt-5 inline-flex items-center gap-1 text-[12px] font-semibold text-brand-violet self-start">
+                          {hasChildren ? (lang === "fa" ? "مشاهده همه زیرگروه‌ها" : lang === "tg" ? "Дидани ҳамаи зергурӯҳҳо" : lang === "ru" ? "Смотреть все подкатегории" : "View all subcategories") : t.categories.viewProducts}
                           <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={12} />
-                        </span>
+                        </Link>
                       </div>
-                    </Link>
+                    </article>
                   </SpotlightCard>
                 </TiltCard>
               );
