@@ -68,6 +68,42 @@ test("Health tree cards preserve the main Health card design at every level", as
   assert.equal(cards.includes("aspect-["), false);
 });
 
+test("Health category siblings use varied icons from three normalized packs", async () => {
+  const [iconSource, cards, categoryPage, ...levelTwoSql] = await Promise.all([
+    readFile("components/health/HealthCategoryIcon.jsx", "utf8"),
+    readFile("components/health/CategoryTreeGrid.jsx", "utf8"),
+    readFile("app/health/[lang]/categories/[slug]/page.jsx", "utf8"),
+    ...LEVEL_TWO_FILES.map((file) => readFile(file, "utf8")),
+  ]);
+
+  const explicitIcons = new Map(
+    [...iconSource.matchAll(/^\s*(?:"([a-z0-9-]+)"|([a-z][a-z0-9-]*)):\s*"((?:lu|tb|ph):[a-z0-9-]+)",$/gm)]
+      .map((match) => [match[1] || match[2], match[3]])
+  );
+  const levelTwoRows = levelTwoSql.flatMap(rowsFrom);
+  const byParent = new Map();
+
+  for (const row of levelTwoRows) {
+    assert.ok(explicitIcons.has(row.slug), `Missing explicit icon for ${row.slug}`);
+    const siblings = byParent.get(row.parent) || [];
+    siblings.push(explicitIcons.get(row.slug));
+    byParent.set(row.parent, siblings);
+  }
+
+  for (const [parent, icons] of byParent) {
+    assert.equal(new Set(icons).size, icons.length, `Duplicate visible icon under ${parent}`);
+  }
+
+  const packs = new Set(levelTwoRows.map((row) => explicitIcons.get(row.slug).split(":")[0]));
+  assert.deepEqual([...packs].sort(), ["lu", "ph", "tb"]);
+  assert.match(iconSource, /resolveHealthCategoryIcons/);
+  assert.match(iconSource, /data-icon-pack/);
+  assert.match(cards, /resolveHealthCategoryIcons\(items\)/);
+  assert.match(cards, /<HealthCategoryIcon/);
+  assert.match(categoryPage, /lang === "fa" \? "arrow" : "arrowL"/);
+  assert.equal(categoryPage.includes("rtl:rotate-180"), false);
+});
+
 test("Health sitemap emits routes for the active category hierarchy", async () => {
   const sitemap = await readFile("app/sitemap.js", "utf8");
 
