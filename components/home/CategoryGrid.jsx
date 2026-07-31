@@ -7,6 +7,7 @@ import { getCategories, getProducts } from "@/lib/supabase";
 import { getTranslations } from "@/lib/i18n";
 import { buildHealthCategoryTree, healthCategoryName, rollupHealthCategoryCounts } from "@/lib/health/categories";
 import Icon from "@/components/shared/Icon";
+import HealthCategoryIcon, { resolveHealthCategoryIcons } from "@/components/health/HealthCategoryIcon";
 import { Reveal, Stagger, StaggerItem } from "@/components/shared/Reveal";
 import TiltCard from "@/components/shared/TiltCard";
 import SpotlightCard from "@/components/shared/SpotlightCard";
@@ -46,6 +47,7 @@ export default function CategoryGrid({ lang }) {
   }, []);
 
   const placeholders = Array.from({ length: 6 }, (_, index) => ({ id: `loading-${index}`, loading: true }));
+  const iconNames = resolveHealthCategoryIcons(categories);
 
   return (
     <section className="py-14 md:py-20 bg-canvas-soft border-y border-line">
@@ -62,7 +64,7 @@ export default function CategoryGrid({ lang }) {
         </Reveal>
 
         <Stagger className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
-          {(loaded ? categories : placeholders).map((category) => (
+          {(loaded ? categories : placeholders).map((category, index) => (
             <StaggerItem key={category.id || category.slug}>
               <TiltCard className="h-full rounded-2xl" max={8}>
                 <SpotlightCard className="h-full rounded-2xl">
@@ -72,7 +74,7 @@ export default function CategoryGrid({ lang }) {
                     <Link href={category.children?.length ? `/health/${lang}/categories/${category.slug}` : `/health/${lang}/catalog?category=${category.slug}`} className="card card-hover overflow-hidden group p-5 text-center block h-full">
                       <div className="relative w-14 h-14 mx-auto mb-3 rounded-2xl bg-brand-violet/[0.08] text-brand-violet flex items-center justify-center transition-all duration-300 group-hover:text-white group-hover:shadow-brand group-hover:-translate-y-0.5">
                         <span className="absolute inset-0 rounded-2xl bg-brand-gradient opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <Icon name={category.icon || "layers"} size={28} strokeWidth={1.6} className="relative" />
+                        <HealthCategoryIcon name={iconNames[index]} size={28} strokeWidth={1.6} className="relative" />
                       </div>
                       <div className="font-semibold text-[13px] md:text-sm text-ink leading-tight mb-1 group-hover:text-brand-violet transition-colors">{healthCategoryName(category, lang)}</div>
                       <div className="text-[11px] text-ink-faint">{labelFor(category.total_count || 0, lang)}</div>

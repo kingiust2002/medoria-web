@@ -2,6 +2,7 @@ import Link from "next/link";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
 import SpotlightCard from "@/components/shared/SpotlightCard";
+import HealthCategoryIcon, { resolveHealthCategoryIcons } from "@/components/health/HealthCategoryIcon";
 import { healthCategoryDescription, healthCategoryName } from "@/lib/health/categories";
 
 function countLabel(count, lang) {
@@ -50,9 +51,11 @@ function fallbackDescription(hasChildren, lang) {
 }
 
 export default function CategoryTreeGrid({ lang, items = [], hrefFor }) {
+  const iconNames = resolveHealthCategoryIcons(items);
+
   return (
     <div role="list" className="grid grid-cols-1 md:grid-cols-2 gap-5">
-      {items.map((node) => {
+      {items.map((node, index) => {
         const hasChildren = Boolean(node.children?.length);
         const childCount = node.children?.length || 0;
         const name = healthCategoryName(node, lang);
@@ -68,7 +71,7 @@ export default function CategoryTreeGrid({ lang, items = [], hrefFor }) {
                   className="card card-hover overflow-hidden group flex h-full"
                 >
                   <div className="w-32 md:w-40 shrink-0 img-ph flex items-center justify-center text-brand-violet group-hover:bg-brand-gradient group-hover:text-white transition-colors">
-                    <Icon name={node.icon || (hasChildren ? "layers" : "package")} size={56} strokeWidth={1.3} className="relative" />
+                    <HealthCategoryIcon name={iconNames[index]} size={56} strokeWidth={1.3} className="relative" />
                   </div>
 
                   <div className="p-5 md:p-6 flex-1 flex flex-col min-w-0">
