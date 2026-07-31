@@ -14,6 +14,7 @@ import {
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import Icon from "@/components/shared/Icon";
 import CategoryTreeGrid from "@/components/health/CategoryTreeGrid";
+import HealthCategoryIcon from "@/components/health/HealthCategoryIcon";
 import SeoCategoryDirectory from "@/components/health/SeoCategoryDirectory";
 
 export const dynamic = "force-dynamic";
@@ -114,7 +115,7 @@ export default async function HealthCategoryPage(props) {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-5">
             <div className="flex items-start gap-4 min-w-0">
               <span className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-brand-violet/10 text-brand-violet grid place-items-center shrink-0">
-                <Icon name={category.icon || "layers"} size={30} strokeWidth={1.5} />
+                <HealthCategoryIcon node={category} size={30} strokeWidth={1.5} />
               </span>
               <div className="min-w-0">
                 <h1 className="font-display text-3xl md:text-4xl font-extrabold text-ink tracking-tight leading-tight">{categoryName}</h1>
@@ -127,7 +128,7 @@ export default async function HealthCategoryPage(props) {
                 href={parent ? `/health/${lang}/categories/${parent.slug}` : `/health/${lang}/categories`}
                 className="btn-ghost size-md"
               >
-                <Icon name="arrow" size={15} className="rtl:rotate-180" />
+                <Icon name={lang === "fa" ? "arrow" : "arrowL"} size={15} />
                 {lang === "fa" ? "مرحله قبل" : lang === "tg" ? "Қадами пешина" : lang === "ru" ? "Назад" : "Back"}
               </Link>
               <Link href={`/health/${lang}/catalog?category=${category.slug}`} className="btn-primary size-md">
@@ -143,7 +144,6 @@ export default async function HealthCategoryPage(props) {
         <CategoryTreeGrid
           lang={lang}
           items={category.children}
-          level={Number(category.level || path.length) + 1}
           hrefFor={(node) => node.children?.length
             ? `/health/${lang}/categories/${node.slug}`
             : `/health/${lang}/catalog?category=${node.slug}`}
