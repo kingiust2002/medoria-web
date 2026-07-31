@@ -89,7 +89,6 @@ export default async function CategoriesPage(props) {
             <CategoryTreeGrid
               lang={lang}
               items={tree}
-              level={1}
               hrefFor={(node) => node.children?.length
                 ? `/health/${lang}/categories/${node.slug}`
                 : `/health/${lang}/catalog?category=${node.slug}`}

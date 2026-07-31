@@ -54,6 +54,20 @@ test("Health public navigation drills through the category tree like Beauty", as
   assert.match(quickAccess, /flattenHealthCategoryTree/);
 });
 
+test("Health tree cards preserve the main Health card design at every level", async () => {
+  const cards = await readFile("components/health/CategoryTreeGrid.jsx", "utf8");
+
+  assert.match(cards, /TiltCard/);
+  assert.match(cards, /SpotlightCard/);
+  assert.match(cards, /grid grid-cols-1 md:grid-cols-2 gap-5/);
+  assert.match(cards, /card card-hover overflow-hidden group flex h-full/);
+  assert.match(cards, /w-32 md:w-40 shrink-0 img-ph/);
+  assert.match(cards, /size=\{56\}/);
+  assert.match(cards, /node\.children\?\.length/);
+  assert.match(cards, /Explore .* subcategories/);
+  assert.equal(cards.includes("aspect-["), false);
+});
+
 test("Health sitemap emits routes for the active category hierarchy", async () => {
   const sitemap = await readFile("app/sitemap.js", "utf8");
 
