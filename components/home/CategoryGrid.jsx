@@ -69,7 +69,7 @@ export default function CategoryGrid({ lang }) {
                   {category.loading ? (
                     <div className="card p-5 h-full"><div className="w-14 h-14 mx-auto mb-3 rounded-2xl skeleton" /><div className="h-4 skeleton mb-2" /><div className="h-3 skeleton w-2/3 mx-auto" /></div>
                   ) : (
-                    <Link href={category.children?.length ? `/health/${lang}/categories/${category.slug}` : `/health/${lang}/catalog?category=${category.slug}`} className="card card-hover overflow-hidden group p-5 text-center block h-full">
+                    <Link href={`/health/${lang}/categories#${category.slug}`} className="card card-hover overflow-hidden group p-5 text-center block h-full">
                       <div className="relative w-14 h-14 mx-auto mb-3 rounded-2xl bg-brand-violet/[0.08] text-brand-violet flex items-center justify-center transition-all duration-300 group-hover:text-white group-hover:shadow-brand group-hover:-translate-y-0.5">
                         <span className="absolute inset-0 rounded-2xl bg-brand-gradient opacity-0 group-hover:opacity-100 transition-opacity" />
                         <Icon name={category.icon || "layers"} size={28} strokeWidth={1.6} className="relative" />
