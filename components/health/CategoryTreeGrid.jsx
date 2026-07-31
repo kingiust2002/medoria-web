@@ -1,10 +1,17 @@
 import Link from "next/link";
 import Icon from "@/components/shared/Icon";
-import { Stagger, StaggerItem } from "@/components/shared/Reveal";
-import { healthCategoryName } from "@/lib/health/categories";
+import TiltCard from "@/components/shared/TiltCard";
+import SpotlightCard from "@/components/shared/SpotlightCard";
+import { healthCategoryDescription, healthCategoryName } from "@/lib/health/categories";
 
 function countLabel(count, lang) {
-  if (!count) return lang === "fa" ? "بدون محصول" : lang === "tg" ? "бе маҳсулот" : lang === "ru" ? "нет товаров" : "no products";
+  if (!count) {
+    if (lang === "fa") return "به‌زودی";
+    if (lang === "tg") return "ба зудӣ";
+    if (lang === "ru") return "скоро";
+    return "coming soon";
+  }
+
   const noun = {
     fa: "محصول",
     tg: "мол",
@@ -14,72 +21,81 @@ function countLabel(count, lang) {
   return `${count} ${noun[lang] || noun.en}`;
 }
 
-function childLabel(count, lang) {
-  if (lang === "fa") return `${count} زیرگروه`;
-  if (lang === "tg") return `${count} зергурӯҳ`;
-  if (lang === "ru") return `${count} подкатегорий`;
-  return `${count} subcategories`;
+function actionLabel(hasChildren, childCount, lang) {
+  if (!hasChildren) {
+    if (lang === "fa") return "مشاهده محصولات";
+    if (lang === "tg") return "Дидани маҳсулот";
+    if (lang === "ru") return "Смотреть товары";
+    return "Explore products";
+  }
+
+  if (lang === "fa") return `مشاهده ${childCount} زیرگروه`;
+  if (lang === "tg") return `Дидани ${childCount} зергурӯҳ`;
+  if (lang === "ru") return `Смотреть подкатегории: ${childCount}`;
+  return `Explore ${childCount} subcategories`;
 }
 
-const GRADIENTS = [
-  "linear-gradient(145deg, #7c3aed 0%, #4f46e5 52%, #0ea5e9 100%)",
-  "linear-gradient(145deg, #0891b2 0%, #2563eb 52%, #6d28d9 100%)",
-  "linear-gradient(145deg, #9333ea 0%, #db2777 52%, #f97316 100%)",
-  "linear-gradient(145deg, #0f766e 0%, #0ea5e9 50%, #4f46e5 100%)",
-  "linear-gradient(145deg, #4338ca 0%, #7c3aed 48%, #c026d3 100%)",
-  "linear-gradient(145deg, #0369a1 0%, #0284c7 45%, #7c3aed 100%)",
-];
+function fallbackDescription(hasChildren, lang) {
+  if (hasChildren) {
+    if (lang === "fa") return "گروه‌های تخصصی این بخش را مرحله‌به‌مرحله بررسی کنید و سپس وارد محصولات موردنظر شوید.";
+    if (lang === "tg") return "Гурӯҳҳои махсуси ин бахшро қадам ба қадам дида, баъд ба маҳсулоти лозим гузаред.";
+    if (lang === "ru") return "Перейдите к специализированным группам этого раздела, а затем выберите нужные товары.";
+    return "Browse the specialist groups in this section, then continue to the relevant products.";
+  }
 
-export default function CategoryTreeGrid({ lang, items = [], level = 1, hrefFor }) {
-  const isRoot = level === 1;
+  if (lang === "fa") return "محصولات این دسته را بررسی کنید و مشخصات و شرایط تأمین عمده را ببینید.";
+  if (lang === "tg") return "Маҳсулоти ин гурӯҳ ва шартҳои таъминоти яклухтро баррасӣ кунед.";
+  if (lang === "ru") return "Просмотрите товары этой категории, характеристики и условия оптовой поставки.";
+  return "Review products in this category, including specifications and wholesale availability.";
+}
 
+export default function CategoryTreeGrid({ lang, items = [], hrefFor }) {
   return (
-    <Stagger className={`grid gap-4 sm:gap-5 ${isRoot ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2 lg:grid-cols-3"}`}>
-      {items.map((node, index) => {
+    <div role="list" className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      {items.map((node) => {
         const hasChildren = Boolean(node.children?.length);
-        const href = hrefFor(node);
-        const gradient = GRADIENTS[index % GRADIENTS.length];
+        const childCount = node.children?.length || 0;
+        const name = healthCategoryName(node, lang);
+        const description = healthCategoryDescription(node, lang) || fallbackDescription(hasChildren, lang);
 
         return (
-          <StaggerItem key={node.id || node.slug}>
-            <Link
-              href={href}
-              className="group block relative overflow-hidden rounded-2xl border border-line focus-ring shadow-sm hover:shadow-lg transition-shadow"
-            >
-              <div className={`relative ${isRoot ? "aspect-[16/9]" : "aspect-[4/3]"}`} style={{ background: gradient }}>
-                <div className="absolute inset-0 opacity-30" style={{ background: "radial-gradient(circle at 20% 15%, rgba(255,255,255,.55), transparent 35%), radial-gradient(circle at 85% 80%, rgba(255,255,255,.24), transparent 40%)" }} />
-                <div className="absolute inset-0 grid place-items-center transition-transform duration-500 group-hover:scale-105">
-                  <span className={`grid place-items-center rounded-3xl bg-white/15 backdrop-blur-sm text-white shadow-inner ${isRoot ? "w-24 h-24" : "w-18 h-18"}`}>
-                    <Icon name={node.icon || "layers"} size={isRoot ? 46 : 34} strokeWidth={1.35} />
-                  </span>
-                </div>
-                <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(15,23,42,.72) 0%, rgba(15,23,42,.14) 56%, transparent 78%)" }} />
-
-                {isRoot && (
-                  <span className="absolute top-4 start-4 inline-flex items-center justify-center min-w-8 h-8 px-2 rounded-full bg-white/20 backdrop-blur-sm text-white text-[11px] font-bold tracking-wide">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                )}
-
-                <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 flex items-end justify-between gap-3">
-                  <div className="min-w-0">
-                    <h2 className={`text-white font-bold drop-shadow leading-tight ${isRoot ? "text-xl sm:text-2xl font-display" : "text-[15px] sm:text-base"}`}>
-                      {healthCategoryName(node, lang)}
-                    </h2>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] sm:text-[11px] text-white/75">
-                      {hasChildren && <span>{childLabel(node.children.length, lang)}</span>}
-                      <span>{countLabel(node.total_count, lang)}</span>
-                    </div>
+          <div role="listitem" key={node.id || node.slug} className="h-full">
+            <TiltCard className="h-full rounded-2xl" max={5}>
+              <SpotlightCard className="h-full rounded-2xl">
+                <Link
+                  href={hrefFor(node)}
+                  aria-label={`${name} — ${actionLabel(hasChildren, childCount, lang)}`}
+                  className="card card-hover overflow-hidden group flex h-full"
+                >
+                  <div className="w-32 md:w-40 shrink-0 img-ph flex items-center justify-center text-brand-violet group-hover:bg-brand-gradient group-hover:text-white transition-colors">
+                    <Icon name={node.icon || (hasChildren ? "layers" : "package")} size={56} strokeWidth={1.3} className="relative" />
                   </div>
-                  <span className="shrink-0 grid place-items-center w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm text-white transition-colors group-hover:bg-white/30">
-                    <Icon name={hasChildren ? "chevronLeft" : "arrowUpRight"} size={16} className={hasChildren ? "rtl:rotate-180" : ""} />
-                  </span>
-                </div>
-              </div>
-            </Link>
-          </StaggerItem>
+
+                  <div className="p-5 md:p-6 flex-1 flex flex-col min-w-0">
+                    <div className="flex items-baseline justify-between gap-3 mb-2">
+                      <h2 className="font-display text-lg md:text-xl font-bold text-ink group-hover:text-brand-violet transition-colors leading-tight">
+                        {name}
+                      </h2>
+                      <span className="text-[11px] text-ink-faint shrink-0">
+                        {countLabel(node.total_count, lang)}
+                      </span>
+                    </div>
+
+                    <p className="text-[13px] text-ink-muted leading-relaxed mb-4 flex-1">
+                      {description}
+                    </p>
+
+                    <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-brand-violet">
+                      {actionLabel(hasChildren, childCount, lang)}
+                      <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={12} />
+                    </span>
+                  </div>
+                </Link>
+              </SpotlightCard>
+            </TiltCard>
+          </div>
         );
       })}
-    </Stagger>
+    </div>
   );
 }
