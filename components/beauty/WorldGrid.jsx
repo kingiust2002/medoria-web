@@ -47,7 +47,9 @@ export default function WorldGrid({
           <div className="flex items-center gap-2">
             {backHref && (
               <Link href={backHref} className="btn-ghost size-md">
-                <Icon name="arrow" size={16} className="rtl:rotate-180" /> {c.back}
+                {/* `arrow` points right, so Back has to flip it in LTR and
+                    leave it alone in RTL — the reverse of the tile chevron. */}
+                <Icon name="arrow" size={16} className="rotate-180 rtl:rotate-0" /> {c.back}
               </Link>
             )}
             {browseAllHref && (
@@ -118,7 +120,10 @@ export default function WorldGrid({
                           )}
                         </div>
                         <span className="shrink-0 grid place-items-center w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm text-white transition-colors group-hover:bg-white/30">
-                          <Icon name={drills ? "chevronLeft" : "arrowUpRight"} size={16} className={drills ? "rtl:rotate-180" : ""} />
+                          {/* Points the way the reader is going: right in LTR,
+                              left in RTL. It was chevronLeft + rtl:rotate-180,
+                              which pointed backwards in BOTH directions. */}
+                          <Icon name={drills ? "chevronRight" : "arrowUpRight"} size={16} className={drills ? "rtl:rotate-180" : ""} />
                         </span>
                       </div>
                     </div>
