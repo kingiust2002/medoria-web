@@ -1,13 +1,19 @@
 // app/[lang]/layout.jsx — per-locale shell: localized metadata defaults, Farsi
 // noindex, global Organization + WebSite (SearchAction) JSON-LD, chrome.
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { LOCALES, LANG_META, getTranslations } from "@/lib/i18n";
 import { SEO_KEYWORDS, robotsFor, SITE_URL, safeJsonLd } from "@/lib/seo";
+import { getHealthNavTree } from "@/lib/health/navigation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
 import AiAssistant from "@/components/shared/AiAssistant";
 import ScrollProgress from "@/components/shared/ScrollProgress";
+
+// The Collection mega-menu follows the active database tree. Operator mutations
+// revalidate Health routes; this interval is a fallback for external changes.
+export const revalidate = 120;
 
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
@@ -25,6 +31,11 @@ export function generateMetadata({ params }) {
     // Health's own mark — overrides the root's neutral combined favicon.
     icons: { icon: "/logo-mark.png", apple: "/logo-mark.png" },
   };
+}
+
+async function HealthNav({ lang }) {
+  const categoryTree = await getHealthNavTree(lang);
+  return <Header lang={lang} categoryTree={categoryTree} />;
 }
 
 export default function LangLayout({ children, params }) {
@@ -82,7 +93,9 @@ export default function LangLayout({ children, params }) {
         className="pointer-events-none fixed inset-0 z-[70] opacity-[0.035] mix-blend-soft-light"
         style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }}
       />
-      <Header lang={lang} />
+      <Suspense fallback={<Header lang={lang} categoryTree={[]} />}>
+        <HealthNav lang={lang} />
+      </Suspense>
       <main>{children}</main>
       <Footer lang={lang} />
       <FloatingWhatsApp lang={lang} />
