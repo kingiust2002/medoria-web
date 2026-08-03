@@ -40,14 +40,18 @@ export default function WorldGrid({
         <Breadcrumb lang={lang} crumbs={crumbs} />
         <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-[12px] font-semibold tracking-[0.22em] uppercase text-[color:var(--v-accent)] mb-2">THE EDIT</p>
+            {/* Was the literal English "THE EDIT" on every locale, including
+                the two Cyrillic ones and the RTL one. */}
+            <p className="text-[12px] font-semibold tracking-[0.22em] uppercase text-[color:var(--v-accent)] mb-2">{c.tag}</p>
             <h1 className="bv-display text-4xl sm:text-5xl font-bold text-ink">{heading}</h1>
             {sub && <p className="mt-3 text-ink-muted max-w-xl leading-relaxed">{sub}</p>}
           </div>
           <div className="flex items-center gap-2">
             {backHref && (
               <Link href={backHref} className="btn-ghost size-md">
-                <Icon name="arrow" size={16} className="rtl:rotate-180" /> {c.back}
+                {/* `arrow` points right, so Back has to flip it in LTR and
+                    leave it alone in RTL — the reverse of the tile chevron. */}
+                <Icon name="arrow" size={16} className="rotate-180 rtl:rotate-0" /> {c.back}
               </Link>
             )}
             {browseAllHref && (
@@ -118,7 +122,10 @@ export default function WorldGrid({
                           )}
                         </div>
                         <span className="shrink-0 grid place-items-center w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm text-white transition-colors group-hover:bg-white/30">
-                          <Icon name={drills ? "chevronLeft" : "arrowUpRight"} size={16} className={drills ? "rtl:rotate-180" : ""} />
+                          {/* Points the way the reader is going: right in LTR,
+                              left in RTL. It was chevronLeft + rtl:rotate-180,
+                              which pointed backwards in BOTH directions. */}
+                          <Icon name={drills ? "chevronRight" : "arrowUpRight"} size={16} className={drills ? "rtl:rotate-180" : ""} />
                         </span>
                       </div>
                     </div>

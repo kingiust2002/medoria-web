@@ -7,7 +7,8 @@
 //   - Hugging Face: HUGGING_FACE_API_KEY (+ optional HF_MODEL)
 //   - Anthropic:    ANTHROPIC_API_KEY (+ optional ANTHROPIC_MODEL)
 import Anthropic from "@anthropic-ai/sdk";
-import { BEAUTY_CATEGORIES, getCategoryName } from "@/components/beauty/i18n";
+import { getBeautyCategoryTree } from "@/lib/beauty/catalog";
+import { nameOf } from "@/lib/beauty/worlds";
 import { WA_NUMBER, TG_USER } from "@/lib/whatsapp";
 import { rateLimit, clientIpFromHeaders, isSameOriginRequest } from "@/lib/security/rateLimit";
 import { verifyChatPass } from "@/lib/security/chatPass";
@@ -47,11 +48,18 @@ export async function GET() {
   return Response.json({ available: !!provider() });
 }
 
-function buildSystem(lang) {
+async function buildSystem(lang) {
   const language = LANG_NAMES[lang] || LANG_NAMES.en;
-  const categories = BEAUTY_CATEGORIES.map(
-    (c) => `- ${getCategoryName(c.slug, lang)} (${c.slug})`
-  ).join("\n");
+  // The assistant was being told the catalog had three categories, from a
+  // constant written before the tree existed. Give it the real departments and
+  // their groups so it can actually route someone to the right place.
+  const tree = await getBeautyCategoryTree();
+  const categories = tree
+    .map((d) => {
+      const kids = (d.children || []).map((g) => `${nameOf(g, lang)} (${g.slug})`).join(", ");
+      return `- ${nameOf(d, lang)} (${d.slug})${kids ? `\n    ${kids}` : ""}`;
+    })
+    .join("\n");
 
   // Optional operator-defined rules (Beauty-specific), editable from Vercel
   // without a code redeploy. Falls back to the shared ASSISTANT_RULES.
@@ -205,7 +213,7 @@ export async function POST(req) {
   const messages = sanitize(body?.messages);
   if (!messages.length) return Response.json({ error: "No messages" }, { status: 400 });
 
-  const system = buildSystem(lang);
+  const system = await buildSystem(lang);
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
