@@ -40,7 +40,9 @@ export default function WorldGrid({
         <Breadcrumb lang={lang} crumbs={crumbs} />
         <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-[12px] font-semibold tracking-[0.22em] uppercase text-[color:var(--v-accent)] mb-2">THE EDIT</p>
+            {/* Was the literal English "THE EDIT" on every locale, including
+                the two Cyrillic ones and the RTL one. */}
+            <p className="text-[12px] font-semibold tracking-[0.22em] uppercase text-[color:var(--v-accent)] mb-2">{c.tag}</p>
             <h1 className="bv-display text-4xl sm:text-5xl font-bold text-ink">{heading}</h1>
             {sub && <p className="mt-3 text-ink-muted max-w-xl leading-relaxed">{sub}</p>}
           </div>

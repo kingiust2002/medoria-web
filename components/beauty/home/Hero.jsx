@@ -9,7 +9,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, useReducedMotion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useTheme } from "next-themes";
-import { getBeautyTranslations as getTranslations, BEAUTY_CATEGORIES as CATEGORIES, getCategoryName } from "@/components/beauty/i18n";
+import { getBeautyTranslations as getTranslations } from "@/components/beauty/i18n";
 import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
@@ -18,7 +18,12 @@ import { BeautyWordLockup } from "@/components/beauty/BeautyBrand";
 const BeautyHeroScene = dynamic(() => import("@/components/beauty/home/BeautyHeroScene"), { ssr: false });
 const EASE = [0.2, 0.8, 0.2, 1];
 
-export default function Hero({ lang, banner }) {
+// `depts` is the real seven-department tree, handed down from the page — the
+// hero is a client component so it cannot read it itself. It used to render
+// three hard-coded chips (Skincare / Makeup / Tools) all labelled "soon";
+// those departments are live now and each one links into its own World.
+export default function Hero({ lang, banner, depts = [] }) {
+  const worldsAll = `/beauty/${lang}/worlds`;
   const t = getTranslations(lang);
   const reduce = useReducedMotion();
   const { resolvedTheme } = useTheme();
@@ -66,7 +71,7 @@ export default function Hero({ lang, banner }) {
     document.querySelector("#worlds")?.scrollIntoView({ behavior: "smooth" });
   };
   const filteredCats = q.trim()
-    ? CATEGORIES.filter((c) => getCategoryName(c.slug, lang).toLowerCase().includes(q.toLowerCase()))
+    ? depts.filter((c) => (c.name || "").toLowerCase().includes(q.toLowerCase()))
     : [];
 
   const trust = [
@@ -185,7 +190,7 @@ export default function Hero({ lang, banner }) {
                 {filteredCats.map((c) => (
                   <a key={c.slug} href="#worlds" className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand-violet/5 transition-colors">
                     <div className="w-9 h-9 rounded-lg bg-brand-violet/10 text-brand-violet flex items-center justify-center"><Icon name={c.icon} size={18} strokeWidth={1.75} /></div>
-                    <span className="text-[13px] font-medium text-ink">{getCategoryName(c.slug, lang)}</span>
+                    <span className="text-[13px] font-medium text-ink">{c.name}</span>
                     <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={13} className="ms-auto text-ink-faint" />
                   </a>
                 ))}
@@ -194,20 +199,20 @@ export default function Hero({ lang, banner }) {
           </motion.div>
 
           {/* category chips */}
-          <motion.div variants={item} className="mt-5 flex flex-wrap gap-2 items-center">
+          <motion.div variants={item} className={`mt-5 flex-wrap gap-2 items-center ${depts.length ? "flex" : "hidden"}`}>
             <span className="text-[11px] text-ink-faint me-1">{t.common.categories}:</span>
-            {CATEGORIES.map((c) => (
-              <a key={c.slug} href="#worlds"
+            {depts.map((c) => (
+              <a key={c.slug} href={c.href}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-medium transition-all bg-surface/80 border-line text-ink-muted hover:text-brand-violet hover:border-brand-violet/30 shadow-soft">
-                <Icon name={c.icon} size={12} className="text-cyan-600" strokeWidth={2} />
-                {getCategoryName(c.slug, lang)}
+                <Icon name={c.icon || "sparkles"} size={12} className="text-cyan-600" strokeWidth={2} />
+                {c.name}
               </a>
             ))}
           </motion.div>
 
           {/* CTAs */}
           <motion.div variants={item} className="mt-8 flex flex-wrap gap-3">
-            <a href="#collections" className="btn-primary size-xl group bv-sheen">
+            <a href={worldsAll} className="btn-primary size-xl group bv-sheen">
               {t.home.heroCta}
               <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={16} className="transition-transform group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
             </a>
@@ -242,25 +247,29 @@ export default function Hero({ lang, banner }) {
                 <span className="w-8 h-8 rounded-full bg-cyan-500/15 text-cyan-600 flex items-center justify-center"><Icon name="badgeCheck" size={16} /></span>
               </div>
               <div className="text-[11px] text-ink-muted -mt-3 mb-4">Luxury Beauty · Tajikistan</div>
+              {depts.length > 0 && (
               <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint mb-2">
                 {{ fa: "کالکشن ما", ru: "Наша коллекция", tg: "Коллексияи мо", en: "Our collection" }[lang] || "Our collection"}
               </div>
+              )}
               <div className="flex flex-col gap-2 mb-4">
-                {CATEGORIES.map((c) => (
-                  <a key={c.slug} href="#worlds"
+                {depts.map((c) => (
+                  <a key={c.slug} href={c.href}
                     className="flex items-center gap-3 rounded-xl border px-3 py-2 transition-colors group bg-brand-violet/[0.05] border-line hover:bg-brand-violet/[0.09]">
-                    <span className="w-10 h-10 rounded-lg img-ph overflow-hidden grid place-items-center shrink-0 text-brand-violet">
-                      <Icon name={c.icon} size={18} strokeWidth={1.6} />
+                    <span className="w-10 h-10 rounded-lg img-ph overflow-hidden grid place-items-center shrink-0">
+                      {c.img
+                        ? <img src={c.img} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                        : <Icon name={c.icon || "sparkles"} size={18} strokeWidth={1.6} className="text-brand-violet" />}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[12px] font-semibold text-ink truncate">{getCategoryName(c.slug, lang)}</span>
-                      <span className="block text-[11px] font-semibold text-brand-violet">{t.common.soon}</span>
+                      <span className="block text-[12px] font-semibold text-ink truncate">{c.name}</span>
+                      <span className="block text-[11px] font-semibold text-brand-violet">{c.count} {c.countLabel}</span>
                     </span>
                     <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={14} className="text-ink-faint group-hover:text-brand-violet transition-colors" />
                   </a>
                 ))}
               </div>
-              <a href="#collections" className="flex items-center justify-between rounded-xl border px-4 py-3 transition-colors bg-brand-violet/[0.05] border-line hover:bg-brand-violet/[0.09]">
+              <a href={worldsAll} className="flex items-center justify-between rounded-xl border px-4 py-3 transition-colors bg-brand-violet/[0.05] border-line hover:bg-brand-violet/[0.09]">
                 <span className="text-[12px] font-semibold text-ink">{t.home.heroCta}</span>
                 <Icon name={lang === "fa" ? "arrowL" : "arrowUpRight"} size={15} className="text-brand-violet" />
               </a>

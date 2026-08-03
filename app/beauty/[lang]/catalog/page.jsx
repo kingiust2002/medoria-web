@@ -8,8 +8,9 @@
 import Link from "next/link";
 import { LOCALES } from "@/lib/i18n";
 import { waLink, tgLink, bulkInquiryMessage } from "@/lib/whatsapp";
-import { getBeautyTranslations, BEAUTY_CATEGORIES, getCategoryName } from "@/components/beauty/i18n";
+import { getBeautyTranslations } from "@/components/beauty/i18n";
 import { getBeautyCategoryTree, getBeautyCategoryPath, getBeautyBrands, getBeautyProducts } from "@/lib/beauty/catalog";
+import { nameOf, deptHref, copyFor } from "@/lib/beauty/worlds";
 import BeautyProductCard from "@/components/beauty/catalog/BeautyProductCard";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
@@ -222,17 +223,18 @@ export default async function BeautyCatalogPage({ params, searchParams }) {
           </>
         ) : (
           <>
-            {/* World entry tiles (pre-launch) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5 mb-12">
-              {BEAUTY_CATEGORIES.map((cat) => (
-                <TiltCard key={cat.slug} className="h-full rounded-2xl" max={7}>
-                  <Link href={`/beauty/${lang}/worlds`} className="card card-hover bv-sheen p-6 text-center group h-full block">
+            {/* World entry tiles — the real departments, not the three
+                placeholders this carried before the tree existed. */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5 mb-12">
+              {tree.map((cat) => (
+                <TiltCard key={cat.id} className="h-full rounded-2xl" max={7}>
+                  <Link href={deptHref(lang, cat.slug)} className="card card-hover bv-sheen p-6 text-center group h-full block focus-ring">
                     <div className="relative w-14 h-14 mx-auto mb-3 rounded-2xl bg-brand-violet/[0.08] text-brand-violet flex items-center justify-center transition-all duration-300 group-hover:text-white group-hover:shadow-brand group-hover:-translate-y-0.5">
                       <span className="absolute inset-0 rounded-2xl bg-brand-gradient opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <Icon name={cat.icon} size={28} strokeWidth={1.6} className="relative" />
+                      <Icon name={cat.icon || "sparkles"} size={28} strokeWidth={1.6} className="relative" />
                     </div>
-                    <div className="font-display font-semibold text-[15px] text-ink group-hover:text-brand-violet transition-colors mb-1">{getCategoryName(cat.slug, lang)}</div>
-                    <div className="text-[11px] text-ink-faint">{t.common.soon}</div>
+                    <div className="font-display font-semibold text-[15px] text-ink group-hover:text-brand-violet transition-colors mb-1">{nameOf(cat, lang)}</div>
+                    <div className="text-[11px] text-ink-faint">{cat.children?.length || 0} {copyFor(lang).items}</div>
                   </Link>
                 </TiltCard>
               ))}
