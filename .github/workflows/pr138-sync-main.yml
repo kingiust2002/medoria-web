@@ -1,0 +1,69 @@
+name: PR 138 Sync Main
+
+on:
+  push:
+    branches:
+      - feat/health-tree-port-to-main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr-138-sync-main
+  cancel-in-progress: false
+
+jobs:
+  sync-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-project.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/health-tree-port-to-main
+          fetch-depth: 0
+
+      - name: Merge latest main without publishing yet
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge --no-commit --no-ff origin/main
+          git rm .github/workflows/pr138-sync-main.yml
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit merge and verify final scope
+        run: |
+          set -euo pipefail
+          git commit -m "chore(health): merge latest main into PR 138"
+          changed="$(git diff --name-only origin/main...HEAD)"
+          printf '%s\n' "$changed"
+          forbidden='^(package\.json|package-lock\.json|next\.config\.js|vercel\.json|Dockerfile|deploy/|scripts/self-host/|docs/self-hosting/|components/beauty/|lib/beauty/)'
+          if printf '%s\n' "$changed" | grep -E "$forbidden"; then
+            echo "Forbidden file entered final PR diff" >&2
+            exit 1
+          fi
+          test -z "$(git status --porcelain)"
+
+      - name: Push validated merge commit
+        run: git push origin HEAD:feat/health-tree-port-to-main
