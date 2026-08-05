@@ -12,6 +12,7 @@ import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import SplitText from "@/components/shared/SplitText";
+import BeautyPageHeader from "@/components/beauty/BeautyPageHeader";
 import { CONTACT_COPY } from "./copy";
 
 const PHONE = process.env.NEXT_PUBLIC_PHONE || "+992900000000";
@@ -24,6 +25,7 @@ export default function ContactInner({ lang }) {
   return (
     <div className="bg-canvas-soft">
       <section className="bg-canvas-soft border-b border-line relative overflow-hidden">
+        <BeautyPageHeader name="contact-header" />
         <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{
           background: "radial-gradient(55% 60% at 85% 5%, var(--v-glow), transparent 60%), radial-gradient(45% 55% at 8% 100%, rgba(28,41,81,0.07), transparent 60%)",
         }} />
