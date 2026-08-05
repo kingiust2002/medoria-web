@@ -295,7 +295,7 @@ export default function BulkAddGrid({ categories }) {
                 <th className="px-2 py-2.5 font-medium text-right min-w-[90px]">واحد</th>
                 <th className="px-2 py-2.5 font-medium text-center w-14">موجود</th>
                 <th className="px-2 py-2.5 font-medium text-center w-14">فعال</th>
-                <th className="px-2 py-2.5 font-medium text-center w-14">ویژه</th>
+                <th className="px-2 py-2.5 font-medium text-center w-14" title="نمایش در بخش منتخب و کارت شناور صفحه‌ی اصلی">ویژه</th>
                 <th className="px-2 py-2.5 font-medium text-right w-20">تصویر</th>
                 <th className="px-2 py-2.5 font-medium text-center w-28">عملیات</th>
               </tr>
