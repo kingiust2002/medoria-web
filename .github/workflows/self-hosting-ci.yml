@@ -1,0 +1,162 @@
+name: Self-hosting checks
+
+on:
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "app/**"
+      - "lib/**"
+      - "next.config.js"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/check-self-host-env.mjs"
+      - "scripts/self-host/**"
+      - "deploy/**"
+      - ".github/workflows/self-hosting-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Syntax checks
+        run: |
+          node --check scripts/check-self-host-env.mjs
+          node --check scripts/self-host/audit-supabase-services.mjs
+          node --check next.config.js
+          node --check app/api/health/route.js
+          bash -n scripts/self-host/backup-platform-db.sh
+          bash -n scripts/self-host/restore-self-hosted-db.sh
+          bash -n scripts/self-host/copy-storage.sh
+          bash -n scripts/self-host/bootstrap-vps.sh
+          bash -n scripts/self-host/verify-vps.sh
+
+      - name: Verify destructive-operation guards
+        shell: bash
+        run: |
+          if bash scripts/self-host/restore-self-hosted-db.sh /tmp/missing-backup 2>/dev/null; then
+            echo "restore script ran without required environment guards" >&2
+            exit 1
+          fi
+          if bash scripts/self-host/copy-storage.sh 2>/dev/null; then
+            echo "storage script unexpectedly ran without required tools/remotes" >&2
+            exit 1
+          fi
+          if bash scripts/self-host/bootstrap-vps.sh 2>/dev/null; then
+            echo "VPS bootstrap ran without explicit authorization" >&2
+            exit 1
+          fi
+
+      - name: Generate Supabase service inventory
+        run: npm run audit:supabase -- artifacts/supabase-service-audit.json
+
+      - name: Upload Supabase service inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-service-audit
+          path: artifacts/supabase-service-audit.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Create non-production CI environment
+        shell: bash
+        run: |
+          cat > deploy/.env <<'ENV'
+          STAGING_HOST=staging-ci.medoria.invalid
+          ACME_EMAIL=ci@medoria.invalid
+          NEXT_PUBLIC_SITE_URL=https://staging-ci.medoria.invalid
+          NEXT_PUBLIC_SUPABASE_URL=https://ci-project.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=ci-public-anon-key-not-for-production
+          NEXT_PUBLIC_EMAIL=
+          NEXT_PUBLIC_PHONE=
+          NEXT_PUBLIC_TG_USERNAME=
+          NEXT_PUBLIC_WA_NUMBER=
+          NEXT_PUBLIC_GA_MEASUREMENT_ID=
+          NEXT_PUBLIC_YANDEX_METRICA_ID=
+          NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=
+          NEXT_PUBLIC_YANDEX_VERIFICATION=
+          SUPABASE_SERVICE_ROLE_KEY=ci-service-role-key-not-for-production
+          OPERATOR_USERNAME=ci-health-operator
+          OPERATOR_PASSWORD_HASH=ci-password-hash
+          OPERATOR_SESSION_SECRET=ci-health-session-secret-00000000000000000000
+          BEAUTY_OPERATOR_USERNAME=ci-beauty-operator
+          BEAUTY_OPERATOR_PASSWORD_HASH=ci-password-hash
+          BEAUTY_OPERATOR_SESSION_SECRET=ci-beauty-session-secret-00000000000000000000
+          CAPTCHA_SECRET=ci-captcha-secret
+          UPSTASH_REDIS_REST_URL=
+          UPSTASH_REDIS_REST_TOKEN=
+          ANTHROPIC_API_KEY=
+          HUGGING_FACE_API_KEY=
+          GOOGLE_TRANSLATE_API_KEY=
+          ENV
+
+      - name: Validate environment contract
+        run: npm run check:self-host-env -- deploy/.env
+
+      - name: Build standalone application
+        shell: bash
+        run: |
+          set -a
+          source deploy/.env
+          set +a
+          npm run build
+
+      - name: Verify standalone output
+        run: |
+          test -f .next/standalone/server.js
+          test -d .next/static
+
+      - name: Validate Compose rendering
+        run: docker compose --env-file deploy/.env -f deploy/compose.app.yml config --quiet
+
+      - name: Build production container
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_SITE_URL=https://staging-ci.medoria.invalid \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL=https://ci-project.supabase.co \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=ci-public-anon-key-not-for-production \
+            --tag medoria-web:self-host-ci \
+            .
+
+      - name: Verify sharp runtime
+        run: docker run --rm medoria-web:self-host-ci node -e "require('sharp'); console.log('sharp runtime ok')"
+
+      - name: Smoke-test container health
+        shell: bash
+        run: |
+          container_id=$(docker run -d --env-file deploy/.env -p 127.0.0.1:3000:3000 medoria-web:self-host-ci)
+          trap 'docker logs "$container_id" || true; docker rm -f "$container_id" >/dev/null 2>&1 || true' EXIT
+
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/api/health | grep -q '"status":"ok"'; then
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "container health endpoint did not become ready" >&2
+          exit 1
