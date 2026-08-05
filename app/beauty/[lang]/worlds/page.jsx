@@ -50,6 +50,7 @@ export default async function WorldsPage({ params }) {
       heading={c.root}
       sub={c.rootSub}
       crumbs={[{ label: t.nav.home, href: `/beauty/${lang}` }, { label: c.worlds }]}
+      headerImg="worlds-header"
       hrefFor={(node) => deptHref(lang, node.slug)}
     />
   );
