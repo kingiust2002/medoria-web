@@ -29,7 +29,7 @@ const SORTS = ["newest", "price_asc", "price_desc", "popular"];
 
 const COPY = {
   tg: {
-    title: "Каталоги касбии зебоӣ", subtitle: "Интихоби андешидашудаи нигоҳубин, ороиш ва абзорҳо барои кашфи касбӣ.",
+    title: "Каталоги касбии зебоӣ", subtitle: "Атр, беҳдошт, ороиш, мӯй ва абзор — интихоби андешидашуда барои кашфи касбӣ.",
     emptyTitle: "Каталог омода карда мешавад", emptySub: "Бигӯед чӣ меҷӯед — мо имконоти мавҷуда ва қадамҳои баъдиро тасдиқ мекунем.", browse: "Дидани категорияҳо",
     allWorlds: "Ҳама", allCats: "Ҳама самтҳо", search: "Ҷустуҷӯи мол, бренд ё SKU…", apply: "Ҷустуҷӯ",
     brandAll: "Ҳама брендҳо", results: "маҳсулот", noResults: "Ягон маҳсулоти мувофиқ нест", noResultsSub: "Филтрҳоро тағйир диҳед ё ҷустуҷӯи васеътар кунед.", clear: "Пок кардани филтрҳо",
@@ -37,7 +37,7 @@ const COPY = {
     sort: { default: "Тавсияшуда", newest: "Воридшудаи нав", price_asc: "Нарх: аввал арзон", price_desc: "Нарх: аввал қимат", popular: "Серталаб" },
   },
   ru: {
-    title: "Профессиональный каталог красоты", subtitle: "Продуманный отбор ухода, макияжа и инструментов для профессионального знакомства.",
+    title: "Профессиональный каталог красоты", subtitle: "Парфюмерия, гигиена, макияж, волосы и техника — продуманный отбор для профессионального знакомства.",
     emptyTitle: "Каталог готовится", emptySub: "Расскажите, что вы ищете — мы подтвердим доступные варианты и следующие шаги.", browse: "Смотреть категории",
     allWorlds: "Все", allCats: "Все направления", search: "Поиск по названию, бренду или SKU…", apply: "Найти",
     brandAll: "Все бренды", results: "товаров", noResults: "Ничего подходящего не найдено", noResultsSub: "Измените фильтры или расширьте поиск.", clear: "Сбросить фильтры",
@@ -45,7 +45,7 @@ const COPY = {
     sort: { default: "Рекомендуемые", newest: "Новые поступления", price_asc: "Цена: сначала ниже", price_desc: "Цена: сначала выше", popular: "Популярные" },
   },
   en: {
-    title: "Professional beauty catalog", subtitle: "A considered selection of skincare, makeup and tools for professional discovery.",
+    title: "Professional beauty catalog", subtitle: "Fragrance, personal care, makeup, hair and electricals — a considered selection for professional discovery.",
     emptyTitle: "The catalog is being prepared", emptySub: "Tell us what you are looking for and we will confirm the available options and next steps.", browse: "Explore categories",
     allWorlds: "All", allCats: "All categories", search: "Search by product, brand or SKU…", apply: "Search",
     brandAll: "All brands", results: "products", noResults: "No matching products", noResultsSub: "Adjust the filters or try a broader search.", clear: "Clear filters",
@@ -53,7 +53,7 @@ const COPY = {
     sort: { default: "Featured", newest: "New arrivals", price_asc: "Price: low to high", price_desc: "Price: high to low", popular: "Most viewed" },
   },
   fa: {
-    title: "کاتالوگ حرفه‌ای زیبایی", subtitle: "انتخابی سنجیده از مراقبت پوست، آرایش و ابزار برای کشف حرفه‌ای.",
+    title: "کاتالوگ حرفه‌ای زیبایی", subtitle: "عطر، بهداشتی، آرایشی، مو و لوازم برقی — انتخابی سنجیده برای کشف حرفه‌ای.",
     emptyTitle: "کاتالوگ در حال آماده‌سازی است", emptySub: "بگویید دنبال چه هستید — گزینه‌های موجود و قدم‌های بعدی را تأیید می‌کنیم.", browse: "مشاهده دسته‌بندی‌ها",
     allWorlds: "همه", allCats: "همه دسته‌ها", search: "جستجوی محصول، برند یا SKU…", apply: "جستجو",
     brandAll: "همه برندها", results: "محصول", noResults: "محصول مطابقی یافت نشد", noResultsSub: "فیلترها را تغییر دهید یا جستجو را گسترده‌تر کنید.", clear: "پاک‌کردن فیلترها",

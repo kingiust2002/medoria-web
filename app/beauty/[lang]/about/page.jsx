@@ -20,7 +20,7 @@ const WORLD_ICONS = ["sparkles", "star", "package"];
 
 const COPY = {
   tg: {
-    hero: { tag: "ДАР БОРАИ MEDORIA BEAUTY", title: "Нигоҳи андешидашуда ба зебоии касбӣ", sub: "Medoria Beauty нигоҳубини пӯст, ороиш ва абзорҳои касбиро дар каталоги мутамарказ барои салонҳо, бутикҳо ва мутахассисони Тоҷикистон ҷамъ мекунад." },
+    hero: { tag: "ДАР БОРАИ MEDORIA BEAUTY", title: "Нигоҳи андешидашуда ба зебоии касбӣ", sub: "Medoria Beauty атр, беҳдошт, ороиш, мӯй, абзори барқӣ, мӯд ва иловагиҳоро дар каталоги мутамарказ барои салонҳо, бутикҳо ва мутахассисони Тоҷикистон ҷамъ мекунад." },
     mission: { tag: "НИГОҲИ МО", title: "Бо мақсад интихобшуда", body: "Зебоии касбӣ ба садои бештар ниёз надорад. Он ба интихоби равшантар ниёз дорад: маҳсулоти муносиб, заминаи муфид ва роҳи мустақим барои муҳокимаи мавҷудӣ ва ниёзҳои тиҷоратӣ." },
     values: { tag: "АРЗИШҲОИ МО", items: [
       ["Хештандорӣ", "Интихоби мутамарказ, бе изофагӣ пешниҳод шуда."],
@@ -45,7 +45,7 @@ const COPY = {
     cta: { title: "Аз он чи бизнеси шумо лозим дорад сар кунед", sub: "Каталогро кушоед ё ба Medoria дархости мутамаркази маҳсулот фиристед." },
   },
   ru: {
-    hero: { tag: "О MEDORIA BEAUTY", title: "Продуманная точка зрения на профессиональную красоту", sub: "Medoria Beauty собирает уход, макияж и профессиональные инструменты в сфокусированный каталог для салонов, бутиков и специалистов Таджикистана." },
+    hero: { tag: "О MEDORIA BEAUTY", title: "Продуманная точка зрения на профессиональную красоту", sub: "Medoria Beauty собирает парфюмерию, гигиену, макияж, волосы, технику, аксессуары и добавки в сфокусированный каталог для салонов, бутиков и специалистов Таджикистана." },
     mission: { tag: "НАША ТОЧКА ЗРЕНИЯ", title: "Отобрано с целью", body: "Профессиональной красоте не нужно больше шума. Ей нужен более понятный отбор: релевантные продукты, полезный контекст и прямой способ обсудить наличие и коммерческие условия." },
     values: { tag: "НАШИ ЦЕННОСТИ", items: [
       ["Сдержанность", "Сфокусированный отбор, представленный без излишеств."],
@@ -70,7 +70,7 @@ const COPY = {
     cta: { title: "Начните с того, что нужно вашему бизнесу", sub: "Откройте каталог или отправьте Medoria сфокусированный запрос по товару." },
   },
   en: {
-    hero: { tag: "ABOUT MEDORIA BEAUTY", title: "A considered point of view on professional beauty", sub: "Medoria Beauty brings skincare, makeup and professional tools into a focused catalog for salons, boutiques and specialists in Tajikistan." },
+    hero: { tag: "ABOUT MEDORIA BEAUTY", title: "A considered point of view on professional beauty", sub: "Medoria Beauty brings fragrance, personal care, makeup, hair, electricals, accessories and supplements into a focused catalog for salons, boutiques and specialists in Tajikistan." },
     mission: { tag: "OUR POINT OF VIEW", title: "Selected with purpose", body: "Professional beauty does not need more noise. It needs a clearer edit: relevant products, useful context and a direct way to discuss availability and commercial requirements." },
     values: { tag: "OUR VALUES", items: [
       ["Restraint", "A focused selection, presented without excess."],
@@ -95,7 +95,7 @@ const COPY = {
     cta: { title: "Start with what your business needs", sub: "Explore the catalog or send Medoria a focused product request." },
   },
   fa: {
-    hero: { tag: "درباره مدوریا بیوتی", title: "نگاهی سنجیده به زیبایی حرفه‌ای", sub: "مدوریا بیوتی مراقبت پوست، آرایش و ابزار حرفه‌ای را در کاتالوگی متمرکز برای سالن‌ها، بوتیک‌ها و متخصصان تاجیکستان گرد می‌آورد." },
+    hero: { tag: "درباره مدوریا بیوتی", title: "نگاهی سنجیده به زیبایی حرفه‌ای", sub: "مدوریا بیوتی عطر، بهداشتی، آرایشی، مو، لوازم برقی، مد و مکمل را در کاتالوگی متمرکز برای سالن‌ها، بوتیک‌ها و متخصصان تاجیکستان گرد می‌آورد." },
     mission: { tag: "دیدگاه ما", title: "منتخب با هدف", body: "زیبایی حرفه‌ای به سروصدای بیشتر نیاز ندارد. آن به گزینشی شفاف‌تر نیاز دارد: محصولات مرتبط، زمینه‌ای مفید و راهی مستقیم برای گفتگو درباره موجودی و نیازهای تجاری." },
     values: { tag: "ارزش‌های ما", items: [
       ["خویشتن‌داری", "انتخابی متمرکز، بدون زیاده‌روی ارائه شده."],
