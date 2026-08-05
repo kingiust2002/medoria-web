@@ -14,7 +14,7 @@ import { DEFAULT_LOCALE, LANG_META } from "@/lib/i18n";
 export const metadata = {
   title: "Medoria — Professional Health & Beauty in Tajikistan",
   description:
-    "Ду каталоги касбӣ — Medoria Health барои маводи тиббӣ ва Medoria Beauty барои нигоҳубини пӯст, ороиш ва абзорҳои зебоӣ дар Тоҷикистон.",
+    "Ду каталоги касбӣ — Medoria Health барои маводи тиббӣ ва Medoria Beauty барои атр, беҳдошт, ороиш, мӯй ва абзори зебоӣ дар Тоҷикистон.",
   alternates: { canonical: "/" },
   robots: { index: true, follow: true },
   openGraph: {
