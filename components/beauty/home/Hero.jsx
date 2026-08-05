@@ -18,11 +18,16 @@ import { BeautyWordLockup } from "@/components/beauty/BeautyBrand";
 const BeautyHeroScene = dynamic(() => import("@/components/beauty/home/BeautyHeroScene"), { ssr: false });
 const EASE = [0.2, 0.8, 0.2, 1];
 
-// `depts` is the real seven-department tree, handed down from the page — the
-// hero is a client component so it cannot read it itself. It used to render
-// three hard-coded chips (Skincare / Makeup / Tools) all labelled "soon";
-// those departments are live now and each one links into its own World.
-export default function Hero({ lang, banner, depts = [] }) {
+// `depts` is the real seven-department tree and `featured` the products the
+// operator starred in the panel — both handed down from the page, since the
+// hero is a client component and cannot read them itself.
+//
+// The departments drive the search suggestions and the chip row. The floating
+// card is a shop window, not a second navigation: it shows the few products
+// the operator chose to put in it (beauty_products.is_featured), and hides its
+// list entirely while nothing is starred rather than falling back to listing
+// all seven categories again.
+export default function Hero({ lang, banner, depts = [], featured = [] }) {
   const worldsAll = `/beauty/${lang}/worlds`;
   const t = getTranslations(lang);
   const reduce = useReducedMotion();
@@ -247,28 +252,31 @@ export default function Hero({ lang, banner, depts = [] }) {
                 <span className="w-8 h-8 rounded-full bg-cyan-500/15 text-cyan-600 flex items-center justify-center"><Icon name="badgeCheck" size={16} /></span>
               </div>
               <div className="text-[11px] text-ink-muted -mt-3 mb-4">Luxury Beauty · Tajikistan</div>
-              {depts.length > 0 && (
-              <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint mb-2">
-                {{ fa: "کالکشن ما", ru: "Наша коллекция", tg: "Коллексияи мо", en: "Our collection" }[lang] || "Our collection"}
-              </div>
+              {featured.length > 0 && (
+                <>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint mb-2">
+                    {{ fa: "محصولات منتخب", ru: "Избранные товары", tg: "Маҳсулоти интихобшуда", en: "Featured products" }[lang] || "Featured products"}
+                  </div>
+                  <div className="flex flex-col gap-2 mb-4">
+                    {featured.map((p) => (
+                      <a key={p.slug} href={p.href}
+                        className="flex items-center gap-3 rounded-xl border px-3 py-2 transition-colors group bg-brand-violet/[0.05] border-line hover:bg-brand-violet/[0.09]">
+                        <span className="w-10 h-10 rounded-lg img-ph overflow-hidden grid place-items-center shrink-0">
+                          {p.img
+                            ? <img src={p.img} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                            : <Icon name="sparkles" size={18} strokeWidth={1.6} className="text-brand-violet" />}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[12px] font-semibold text-ink truncate">{p.name}</span>
+                          {/* Brand names are Latin trademarks — never mirrored. */}
+                          {p.brand && <span dir="ltr" className="block text-[11px] font-semibold text-brand-violet truncate">{p.brand}</span>}
+                        </span>
+                        <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={14} className="text-ink-faint group-hover:text-brand-violet transition-colors" />
+                      </a>
+                    ))}
+                  </div>
+                </>
               )}
-              <div className="flex flex-col gap-2 mb-4">
-                {depts.map((c) => (
-                  <a key={c.slug} href={c.href}
-                    className="flex items-center gap-3 rounded-xl border px-3 py-2 transition-colors group bg-brand-violet/[0.05] border-line hover:bg-brand-violet/[0.09]">
-                    <span className="w-10 h-10 rounded-lg img-ph overflow-hidden grid place-items-center shrink-0">
-                      {c.img
-                        ? <img src={c.img} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
-                        : <Icon name={c.icon || "sparkles"} size={18} strokeWidth={1.6} className="text-brand-violet" />}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[12px] font-semibold text-ink truncate">{c.name}</span>
-                      <span className="block text-[11px] font-semibold text-brand-violet">{c.count} {c.countLabel}</span>
-                    </span>
-                    <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={14} className="text-ink-faint group-hover:text-brand-violet transition-colors" />
-                  </a>
-                ))}
-              </div>
               <a href={worldsAll} className="flex items-center justify-between rounded-xl border px-4 py-3 transition-colors bg-brand-violet/[0.05] border-line hover:bg-brand-violet/[0.09]">
                 <span className="text-[12px] font-semibold text-ink">{t.home.heroCta}</span>
                 <Icon name={lang === "fa" ? "arrowL" : "arrowUpRight"} size={15} className="text-brand-violet" />

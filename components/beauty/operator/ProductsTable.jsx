@@ -230,7 +230,7 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
                   </button>
                   <button onClick={() => runQuick(p, { is_featured: !p.is_featured })} disabled={isBusy}
                     className={`hidden sm:grid place-items-center w-8 h-8 rounded-lg transition-colors disabled:opacity-50 ${p.is_featured ? "text-accent-gold bg-accent-gold/10" : "text-ink-faint hover:bg-line-soft"}`}
-                    title={p.is_featured ? "ویژه (کلیک=عادی)" : "عادی (کلیک=ویژه)"}>
+                    title={p.is_featured ? "ویژه — در صفحه‌ی اصلی نمایش داده می‌شود (کلیک=عادی)" : "عادی (کلیک=ویژه: نمایش در صفحه‌ی اصلی)"}>
                     <Icon name="star" size={16} fill={p.is_featured ? "currentColor" : "none"} />
                   </button>
 

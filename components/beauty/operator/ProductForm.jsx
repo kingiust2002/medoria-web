@@ -423,7 +423,7 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
           <SectionCard title="انتشار" icon="badgeCheck">
             <div className="flex flex-col gap-3">
               <div className="rounded-xl bg-canvas-soft border border-line p-3.5"><Toggle checked={f.is_active} onChange={(v) => up("is_active", v)} label="فعال (نمایش در سایت)" desc="غیرفعال = آرشیو، در سایت دیده نمی‌شود." /></div>
-              <div className="rounded-xl bg-canvas-soft border border-line p-3.5"><Toggle checked={f.is_featured} onChange={(v) => up("is_featured", v)} label="ویژه (Featured)" desc="نمایش در بخش محصولات منتخب." /></div>
+              <div className="rounded-xl bg-canvas-soft border border-line p-3.5"><Toggle checked={f.is_featured} onChange={(v) => up("is_featured", v)} label="ویژه (Featured)" desc="در بخش «منتخب» صفحه‌ی اصلی و در کارت شناور بالای صفحه (۴ محصول اول) نمایش داده می‌شود." /></div>
             </div>
             <div className="mt-4 flex flex-col gap-2">
               <SaveButton full />
