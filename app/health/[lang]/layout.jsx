@@ -11,15 +11,11 @@ import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
 import AiAssistant from "@/components/shared/AiAssistant";
 import ScrollProgress from "@/components/shared/ScrollProgress";
 
-// Next.js 15 changed unconfigured server fetches to no-store. Supabase JS uses
-// fetch internally, so preserve the previous public-catalog behavior here:
-// individual pages still control freshness through their static `revalidate`
-// values and operator mutations continue to call revalidatePath. Operator and
-// API routes are outside this layout and remain uncached.
+// Next.js 15: preserve cached public Supabase fetch behavior.
 export const fetchCache = "default-cache";
 
-// The Collection mega-menu follows the active database tree. Panel mutations
-// revalidate Health routes; this interval is the fallback for external changes.
+// The Collection mega-menu follows the active database tree. Operator mutations
+// revalidate Health routes; this interval is a fallback for external changes.
 export const revalidate = 120;
 
 export function generateStaticParams() {
@@ -27,8 +23,7 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata(props) {
-  const params = await props.params;
-  const { lang } = params;
+  const { lang } = await props.params;
   if (!LOCALES.includes(lang)) return {};
   const t = getTranslations(lang);
   return {
@@ -41,22 +36,14 @@ export async function generateMetadata(props) {
   };
 }
 
-// Resolve the large category tree in its own streaming boundary. The first
-// frame still contains a complete, usable header; the Collection entry becomes
-// the cascading tree as soon as the slim locale-specific projection resolves.
 async function HealthNav({ lang }) {
   const categoryTree = await getHealthNavTree(lang);
   return <Header lang={lang} categoryTree={categoryTree} />;
 }
 
 export default async function LangLayout(props) {
-  const params = await props.params;
-
-  const {
-    children
-  } = props;
-
-  const { lang } = params;
+  const { lang } = await props.params;
+  const { children } = props;
   if (!LOCALES.includes(lang)) notFound();
   const dir = LANG_META[lang].dir;
   const t = getTranslations(lang);
@@ -69,15 +56,23 @@ export default async function LangLayout(props) {
       "@type": "Organization",
       name: "Medoria",
       url: SITE_URL,
-      logo: `${SITE_URL}/logo-mark.png`,
-      contactPoint: phone ? [{ "@type": "ContactPoint", telephone: phone, contactType: "sales", availableLanguage: ["English", "Russian", "Tajik"] }] : undefined,
-      email: email || undefined,
+      logo: `${SITE_URL}/logo.png`,
+      description: t.footer.desc,
+      areaServed: { "@type": "Country", name: "Tajikistan" },
+      contactPoint: [{
+        "@type": "ContactPoint",
+        contactType: "sales",
+        availableLanguage: ["en", "ru", "tg"],
+        ...(phone ? { telephone: phone } : {}),
+        ...(email ? { email } : {}),
+      }],
     },
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
       name: "Medoria",
       url: SITE_URL,
+      inLanguage: ["en", "ru", "tg"],
       potentialAction: {
         "@type": "SearchAction",
         target: `${SITE_URL}/health/${lang}/catalog?q={search_term_string}`,
@@ -87,16 +82,28 @@ export default async function LangLayout(props) {
   ];
 
   return (
-    <div dir={dir} data-lang={lang} data-vertical="health" className="min-h-screen flex flex-col bg-white text-slate-900">
+    <div lang={lang} dir={dir} data-vertical="health" className={dir === "rtl" ? "font-farsi" : "font-sans"}>
+      {/* Set html attributes via script to avoid SSR mismatch */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `document.documentElement.lang="${lang}";document.documentElement.dir="${dir}";`,
+        }}
+      />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
       <ScrollProgress />
+      {/* subtle film-grain overlay — premium textured feel, never blocks input */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-[70] opacity-[0.035] mix-blend-soft-light"
+        style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }}
+      />
       <Suspense fallback={<Header lang={lang} categoryTree={[]} />}>
         <HealthNav lang={lang} />
       </Suspense>
-      <main className="flex-1">{children}</main>
-      <Footer lang={lang} t={t} />
+      <main>{children}</main>
+      <Footer lang={lang} />
+      <FloatingWhatsApp lang={lang} />
       <AiAssistant lang={lang} />
-      <FloatingWhatsApp />
     </div>
   );
 }

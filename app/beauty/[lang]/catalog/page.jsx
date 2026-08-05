@@ -8,8 +8,9 @@
 import Link from "next/link";
 import { LOCALES } from "@/lib/i18n";
 import { waLink, tgLink, bulkInquiryMessage } from "@/lib/whatsapp";
-import { getBeautyTranslations, BEAUTY_CATEGORIES, getCategoryName } from "@/components/beauty/i18n";
+import { getBeautyTranslations } from "@/components/beauty/i18n";
 import { getBeautyCategoryTree, getBeautyCategoryPath, getBeautyBrands, getBeautyProducts } from "@/lib/beauty/catalog";
+import { nameOf, deptHref, copyFor } from "@/lib/beauty/worlds";
 import BeautyProductCard from "@/components/beauty/catalog/BeautyProductCard";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
@@ -28,7 +29,7 @@ const SORTS = ["newest", "price_asc", "price_desc", "popular"];
 
 const COPY = {
   tg: {
-    title: "Каталоги касбии зебоӣ", subtitle: "Интихоби андешидашудаи нигоҳубин, ороиш ва абзорҳо барои кашфи касбӣ.",
+    title: "Каталоги касбии зебоӣ", subtitle: "Атр, беҳдошт, ороиш, мӯй ва абзор — интихоби андешидашуда барои кашфи касбӣ.",
     emptyTitle: "Каталог омода карда мешавад", emptySub: "Бигӯед чӣ меҷӯед — мо имконоти мавҷуда ва қадамҳои баъдиро тасдиқ мекунем.", browse: "Дидани категорияҳо",
     allWorlds: "Ҳама", allCats: "Ҳама самтҳо", search: "Ҷустуҷӯи мол, бренд ё SKU…", apply: "Ҷустуҷӯ",
     brandAll: "Ҳама брендҳо", results: "маҳсулот", noResults: "Ягон маҳсулоти мувофиқ нест", noResultsSub: "Филтрҳоро тағйир диҳед ё ҷустуҷӯи васеътар кунед.", clear: "Пок кардани филтрҳо",
@@ -36,7 +37,7 @@ const COPY = {
     sort: { default: "Тавсияшуда", newest: "Воридшудаи нав", price_asc: "Нарх: аввал арзон", price_desc: "Нарх: аввал қимат", popular: "Серталаб" },
   },
   ru: {
-    title: "Профессиональный каталог красоты", subtitle: "Продуманный отбор ухода, макияжа и инструментов для профессионального знакомства.",
+    title: "Профессиональный каталог красоты", subtitle: "Парфюмерия, гигиена, макияж, волосы и техника — продуманный отбор для профессионального знакомства.",
     emptyTitle: "Каталог готовится", emptySub: "Расскажите, что вы ищете — мы подтвердим доступные варианты и следующие шаги.", browse: "Смотреть категории",
     allWorlds: "Все", allCats: "Все направления", search: "Поиск по названию, бренду или SKU…", apply: "Найти",
     brandAll: "Все бренды", results: "товаров", noResults: "Ничего подходящего не найдено", noResultsSub: "Измените фильтры или расширьте поиск.", clear: "Сбросить фильтры",
@@ -44,7 +45,7 @@ const COPY = {
     sort: { default: "Рекомендуемые", newest: "Новые поступления", price_asc: "Цена: сначала ниже", price_desc: "Цена: сначала выше", popular: "Популярные" },
   },
   en: {
-    title: "Professional beauty catalog", subtitle: "A considered selection of skincare, makeup and tools for professional discovery.",
+    title: "Professional beauty catalog", subtitle: "Fragrance, personal care, makeup, hair and electricals — a considered selection for professional discovery.",
     emptyTitle: "The catalog is being prepared", emptySub: "Tell us what you are looking for and we will confirm the available options and next steps.", browse: "Explore categories",
     allWorlds: "All", allCats: "All categories", search: "Search by product, brand or SKU…", apply: "Search",
     brandAll: "All brands", results: "products", noResults: "No matching products", noResultsSub: "Adjust the filters or try a broader search.", clear: "Clear filters",
@@ -52,7 +53,7 @@ const COPY = {
     sort: { default: "Featured", newest: "New arrivals", price_asc: "Price: low to high", price_desc: "Price: high to low", popular: "Most viewed" },
   },
   fa: {
-    title: "کاتالوگ حرفه‌ای زیبایی", subtitle: "انتخابی سنجیده از مراقبت پوست، آرایش و ابزار برای کشف حرفه‌ای.",
+    title: "کاتالوگ حرفه‌ای زیبایی", subtitle: "عطر، بهداشتی، آرایشی، مو و لوازم برقی — انتخابی سنجیده برای کشف حرفه‌ای.",
     emptyTitle: "کاتالوگ در حال آماده‌سازی است", emptySub: "بگویید دنبال چه هستید — گزینه‌های موجود و قدم‌های بعدی را تأیید می‌کنیم.", browse: "مشاهده دسته‌بندی‌ها",
     allWorlds: "همه", allCats: "همه دسته‌ها", search: "جستجوی محصول، برند یا SKU…", apply: "جستجو",
     brandAll: "همه برندها", results: "محصول", noResults: "محصول مطابقی یافت نشد", noResultsSub: "فیلترها را تغییر دهید یا جستجو را گسترده‌تر کنید.", clear: "پاک‌کردن فیلترها",
@@ -225,17 +226,18 @@ export default async function BeautyCatalogPage(props) {
           </>
         ) : (
           <>
-            {/* World entry tiles (pre-launch) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-5 mb-12">
-              {BEAUTY_CATEGORIES.map((cat) => (
-                <TiltCard key={cat.slug} className="h-full rounded-2xl" max={7}>
-                  <Link href={`/beauty/${lang}/worlds`} className="card card-hover bv-sheen p-6 text-center group h-full block">
+            {/* World entry tiles — the real departments, not the three
+                placeholders this carried before the tree existed. */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5 mb-12">
+              {tree.map((cat) => (
+                <TiltCard key={cat.id} className="h-full rounded-2xl" max={7}>
+                  <Link href={deptHref(lang, cat.slug)} className="card card-hover bv-sheen p-6 text-center group h-full block focus-ring">
                     <div className="relative w-14 h-14 mx-auto mb-3 rounded-2xl bg-brand-violet/[0.08] text-brand-violet flex items-center justify-center transition-all duration-300 group-hover:text-white group-hover:shadow-brand group-hover:-translate-y-0.5">
                       <span className="absolute inset-0 rounded-2xl bg-brand-gradient opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <Icon name={cat.icon} size={28} strokeWidth={1.6} className="relative" />
+                      <Icon name={cat.icon || "sparkles"} size={28} strokeWidth={1.6} className="relative" />
                     </div>
-                    <div className="font-display font-semibold text-[15px] text-ink group-hover:text-brand-violet transition-colors mb-1">{getCategoryName(cat.slug, lang)}</div>
-                    <div className="text-[11px] text-ink-faint">{t.common.soon}</div>
+                    <div className="font-display font-semibold text-[15px] text-ink group-hover:text-brand-violet transition-colors mb-1">{nameOf(cat, lang)}</div>
+                    <div className="text-[11px] text-ink-faint">{cat.children?.length || 0} {copyFor(lang).items}</div>
                   </Link>
                 </TiltCard>
               ))}
