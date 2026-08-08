@@ -62,12 +62,11 @@ const nextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
-  // 301 the secondary domain to the canonical one (only fires when the request
-  // host is medoria.com; medoria.tj / vercel.app are unaffected).
+  // medoriaco.com is the canonical production domain.
+  // Redirect only the www variant to the apex domain.
   async redirects() {
     return [
-      { source: "/:path*", has: [{ type: "host", value: "medoria.com" }], destination: "https://medoria.tj/:path*", permanent: true },
-      { source: "/:path*", has: [{ type: "host", value: "www.medoria.com" }], destination: "https://medoria.tj/:path*", permanent: true },
+      { source: "/:path*", has: [{ type: "host", value: "www.medoriaco.com" }], destination: "https://medoriaco.com/:path*", permanent: true },
       // «World» drill-down moved from query params to route segments so the
       // pages can be statically prerendered (?dept= forced a per-request render
       // on every hit). Keep the old shape working for anything already linked.
