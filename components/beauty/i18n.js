@@ -1,6 +1,16 @@
 // components/beauty/i18n.js — Beauty translation tree shaped EXACTLY like
 // lib/i18n's (common/home/footer + CATEGORIES/getCategoryName), so the Health
 // home components can be copied verbatim and only swap this import.
+import { SWITCHER_LOCALES } from "@/lib/i18n";
+
+// The stats band advertises how many languages a VISITOR can read the site in
+// — that is the language switcher, not the route table. Persian is a valid
+// route but is deliberately kept out of the switcher (see lib/i18n), so it
+// must not be counted here. Deriving the figure means it can never drift out
+// of sync with the switcher again.
+const LANGS = String(SWITCHER_LOCALES.length);
+const LANGS_FA = LANGS.replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
+
 export const BEAUTY_CATEGORIES = [
   { slug: "skincare", icon: "sparkles", accent: "from-primary-100 to-cyan-100" },
   { slug: "makeup", icon: "star", accent: "from-cyan-100 to-primary-100" },
@@ -33,7 +43,7 @@ const T = {
       heroSub: "Атр, беҳдошт, ороиш, мӯй, абзори барқӣ, мӯд ва иловагиҳо — коллексияи андешидашуда барои салонҳо, бутикҳо ва мутахассисони зебоии Тоҷикистон. Мустақим дархости мавҷудӣ диҳед.",
       heroCta: "Кашфи каталог",
       heroSearch: "Маҳсулот, бренд ё категорияро ҷустуҷӯ кунед...",
-      stats: [["B2B", "Зебоии касбӣ"], ["4", "Забон"], ["7", "Ҷаҳони маҳсулот"], ["Мустақим", "Дархости ҳамкорӣ"]],
+      stats: [["B2B", "Зебоии касбӣ"], [LANGS, "Забон"], ["7", "Ҷаҳони маҳсулот"], ["Мустақим", "Дархости ҳамкорӣ"]],
       catTag: "ИНТИХОБ",
       catH: "Ҳафт ҷаҳон. Як нигоҳи андешидашуда.",
       catSub: "Атр, беҳдошт, ороиш, мӯй, абзори барқӣ, мӯд ва иловагиҳо — бо равшанӣ ва назокат якҷоя.",
@@ -88,7 +98,7 @@ const T = {
       heroSub: "Парфюмерия, гигиена, макияж, волосы, техника, аксессуары и добавки — продуманная коллекция для салонов, бутиков и бьюти-специалистов Таджикистана. Запросите наличие напрямую.",
       heroCta: "Смотреть каталог",
       heroSearch: "Поиск товара, бренда или категории...",
-      stats: [["B2B", "Профессиональная красота"], ["4", "Языка"], ["7", "Миров товаров"], ["Прямой", "Запрос сотрудничества"]],
+      stats: [["B2B", "Профессиональная красота"], [LANGS, "Языка"], ["7", "Миров товаров"], ["Прямой", "Запрос сотрудничества"]],
       catTag: "ОТБОР",
       catH: "Семь миров. Один продуманный взгляд.",
       catSub: "Парфюмерия, гигиена, макияж, волосы, техника, аксессуары и добавки — собраны с ясностью и сдержанностью.",
@@ -143,7 +153,7 @@ const T = {
       heroSub: "Fragrance, personal care, makeup, hair, electricals, accessories and supplements — a considered collection for salons, boutiques and beauty specialists in Tajikistan. Request availability directly.",
       heroCta: "Discover the catalog",
       heroSearch: "Search products, brands or categories…",
-      stats: [["B2B", "Professional beauty"], ["4", "Languages"], ["7", "Worlds of product"], ["Direct", "Partnership inquiry"]],
+      stats: [["B2B", "Professional beauty"], [LANGS, "Languages"], ["7", "Worlds of product"], ["Direct", "Partnership inquiry"]],
       catTag: "THE EDIT",
       catH: "Seven worlds. One considered point of view.",
       catSub: "Fragrance, personal care, makeup, hair, electricals, accessories and supplements — brought together with clarity and restraint.",
@@ -198,7 +208,7 @@ const T = {
       heroSub: "عطر، بهداشتی، آرایشی، مو، لوازم برقی، مد و مکمل — کالکشنی سنجیده برای سالن‌ها، بوتیک‌ها و متخصصان زیبایی تاجیکستان. مستقیم موجودی را استعلام بگیرید.",
       heroCta: "کشف کاتالوگ",
       heroSearch: "جستجوی محصول، برند یا دسته‌بندی...",
-      stats: [["B2B", "زیبایی حرفه‌ای"], ["۴", "زبان"], ["۷", "دنیای محصول"], ["مستقیم", "استعلام همکاری"]],
+      stats: [["B2B", "زیبایی حرفه‌ای"], [LANGS_FA, "زبان"], ["۷", "دنیای محصول"], ["مستقیم", "استعلام همکاری"]],
       catTag: "منتخب",
       catH: "هفت دنیا. یک نگاه سنجیده.",
       catSub: "عطر، بهداشتی، آرایشی، مو، لوازم برقی، مد و مکمل — با شفافیت و خویشتن‌داری کنار هم.",

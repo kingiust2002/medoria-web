@@ -15,6 +15,7 @@ import BeautyProductCard from "@/components/beauty/catalog/BeautyProductCard";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
+import BeautyPageHeader from "@/components/beauty/BeautyPageHeader";
 import SplitText from "@/components/shared/SplitText";
 
 // Filters come from searchParams; the grid must always reflect the operator's
@@ -130,6 +131,7 @@ export default async function BeautyCatalogPage(props) {
     <div className="bg-canvas-soft min-h-screen">
       {/* Header */}
       <div className="bg-canvas-soft border-b border-line relative overflow-hidden">
+        <BeautyPageHeader name="catalog-header" />
         <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{
           background: "radial-gradient(50% 60% at 85% 0%, var(--v-glow), transparent 60%)",
         }} />

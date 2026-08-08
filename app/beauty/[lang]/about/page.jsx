@@ -10,6 +10,8 @@ import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import SplitText from "@/components/shared/SplitText";
+import Image from "next/image";
+import BeautyPageHeader from "@/components/beauty/BeautyPageHeader";
 
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
@@ -144,6 +146,7 @@ export default async function BeautyAboutPage(props) {
     <div className="bg-canvas-soft">
       {/* Hero */}
       <section className="relative overflow-hidden bg-canvas-soft border-b border-line">
+        <BeautyPageHeader name="about-header" />
         <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{
           background: "radial-gradient(60% 60% at 82% 10%, var(--v-glow), transparent 60%), radial-gradient(50% 50% at 10% 100%, rgba(28,41,81,0.08), transparent 60%)",
         }} />
@@ -165,8 +168,13 @@ export default async function BeautyAboutPage(props) {
             <h2 className="section-h mb-5 leading-tight">{c.mission.title}</h2>
             <p className="text-base md:text-lg text-ink-muted leading-[1.85]">{c.mission.body}</p>
           </div>
-          <div className="relative aspect-[16/11] w-full rounded-[2rem] overflow-hidden shadow-card img-ph grid place-items-center bv-sheen">
-            <Icon name="sparkles" size={64} strokeWidth={1.1} className="text-[color:var(--v-copper)] opacity-60" />
+          {/* Was an icon on a gradient. Rendered with next/image rather than
+              the shared ImagePlaceholder because this page is otherwise fully
+              server-rendered — the placeholder is a client component, and
+              10 KB of JS to guard a file we ship is not a trade worth making. */}
+          <div className="relative aspect-[16/11] w-full rounded-[2rem] overflow-hidden shadow-card img-ph">
+            <Image src="/beauty/about/mission.webp" alt={c.mission.title} fill sizes="(max-width: 1023px) 100vw, 50vw" className="object-cover dark:hidden" />
+            <Image src="/beauty/about/mission-dark.webp" alt="" fill sizes="(max-width: 1023px) 100vw, 50vw" className="object-cover hidden dark:block" />
           </div>
         </div>
       </section>

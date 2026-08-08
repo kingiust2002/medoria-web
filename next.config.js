@@ -82,7 +82,12 @@ const nextConfig = {
   },
   // xlsx (SheetJS) parses operator uploads server-side only.
   serverExternalPackages: ["xlsx"],
-  experimental: { typedRoutes: false },
+  experimental: {
+    typedRoutes: false,
+    serverActions: {
+      bodySizeLimit: "8mb",
+    },
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

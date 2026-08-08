@@ -10,6 +10,7 @@ import Link from "next/link";
 import Icon from "@/components/shared/Icon";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import { Stagger, StaggerItem } from "@/components/shared/Reveal";
+import BeautyPageHeader from "@/components/beauty/BeautyPageHeader";
 import { beautyImageUrl } from "@/lib/beauty/catalog";
 import { nameOf, hasKids, gradFor, DEPT_IMG, copyFor } from "@/lib/beauty/worlds";
 import { CATEGORY_IMG } from "@/lib/beauty/categoryImages";
@@ -29,6 +30,11 @@ export default function WorldGrid({
   // Fixes the gradient family for a whole subtree, so a department and its
   // descendants share one hue instead of restarting the palette per page.
   gradIndex,
+  // Name of a banner in /public/beauty/headers to lay behind the title block,
+  // the way the other tabs do. Only the root of «World» sets it: a department
+  // or group page already leads with its own photographed tiles, and a second
+  // photograph above them would compete with the grid.
+  headerImg,
 }) {
   const c = copyFor(lang);
   const isDept = variant === "dept";
@@ -36,7 +42,9 @@ export default function WorldGrid({
 
   return (
     <div className="pb-20">
-      <div className="container-x pt-8 pb-6">
+      <div className={`relative ${headerImg ? "overflow-hidden border-b border-line bg-canvas-soft mb-8" : ""}`}>
+        {headerImg && <BeautyPageHeader name={headerImg} />}
+        <div className={`container-x relative ${headerImg ? "pt-10 pb-10 md:pt-14 md:pb-14" : "pt-8 pb-6"}`}>
         <Breadcrumb lang={lang} crumbs={crumbs} />
         <div className="mt-5 flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -60,6 +68,7 @@ export default function WorldGrid({
               </Link>
             )}
           </div>
+        </div>
         </div>
       </div>
 

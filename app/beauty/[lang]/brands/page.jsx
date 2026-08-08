@@ -13,6 +13,7 @@ import { getBeautyBrandDirectory, beautyBrandLogoUrl } from "@/lib/beauty/catalo
 import { waLink, tgLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import Breadcrumb from "@/components/shared/Breadcrumb";
+import BeautyPageHeader from "@/components/beauty/BeautyPageHeader";
 import { Reveal, Stagger, StaggerItem } from "@/components/shared/Reveal";
 
 // ISR, not force-dynamic: this page reads no searchParams and no request
@@ -100,12 +101,18 @@ export default async function BeautyBrandsPage(props) {
       {/* Cinematic motion header */}
       <section className="relative overflow-hidden border-b border-line">
         <div className="brand-hero absolute inset-0" aria-hidden="true" />
+        {/* The photograph goes between the CSS pan and the streak, so the
+            motion still reads over it rather than being replaced by it. */}
+        <BeautyPageHeader name="brands-header" light={0.62} dark={0.6} onDark />
         <div className="brand-hero-streak" aria-hidden="true" />
         <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-black/25" />
         <div aria-hidden="true" className="absolute inset-x-10 bottom-0 h-px opacity-70"
           style={{ background: "linear-gradient(90deg, transparent, var(--v-champagne), transparent)" }} />
         <div className="container-x relative py-16 md:py-24">
-          <Breadcrumb lang={lang} className="mb-4 [&_*]:!text-white/70" crumbs={[{ label: t.nav.home, href: `/beauty/${lang}` }, { label: t.nav.brands }]} />
+          {/* The shared pill is ivory glass; this band is the one place it sits
+              on a deep ground, so the surface and border have to be inverted
+              too — recolouring only the text left white on near-white. */}
+          <Breadcrumb lang={lang} className="mb-4 !bg-white/10 !border-white/25 [&_*]:!text-white/75" crumbs={[{ label: t.nav.home, href: `/beauty/${lang}` }, { label: t.nav.brands }]} />
           <div className="text-[11px] font-bold tracking-[0.32em] text-[color:#F3DCBE] mb-3" dir="ltr">MAISONS</div>
           <h1 className="bv-display text-4xl md:text-6xl text-white leading-[1.08] mb-4 max-w-3xl">{c.title}</h1>
           <p className="text-[14px] md:text-lg text-white/85 leading-relaxed max-w-2xl">{c.sub}</p>
