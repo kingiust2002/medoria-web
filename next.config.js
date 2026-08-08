@@ -93,11 +93,9 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      // medoria.co is the selected canonical domain. The secondary domain and
-      // www variants redirect in one permanent hop after DNS cutover.
-      { source: "/:path*", has: [{ type: "host", value: "medoriaco.com" }], destination: "https://medoria.co/:path*", permanent: true },
-      { source: "/:path*", has: [{ type: "host", value: "www.medoriaco.com" }], destination: "https://medoria.co/:path*", permanent: true },
-      { source: "/:path*", has: [{ type: "host", value: "www.medoria.co" }], destination: "https://medoria.co/:path*", permanent: true },
+      // medoriaco.com is the canonical production domain.
+      // Only the www variant redirects to the apex domain.
+      { source: "/:path*", has: [{ type: "host", value: "www.medoriaco.com" }], destination: "https://medoriaco.com/:path*", permanent: true },
       // «World» drill-down moved from query params to route segments so pages
       // can be statically prerendered. Preserve old links permanently.
       {
