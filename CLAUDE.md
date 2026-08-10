@@ -21,10 +21,27 @@ ivory/champagne/copper). Gateway at `/` presents both and routes to
 - Production backups are local + encrypted Cloudflare R2. Never send backup contents directly to the raw R2 remote; use the `r2crypt` layer.
 - Never print or commit `deploy/.env`, Supabase `.env`, `rclone.conf`, API tokens, DB passwords, service-role keys, operator secrets, or rclone crypt passwords.
 
+### The two branches
+
+- `main` — source of the **application**. Base for every new PR.
+- `staging/self-hosting-sync-20260802` — what the VPS checks out. It carries the
+  deployment surface that `main` does not have: `Dockerfile`, `deploy/**`,
+  `scripts/self-host/**`, `app/api/health/route.js`, `output: "standalone"`,
+  and the GitHub workflows. **A checkout of `main` alone is not deployable.**
+  Full table: runbook §1.1.
+- The two histories differ on purpose. Never "tidy" them with a wholesale merge,
+  wholesale rebase, force push, or `git reset --hard`. Unifying them is a
+  deferred, scheduled decision — runbook §18.2.
+- Retired: PR #116 (`infra/self-hosting`) and PR #117
+  (`upgrade/next15-self-hosting`) were closed without merge and their branches
+  deleted. Their content is already absorbed (both tips are ancestors of the
+  deployment branch). Do not recreate them, and treat any document naming them
+  as stale — runbook §1.2.
+
 ### Where future changes belong
 
-- Normal application code: make a focused PR branch from `main`, run tests/lint/build, then merge to `main`.
-- The VPS currently uses the dedicated self-hosting/deployment checkout/branch. After an application PR is merged, deploy it **deliberately** to the VPS; never assume a merge to `main` automatically updates production.
+- Normal application code: make a focused PR branch from `main`, run tests/lint/build, then merge to `main`. `main` has no CI workflows, so those gates are yours to run.
+- After an application PR is merged, deploy it **deliberately** to the VPS; never assume a merge to `main` automatically updates production.
 - Production Caddy/self-hosting changes require reading the runbook and checking the deployment branch/live VPS first.
 - Do not use `git reset --hard` as a routine production synchronization method.
 - Before risky DB/infra changes, run a fresh production backup and require the local + R2 backup chain to PASS.
