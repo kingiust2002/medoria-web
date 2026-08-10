@@ -19,3 +19,46 @@
     format json
   }
 }
+
+
+api-staging.medoriaco.com, api.medoriaco.com {
+  encode zstd gzip
+
+  @supabase_api path /rest/v1 /rest/v1/* /auth/v1 /auth/v1/* /storage/v1 /storage/v1/*
+
+  handle @supabase_api {
+    reverse_proxy supabase-kong:8000 {
+      header_up X-Real-IP {remote_host}
+    }
+  }
+
+  handle {
+    respond "Not Found" 404
+  }
+
+  header {
+    -Server
+  }
+
+  log {
+    output stdout
+    format json
+  }
+}
+
+staging.medoriaco.com, medoriaco.com, www.medoriaco.com {
+  encode zstd gzip
+
+  reverse_proxy app:3000 {
+    header_up X-Real-IP {remote_host}
+  }
+
+  header {
+    -Server
+  }
+
+  log {
+    output stdout
+    format json
+  }
+}
