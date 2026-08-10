@@ -1,5 +1,19 @@
 # Application-only staging runbook
 
+> **Historical — migration-era document.**
+>
+> This file describes the plan and validation work carried out *before* the
+> August 2026 cutover, when production was still Vercel + Supabase Cloud. The
+> migration is complete: production is the self-hosted VPS behind
+> `https://medoriaco.com`. Keep this file for the reasoning and the test
+> evidence it records, not as instructions to follow.
+>
+> The authoritative operational document is
+> [`docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md`](../PRODUCTION_MIGRATION_AND_OPERATIONS.md).
+> The branches this document may name — `infra/self-hosting` and
+> `upgrade/next15-self-hosting` — were closed without merge and deleted; their
+> content lives on in this branch's history (runbook §1).
+
 This runbook deploys the Next.js application to a VPS while keeping Supabase Cloud, Vercel production, and production DNS unchanged.
 
 ## Safety boundary
@@ -55,8 +69,12 @@ Membership in the `docker` group is effectively root access. Use `sudo docker` u
 
 ## 2. Check out the staging branch
 
+The branch named here at the time — `infra/self-hosting` — no longer exists.
+The branch the production VPS actually checks out is
+`staging/self-hosting-sync-20260802`:
+
 ```bash
-git clone --branch infra/self-hosting --single-branch \
+git clone --branch staging/self-hosting-sync-20260802 --single-branch \
   https://github.com/kingiust2002/medoria-web.git
 cd medoria-web
 ```
@@ -199,7 +217,7 @@ Record and investigate:
 ```bash
 cd /path/to/medoria-web
 git fetch origin
-git checkout infra/self-hosting
+git checkout staging/self-hosting-sync-20260802
 git pull --ff-only
 npm ci
 npm run check:self-host-env -- deploy/.env

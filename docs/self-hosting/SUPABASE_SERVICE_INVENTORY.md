@@ -1,5 +1,19 @@
 # Supabase runtime service inventory
 
+> **Historical — migration-era document.**
+>
+> This file describes the plan and validation work carried out *before* the
+> August 2026 cutover, when production was still Vercel + Supabase Cloud. The
+> migration is complete: production is the self-hosted VPS behind
+> `https://medoriaco.com`. Keep this file for the reasoning and the test
+> evidence it records, not as instructions to follow.
+>
+> The authoritative operational document is
+> [`docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md`](../PRODUCTION_MIGRATION_AND_OPERATIONS.md).
+> The branches this document may name — `infra/self-hosting` and
+> `upgrade/next15-self-hosting` — were closed without merge and deleted; their
+> content lives on in this branch's history (runbook §1).
+
 Source: automated scan of 215 runtime files under `app/`, `components/`, `lib/`, and root middleware files.
 
 Command:

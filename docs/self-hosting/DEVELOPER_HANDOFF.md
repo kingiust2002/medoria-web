@@ -1,5 +1,19 @@
 # Medoria Developer Handoff
 
+> **Historical — migration-era document.**
+>
+> This file describes the plan and validation work carried out *before* the
+> August 2026 cutover, when production was still Vercel + Supabase Cloud. The
+> migration is complete: production is the self-hosted VPS behind
+> `https://medoriaco.com`. Keep this file for the reasoning and the test
+> evidence it records, not as instructions to follow.
+>
+> The authoritative operational document is
+> [`docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md`](../PRODUCTION_MIGRATION_AND_OPERATIONS.md).
+> The branches this document may name — `infra/self-hosting` and
+> `upgrade/next15-self-hosting` — were closed without merge and deleted; their
+> content lives on in this branch's history (runbook §1).
+
 Last updated: 2026-08-02
 
 This document is the operational handoff for Medoria self-hosting work. It is intended to let a developer or DevOps engineer resume the project without reconstructing the migration history from chat logs.
@@ -15,10 +29,23 @@ This document is the operational handoff for Medoria self-hosting work. It is in
 
 Important branches:
 
-- `main` — production/mainline application history.
-- `infra/self-hosting` — infrastructure/self-hosting base work.
+- `main` — the application source branch and the base for every new PR.
+- `staging/self-hosting-sync-20260802` — the branch the production VPS checks
+  out. It carries the deployment surface (`Dockerfile`, `deploy/**`,
+  `scripts/self-host/**`, `app/api/health/route.js`, the standalone build
+  setting, the workflows) that `main` does not have.
+
+Retired since this document was written:
+
+- `infra/self-hosting` — infrastructure/self-hosting base work. PR #116 closed
+  without merge on 2026-08-10, branch deleted.
 - `upgrade/next15-self-hosting` — Next.js 15 + self-hosting migration branch.
-- `staging/self-hosting-sync-20260802` — current reconciliation branch containing migration work plus latest `main` changes.
+  PR #117 closed without merge on 2026-08-10, branch deleted.
+
+Neither is a dependency any more. Both head commits (`af44fa2` and `3781ddc`)
+are ancestors of `staging/self-hosting-sync-20260802`, so their work is already
+in the deployment branch and their history is still reachable. Do not recreate
+them. See runbook §1.
 
 Current reconciled merge commit:
 

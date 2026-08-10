@@ -1,6 +1,22 @@
 # Next.js 15 maintenance upgrade
 
-Status: isolated draft branch only. This branch targets `infra/self-hosting`, not `main`, and is not approved for production.
+> **Historical — migration-era document.**
+>
+> This file describes the plan and validation work carried out *before* the
+> August 2026 cutover, when production was still Vercel + Supabase Cloud. The
+> migration is complete: production is the self-hosted VPS behind
+> `https://medoriaco.com`. Keep this file for the reasoning and the test
+> evidence it records, not as instructions to follow.
+>
+> The authoritative operational document is
+> [`docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md`](../PRODUCTION_MIGRATION_AND_OPERATIONS.md).
+> The branches this document may name — `infra/self-hosting` and
+> `upgrade/next15-self-hosting` — were closed without merge and deleted; their
+> content lives on in this branch's history (runbook §1).
+
+Status when written: isolated draft branch only, targeting `infra/self-hosting`, not `main`, and not approved for production.
+
+Status now: **superseded.** That draft branch (`upgrade/next15-self-hosting`, PR #117) and its base (`infra/self-hosting`, PR #116) were both closed without merge on 2026-08-10 and deleted. The upgrade work described below is already part of `staging/self-hosting-sync-20260802`, which is what production runs. The sections that follow are kept for the reasoning and the validation evidence.
 
 ## Why this upgrade exists
 
@@ -135,6 +151,6 @@ Before this branch can leave draft status:
 
 ## Rollback
 
-This branch is not merged into `infra/self-hosting` until approved. The immediate code rollback is therefore simply to keep using `infra/self-hosting`.
+Historical: at the time, this branch was not merged into `infra/self-hosting`, so the immediate code rollback was simply to keep using that branch.
 
-After a future merge, the previous branch/commit and Vercel production remain rollback references until the staging and production observation windows expire.
+Neither branch exists any more, so that rollback path is gone. The current rollback model — which accounts for the production data written on the VPS after cutover — is in [`docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md`](../PRODUCTION_MIGRATION_AND_OPERATIONS.md) §8. Vercel is no longer a rollback target for the application.
