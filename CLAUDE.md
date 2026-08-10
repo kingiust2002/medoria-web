@@ -1,9 +1,33 @@
 # Medoria — permanent project rules
 
+> **Production operations are self-hosted now.** Before touching deployment, database, Supabase, DNS, Caddy, backups, environment variables, or production infrastructure, read **`docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md` in full**. It is the authoritative migration history and operational runbook as of 2026-08-10.
+
 One repo, one house, two equal verticals: **Medoria Health** (B2B medical,
 navy/silver/glacial) and **Medoria Beauty** (luxury cosmetics,
 ivory/champagne/copper). Gateway at `/` presents both and routes to
 `/health/{lang}` and `/beauty/{lang}`.
+
+## Production infrastructure — non-negotiable context
+
+- Canonical production site: **`https://medoriaco.com`**.
+- Production Supabase API: **`https://api.medoriaco.com`**.
+- `www.medoriaco.com` redirects to the apex domain.
+- **Do not use or restore `medoria.tj`, `medoria.co`, or `medoria.com` as the canonical production domain.**
+- Production compute is the self-hosted VPS at `91.107.161.56`, not Vercel compute.
+- Production app checkout on the VPS: `/home/medoria/apps/medoria-staging`.
+- Self-hosted Supabase lives under `/home/medoria/infra/supabase-staging`.
+- DNS is still administered through Vercel DNS; this does **not** mean Vercel is the production application host.
+- The old Supabase Cloud project is frozen/stale rollback material, **not** a writable production database.
+- Production backups are local + encrypted Cloudflare R2. Never send backup contents directly to the raw R2 remote; use the `r2crypt` layer.
+- Never print or commit `deploy/.env`, Supabase `.env`, `rclone.conf`, API tokens, DB passwords, service-role keys, operator secrets, or rclone crypt passwords.
+
+### Where future changes belong
+
+- Normal application code: make a focused PR branch from `main`, run tests/lint/build, then merge to `main`.
+- The VPS currently uses the dedicated self-hosting/deployment checkout/branch. After an application PR is merged, deploy it **deliberately** to the VPS; never assume a merge to `main` automatically updates production.
+- Production Caddy/self-hosting changes require reading the runbook and checking the deployment branch/live VPS first.
+- Do not use `git reset --hard` as a routine production synchronization method.
+- Before risky DB/infra changes, run a fresh production backup and require the local + R2 backup chain to PASS.
 
 ## Process
 
@@ -27,8 +51,11 @@ ivory/champagne/copper). Gateway at `/` presents both and routes to
 
 - Do not modify Health or Beauty inner pages during gateway work unless
   explicitly requested.
-- Do not touch database, admin/operator, auth, middleware, Supabase, or
-  Vercel/production config unless explicitly requested.
+- Do not touch database, admin/operator, auth, middleware, Supabase, DNS,
+  Caddy, backup/recovery, or production config unless explicitly requested.
+- If production/infrastructure work is explicitly requested, follow
+  `docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md` rather than legacy Vercel-era
+  deployment assumptions.
 
 ## Localization law
 
