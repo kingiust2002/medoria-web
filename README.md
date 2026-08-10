@@ -153,18 +153,39 @@ The VPS became the production source of truth after the August 2026 cutover. Do 
 
 ## 🛠️ High-level repository structure
 
+On `main` (this branch):
+
 ```text
 app/                    Next.js application routes
 components/             shared and vertical UI
 lib/                    data, auth, operator and domain logic
 migrations/             version-controlled database migrations
-public/                  static assets
-deploy/                  self-hosting deployment configuration
-scripts/self-host/       migration/self-hosting helpers
-docs/                    design and production documentation
-.claude/                 project skills/rules for Claude workflows
-CLAUDE.md                permanent project + production-agent rules
+public/                 static assets
+scripts/                build/content helpers
+docs/                   design and production documentation
+.claude/                project skills/rules for Claude workflows
+CLAUDE.md               permanent project + production-agent rules
 ```
+
+The deployment surface is **not** on `main`. It lives on the branch the VPS
+checks out, `staging/self-hosting-sync-20260802`:
+
+```text
+Dockerfile              production image
+.dockerignore
+deploy/                 compose file, Caddyfile, env template
+scripts/self-host/      preflight, backup/restore, storage copy, smoke tests
+scripts/check-self-host-env.mjs
+app/api/health/         the endpoint the production smoke test calls
+.github/workflows/      self-hosting CI
+docs/self-hosting/      migration-era documents (some contain stale branch names)
+```
+
+So `main` is the application source, but a checkout of `main` alone is not a
+deployable production tree. The full table and the reasoning are in
+[§1.1 of the runbook](docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md).
+Consolidating the two branches is a deferred, deliberate step (runbook §18.2) —
+not something to do as cleanup.
 
 ---
 

@@ -2,7 +2,7 @@
 
 > **Authoritative operational record.**
 >
-> Last reconciled: **2026-08-10 UTC** after the production cutover, off-site backup validation, controlled VPS reboot, and Git cleanup.
+> Last reconciled: **2026-08-10 UTC** after the production cutover, off-site backup validation, controlled VPS reboot, and Git cleanup — then again the same day after PR #116 and PR #117 were closed and their branches deleted (see §1, §1.1, §1.2, §18.2).
 >
 > This file exists so a future maintainer or AI coding agent can reconstruct what happened, understand what is live now, make changes in the correct place, and repeat or reverse the migration without relying on chat history.
 
@@ -59,7 +59,10 @@ Do not commit credentials, database passwords, Supabase keys, Cloudflare API tok
 
 ### Main branch
 
-As of the migration close-out, `main` contains the application-level production fixes through:
+`main` is the source of the **application**. It is not, by itself, a deployable
+production tree — see §1.1.
+
+Production-relevant merges recorded during and after close-out:
 
 - PR #145: Cloudflare Workers AI translation + upload transport fix.
   - feature commit: `215dc2a`
@@ -67,6 +70,13 @@ As of the migration close-out, `main` contains the application-level production 
 - PR #147: canonical domain correction.
   - feature commit: `203fb35`
   - merge commit: `53f4f0a`
+- PR #148: this runbook and the production-architecture documentation.
+  - merge commit: `47b14b6`
+
+Ordinary feature PRs also land on `main` and are deliberately not enumerated
+here; this list would rot. `git log origin/main` is the authority for what
+`main` contains. This section exists to record the *production-significant*
+merges, not to mirror history.
 
 ### Deployment branch currently checked out on the VPS
 
@@ -85,6 +95,33 @@ At the end of cleanup the VPS working tree was clean and tracked the remote bran
 The self-hosting work was developed on the staging migration branch. An accidental attempt to open the entire staging branch against `main` produced PR #146 with a very large unrelated diff. PR #146 was **closed without merge**. It did not modify `main`.
 
 A clean one-file branch was then made from `main` for the canonical-domain correction, producing PR #147. That is the pattern to follow for future application fixes: **small PR branches from the intended base, not a wholesale deployment-branch PR.**
+
+### Retired migration branches — PR #116 and PR #117
+
+Two long-running preparation branches existed during the migration and are now
+**gone**. Closed without merge on 2026-08-10, remote branches deleted:
+
+| PR | Branch | Head commit at close |
+| --- | --- | --- |
+| #116 | `infra/self-hosting` | `af44fa2` |
+| #117 | `upgrade/next15-self-hosting` | `3781ddc` |
+
+Nothing was lost by deleting them. Both head commits are **ancestors of
+`staging/self-hosting-sync-20260802`**, so their entire history is still
+reachable through the deployment branch:
+
+```bash
+git merge-base --is-ancestor af44fa2 origin/staging/self-hosting-sync-20260802 && echo reachable
+git merge-base --is-ancestor 3781ddc origin/staging/self-hosting-sync-20260802 && echo reachable
+```
+
+Consequences for anyone reading older material:
+
+- Do not assume any operational dependency on those two branch names.
+- Do not recreate them.
+- Any document, workflow or instruction that tells you to check out, clone or
+  push to `infra/self-hosting` or `upgrade/next15-self-hosting` is **stale**;
+  known instances are listed in §1.2.
 
 ### Current change workflow
 
@@ -105,6 +142,89 @@ For normal application changes:
 For production infrastructure changes that affect `deploy/Caddyfile`, deployment composition, or self-hosting scripts, first inspect the deployment branch and the live VPS. The current live Caddy configuration was deliberately persisted on `staging/self-hosting-sync-20260802` in `0c67bce`.
 
 **Do not `git reset --hard` on the VPS as a routine synchronization technique.** It was explicitly avoided throughout the migration because it can destroy live deployment-specific state.
+
+**Do not "tidy" the two branches into each other.** They deliberately carry
+different histories. No wholesale merge, no wholesale rebase, no force push and
+no `git reset --hard` between them. Unifying them is a separate, deliberate
+decision — see §18.
+
+---
+
+## 1.1 What only exists on the deployment branch
+
+This is the single most important asymmetry in the repository, and the one most
+likely to mislead an agent or a new maintainer: **`main` alone cannot build or
+run the production image.**
+
+Measured against `origin/main` at the time of writing, these paths exist only
+on `staging/self-hosting-sync-20260802`:
+
+| Path | On `main` | On deployment branch | Why it matters |
+| --- | --- | --- | --- |
+| `Dockerfile` | no | yes | there is no production image without it |
+| `deploy/compose.app.yml` | no | yes | app + Caddy composition |
+| `deploy/Caddyfile` | no | yes | live routing and TLS |
+| `deploy/.env.example` | no | yes | environment contract template |
+| `.dockerignore` | no | yes | build context hygiene |
+| `output: "standalone"` in `next.config.js` | no | yes | the Docker build expects a standalone build |
+| `app/api/health/route.js` | no | yes | **the endpoint the official smoke test calls** |
+| `scripts/check-self-host-env.mjs`, `scripts/self-host/**` | no | yes | preflight, backup/restore, storage copy, smoke tests |
+| `.github/workflows/**` | no | yes | see §1.2 |
+| `docs/self-hosting/**` | no | yes | migration-era documents |
+
+And the reverse direction:
+
+| Path | On `main` | On deployment branch |
+| --- | --- | --- |
+| `docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md` (this file) | yes | **no** |
+| `CLAUDE.md` with the production-architecture section | yes | **no** (older copy) |
+| `vercel.json` (`regions: ["fra1"]`, vestigial) | yes | no |
+
+Two practical consequences:
+
+1. `https://medoriaco.com/api/health` returns 200 today **because the VPS runs
+   the deployment branch**. If a checkout were ever switched to `main`, that
+   route would 404 and the build would not be a standalone Docker build. Treat
+   "`main` is the application source" as true for feature code and false for
+   deployability.
+2. This runbook is not present on the branch the VPS checks out. When operating
+   from `/home/medoria/apps/medoria-staging`, read the runbook from `main` (or
+   from GitHub) — do not conclude it is missing.
+
+Divergence at the time of writing: 6 commits on `main` that the deployment
+branch lacks, 170 commits on the deployment branch that `main` lacks, common
+ancestor `ce6a760`. Recompute rather than trusting these numbers:
+
+```bash
+git rev-list --count origin/staging/self-hosting-sync-20260802..origin/main
+git rev-list --count origin/main..origin/staging/self-hosting-sync-20260802
+```
+
+---
+
+## 1.2 Known stale references (documentation debt, not runtime risk)
+
+These live on the deployment branch and are **known wrong**. They are recorded
+here rather than silently edited, because changing files on the branch the VPS
+tracks is a deliberate operation, not cleanup:
+
+- `.github/workflows/upgrade-actions-runtime.yml` — triggers on pull requests
+  targeting `infra/self-hosting` and, if it ever ran, would
+  `git push origin HEAD:upgrade/next15-self-hosting`, i.e. recreate a deleted
+  branch. It is dormant because its trigger branch no longer exists.
+- `docs/self-hosting/DEVELOPER_HANDOFF.md` — lists both deleted branches as the
+  current working model.
+- `docs/self-hosting/APP_STAGING_RUNBOOK.md` — instructs
+  `git clone --branch infra/self-hosting …` and `git checkout infra/self-hosting`.
+- `docs/self-hosting/NEXT15_UPGRADE.md` — describes rollback as "keep using
+  `infra/self-hosting`".
+
+Also note: `main` carries **no** GitHub Actions workflows at all, so
+`self-hosting-ci.yml` never runs for a PR based on `main`. The gates in the
+change workflow above are therefore run locally, not by CI.
+
+Nothing in this section is a live failure. It is the list to work through when
+the Git unification in §18 is scheduled.
 
 ---
 
@@ -1417,11 +1537,11 @@ isolated Supabase-compatible public restore = PASS
 
 ---
 
-## 18. Remaining lifecycle item
+## 18. Remaining lifecycle items
 
-The migration itself is complete.
+The migration itself is complete. Two actions are deliberately deferred.
 
-One lifecycle action was intentionally deferred:
+### 18.1 Retire the frozen Supabase Cloud project
 
 > Review the frozen old Supabase Cloud project after the observation window, targeted for **2026-08-24**. If the VPS, backups, Auth, Storage and site remain stable, retire/delete the old Cloud project deliberately.
 
@@ -1434,6 +1554,42 @@ Before deletion, take one final look at:
 - whether any rollback/business requirement calls for longer retention.
 
 Do not delete the old Cloud project merely because the date arrived if a production incident is active.
+
+### 18.2 Git unification — one branch instead of two
+
+Production is healthy; Git is simply not yet consolidated after the migration.
+The intent is to end up with a single main branch that carries both the
+application and the deployment surface, so §1.1 stops being true.
+
+This is a **separate, scheduled decision**, not routine maintenance, because it
+changes what the VPS checks out. Until it is scheduled and approved:
+
+- keep the two branches as they are;
+- no wholesale merge, rebase, force push or `git reset --hard` between them;
+- keep landing application changes as small PRs from `main`;
+- keep deploying to the VPS deliberately.
+
+When it is scheduled, the questions to answer first — in this order:
+
+1. Which branch becomes the single source: `main` gaining the deployment
+   surface, or the deployment branch being replayed onto `main`?
+2. What exactly moves: `Dockerfile`, `.dockerignore`, `deploy/**`,
+   `scripts/self-host/**`, `scripts/check-self-host-env.mjs`,
+   `app/api/health/route.js`, the `output: "standalone"` setting, and the
+   workflows — see the table in §1.1.
+3. Which migration-era documents in `docs/self-hosting/**` are kept, corrected,
+   or dropped, including the stale references listed in §1.2.
+4. Does `.github/workflows/upgrade-actions-runtime.yml` survive at all? It only
+   ever served the two deleted branches.
+5. Does `vercel.json` stay on the unified branch? Vercel still administers DNS
+   but no longer hosts the application.
+6. How does the VPS switch checkout without a destructive command, and what is
+   the rollback if the first build on the unified branch fails?
+7. What proves success: a fresh backup PASS, a clean image build, and the §9
+   smoke tests green — before the old branch is retired, not after.
+
+Prerequisite for starting: a fresh production backup with the local + R2 chain
+reporting PASS.
 
 ---
 
