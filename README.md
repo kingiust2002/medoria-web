@@ -1,176 +1,195 @@
-# 🏥 Medoria — کاتالوگ B2B مصرفی پزشکی تاجیکستان
+# 🏥 Medoria
 
-سایت کاتالوگی پزشکی حرفه‌ای با Next.js 14 + Supabase + Tailwind CSS.
+Medoria is a multilingual platform with two equal verticals: **Medoria Health** and **Medoria Beauty**, built with Next.js + Supabase.
 
-## ✨ ویژگی‌ها
-
-### چندزبانه واقعی
-- 🇷🇺 روسی · 🇹🇯 تاجیکی · 🇬🇧 انگلیسی · 🇮🇷 فارسی (RTL)
-- ذخیره زبان انتخابی در localStorage
-- متادیتای SEO جدا برای هر زبان
-
-### کاتالوگ کامل
-- جستجو + Mega search با dropdown
-- فیلتر دسته‌بندی، برند، Badge (NEW/TOP/SALE)
-- نمای Grid / List
-- مرتب‌سازی بر اساس قیمت/نام
-- اسکلت بارگذاری حرفه‌ای
-
-### صفحه محصول
-- گالری چند عکس با Lightbox و کیبورد
-- Specs (JSONB)، بروشور PDF
-- Sticky Quote Panel هنگام scroll
-- محصولات مشابه
-- آیکون categoryهای پیش‌فرض هنگام نبود عکس
-
-### مقایسه محصولات
-- تا ۴ محصول کنار هم
-- نوار شناور پایین صفحه
-- هایلایت ارزان‌ترین قیمت
-- ذخیره در localStorage
-
-### استعلام B2B
-- WhatsApp & Telegram با پیام آماده ۴ زبانه
-- فرم Request Quote
-- فرم Contact ذخیره در Supabase
-- بخش "ارسال لیست خرید" برای خرید عمده
-
-### بخش‌های Home (۱۱ بخش)
-۱. Hero با نمایش لوگو
-۲. Stats با تعداد واقعی محصولات
-۳. ۶ دسته‌بندی با تعداد live
-۴. محصولات منتخب
-۵. مارکی برندها
-۶. چرا مدوریا (۶ مزیت)
-۷. روند ۴ مرحله‌ای خرید
-۸. ۳ مخاطب اصلی
-۹. ⭐ نظر مشتریان (Testimonials)
-۱۰. 📋 فرم لیست خرید عمده
-۱۱. CTA نهایی
+> ## ⚠️ Production deployment changed in August 2026
+>
+> The live system is **self-hosted on a VPS**. Vercel is still used for DNS administration/preview integrations, but **Vercel compute and Supabase Cloud are no longer the production runtime/database**.
+>
+> Canonical production site: **`https://medoriaco.com`**  
+> Production Supabase API: **`https://api.medoriaco.com`**
+>
+> Before any production, database, DNS, Caddy, Supabase, backup, or migration work, read:
+>
+> **[`docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md`](docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md)**
+>
+> AI/Claude agents must also read **[`CLAUDE.md`](CLAUDE.md)**. The older Vercel/Supabase-Cloud deployment instructions that once lived in this README are historical and must not be used for the live production system.
 
 ---
 
-## 🚀 مراحل Deploy
+## ✨ Core product capabilities
 
-### مرحله ۱ — Supabase SQL
+### Multilingual
 
-تو **SQL Editor** Supabase، **به ترتیب** این ۳ فایل رو RUN کن:
+- Tajik
+- Russian
+- English
+- Persian / RTL route support
+- localized metadata and UI copy
 
-1. `supabase-migration.sql` — جدول‌های اصلی
-2. `supabase-migration-phase2.sql` — جدول contact_inquiries
-3. `supabase-seed-data.sql` — **۲۴ محصول واقعی** ✨
+### Catalogs
 
-> ⚠️ اگه قبلاً migration رو زدی، فقط فایل ۳ (seed) رو اجرا کن.
+- Health and Beauty verticals
+- search and filtering
+- category taxonomies
+- brand directory
+- product pages and imagery
+- product comparison and B2B quote flows
 
-### مرحله ۲ — Environment Variables (Vercel)
+### Operator tooling
 
-```
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_xxx
-NEXT_PUBLIC_WA_NUMBER=992XXXXXXXXX
-NEXT_PUBLIC_TG_USERNAME=YourTelegramUser
-NEXT_PUBLIC_EMAIL=sales@medoria.tj
-NEXT_PUBLIC_PHONE=+992XXXXXXXXX
+- Health and Beauty operator surfaces
+- product/category/brand management
+- image uploads
+- CSV/XLS/XLSX import pipeline
+- multilingual auto-translation
+- Cloudflare Workers AI server-side translation
+
+---
+
+## 🚀 Current production architecture
+
+Production is currently:
+
+```text
+Internet
+  -> Vercel DNS
+  -> VPS 91.107.161.56
+      -> Caddy
+          -> Next.js application container
+          -> self-hosted Supabase Kong
+              -> REST / Auth / Storage
+              -> PostgreSQL / Storage services
 ```
 
-### مرحله ۳ — GitHub & Vercel
+Canonical hosts:
 
-1. همه فایل‌های قدیمی repo رو پاک کن
-2. محتویات این پوشه (همه فایل‌ها و پوشه‌ها) رو آپلود کن
-3. Vercel خودکار build می‌کنه (۲-۳ دقیقه)
+```text
+https://medoriaco.com
+https://www.medoriaco.com       -> apex redirect
+https://api.medoriaco.com
+https://staging.medoriaco.com
+https://api-staging.medoriaco.com
+```
+
+The production app checkout currently lives on the VPS at:
+
+```text
+/home/medoria/apps/medoria-staging
+```
+
+The self-hosted Supabase stack lives under:
+
+```text
+/home/medoria/infra/supabase-staging
+```
+
+For the exact branch state, DNS records, migration chronology, backups, restore procedure, rollback rules, and future migration checklist, use the production runbook rather than this README.
 
 ---
 
-## 🎨 لوگوها
+## 🔄 Development workflow
 
-سه نسخه در `/public`:
-- `logo.png` — فقط آیکون (هدر، compact)
-- `logo-full.png` — آیکون + متن "Medoria" (Hero، Footer)
-- `logo-text.png` — فقط typography
+Normal application work should follow the repository rules in `CLAUDE.md`:
 
-استفاده در کد:
-```jsx
-<Logo variant="icon" />          // فقط آیکون
-<Logo variant="icon" showText /> // آیکون + متن (Header)
-<Logo variant="full" />          // لوگو کامل (Footer)
-<Logo variant="text" />          // فقط typography
+1. Create a focused PR branch from `main`.
+2. Do not commit directly to `main`.
+3. Never commit secrets.
+4. Run:
+
+```bash
+npm ci
+npm test
+npm run lint
+npm run build
+```
+
+5. Review the diff for scope and secrets.
+6. Merge the approved PR.
+7. Production deployment to the VPS is a deliberate operational step; a GitHub merge alone must not be assumed to update the live VPS.
+
+For infrastructure or database changes, first run a fresh production backup and follow the runbook.
+
+---
+
+## 🛡️ Production backup baseline
+
+The live system has:
+
+- daily local production backups;
+- 14-day local retention;
+- encrypted Cloudflare R2 off-site backup;
+- 90-day R2 retention;
+- rclone client-side content/filename encryption;
+- checksum verification;
+- tested PostgreSQL 17 restore path.
+
+Never upload production backup directories directly to the raw R2 remote. The encrypted `r2crypt` layer is required.
+
+---
+
+## 🔐 Secrets
+
+Never commit or paste into issues/PRs/chat:
+
+- `.env` files;
+- Supabase service-role keys;
+- database passwords;
+- operator passwords/session secrets;
+- Cloudflare API tokens;
+- R2 Access Key / Secret;
+- `rclone.conf`;
+- rclone crypt Password 1 / Password 2.
+
+---
+
+## 📦 Product data and images
+
+Product/catalog data lives in the production self-hosted Supabase instance. Storage buckets include Health and Beauty product/brand imagery.
+
+The VPS became the production source of truth after the August 2026 cutover. Do not restore an old Supabase Cloud dump over the live VPS merely to "sync" environments.
+
+---
+
+## 🛠️ High-level repository structure
+
+```text
+app/                    Next.js application routes
+components/             shared and vertical UI
+lib/                    data, auth, operator and domain logic
+migrations/             version-controlled database migrations
+public/                  static assets
+deploy/                  self-hosting deployment configuration
+scripts/self-host/       migration/self-hosting helpers
+docs/                    design and production documentation
+.claude/                 project skills/rules for Claude workflows
+CLAUDE.md                permanent project + production-agent rules
 ```
 
 ---
 
-## 📦 افزودن محصولات
+## 📚 Production documentation
 
-### روش ۱: SQL Editor
-از `supabase-seed-data.sql` به‌عنوان الگو استفاده کن. هر محصول نیاز داره:
-- 4 زبان: `name_ru`, `name_tg`, `name_en`, `name_fa`
-- توضیحات: `description_ru/tg/en/fa`
-- پایه: `sku`, `category`, `brand`, `price`, `unit`
-- اختیاری: `badge` (NEW/TOP/SALE), `is_featured`, `image_url`, `gallery_urls`
+The authoritative operational document is:
 
-### روش ۲: Table Editor (UI)
-Supabase → Table Editor → products → Insert row
+**[`docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md`](docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md)**
 
-### عکس محصول
-آپلود به Supabase Storage (bucket: `product-images`) → URL یا path رو در `image_url` ذخیره کن. می‌تونی آرایه‌ای از URLها در `gallery_urls` بذاری.
+It records, in detail:
 
----
+- the Vercel/Supabase-Cloud -> VPS/self-hosted-Supabase migration;
+- the exact production domains and server paths;
+- Git branch/PR history relevant to migration;
+- database and Storage migration checkpoints;
+- Cloud write freeze and rollback constraints;
+- Caddy and DNS state;
+- Cloudflare Workers AI translation changes;
+- local backup automation;
+- Cloudflare R2 client-side encrypted backup;
+- restore testing and PostgreSQL version compatibility;
+- 14-day local / 90-day R2 retention;
+- controlled reboot/autostart validation;
+- Git cleanup;
+- future deploy and full-migration SOPs;
+- the remaining old-Supabase-Cloud retirement checkpoint.
 
-## 🛠️ ساختار
-
-```
-app/
-  [lang]/
-    page.jsx              ← Home (11 بخش)
-    catalog/
-      page.jsx            ← لیست با فیلتر/سرچ/Compare
-      [slug]/page.jsx     ← صفحه محصول
-    compare/page.jsx      ← مقایسه side-by-side
-    categories/page.jsx
-    about/page.jsx
-    contact/page.jsx
-    layout.jsx
-  page.jsx                ← localStorage lang redirect
-  layout.jsx
-  globals.css
-
-components/
-  layout/    Header, Footer, TopBar, Logo, LanguageSwitcher
-  home/      Hero, StatsBar, CategoryGrid, FeaturedProducts,
-             Brands, WhyMedoria, Process, Audience,
-             Trust 🆕, Procurement 🆕, FinalCTA
-  catalog/   ProductCard, CompareDrawer
-  product/   ProductGallery, QuoteModal, StickyQuotePanel
-  shared/    Icon (40+ SVG), FloatingWhatsApp
-
-lib/
-  i18n.js       4-language translations
-  supabase.js   getProducts, getProduct, getRelated, imageUrl
-  whatsapp.js   waLink, tgLink, message builders
-  compare.js    useCompare hook with localStorage
-  categories.js Supabase categories fetcher
-
-public/
-  logo.png, logo-full.png, logo-text.png
-```
-
----
-
-## 🔧 طراحی
-
-پالت رنگ B2B پزشکی (آبی محور، الهام از Medline/McKesson):
-- **Primary**: #2563EB (آبی اصلی)
-- **Cyan**: #06B6D4 (accent)
-- **Navy**: #0F172A (متن، footer)
-- **Tint Blue/Cyan**: پس‌زمینه‌های ملایم
-- لوگو رنگارنگ خودش حفظ شده (gradient اصلی)
-
----
-
-## 📱 پیشرفت پروژه
-
-✅ **فاز ۱**: ساخت اولیه
-✅ **فاز ۲**: Compare, Brand filter, Categories page, Contact form, Gallery
-✅ **فاز ۳**: Redesign B2B (آبی), SVG icons, Sticky panel, localStorage, Grid/List, Badge filter
-✅ **فاز ۴**: لوگوهای کامل, Testimonials, Procurement section, Brands marquee, Live counts, Seed data واقعی
-
-**پروژه ۱۰۰٪ آماده استفاده در محیط واقعی.**
+If this README and the production runbook disagree about production infrastructure, **the runbook and verified live VPS state take precedence**.
