@@ -23,9 +23,17 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# local env files
+# local env and credential files
 .env
 .env*.local
+.pgpass
+rclone.conf
+
+# migration outputs and generated audits
+/backups/
+/artifacts/
+*.dump
+*.backup
 
 # vercel
 .vercel
