@@ -82,8 +82,9 @@ const nextConfig = {
   },
   // xlsx (SheetJS) parses operator uploads server-side only.
   serverExternalPackages: ["xlsx"],
+  // Moved out of `experimental` in Next 15; keeping it explicit preserves intent.
+  typedRoutes: false,
   experimental: {
-    typedRoutes: false,
     serverActions: {
       bodySizeLimit: "8mb",
     },
