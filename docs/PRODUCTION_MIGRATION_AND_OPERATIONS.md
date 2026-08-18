@@ -2,7 +2,7 @@
 
 > **Authoritative operational record.**
 >
-> Last reconciled: **2026-08-10 UTC** after the production cutover, off-site backup validation, controlled VPS reboot, and Git cleanup — then again the same day after PR #116 and PR #117 were closed and their branches deleted (see §1, §1.1, §1.2, §18.2).
+> Last reconciled: **2026-08-10 UTC** after the production cutover, off-site backup validation, controlled VPS reboot, and Git cleanup; then after PR #116/#117 were closed and their branches deleted; then after the deployment-branch documentation cleanup (`6920df0`) and the framework-divergence audit (§1.3).
 >
 > This file exists so a future maintainer or AI coding agent can reconstruct what happened, understand what is live now, make changes in the correct place, and repeat or reverse the migration without relying on chat history.
 
@@ -152,9 +152,14 @@ decision — see §18.
 
 ## 1.1 What only exists on the deployment branch
 
-This is the single most important asymmetry in the repository, and the one most
-likely to mislead an agent or a new maintainer: **`main` alone cannot build or
-run the production image.**
+Two asymmetries matter here. The first is which **files** exist on each branch,
+covered below. The second is bigger and is covered in §1.3: the two branches
+run **different major versions of Next.js and React**, and the application code
+differs accordingly.
+
+Together they mean: **`main` alone cannot build or run the production image,
+and a build that passes on `main` has not been validated against what
+production actually runs.**
 
 Measured against `origin/main` at the time of writing, these paths exist only
 on `staging/self-hosting-sync-20260802`:
@@ -171,6 +176,7 @@ on `staging/self-hosting-sync-20260802`:
 | `scripts/check-self-host-env.mjs`, `scripts/self-host/**` | no | yes | preflight, backup/restore, storage copy, smoke tests |
 | `.github/workflows/**` | no | yes | see §1.2 |
 | `docs/self-hosting/**` | no | yes | migration-era documents |
+| `lib/operator/importColumns.js`, `spreadsheetRows.js`, `xlsxTemplate.js` | no | yes | the ExcelJS-free XLSX path production uses (§1.3) |
 
 And the reverse direction:
 
@@ -202,29 +208,120 @@ git rev-list --count origin/main..origin/staging/self-hosting-sync-20260802
 
 ---
 
-## 1.2 Known stale references (documentation debt, not runtime risk)
+## 1.2 Stale references on the deployment branch — resolved
 
-These live on the deployment branch and are **known wrong**. They are recorded
-here rather than silently edited, because changing files on the branch the VPS
-tracks is a deliberate operation, not cleanup:
+The deployment branch used to carry documents and a workflow that still named
+the deleted branches. All of it was corrected in `6920df0`, a documentation-only
+commit that left every production runtime file byte-identical:
 
-- `.github/workflows/upgrade-actions-runtime.yml` — triggers on pull requests
-  targeting `infra/self-hosting` and, if it ever ran, would
-  `git push origin HEAD:upgrade/next15-self-hosting`, i.e. recreate a deleted
-  branch. It is dormant because its trigger branch no longer exists.
-- `docs/self-hosting/DEVELOPER_HANDOFF.md` — lists both deleted branches as the
-  current working model.
-- `docs/self-hosting/APP_STAGING_RUNBOOK.md` — instructs
-  `git clone --branch infra/self-hosting …` and `git checkout infra/self-hosting`.
-- `docs/self-hosting/NEXT15_UPGRADE.md` — describes rollback as "keep using
-  `infra/self-hosting`".
+| Item | Resolution |
+| --- | --- |
+| `.github/workflows/upgrade-actions-runtime.yml` — triggered on PRs to `infra/self-hosting` and pushed to `upgrade/next15-self-hosting` | deleted; `self-hosting-ci.yml` is now the only workflow |
+| `docs/self-hosting/DEVELOPER_HANDOFF.md` — listed both deleted branches as current | rewritten: the two live branches, the retired pair, and the ancestry proof |
+| `docs/self-hosting/APP_STAGING_RUNBOOK.md` — `git clone --branch infra/self-hosting …` | now names `staging/self-hosting-sync-20260802` |
+| `docs/self-hosting/NEXT15_UPGRADE.md` — rollback described as "keep using `infra/self-hosting`" | marked superseded; rollback now points at §8 |
+| all eight `docs/self-hosting/*.md` — written pre-cutover in the present tense | each opens with a Historical banner |
+| this runbook, `CLAUDE.md`, `README.md` absent from the deployment branch | copied across, so the VPS checkout carries them |
 
-Also note: `main` carries **no** GitHub Actions workflows at all, so
+One deliberate difference remains between the two copies of `README.md`: the
+deployment branch cannot say "on `main` (this branch)". The wording is
+branch-neutral on both sides.
+
+What is **not** resolved: `main` still carries no GitHub Actions workflows, so
 `self-hosting-ci.yml` never runs for a PR based on `main`. The gates in the
-change workflow above are therefore run locally, not by CI.
+change workflow above are run locally, not by CI. That is fixed by §18.2, not
+by documentation.
 
-Nothing in this section is a live failure. It is the list to work through when
-the Git unification in §18 is scheduled.
+---
+
+## 1.3 Framework and dependency divergence — the dangerous one
+
+`main` and the deployment branch are not the same application on two different
+file layouts. **They are two different framework generations.**
+
+| | `main` | deployment branch (= production) |
+| --- | --- | --- |
+| `next` | `14.2.35` | **`15.5.21`** |
+| `react` / `react-dom` | `18.3.1` | **`19.2.8`** |
+| `eslint-config-next` | `14.2.35` | `15.5.21` |
+| `postcss` | `8.4.39` | `8.5.18` (+ `overrides`) |
+| `sharp` | transitive | `0.35.3` pinned (+ `overrides`) |
+| `exceljs` | `^4.4.0` | **removed** |
+| `fflate` | — | `0.8.3` (replaces ExcelJS for XLSX generation) |
+| `@vercel/analytics` | `^2.0.1` | **removed** |
+| npm scripts | — | `audit:supabase`, `check:self-host-env` |
+
+Configuration follows from that:
+
+| Setting | `main` | deployment branch |
+| --- | --- | --- |
+| `output` | — | `"standalone"` |
+| external packages | `experimental` form | `serverExternalPackages: ["xlsx"]` (stable in 15) |
+| `fetchCache = "default-cache"` | absent | present in both `app/beauty/[lang]/layout.jsx` and `app/health/[lang]/layout.jsx` |
+
+That `fetchCache` line is not cosmetic. Next 15 changed the default so an
+unconfigured server `fetch` is no longer cached, and Supabase JS uses `fetch`
+internally — without it the public Health and Beauty layouts lose their
+ISR/revalidate behaviour. **Do not remove it.**
+
+### What that does to the application code
+
+42 files differ between the branches under `app/`, `lib/` and `components/`.
+The bulk of it is the Next 15 async-request-API contract:
+
+| Migration surface | Count on `main` (still synchronous) |
+| --- | --- |
+| files destructuring `params` / `searchParams` in a component signature | **25** |
+| synchronous `cookies()` / `headers()` call sites | **10** |
+
+Production reads them the other way round:
+
+```js
+// main
+export default async function BeautyPage({ params }) {
+  const { lang } = params;
+
+// production
+export default async function BeautyPage(props) {
+  const { lang } = await props.params;
+```
+
+Three files also exist only on the deployment branch because ExcelJS was
+removed there: `lib/operator/importColumns.js`, `lib/operator/spreadsheetRows.js`
+and `lib/operator/xlsxTemplate.js`. And `app/layout.jsx` still renders
+`<Analytics />` from `@vercel/analytics` on `main`; production does not.
+
+Nothing is stranded in the other direction: **every file under `app/`, `lib/`
+and `components/` that exists on `main` also exists on the deployment branch.**
+Feature work has been reaching production — it just arrives rewritten.
+
+### The consequence that matters
+
+> The quality gates run for a `main`-based PR — `npm ci`, `npm test`,
+> `npm run lint`, `npm run build` — execute against **Next 14 / React 18**.
+> Production is **Next 15 / React 19**. A green run on `main` is evidence about
+> a framework production does not use.
+
+So, until §18.2 is done:
+
+1. A `main` PR that touches `params`, `searchParams`, `cookies()` or
+   `headers()` **needs a Next 15 counterpart** when it is carried to the
+   deployment branch. Say so explicitly in the PR body rather than assuming the
+   person deploying will notice.
+2. A `main` PR that adds a dependency must be checked against the deployment
+   branch's `package.json` too — in particular do not reintroduce `exceljs` or
+   `@vercel/analytics`, both deliberately removed from production.
+3. Never resolve a conflict during unification by taking `main`'s side on any
+   of the 42 files without re-applying the Next 15 contract. Taking `main`
+   wholesale would silently downgrade production.
+
+Recompute these figures rather than trusting them:
+
+```bash
+git diff --name-only origin/main origin/staging/self-hosting-sync-20260802 -- app/ lib/ components/ | wc -l
+git grep -l -E "\(\{ *params|\(\{ *searchParams" origin/main -- 'app/**' | wc -l
+git grep -n -E "\b(cookies|headers)\(\)" origin/main -- 'app/**' 'lib/**' | wc -l
+```
 
 ---
 
@@ -1559,37 +1656,83 @@ Do not delete the old Cloud project merely because the date arrived if a product
 
 Production is healthy; Git is simply not yet consolidated after the migration.
 The intent is to end up with a single main branch that carries both the
-application and the deployment surface, so §1.1 stops being true.
+application and the deployment surface, so §1.1 and §1.3 stop being true.
 
-This is a **separate, scheduled decision**, not routine maintenance, because it
-changes what the VPS checks out. Until it is scheduled and approved:
+**This is not tidying. It is a framework upgrade of `main`.** §1.3 has the
+evidence: `main` is Next 14 / React 18, production is Next 15 / React 19, and
+42 application files differ. Anyone who moves only `Dockerfile` and `deploy/**`
+onto `main` and then points the VPS at it **will break production**, because
+`main`'s code still uses the Next 14 synchronous request APIs.
 
-- keep the two branches as they are;
-- no wholesale merge, rebase, force push or `git reset --hard` between them;
-- keep landing application changes as small PRs from `main`;
-- keep deploying to the VPS deliberately.
+#### Why it should still happen
 
-When it is scheduled, the questions to answer first — in this order:
+- Every application change currently needs a manual second step to reach
+  production. That step is invisible and unenforced; the day someone forgets,
+  production silently stops matching `main`.
+- The gates run on a `main` PR validate a framework production does not run
+  (§1.3). This is the largest correctness gap in the current process.
+- `self-hosting-ci.yml` lives only on the deployment branch, so no CI ever runs
+  for an ordinary PR.
+- The two branches carry duplicate copies of `CLAUDE.md`, `README.md` and this
+  runbook, which have to be re-synced by hand — they drifted within one day of
+  being aligned.
+- The branch that serves production is named `staging/…`.
 
-1. Which branch becomes the single source: `main` gaining the deployment
-   surface, or the deployment branch being replayed onto `main`?
-2. What exactly moves: `Dockerfile`, `.dockerignore`, `deploy/**`,
-   `scripts/self-host/**`, `scripts/check-self-host-env.mjs`,
-   `app/api/health/route.js`, the `output: "standalone"` setting, and the
-   workflows — see the table in §1.1.
-3. Which migration-era documents in `docs/self-hosting/**` are kept, corrected,
-   or dropped, including the stale references listed in §1.2.
-4. Does `.github/workflows/upgrade-actions-runtime.yml` survive at all? It only
-   ever served the two deleted branches.
-5. Does `vercel.json` stay on the unified branch? Vercel still administers DNS
-   but no longer hosts the application.
-6. How does the VPS switch checkout without a destructive command, and what is
-   the rollback if the first build on the unified branch fails?
-7. What proves success: a fresh backup PASS, a clean image build, and the §9
-   smoke tests green — before the old branch is retired, not after.
+#### Why it is not urgent
 
-Prerequisite for starting: a fresh production backup with the local + R2 chain
-reporting PASS.
+Production is stable, backed up locally and off-site, and proven to survive a
+reboot. Nothing here is a live fault. It is scheduled work, not an incident.
+
+#### Direction
+
+Replay the deployment branch's state onto `main`, not the reverse. Production's
+tree is the tested one: it is what the live image is built from, what passed the
+Next 15 validation recorded in `docs/self-hosting/NEXT15_UPGRADE.md`, and what
+is serving traffic today. `main` contributes only the six commits it is ahead
+by — all documentation plus the canonical-domain fix, which the deployment
+branch already has in its own form (`0152388`).
+
+#### Sequence
+
+1. Fresh production backup; require the local + R2 chain to report PASS. Do not
+   start otherwise.
+2. Record the current state: both branch SHAs, the running image, `docker ps`,
+   and a passing set of the §9 smoke tests.
+3. Open a unification branch **from the deployment branch**, and bring across
+   from `main` only what production lacks: this runbook, the current `CLAUDE.md`
+   and `README.md` (already done — see `6920df0`), and any documentation added
+   since.
+4. Decide each item in §1.1's reverse table: `vercel.json` (vestigial — Vercel
+   administers DNS but hosts nothing), and whether `docs/self-hosting/**` is
+   kept as history or archived.
+5. Delete `.github/workflows/upgrade-actions-runtime.yml` (already done in
+   `6920df0`) and confirm `self-hosting-ci.yml` is the only workflow left.
+6. Run the full gate set on that branch — `npm ci`, `npm test`, `npm run lint`,
+   `npm run build` — under Next 15, plus the Docker image build and
+   `caddy validate`. This is the first time those gates and production agree.
+7. Open one PR into `main`. It will be large; that is expected and is not the
+   PR #146 mistake, because this time the intent is exactly to replace `main`'s
+   tree, not to smuggle an unrelated diff alongside a one-line fix.
+8. After merge, switch the VPS checkout to `main` **without a destructive
+   command** — fetch, then `git switch` to a branch tracking `main` in a clean
+   tree. Never `git reset --hard`.
+9. Rebuild the image, restart, and re-run the §9 smoke tests. Expect
+   `medoriaco.com` 200, `/api/health` 200, `www` 200 after redirect, storage
+   status 200.
+10. Rollback if any of that fails: the deployment branch still exists and its
+    last known-good commit is unchanged, so switch the checkout back and rebuild
+    from it. Do not delete the branch on the same day.
+11. Only after a stable observation window: rename or retire
+    `staging/self-hosting-sync-20260802`, and give `main` the CI workflow so the
+    gates finally run automatically.
+
+#### Definition of done
+
+- one branch carries both the application and the deployment surface;
+- the VPS checks out that branch;
+- `npm run build` on it is the same build production runs;
+- CI runs on PRs;
+- §1.1 and §1.3 are deleted from this runbook rather than updated.
 
 ---
 
