@@ -48,6 +48,16 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0
 
+# The standalone server runs as `node server.js` and the healthcheck is a bare
+# `node -e`, so npm is never invoked at runtime -- it is only present because
+# the Node base image ships it. Dropping it removes the package manager and its
+# bundled dependency tree (tar, sigstore, ip-address, picomatch,
+# brace-expansion) from the production surface, which is what the Trivy
+# HIGH/CRITICAL gate was reporting against.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    /usr/local/bin/npm \
+    /usr/local/bin/npx
+
 RUN groupadd --system --gid 1001 nodejs \
     && useradd --system --uid 1001 --gid nodejs --create-home nextjs
 
