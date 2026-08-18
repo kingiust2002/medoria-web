@@ -87,12 +87,29 @@ for (const key of ["NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_SUPABASE_URL"]) {
   }
 }
 
+// deploy/Caddyfile now routes these hosts to the app service directly,
+// alongside the temporary {$STAGING_HOST} block. Once a host is wired in
+// there, NEXT_PUBLIC_SITE_URL is allowed to point at it even though it no
+// longer equals STAGING_HOST -- that equality was only ever a stand-in for
+// "Caddy will actually answer for this host". Keep this list in sync with
+// the site block in deploy/Caddyfile.
+const CADDY_ROUTED_APP_HOSTS = new Set([
+  "medoriaco.com",
+  "www.medoriaco.com",
+  "staging.medoriaco.com",
+]);
+
 const siteUrl = values.get("NEXT_PUBLIC_SITE_URL");
 const stagingHost = values.get("STAGING_HOST");
 if (siteUrl && stagingHost) {
   try {
-    if (new URL(siteUrl).hostname !== stagingHost) {
-      fail("NEXT_PUBLIC_SITE_URL hostname must match STAGING_HOST during app staging");
+    const siteHost = new URL(siteUrl).hostname;
+    if (siteHost !== stagingHost && !CADDY_ROUTED_APP_HOSTS.has(siteHost)) {
+      fail(
+        "NEXT_PUBLIC_SITE_URL hostname must equal STAGING_HOST (temporary " +
+          "staging), or be a host deploy/Caddyfile already routes to the " +
+          `app (${[...CADDY_ROUTED_APP_HOSTS].join(", ")})`,
+      );
     }
   } catch {
     // Invalid URL is reported above.
