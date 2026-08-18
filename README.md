@@ -153,7 +153,7 @@ The VPS became the production source of truth after the August 2026 cutover. Do 
 
 ## 🛠️ High-level repository structure
 
-On `main` (this branch):
+On `main`, the application source branch:
 
 ```text
 app/                    Next.js application routes
@@ -168,7 +168,8 @@ CLAUDE.md               permanent project + production-agent rules
 ```
 
 The deployment surface is **not** on `main`. It lives on the branch the VPS
-checks out, `staging/self-hosting-sync-20260802`:
+checks out, `staging/self-hosting-sync-20260802`, in addition to everything
+above:
 
 ```text
 Dockerfile              production image
@@ -178,7 +179,7 @@ scripts/self-host/      preflight, backup/restore, storage copy, smoke tests
 scripts/check-self-host-env.mjs
 app/api/health/         the endpoint the production smoke test calls
 .github/workflows/      self-hosting CI
-docs/self-hosting/      migration-era documents (some contain stale branch names)
+docs/self-hosting/      migration-era documents, each marked historical
 ```
 
 So `main` is the application source, but a checkout of `main` alone is not a

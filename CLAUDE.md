@@ -32,6 +32,15 @@ ivory/champagne/copper). Gateway at `/` presents both and routes to
 - The two histories differ on purpose. Never "tidy" them with a wholesale merge,
   wholesale rebase, force push, or `git reset --hard`. Unifying them is a
   deferred, scheduled decision — runbook §18.2.
+- **They are also different framework generations.** `main` is Next 14 /
+  React 18; production is Next 15 / React 19, and 42 application files differ.
+  So `npm run build` passing on `main` is *not* evidence about production —
+  runbook §1.3. Two rules follow:
+  - a `main` PR touching `params`, `searchParams`, `cookies()` or `headers()`
+    needs a Next 15 counterpart when it is carried to the deployment branch;
+    say so in the PR body instead of assuming it will be noticed;
+  - never reintroduce `exceljs` or `@vercel/analytics` — both were deliberately
+    removed from production.
 - Retired: PR #116 (`infra/self-hosting`) and PR #117
   (`upgrade/next15-self-hosting`) were closed without merge and their branches
   deleted. Their content is already absorbed (both tips are ancestors of the
