@@ -84,11 +84,43 @@ assert_redirect() {
   fi
 }
 
-assert_redirect "medoriaco.com" "/health/en" "https://medoria.co/health/en"
-assert_redirect "www.medoriaco.com" "/beauty/en" "https://medoria.co/beauty/en"
-assert_redirect "www.medoria.co" "/login" "https://medoria.co/login"
+assert_canonical_host() {
+  local host="$1"
+  local request_path="$2"
+  local headers status location
 
-echo "canonical host redirects verified"
+  headers="$(curl -sSI -H "Host: $host" "$base_url$request_path")"
+  status="$(awk 'NR==1 {print $2}' <<<"$headers")"
+  location="$(awk 'BEGIN{IGNORECASE=1} /^location:/ {sub(/\r$/, "", $2); print $2; exit}' <<<"$headers")"
+
+  if [[ "$status" != "200" ]]; then
+    echo "error: canonical host must serve directly: host=$host path=$request_path, got $status" >&2
+    exit 1
+  fi
+  if [[ -n "$location" ]]; then
+    echo "error: canonical host must not redirect: host=$host path=$request_path -> $location" >&2
+    exit 1
+  fi
+}
+
+# medoriaco.com is the canonical production domain, so it serves directly and
+# must never redirect away from itself. Only the www variant folds into it.
+assert_canonical_host "medoriaco.com" "/health/en"
+assert_canonical_host "medoriaco.com" "/beauty/en"
+assert_redirect "www.medoriaco.com" "/beauty/en" "https://medoriaco.com/beauty/en"
+assert_redirect "www.medoriaco.com" "/login" "https://medoriaco.com/login"
+
+# medoria.co, medoria.com and medoria.tj are retired and must not come back as
+# redirect targets. Guard the canonical redirect against silently regaining one.
+retired_target="$(curl -sSI -H "Host: www.medoriaco.com" "$base_url/health/en" \
+  | awk 'BEGIN{IGNORECASE=1} /^location:/ {print $2; exit}' \
+  | grep -Eo 'medoria\.(co|com|tj)' || true)"
+if [[ -n "$retired_target" ]]; then
+  echo "error: canonical redirect points at retired domain: $retired_target" >&2
+  exit 1
+fi
+
+echo "canonical host behaviour verified"
 
 locale_headers="$(curl -sSI "$base_url/en")"
 locale_status="$(awk 'NR==1 {print $2}' <<<"$locale_headers")"
