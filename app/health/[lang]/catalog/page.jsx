@@ -6,7 +6,9 @@ import { buildHealthCategoryTree, findHealthCategory, healthCategoryName } from 
 import { buildAlternates } from "@/lib/seo";
 import CatalogInner from "./CatalogInner";
 
-export async function generateMetadata({ params, searchParams }) {
+export async function generateMetadata(props) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const { lang } = params;
   if (!LOCALES.includes(lang)) return {};
   const t = getTranslations(lang);
@@ -40,7 +42,8 @@ export async function generateMetadata({ params, searchParams }) {
   };
 }
 
-export default function CatalogPage({ params }) {
+export default async function CatalogPage(props) {
+  const params = await props.params;
   return (
     <Suspense fallback={<div className="container-x py-20 text-center text-ink-muted">…</div>}>
       <CatalogInner params={params} />

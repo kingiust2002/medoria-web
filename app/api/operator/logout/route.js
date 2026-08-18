@@ -11,7 +11,7 @@ export async function POST(req) {
   if (!isSameOrigin(req)) {
     return NextResponse.json({ error: "درخواست نامعتبر است." }, { status: 403 });
   }
-  cookies().set(OP_COOKIE, "", {
+  (await cookies()).set(OP_COOKIE, "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

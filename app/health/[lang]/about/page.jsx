@@ -14,7 +14,8 @@ import SplitText from "@/components/shared/SplitText";
 const VALUE_ICONS = ["shield", "bolt", "check", "handshake"];
 const OFFER_ICONS = ["gloves", "stethoscope", "bandage", "thermometer", "flask", "pill"];
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const { lang } = params;
   if (!LOCALES.includes(lang)) return {};
   const t = getTranslations(lang);
@@ -25,7 +26,8 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function AboutPage({ params }) {
+export default async function AboutPage(props) {
+  const params = await props.params;
   const { lang } = params;
   const t = getTranslations(lang);
   const a = t.about;

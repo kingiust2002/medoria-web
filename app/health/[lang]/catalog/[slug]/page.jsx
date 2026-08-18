@@ -18,7 +18,8 @@ export async function generateStaticParams() {
   return [];
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const { lang, slug } = params;
   const t = getTranslations(lang);
   const p = await getProductBySlug(slug);
@@ -42,7 +43,8 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default async function ProductPage({ params }) {
+export default async function ProductPage(props) {
+  const params = await props.params;
   const { lang, slug } = params;
   const t = getTranslations(lang);
   // throwOnError: a DB blip during ISR revalidation keeps the stale page

@@ -38,8 +38,8 @@ export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
 }
 
-export function generateMetadata({ params }) {
-  const { lang } = params;
+export async function generateMetadata(props) {
+  const { lang } = await props.params;
   const t = getBeautyTranslations(lang);
   return {
     title: "Medoria Beauty — Luxury cosmetics",
@@ -56,8 +56,8 @@ export function generateMetadata({ params }) {
   };
 }
 
-export default async function BeautyPage({ params }) {
-  const { lang } = params;
+export default async function BeautyPage(props) {
+  const { lang } = await props.params;
   if (!LOCALES.includes(lang)) notFound();
   const media = getBeautyMedia();
 

@@ -23,7 +23,8 @@ async function resolve(lang, deptSlug, groupSlug) {
   return group ? { dept, group, index } : null;
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const found = await resolve(params.lang, params.dept, params.group);
   if (!found) return {};
   const { lang } = params;
@@ -42,7 +43,8 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default async function WorldGroupPage({ params }) {
+export default async function WorldGroupPage(props) {
+  const params = await props.params;
   const { lang, dept: deptSlug, group: groupSlug } = params;
   const found = await resolve(lang, deptSlug, groupSlug);
   if (!found) notFound();

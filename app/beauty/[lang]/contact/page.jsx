@@ -8,7 +8,8 @@ export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const { lang } = params;
   if (!LOCALES.includes(lang)) return {};
   const c = CONTACT_COPY[lang] || CONTACT_COPY.en;
@@ -16,6 +17,7 @@ export async function generateMetadata({ params }) {
   return { title: `${c.hero.title} — ${t.common.brand}`, description: c.hero.sub, robots: lang === "fa" ? { index: false, follow: true } : undefined };
 }
 
-export default function BeautyContactPage({ params }) {
+export default async function BeautyContactPage(props) {
+  const params = await props.params;
   return <ContactInner lang={params.lang} />;
 }

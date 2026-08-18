@@ -35,7 +35,8 @@ const COPY = {
   fa: { sku: "کد (SKU)", brand: "برند", category: "دسته", minOrder: "حداقل سفارش", inStock: "موجود", outStock: "ناموجود", specs: "مشخصات", related: "بیشتر از همین دسته", back: "بازگشت به کاتالوگ", requestPrice: "استعلام قیمت", requestQuote: "درخواست استعلام قیمت", ask: "استعلام در واتساپ", askTg: "استعلام در تلگرام" },
 };
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const { lang, slug } = params;
   if (!LOCALES.includes(lang)) return {};
   const t = getBeautyTranslations(lang);
@@ -62,7 +63,8 @@ function Meta({ label, value }) {
   );
 }
 
-export default async function BeautyProductPage({ params }) {
+export default async function BeautyProductPage(props) {
+  const params = await props.params;
   const { lang, slug } = params;
   if (!LOCALES.includes(lang)) notFound();
   const t = getBeautyTranslations(lang);

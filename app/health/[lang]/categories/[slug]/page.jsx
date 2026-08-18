@@ -26,8 +26,8 @@ const FALLBACK_DESCRIPTION = {
   en: "Choose the next level to browse the product groups and specialist categories in this section.",
 };
 
-export async function generateMetadata({ params }) {
-  const { lang, slug } = params;
+export async function generateMetadata(props) {
+  const { lang, slug } = await props.params;
   const t = getTranslations(lang);
 
   try {
@@ -54,8 +54,8 @@ export async function generateMetadata({ params }) {
   }
 }
 
-export default async function HealthCategoryPage({ params }) {
-  const { lang, slug } = params;
+export default async function HealthCategoryPage(props) {
+  const { lang, slug } = await props.params;
   const t = getTranslations(lang);
   const [categories, products] = await Promise.all([getCategories(), getProducts()]);
   const tree = buildHealthCategoryTree(categories, { activeOnly: true });

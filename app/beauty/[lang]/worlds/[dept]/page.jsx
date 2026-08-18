@@ -22,7 +22,8 @@ async function resolve(lang, deptSlug) {
   return index < 0 ? null : { dept: tree[index], index };
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const found = await resolve(params.lang, params.dept);
   if (!found) return {};
   const { lang } = params;
@@ -41,7 +42,8 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default async function WorldDeptPage({ params }) {
+export default async function WorldDeptPage(props) {
+  const params = await props.params;
   const { lang, dept: deptSlug } = params;
   const found = await resolve(lang, deptSlug);
   if (!found) notFound();

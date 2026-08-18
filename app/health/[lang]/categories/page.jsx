@@ -16,8 +16,8 @@ import SeoCategoryDirectory from "@/components/health/SeoCategoryDirectory";
 
 export const dynamic = "force-dynamic";
 
-export function generateMetadata({ params }) {
-  const { lang } = params;
+export async function generateMetadata(props) {
+  const { lang } = await props.params;
   const t = getTranslations(lang);
   return {
     title: `${t.categories.title} — ${t.common.brand}`,
@@ -32,8 +32,8 @@ export function generateMetadata({ params }) {
   };
 }
 
-export default async function CategoriesPage({ params }) {
-  const { lang } = params;
+export default async function CategoriesPage(props) {
+  const { lang } = await props.params;
   const t = getTranslations(lang);
   const [categories, products] = await Promise.all([getCategories(), getProducts()]);
   const tree = buildHealthCategoryTree(categories, { activeOnly: true });

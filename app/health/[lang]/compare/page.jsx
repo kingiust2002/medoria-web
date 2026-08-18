@@ -1,6 +1,6 @@
 // app/[lang]/compare/page.jsx
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useCompare } from "@/lib/compare";
 import { supabase, imageUrl } from "@/lib/supabase";
@@ -12,7 +12,8 @@ import Breadcrumb from "@/components/shared/Breadcrumb";
 
 export const dynamic = "force-dynamic";
 
-export default function ComparePage({ params }) {
+export default function ComparePage(props) {
+  const params = use(props.params);
   const { lang } = params;
   const t = getTranslations(lang);
   const { ids, remove, clear } = useCompare();

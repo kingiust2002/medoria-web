@@ -11,6 +11,9 @@ import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
 import AiAssistant from "@/components/shared/AiAssistant";
 import ScrollProgress from "@/components/shared/ScrollProgress";
 
+// Next.js 15: preserve cached public Supabase fetch behavior.
+export const fetchCache = "default-cache";
+
 // The Collection mega-menu follows the active database tree. Operator mutations
 // revalidate Health routes; this interval is a fallback for external changes.
 export const revalidate = 120;
@@ -19,8 +22,8 @@ export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
 }
 
-export function generateMetadata({ params }) {
-  const { lang } = params;
+export async function generateMetadata(props) {
+  const { lang } = await props.params;
   if (!LOCALES.includes(lang)) return {};
   const t = getTranslations(lang);
   return {
@@ -38,8 +41,9 @@ async function HealthNav({ lang }) {
   return <Header lang={lang} categoryTree={categoryTree} />;
 }
 
-export default function LangLayout({ children, params }) {
-  const { lang } = params;
+export default async function LangLayout(props) {
+  const { lang } = await props.params;
+  const { children } = props;
   if (!LOCALES.includes(lang)) notFound();
   const dir = LANG_META[lang].dir;
   const t = getTranslations(lang);
