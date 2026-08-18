@@ -181,7 +181,11 @@ jobs:
 
       - name: Validate Caddy configuration
         run: |
+          # --entrypoint is explicit: the caddy image no longer sets the caddy
+          # binary as its entrypoint, so a bare `validate` is looked up in PATH
+          # as its own executable and the step dies with exit 127.
           docker run --rm \
+            --entrypoint caddy \
             --add-host app:127.0.0.1 \
             -e STAGING_HOST=staging-ci.medoria.invalid \
             -e ACME_EMAIL=ci@medoria.invalid \
