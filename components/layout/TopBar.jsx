@@ -5,7 +5,7 @@ import Icon from "@/components/shared/Icon";
 
 export default function TopBar({ lang }) {
   const t = getTranslations(lang);
-  const email = process.env.NEXT_PUBLIC_EMAIL || "sales@medoria.tj";
+  const email = process.env.NEXT_PUBLIC_EMAIL || "";
   const phone = process.env.NEXT_PUBLIC_PHONE || "";
 
   return (
@@ -30,10 +30,12 @@ export default function TopBar({ lang }) {
             <Icon name="send" size={11} />
             {t.common.telegram}
           </a>
-          <a href={`mailto:${email}`} className="hover:text-white transition-colors flex items-center gap-1.5">
-            <Icon name="mail" size={11} />
-            {t.common.email}
-          </a>
+          {email && (
+            <a href={`mailto:${email}`} className="hover:text-white transition-colors flex items-center gap-1.5">
+              <Icon name="mail" size={11} />
+              {t.common.email}
+            </a>
+          )}
         </div>
       </div>
     </div>
