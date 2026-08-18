@@ -23,33 +23,43 @@ ivory/champagne/copper). Gateway at `/` presents both and routes to
 
 ### The two branches
 
-- `main` — source of the **application**. Base for every new PR.
-- `staging/self-hosting-sync-20260802` — what the VPS checks out. It carries the
-  deployment surface that `main` does not have: `Dockerfile`, `deploy/**`,
+**Unified 2026-08-18 (runbook §18.2 execution record). `main` now carries the
+deployment surface and is Next 15 / React 19** — the framework-generation gap
+and the 42-file divergence described below no longer exist. Some detail from
+that era is kept here because the unification is not fully closed out yet:
+
+- `main` — source of the **application**, base for every new PR, **and now
+  also carries the deployment surface**: `Dockerfile`, `deploy/**`,
   `scripts/self-host/**`, `app/api/health/route.js`, `output: "standalone"`,
-  and the GitHub workflows. **A checkout of `main` alone is not deployable.**
-  Full table: runbook §1.1.
-- The two histories differ on purpose. Never "tidy" them with a wholesale merge,
-  wholesale rebase, force push, or `git reset --hard`. Unifying them is a
-  deferred, scheduled decision — runbook §18.2.
-- **They are also different framework generations.** `main` is Next 14 /
-  React 18; production is Next 15 / React 19, and 42 application files differ.
-  So `npm run build` passing on `main` is *not* evidence about production —
-  runbook §1.3. Two rules follow:
-  - a `main` PR touching `params`, `searchParams`, `cookies()` or `headers()`
-    needs a Next 15 counterpart when it is carried to the deployment branch;
-    say so in the PR body instead of assuming it will be noticed;
-  - never reintroduce `exceljs` or `@vercel/analytics` — both were deliberately
-    removed from production.
+  and `.github/workflows/self-hosting-ci.yml`. A checkout of `main` is
+  deployable.
+- `staging/self-hosting-sync-20260802` — the **previous** deployment branch.
+  It still exists, is still an ancestor of `main` (fast-forward/rollback
+  relationship intact), and is kept as the rollback target — **do not delete
+  or rename it yet.** It is currently a few commits behind `main`: it does not
+  have the four fixes CI surfaced during unification (`nanoid` pin, Caddy
+  validate entrypoint, npm removed from the runtime image, corrected canonical
+  redirect in the smoke test). See runbook §18.2 for the full list and commit
+  SHAs.
+- The VPS was switched to check out `main` the same day. **Before trusting the
+  VPS's git state, run `git branch -vv` there and confirm
+  `staging/self-hosting-sync-20260802` still points at its own tip, not at
+  `main`'s** — the switch hit a branch-labeling snag (documented in the §18.2
+  execution record) whose correction had not been confirmed as of this
+  writing.
+- Never "tidy" the relationship between these two branches with a wholesale
+  merge, wholesale rebase, force push, or `git reset --hard`.
+- Never reintroduce `exceljs` or `@vercel/analytics` — both were deliberately
+  removed from production.
 - Retired: PR #116 (`infra/self-hosting`) and PR #117
   (`upgrade/next15-self-hosting`) were closed without merge and their branches
-  deleted. Their content is already absorbed (both tips are ancestors of the
-  deployment branch). Do not recreate them, and treat any document naming them
-  as stale — runbook §1.2.
+  deleted. Their content is already absorbed (both tips are ancestors of
+  `main`). Do not recreate them, and treat any document naming them as stale —
+  runbook §1.2.
 
 ### Where future changes belong
 
-- Normal application code: make a focused PR branch from `main`, run tests/lint/build, then merge to `main`. `main` has no CI workflows, so those gates are yours to run.
+- Normal application code: make a focused PR branch from `main`, run tests/lint/build, then merge to `main`. `main` now has `self-hosting-ci.yml`, which runs automatically on any PR touching `app/**`, `lib/**`, `Dockerfile`, `deploy/**`, or a handful of other deployment-relevant paths — but it does not cover everything `npm run lint`/`npm test` do, so keep running those yourself too.
 - After an application PR is merged, deploy it **deliberately** to the VPS; never assume a merge to `main` automatically updates production.
 - Production Caddy/self-hosting changes require reading the runbook and checking the deployment branch/live VPS first.
 - Do not use `git reset --hard` as a routine production synchronization method.
