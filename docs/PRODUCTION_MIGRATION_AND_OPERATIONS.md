@@ -1726,6 +1726,60 @@ branch already has in its own form (`0152388`).
     `staging/self-hosting-sync-20260802`, and give `main` the CI workflow so the
     gates finally run automatically.
 
+#### Verification already completed (2026-08-10)
+
+Steps 1–7 do not all need the VPS. The deployment branch's tree was checked out
+in a clean workspace, its own dependency set installed, and the full gate set
+run **under Next 15 / React 19 — the framework production actually uses**. This
+had never been done outside the VPS before.
+
+| Gate | Result |
+| --- | --- |
+| `npm ci` on the deployment branch's lockfile | PASS — resolves `next@15.5.21`, `react@19.2.8` |
+| `npm test` | PASS — 31/31 |
+| `npm run lint` | PASS — no ESLint warnings or errors |
+| `npm run build` | PASS — compiled successfully, `.next/standalone` produced |
+| Beauty routes still SSG/ISR in the Next 15 build | PASS — `● /beauty/[lang]` and all sub-routes |
+| Runtime smoke on the built server | PASS — `/`, `/health/tg`, `/beauty/tg` and all five Beauty tabs, plus `/api/health`, all 200 |
+| Client-side errors across six rendered pages | none |
+| RTL route (`/beauty/fa/about`) | PASS — the header banner mirrors correctly |
+
+So the tree that would become the unified `main` is known good on everything
+that can be checked without the server.
+
+**Still outstanding, and only runnable where Docker and Caddy are:**
+
+- the production image build from `Dockerfile`;
+- `caddy validate --config /etc/caddy/Caddyfile`;
+- `scripts/self-host/smoke-production-container.sh`.
+
+Those are steps 6 and 9 in the sequence above, and they are also exactly what
+`self-hosting-ci.yml` runs — which is another reason to give the unified branch
+that workflow.
+
+**Note on the unification branch itself:** it does not need to be assembled.
+The deployment branch's tree already *is* the intended result — `vercel.json` is
+the only path `main` has that it lacks, and the decision in step 4 is to drop it
+(Vercel administers DNS and hosts nothing). `CLAUDE.md`, `README.md`,
+`.gitignore` and this runbook are already byte-identical on both branches. So
+the unification PR is simply `staging/self-hosting-sync-20260802` → `main`, with
+no preparatory commit in between.
+
+#### Known deprecation to clear while unifying
+
+The build emits:
+
+```text
+⚠ `experimental.typedRoutes` has been moved to `typedRoutes`.
+```
+
+`typedRoutes: false` sits inside `experimental` in `next.config.js` on **both**
+branches. It is harmless today — the value is `false` — but it is the kind of
+warning that becomes an error in a later Next release. Fix it during
+unification, not before: `next.config.js` is a production-configuration file and
+changing it on the deployment branch outside a planned window is not worth the
+risk for a warning.
+
 #### Definition of done
 
 - one branch carries both the application and the deployment surface;
