@@ -8,6 +8,7 @@
 import { notFound } from "next/navigation";
 import { LOCALES } from "@/lib/i18n";
 import { getBeautyCategoryTree } from "@/lib/beauty/catalog";
+import { beautyRobots } from "@/lib/beauty/seo";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
 import WorldGrid from "@/components/beauty/WorldGrid";
 import { copyFor, deptHref, worldsHref, worldsLangParams } from "@/lib/beauty/worlds";
@@ -24,7 +25,7 @@ export async function generateMetadata(props) {
   return {
     title,
     description: c.rootSub,
-    robots: { index: false, follow: true },
+    robots: await beautyRobots(lang),
     alternates: { canonical: worldsHref(lang) },
     openGraph: {
       type: "website",

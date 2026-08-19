@@ -10,6 +10,7 @@ import Link from "next/link";
 import { LOCALES } from "@/lib/i18n";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
 import { getBeautyBrandDirectory, beautyBrandLogoUrl } from "@/lib/beauty/catalog";
+import { beautyRobots } from "@/lib/beauty/seo";
 import { waLink, tgLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import Breadcrumb from "@/components/shared/Breadcrumb";
@@ -71,7 +72,7 @@ export async function generateMetadata(props) {
   return {
     title: `${t.nav.brands} — ${t.common.brand}`,
     description: c.sub,
-    robots: lang === "fa" ? { index: false, follow: true } : undefined,
+    robots: await beautyRobots(lang),
   };
 }
 

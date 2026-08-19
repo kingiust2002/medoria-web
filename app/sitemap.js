@@ -1,12 +1,18 @@
-// app/sitemap.js — dynamic sitemap for Medoria Health.
-// Includes the public category tree so every active department, group and leaf
-// remains discoverable even though the visible quick-access UI is compact.
-import { SITE_URL, SEO_LOCALES } from "@/lib/seo";
+// app/sitemap.js — dynamic sitemap for both verticals.
+// Health includes the public category tree so every active department, group
+// and leaf remains discoverable even though the visible quick-access UI is
+// compact. Beauty appears only once its catalog is open to indexing — the same
+// condition lib/beauty/seo.js uses for the robots tag, so the sitemap and the
+// pages can never contradict each other.
+import { SITE_URL, SEO_LOCALES, SEO_DEFAULT_LOCALE } from "@/lib/seo";
 import { CATEGORIES } from "@/lib/i18n";
 import { getCategories, getProducts } from "@/lib/supabase";
 import { buildHealthCategoryTree, flattenHealthCategoryTree } from "@/lib/health/categories";
+import { getBeautyProducts } from "@/lib/beauty/catalog";
+import { isBeautyIndexable } from "@/lib/beauty/seo";
 
 const HEALTH = "/health";
+const BEAUTY = "/beauty";
 
 const STATIC = [
   { path: "", changeFrequency: "daily", priority: 0.9 },
@@ -18,6 +24,20 @@ const STATIC = [
 
 const langMap = (path) =>
   Object.fromEntries(SEO_LOCALES.map((l) => [l, `${SITE_URL}${HEALTH}/${l}${path}`]));
+
+// Beauty's own static surfaces. Deliberately shorter than the Health list:
+// /worlds is the section index buyers land on, the rest is the catalog.
+const BEAUTY_STATIC = [
+  { path: "", changeFrequency: "daily", priority: 0.9 },
+  { path: "/catalog", changeFrequency: "daily", priority: 0.9 },
+  { path: "/worlds", changeFrequency: "weekly", priority: 0.85 },
+  { path: "/brands", changeFrequency: "weekly", priority: 0.7 },
+  { path: "/about", changeFrequency: "monthly", priority: 0.5 },
+  { path: "/contact", changeFrequency: "monthly", priority: 0.6 },
+];
+
+const beautyLangMap = (path) =>
+  Object.fromEntries(SEO_LOCALES.map((l) => [l, `${SITE_URL}${BEAUTY}/${l}${path}`]));
 
 function categoryPath(node) {
   return node.children?.length
@@ -68,6 +88,42 @@ export default async function sitemap() {
         priority: categoryPriority(depth),
         alternates: { languages: langMap(path) },
       });
+    }
+  }
+
+  // Beauty joins the sitemap on exactly the signal that opens it to indexing
+  // (lib/beauty/seo.js), so the two can never disagree — a page listed here but
+  // serving noindex is a contradiction search engines are right to distrust.
+  // While the catalog is below the threshold this loop simply does not run.
+  if (await isBeautyIndexable(SEO_DEFAULT_LOCALE)) {
+    for (const l of SEO_LOCALES) {
+      for (const s of BEAUTY_STATIC) {
+        out.push({
+          url: `${SITE_URL}${BEAUTY}/${l}${s.path}`,
+          lastModified: now,
+          changeFrequency: s.changeFrequency,
+          priority: s.priority,
+          alternates: { languages: beautyLangMap(s.path) },
+        });
+      }
+    }
+
+    let beautyProducts = [];
+    try { beautyProducts = await getBeautyProducts(); } catch { /* build-safe */ }
+    for (const p of beautyProducts || []) {
+      const slug = p.slug || p.id;
+      if (!slug) continue;
+      const path = `/catalog/${slug}`;
+      const lm = p.updated_at || p.created_at ? new Date(p.updated_at || p.created_at) : now;
+      for (const l of SEO_LOCALES) {
+        out.push({
+          url: `${SITE_URL}${BEAUTY}/${l}${path}`,
+          lastModified: lm,
+          changeFrequency: "weekly",
+          priority: 0.7,
+          alternates: { languages: beautyLangMap(path) },
+        });
+      }
     }
   }
 

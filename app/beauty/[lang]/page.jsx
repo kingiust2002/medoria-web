@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { LOCALES } from "@/lib/i18n";
 import { getBeautyMedia } from "@/lib/beauty/media";
 import { getBeautyCategoryTree, getBeautyProducts, beautyImageUrl } from "@/lib/beauty/catalog";
+import { beautyRobots } from "@/lib/beauty/seo";
 import { nameOf, deptHref, DEPT_IMG, copyFor } from "@/lib/beauty/worlds";
 import { CATEGORY_IMG } from "@/lib/beauty/categoryImages";
 import Hero from "@/components/beauty/home/Hero";
@@ -44,7 +45,7 @@ export async function generateMetadata(props) {
   return {
     title: "Medoria Beauty — Luxury cosmetics",
     description: t.home.heroSub,
-    robots: { index: false, follow: true },
+    robots: await beautyRobots(lang),
     alternates: { canonical: `/beauty/${lang}` },
     openGraph: {
       type: "website",

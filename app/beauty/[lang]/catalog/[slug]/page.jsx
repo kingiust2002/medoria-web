@@ -19,6 +19,7 @@ import BeautyProductCard from "@/components/beauty/catalog/BeautyProductCard";
 import BeautyGallery from "./BeautyGallery";
 import BeautyQuoteButton from "@/components/beauty/BeautyQuoteButton";
 import BeautyViewTracker from "./BeautyViewTracker";
+import { beautyRobots } from "@/lib/beauty/seo";
 
 export const revalidate = 300;
 
@@ -48,7 +49,7 @@ export async function generateMetadata(props) {
   return {
     title: `${name}${p.brand ? ` — ${p.brand}` : ""} — ${t.common.brand}`,
     description: desc,
-    robots: lang === "fa" ? { index: false, follow: true } : undefined,
+    robots: await beautyRobots(lang),
     openGraph: { title: name, description: desc, type: "website", ...(og ? { images: [{ url: og }] } : {}) },
   };
 }

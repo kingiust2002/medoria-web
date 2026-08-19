@@ -3,6 +3,7 @@ import { LOCALES } from "@/lib/i18n";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
 import ContactInner from "./ContactInner";
 import { CONTACT_COPY } from "./copy";
+import { beautyRobots } from "@/lib/beauty/seo";
 
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
@@ -14,7 +15,7 @@ export async function generateMetadata(props) {
   if (!LOCALES.includes(lang)) return {};
   const c = CONTACT_COPY[lang] || CONTACT_COPY.en;
   const t = getBeautyTranslations(lang);
-  return { title: `${c.hero.title} — ${t.common.brand}`, description: c.hero.sub, robots: lang === "fa" ? { index: false, follow: true } : undefined };
+  return { title: `${c.hero.title} — ${t.common.brand}`, description: c.hero.sub, robots: await beautyRobots(lang) };
 }
 
 export default async function BeautyContactPage(props) {
