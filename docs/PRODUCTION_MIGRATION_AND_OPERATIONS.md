@@ -1871,14 +1871,89 @@ tip, not at `main`'s, before trusting the documented rollback path.**
 
 **Outstanding as of this record:**
 
-- confirmation that the branch-label fix above was applied on the VPS;
-- the full §9 public/operator smoke-test matrix against `https://medoriaco.com`
-  (the automated container smoke test above ran inside CI against a synthetic
-  host, not against the live domain);
-- the post-deploy stable observation window (§18.2 step 11) has not started.
+- ~~confirmation that the branch-label fix above was applied on the VPS~~ —
+  **done**, same day. `git branch -vv` on the VPS confirmed:
+  `main` → `ea5f967 [origin/main]`,
+  `staging/self-hosting-sync-20260802` → `86b198d [origin/staging/...]`. Each
+  label points at its own branch's real tip.
+- ~~the full §9 public/operator smoke-test matrix against
+  `https://medoriaco.com`~~ — **done** for the public routes, after the Caddy
+  incident below was resolved: `/` 200, `/api/health` 200, `/health/en` 200,
+  `/beauty/en` 200, `www.medoriaco.com` 308 to the apex. Operator-panel and
+  CAPTCHA/import flows from the full §9/§12 matrix are still unexercised.
+- the post-deploy stable observation window (§18.2 step 11) has not started
+  (restarted by the incident below; start it fresh from the incident's
+  resolution time, not from the original switch).
 
 Do not delete or rename `staging/self-hosting-sync-20260802`, and do not
-delete §1.1/§1.3 below, until all three are closed out.
+delete §1.1/§1.3 below, until the observation window is closed out.
+
+#### Incident: Caddy would not start after the switch to `main` (2026-08-18)
+
+Discovered minutes after the branch-label fix above, while re-running the
+deploy to make sure `main` (not the deployment branch) was actually running —
+an earlier step in this same session had briefly rebuilt from
+`staging/self-hosting-sync-20260802` again by mistake (a copy-paste of the
+rollback command sequence, run right after the branch-label fix instead of
+instead of it) and had to be redone. That rebuild-onto-`main` is what surfaced
+this.
+
+**Symptom:** `docker compose up -d` reported `Container medoria-app-caddy-1
+Started`, but a follow-up `docker compose ps` showed it `Restarting (1)`.
+`up -d` reporting "Started" is not evidence a container stayed up — check
+`ps` (or curl the live domain) afterward, every time, not just this once.
+
+```
+sudo docker logs medoria-app-caddy-1 --tail 50
+Error: adapting config using caddyfile: ambiguous site definition: staging.medoriaco.com
+```
+
+**Root cause:** `deploy/Caddyfile` has carried two things that both claim
+`staging.medoriaco.com` since `0c67bce` hardcoded the production site block:
+
+```caddyfile
+{$STAGING_HOST} {
+  ...
+}
+...
+staging.medoriaco.com, medoriaco.com, www.medoriaco.com {
+  ...
+}
+```
+
+Production's `deploy/.env` had `STAGING_HOST=staging.medoriaco.com` — a
+leftover from the pre-cutover app-only-staging phase
+(`docs/self-hosting/APP_STAGING_RUNBOOK.md`), when that value was the *only*
+host Caddy answered for. Once the hardcoded block was added, the same
+hostname was claimed by two site blocks, and Caddy refuses to adapt an
+ambiguous config rather than guess. It is not possible to say from the
+available logs exactly when this started failing, or whether it affected only
+the two `up -d` runs in this session or predates them — the caddy container
+itself was already running before today's deploy started (see its `CREATED`
+age), so this collision may have been latent for longer without anyone
+running `docker compose ps` after a deploy to notice.
+
+**Immediate mitigation (same day):** `STAGING_HOST` changed in
+`deploy/.env` from `staging.medoriaco.com` to `unused.invalid` (an RFC 2606
+domain reserved to never resolve or collide with anything real), then
+`docker compose up -d` to recreate the caddy container. Confirmed stable
+(`Up`, no restart count) and confirmed live: the §9-subset smoke results
+above.
+
+**Permanent fix:** the `{$STAGING_HOST}` block is fully superseded by the
+hardcoded production/staging host list next to it and serves no purpose
+anymore — every host it could ever need to answer for is already in that
+list. Removed in PR #158, along with `STAGING_HOST` from
+`deploy/compose.app.yml`, `deploy/.env.example`,
+`scripts/check-self-host-env.mjs`, and the `self-hosting-ci.yml` Caddy
+validation step. After that PR is deployed, `deploy/.env`'s `STAGING_HOST`
+line (currently the harmless placeholder above) can be deleted entirely.
+
+**Lesson for future infra changes to `deploy/Caddyfile` or `deploy/.env`:**
+after any `docker compose up -d` that touches Caddy, always follow with
+`docker compose ps` (looking for a real `Up` duration, not just the word
+"Started") and a live curl against `https://medoriaco.com/`, not just the
+compose command's own exit status.
 
 #### Known deprecation to clear while unifying
 

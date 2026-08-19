@@ -41,12 +41,20 @@ that era is kept here because the unification is not fully closed out yet:
   validate entrypoint, npm removed from the runtime image, corrected canonical
   redirect in the smoke test). See runbook §18.2 for the full list and commit
   SHAs.
-- The VPS was switched to check out `main` the same day. **Before trusting the
-  VPS's git state, run `git branch -vv` there and confirm
-  `staging/self-hosting-sync-20260802` still points at its own tip, not at
-  `main`'s** — the switch hit a branch-labeling snag (documented in the §18.2
-  execution record) whose correction had not been confirmed as of this
-  writing.
+- The VPS was switched to check out `main` the same day. The switch hit a
+  branch-labeling snag (documented in the §18.2 execution record) — **fixed
+  and confirmed the same day**: `git branch -vv` on the VPS now shows `main`
+  at `ea5f967` and `staging/self-hosting-sync-20260802` at its own tip. Still
+  worth re-checking `git branch -vv` before trusting the VPS's git state if
+  anyone else has touched that checkout since.
+- **`deploy/Caddyfile`'s `STAGING_HOST`-templated block caused a real outage
+  the same day** — `deploy/.env`'s `STAGING_HOST` collided with a hardcoded
+  host in that same Caddyfile, so Caddy refused to start
+  (`ambiguous site definition`) and the container crash-looped. Full incident
+  and fix in the §18.2 execution record. **Lesson that generalizes:** after
+  any `docker compose up -d` touching Caddy, always confirm with
+  `docker compose ps` and a live curl — `up -d` reporting "Started" is not
+  evidence the container stayed up.
 - Never "tidy" the relationship between these two branches with a wholesale
   merge, wholesale rebase, force push, or `git reset --hard`.
 - Never reintroduce `exceljs` or `@vercel/analytics` — both were deliberately
