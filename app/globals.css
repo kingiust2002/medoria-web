@@ -547,12 +547,18 @@ html.lenis, html.lenis body { height: auto; }
   [data-vertical="beauty"] .brand-hero-streak::before { display: none; }
 }
 
+/* The thread is woven through the page, not painted on top of it: it sits
+   above the flat section backgrounds (and above its own station labels, which
+   carry the lit nodes) but below every card, so it disappears behind a tile
+   and re-emerges in the gutter between them. z-index 1 clears static section
+   backgrounds; the tilt-wrapped cards opt above it at 2. */
 .bv-thread {
   position: absolute;
   inset: 0;
-  z-index: 5;
+  z-index: 1;
   pointer-events: none;
 }
+[data-vertical="beauty"] [data-tilt] { z-index: 2; }
 .bv-thread svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .bv-thread .bv-node { opacity: 0.22; transition: opacity 0.6s var(--ease-lux); }
 .bv-thread .bv-node.lit { opacity: 1; }

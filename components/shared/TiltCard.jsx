@@ -30,6 +30,12 @@ export default function TiltCard({ children, className = "", max = 7, glow = tru
   return (
     <motion.div
       ref={ref}
+      // Styling hook only. The Beauty home uses it to lift tilt-wrapped cards
+      // above the «Fil d'Or» thread so the thread passes behind them — see the
+      // .bv-thread block in app/globals.css. The 3D transform here makes this
+      // element its own stacking context, so the z-index has to sit on it
+      // rather than on the .card inside.
+      data-tilt=""
       onMouseMove={onMove}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={reset}

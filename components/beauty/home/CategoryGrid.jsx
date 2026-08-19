@@ -54,7 +54,14 @@ export default async function CategoryGrid({ lang }) {
                 <TiltCard className="h-full rounded-2xl" max={feature ? 5 : 8}>
                   <SpotlightCard className="h-full rounded-2xl">
                     <a href={deptHref(lang, dept.slug)} className="card card-hover bv-sheen overflow-hidden group block h-full focus-ring">
-                      <div className={`relative ${feature ? "aspect-[16/9]" : "aspect-[4/3]"}`}>
+                      {/* h-full matters: the feature panel is 16/9 across six
+                          columns, so it is taller than a 4/3 card across three.
+                          Grid stretches every card in that row to the feature's
+                          height, but an aspect-only media box keeps its own —
+                          leaving ~120px of bare card below the photograph. The
+                          aspect still sets the natural height wherever the row
+                          is not stretched (one column, and the four-card row). */}
+                      <div className={`relative h-full ${feature ? "aspect-[16/9]" : "aspect-[4/3]"}`}>
                         {img ? (
                           <img
                             src={img}
