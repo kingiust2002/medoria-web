@@ -27,7 +27,7 @@ export async function generateMetadata(props) {
   if (!LOCALES.includes(lang)) return {};
   const t = getTranslations(lang);
   return {
-    description: t.footer.desc,
+    description: t.seo.homeDesc,
     keywords: SEO_KEYWORDS[lang] || SEO_KEYWORDS.en,
     robots: robotsFor(lang),
     openGraph: { locale: lang },

@@ -20,12 +20,12 @@ export async function generateMetadata(props) {
   const { lang } = await props.params;
   const t = getTranslations(lang);
   return {
-    title: `${t.categories.title} — ${t.common.brand}`,
+    title: t.seo.categoriesTitle,
     description: t.categories.subtitle,
     alternates: buildAlternates(lang, "/categories"),
     robots: robotsFor(lang),
     openGraph: {
-      title: `${t.categories.title} — ${t.common.brand}`,
+      title: t.seo.categoriesTitle,
       description: t.categories.subtitle,
       images: [{ url: ogImage(t.categories.title), width: 1200, height: 630, alt: t.categories.title }],
     },

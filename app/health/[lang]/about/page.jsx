@@ -20,7 +20,7 @@ export async function generateMetadata(props) {
   if (!LOCALES.includes(lang)) return {};
   const t = getTranslations(lang);
   return {
-    title: `${t.about.hero.title} — ${t.common.brand}`,
+    title: t.seo.aboutTitle,
     description: t.about.hero.sub,
     alternates: buildAlternates(lang, "/about"),
   };

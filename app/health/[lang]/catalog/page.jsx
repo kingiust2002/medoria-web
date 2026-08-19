@@ -27,7 +27,7 @@ export async function generateMetadata(props) {
 
   if (isThin) {
     return {
-      title: `${t.catalog.title} — ${t.common.brand}`,
+      title: t.seo.catalogTitle,
       description: t.catalog.subtitle,
       alternates: buildAlternates(lang, "/catalog"),
       robots: { index: false, follow: true },
@@ -36,7 +36,7 @@ export async function generateMetadata(props) {
 
   const path = category ? `/catalog?category=${category.slug}` : "/catalog";
   return {
-    title: category ? `${healthCategoryName(category, lang)} — ${t.common.brand}` : `${t.catalog.title} — ${t.common.brand}`,
+    title: category ? healthCategoryName(category, lang) : t.seo.catalogTitle,
     description: t.catalog.subtitle,
     alternates: buildAlternates(lang, path),
   };

@@ -9,7 +9,7 @@ export async function generateMetadata(props) {
   if (!LOCALES.includes(lang)) return {};
   const t = getTranslations(lang);
   return {
-    title: `${t.contact.hero.title} — ${t.common.brand}`,
+    title: t.seo.contactTitle,
     description: t.contact.hero.sub,
     alternates: buildAlternates(lang, "/contact"),
   };
