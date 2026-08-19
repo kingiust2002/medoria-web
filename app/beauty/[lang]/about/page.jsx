@@ -18,7 +18,11 @@ export function generateStaticParams() {
 }
 
 const VALUE_ICONS = ["sparkles", "badgeCheck", "handshake", "refresh"];
-const WORLD_ICONS = ["sparkles", "star", "package"];
+// One per world, in the order COPY[*].worlds.items lists them: fragrance,
+// personal care, makeup, hair, electricals, accessories, supplements. This
+// held only three names while the section has always rendered seven cards, so
+// the last four asked <Icon> for `undefined` and drew an empty tile.
+const WORLD_ICONS = ["droplet", "heart", "sparkles", "wind", "zap", "tag", "pill"];
 
 const COPY = {
   tg: {
@@ -211,7 +215,7 @@ export default async function BeautyAboutPage(props) {
               <TiltCard key={i} className="h-full rounded-2xl" max={6}>
                 <Link href={`/beauty/${lang}/worlds`} className="card p-7 card-hover bv-sheen transition-all group h-full block">
                   <div className="w-12 h-12 rounded-2xl bg-brand-violet/[0.08] text-brand-violet flex items-center justify-center mb-4 transition-all duration-300 group-hover:bg-brand-gradient group-hover:text-white group-hover:shadow-brand">
-                    <Icon name={WORLD_ICONS[i]} size={24} strokeWidth={1.6} />
+                    <Icon name={WORLD_ICONS[i] || "sparkles"} size={24} strokeWidth={1.6} />
                   </div>
                   <h3 className="font-display font-semibold text-[16px] text-ink mb-1.5 group-hover:text-brand-violet transition-colors">{title}</h3>
                   <p className="text-[13px] text-ink-muted leading-relaxed">{desc}</p>
