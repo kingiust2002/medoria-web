@@ -132,9 +132,8 @@ jobs:
         shell: bash
         run: |
           cat > deploy/.env <<'ENV'
-          STAGING_HOST=staging-ci.medoria.invalid
           ACME_EMAIL=ci@medoria.invalid
-          NEXT_PUBLIC_SITE_URL=https://staging-ci.medoria.invalid
+          NEXT_PUBLIC_SITE_URL=https://medoriaco.com
           NEXT_PUBLIC_SUPABASE_URL=https://ci-project.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY=ci-public-anon-key-not-for-production
           NEXT_PUBLIC_EMAIL=
@@ -187,7 +186,6 @@ jobs:
           docker run --rm \
             --entrypoint caddy \
             --add-host app:127.0.0.1 \
-            -e STAGING_HOST=staging-ci.medoria.invalid \
             -e ACME_EMAIL=ci@medoria.invalid \
             -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" \
             caddy:2.11.4-alpine \
@@ -196,7 +194,7 @@ jobs:
       - name: Build production container
         run: |
           docker build \
-            --build-arg NEXT_PUBLIC_SITE_URL=https://staging-ci.medoria.invalid \
+            --build-arg NEXT_PUBLIC_SITE_URL=https://medoriaco.com \
             --build-arg NEXT_PUBLIC_SUPABASE_URL=https://ci-project.supabase.co \
             --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=ci-public-anon-key-not-for-production \
             --tag medoria-web:self-host-ci \

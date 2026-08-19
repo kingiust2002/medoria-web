@@ -49,7 +49,6 @@ services:
       app:
         condition: service_healthy
     environment:
-      STAGING_HOST: ${STAGING_HOST:?set STAGING_HOST}
       ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL}
     ports:
       - "80:80"
