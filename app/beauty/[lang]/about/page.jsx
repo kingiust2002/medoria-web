@@ -12,6 +12,7 @@ import Breadcrumb from "@/components/shared/Breadcrumb";
 import SplitText from "@/components/shared/SplitText";
 import Image from "next/image";
 import BeautyPageHeader from "@/components/beauty/BeautyPageHeader";
+import { beautyRobots } from "@/lib/beauty/seo";
 
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
@@ -136,7 +137,7 @@ export async function generateMetadata(props) {
   return {
     title: `${c.hero.title} — ${t.common.brand}`,
     description: c.hero.sub,
-    robots: lang === "fa" ? { index: false, follow: true } : undefined,
+    robots: await beautyRobots(lang),
   };
 }
 

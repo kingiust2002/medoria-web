@@ -10,6 +10,7 @@ import { LOCALES } from "@/lib/i18n";
 import { waLink, tgLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
 import { getBeautyCategoryTree, getBeautyCategoryPath, getBeautyBrands, getBeautyProducts } from "@/lib/beauty/catalog";
+import { beautyRobots } from "@/lib/beauty/seo";
 import { nameOf, deptHref, copyFor } from "@/lib/beauty/worlds";
 import BeautyProductCard from "@/components/beauty/catalog/BeautyProductCard";
 import Icon from "@/components/shared/Icon";
@@ -69,7 +70,7 @@ export async function generateMetadata(props) {
   if (!LOCALES.includes(lang)) return {};
   const c = COPY[lang] || COPY.en;
   const t = getBeautyTranslations(lang);
-  return { title: `${c.title} — ${t.common.brand}`, description: c.subtitle, robots: lang === "fa" ? { index: false, follow: true } : undefined };
+  return { title: `${c.title} — ${t.common.brand}`, description: c.subtitle, robots: await beautyRobots(lang) };
 }
 
 const str = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
