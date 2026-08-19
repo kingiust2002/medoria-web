@@ -53,6 +53,14 @@ Do not commit credentials, database passwords, Supabase keys, Cloudflare API tok
 
 ## 1. Git state and branch model
 
+> **Superseded 2026-08-18 — read §18.2's execution record first.** The
+> unification described as a future plan throughout this section has
+> happened: `main` now carries the deployment surface and is what the VPS
+> checks out. The branch-role descriptions below (`main` = application-only,
+> `staging/self-hosting-sync-20260802` = what's checked out) describe the
+> **pre-unification** state and are kept for history. Do not follow them for
+> a decision today; §18.2 has the current state and the items still open.
+
 ### Repository
 
 `kingiust2002/medoria-web`
@@ -152,6 +160,15 @@ decision — see §18.
 
 ## 1.1 What only exists on the deployment branch
 
+> **Superseded 2026-08-18.** `main` now carries the deployment surface and
+> runs the same framework generation as production — see the §18.2 execution
+> record. This section is kept, unedited, as the historical picture of the gap
+> and is not yet deleted only because the unification's own definition of done
+> (§18.2) has outstanding items: a VPS branch-labeling correction to confirm,
+> a live smoke-test pass against `https://medoriaco.com`, and the post-deploy
+> observation window. Do not use the table below to decide whether `main` is
+> deployable today — it is; check §18.2 instead.
+
 Two asymmetries matter here. The first is which **files** exist on each branch,
 covered below. The second is bigger and is covered in §1.3: the two branches
 run **different major versions of Next.js and React**, and the application code
@@ -236,8 +253,15 @@ by documentation.
 
 ## 1.3 Framework and dependency divergence — the dangerous one
 
+> **Superseded 2026-08-18.** As of `main`'s merge commit `ea5f967`, `main` runs
+> `next@15.5.21` / `react@19.2.8` — the same generation as production. See the
+> §18.2 execution record. Kept for history for the same reason as the note at
+> the top of §1.1.
+
 `main` and the deployment branch are not the same application on two different
-file layouts. **They are two different framework generations.**
+file layouts. **They are two different framework generations.** (True at the
+time this table was written; not true of current `main` — see the note
+above.)
 
 | | `main` | deployment branch (= production) |
 | --- | --- | --- |
@@ -1765,6 +1789,172 @@ the only path `main` has that it lacks, and the decision in step 4 is to drop it
 the unification PR is simply `staging/self-hosting-sync-20260802` → `main`, with
 no preparatory commit in between.
 
+#### Execution record (2026-08-18)
+
+The sequence above was carried out. PR #153 (`unify/production-tree` →
+`main`) was opened as a draft as planned. What follows is what actually
+happened, including two things the plan above did not anticipate.
+
+**CI found four real, pre-existing defects.** They were all already present
+on the deployment branch. None were visible before today because
+`self-hosting-ci.yml` had never once run to completion on that tree — the job
+died on the first gate it hit, so every gate after that had never executed,
+successfully or otherwise. Unifying the branches is what finally ran the
+whole workflow, and it did its job:
+
+| # | Where CI died | Cause | Fix | Commit |
+| --- | --- | --- | --- | --- |
+| 1 | production npm audit gate | `nanoid` high-severity advisory, reached transitively through `postcss` (GHSA-28wg-ghj8-5hjv, GHSA-2v37-7h3g-55p8) | pinned `nanoid` to `3.3.18` in `overrides`, alongside the existing `postcss`/`sharp` pins | `ffbf56c` |
+| 2 | Caddy validate step | `docker run ... caddy:2.11.4-alpine validate ...` — the image no longer sets `caddy` as its entrypoint, so `validate` was looked up as its own executable and failed with exit 127 | added explicit `--entrypoint caddy` | `caddd5d` |
+| 3 | Trivy HIGH/CRITICAL scan | 8 findings (`tar` CRITICAL + HIGH, `sigstore`, `ip-address`, `picomatch`, `brace-expansion` ×3) — all inside the `npm` CLI bundled by the Node base image, none of them application dependencies, and `npm` is never invoked at runtime (`node server.js`, healthcheck is a bare `node -e`) | removed `npm`/`npx` from the final Docker stage; `deps`/`builder` stages, which do need `npm`, are untouched | `2bebb7c` |
+| 4 | container smoke test | `scripts/self-host/smoke-production-container.sh` asserted `medoriaco.com` should 308-redirect to `medoria.co` — backwards versus the actual and intended canonical-domain policy; the app was correct, the test was migration-era drift | rewrote the assertions: `medoriaco.com` must serve directly (200, no `Location`), `www.medoriaco.com` folds into it, plus a guard that fails the run if the redirect target ever matches `medoria.co`/`.com`/`.tj` again | `fc794f3` |
+
+The `typedRoutes` deprecation (below) was cleared in the same pass, in commit
+`ffbf56c`.
+
+CI went green on `fc794f3` (`validate` check: success). The job log shows every
+step actually executing, not skipping:
+
+```text
+sharp runtime ok
+health endpoint is ready
+gateway and neutral login routes returned HTTP 2xx
+security and health-cache headers verified
+canonical host behaviour verified
+legacy locale redirect verified
+production container smoke tests passed
+```
+
+**Merge.** PR #153 was merged into `main` with an ordinary merge commit
+(`merge`, not squash — squashing would have collapsed the `-s ours` history
+and broken the fast-forward/ancestor relationship the whole approach depends
+on). Merge commit: `ea5f967`. Verified immediately after:
+
+| Check | Result |
+| --- | --- |
+| deployment branch tip still an ancestor of `main` (rollback intact) | ✔ |
+| `main` tree vs. deployment branch tip | differs in exactly the 6 files touched by the 4 fixes above |
+| `vercel.json` | absent from `main` (dropped per step 4) |
+| `Dockerfile`, `deploy/**`, `app/api/health/`, `self-hosting-ci.yml` | present on `main` |
+| `next`/`react` on `main` | `15.5.21` / `19.2.8` |
+
+**VPS deploy, same day.** Backup first: the 02:30 UTC automated backup
+(`20260818T023001Z`) had already reported `BACKUP_RUNNER=PASS` with R2
+offsite verified; a second, manual backup was taken before the switch
+(`20260818T140033Z`) and its 14 checksums all verified `OK` locally, and its
+snapshot was confirmed present in the R2 listing alongside the automated one.
+The container was then rebuilt from `main` and brought up — `medoria-app-app-1`
+and `medoria-app-caddy-1` both came up healthy, and the build log confirms the
+npm-removal fix is live in the running image (`RUN rm -rf
+/usr/local/lib/node_modules/npm ...` executed in the `runner` stage).
+
+**A git housekeeping problem, found during the deploy, not before it.** The
+VPS checkout was a `--single-branch` clone of
+`staging/self-hosting-sync-20260802` only, so `main` had never been fetched
+into it. `git checkout main` correctly failed
+(`pathspec 'main' did not match any file(s) known to git`). The recovery,
+`git pull --ff-only origin main`, worked — the working tree landed on the
+right commit, `ea5f967` — but it fast-forwarded the existing local branch
+*label* `staging/self-hosting-sync-20260802` rather than creating a separate
+local `main`. Net effect: the file tree and running container were correct,
+but the local branch name no longer matched its content, which silently
+breaks the rollback command this runbook documents
+(`git checkout staging/self-hosting-sync-20260802` would no longer reach the
+old deployment tree, because that name now points at the new one). The fix —
+fetch `main` properly, create a real local `main` at `ea5f967`, and reset the
+local `staging/self-hosting-sync-20260802` label back to
+`origin/staging/self-hosting-sync-20260802` — was identified and handed to
+the operator; this record does not assert it was completed. **Whoever next
+touches this VPS checkout must run `git branch -vv` and confirm
+`staging/self-hosting-sync-20260802` points at the deployment branch's own
+tip, not at `main`'s, before trusting the documented rollback path.**
+
+**Outstanding as of this record:**
+
+- ~~confirmation that the branch-label fix above was applied on the VPS~~ —
+  **done**, same day. `git branch -vv` on the VPS confirmed:
+  `main` → `ea5f967 [origin/main]`,
+  `staging/self-hosting-sync-20260802` → `86b198d [origin/staging/...]`. Each
+  label points at its own branch's real tip.
+- ~~the full §9 public/operator smoke-test matrix against
+  `https://medoriaco.com`~~ — **done** for the public routes, after the Caddy
+  incident below was resolved: `/` 200, `/api/health` 200, `/health/en` 200,
+  `/beauty/en` 200, `www.medoriaco.com` 308 to the apex. Operator-panel and
+  CAPTCHA/import flows from the full §9/§12 matrix are still unexercised.
+- the post-deploy stable observation window (§18.2 step 11) has not started
+  (restarted by the incident below; start it fresh from the incident's
+  resolution time, not from the original switch).
+
+Do not delete or rename `staging/self-hosting-sync-20260802`, and do not
+delete §1.1/§1.3 below, until the observation window is closed out.
+
+#### Incident: Caddy would not start after the switch to `main` (2026-08-18)
+
+Discovered minutes after the branch-label fix above, while re-running the
+deploy to make sure `main` (not the deployment branch) was actually running —
+an earlier step in this same session had briefly rebuilt from
+`staging/self-hosting-sync-20260802` again by mistake (a copy-paste of the
+rollback command sequence, run right after the branch-label fix instead of
+instead of it) and had to be redone. That rebuild-onto-`main` is what surfaced
+this.
+
+**Symptom:** `docker compose up -d` reported `Container medoria-app-caddy-1
+Started`, but a follow-up `docker compose ps` showed it `Restarting (1)`.
+`up -d` reporting "Started" is not evidence a container stayed up — check
+`ps` (or curl the live domain) afterward, every time, not just this once.
+
+```
+sudo docker logs medoria-app-caddy-1 --tail 50
+Error: adapting config using caddyfile: ambiguous site definition: staging.medoriaco.com
+```
+
+**Root cause:** `deploy/Caddyfile` has carried two things that both claim
+`staging.medoriaco.com` since `0c67bce` hardcoded the production site block:
+
+```caddyfile
+{$STAGING_HOST} {
+  ...
+}
+...
+staging.medoriaco.com, medoriaco.com, www.medoriaco.com {
+  ...
+}
+```
+
+Production's `deploy/.env` had `STAGING_HOST=staging.medoriaco.com` — a
+leftover from the pre-cutover app-only-staging phase
+(`docs/self-hosting/APP_STAGING_RUNBOOK.md`), when that value was the *only*
+host Caddy answered for. Once the hardcoded block was added, the same
+hostname was claimed by two site blocks, and Caddy refuses to adapt an
+ambiguous config rather than guess. It is not possible to say from the
+available logs exactly when this started failing, or whether it affected only
+the two `up -d` runs in this session or predates them — the caddy container
+itself was already running before today's deploy started (see its `CREATED`
+age), so this collision may have been latent for longer without anyone
+running `docker compose ps` after a deploy to notice.
+
+**Immediate mitigation (same day):** `STAGING_HOST` changed in
+`deploy/.env` from `staging.medoriaco.com` to `unused.invalid` (an RFC 2606
+domain reserved to never resolve or collide with anything real), then
+`docker compose up -d` to recreate the caddy container. Confirmed stable
+(`Up`, no restart count) and confirmed live: the §9-subset smoke results
+above.
+
+**Permanent fix:** the `{$STAGING_HOST}` block is fully superseded by the
+hardcoded production/staging host list next to it and serves no purpose
+anymore — every host it could ever need to answer for is already in that
+list. Removed in PR #158, along with `STAGING_HOST` from
+`deploy/compose.app.yml`, `deploy/.env.example`,
+`scripts/check-self-host-env.mjs`, and the `self-hosting-ci.yml` Caddy
+validation step. After that PR is deployed, `deploy/.env`'s `STAGING_HOST`
+line (currently the harmless placeholder above) can be deleted entirely.
+
+**Lesson for future infra changes to `deploy/Caddyfile` or `deploy/.env`:**
+after any `docker compose up -d` that touches Caddy, always follow with
+`docker compose ps` (looking for a real `Up` duration, not just the word
+"Started") and a live curl against `https://medoriaco.com/`, not just the
+compose command's own exit status.
+
 #### Known deprecation to clear while unifying
 
 The build emits:
@@ -1780,13 +1970,18 @@ unification, not before: `next.config.js` is a production-configuration file and
 changing it on the deployment branch outside a planned window is not worth the
 risk for a warning.
 
+**Cleared 2026-08-18** (see execution record above): `typedRoutes: false` now
+sits at the top level of `next.config.js`, next to `serverExternalPackages`,
+instead of inside `experimental`. The value is unchanged, so routing behavior
+did not change — only the build warning went away.
+
 #### Definition of done
 
-- one branch carries both the application and the deployment surface;
-- the VPS checks out that branch;
-- `npm run build` on it is the same build production runs;
-- CI runs on PRs;
-- §1.1 and §1.3 are deleted from this runbook rather than updated.
+- [x] one branch carries both the application and the deployment surface — `main`, as of `ea5f967`;
+- [x] the VPS checks out that branch — done 2026-08-18, pending the branch-label correction noted above;
+- [x] `npm run build` on it is the same build production runs — confirmed via CI and the live rebuild;
+- [x] CI runs on PRs — `self-hosting-ci.yml` is on `main` and ran on PR #153 and #154;
+- [ ] §1.1 and §1.3 are deleted from this runbook rather than updated — **not yet**. Keep them until the outstanding items above are closed and a stable observation window has passed; they still correctly describe the difference between `main` and the (still-extant) deployment branch until that branch is retired.
 
 ---
 
