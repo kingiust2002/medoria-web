@@ -1,7 +1,9 @@
 // components/beauty/home/CategoryGrid.jsx — the Beauty worlds as an asymmetric
-// editorial vitrine («Fil d'Or» season): the first world is a wide feature
-// panel, the rest sit beside it — magazine rhythm instead of the symmetric
-// Health grid. Second station of the copper thread (data-fil-node).
+// editorial vitrine («Fil d'Or» season): a tall feature panel, two tiles
+// stacked beside it, then a band of quarters — magazine rhythm instead of the
+// symmetric Health grid. Every tile is 16/9 because every department
+// photograph is; the rhythm comes from size, not from shape. Second station of
+// the copper thread (data-fil-node).
 //
 // This used to render three hard-coded cards — Skincare / Makeup / Tools — each
 // labelled "soon" and pointing at an #collections anchor that no longer exists.
@@ -46,22 +48,35 @@ export default async function CategoryGrid({ lang }) {
           {tree.map((dept, i) => {
             const feature = i === 0;
             const kids = dept.children?.length || 0;
+            // Every department photograph is 16/9 (1.79), so every tile is too
+            // — the vitrine gets its rhythm from three tile SIZES rather than
+            // from three shapes. A feature across eight columns and two rows,
+            // the next two stacked beside it across four, then the rest as a
+            // band of quarters. The previous grid put 4/3 tiles beside a 16/9
+            // feature, and because the row stretches them to the feature's
+            // height they ended up 0.86 portrait — half of each photograph was
+            // cropped away. row-span only applies when there is something to
+            // sit beside the feature.
+            const span = feature
+              ? `sm:col-span-2 lg:col-span-8${tree.length > 2 ? " lg:row-span-2" : ""}`
+              : i <= 2
+                ? "lg:col-span-4"
+                : "lg:col-span-3";
             // Same resolution order the World grid uses, so a department wears
             // the identical photograph in both places.
             const img = beautyImageUrl(dept.image_url) || CATEGORY_IMG[dept.slug] || DEPT_IMG[dept.slug] || null;
             return (
-              <StaggerItem key={dept.id} className={feature ? "sm:col-span-2 lg:col-span-6" : "lg:col-span-3"}>
+              <StaggerItem key={dept.id} className={span}>
                 <TiltCard className="h-full rounded-2xl" max={feature ? 5 : 8}>
                   <SpotlightCard className="h-full rounded-2xl">
                     <a href={deptHref(lang, dept.slug)} className="card card-hover bv-sheen overflow-hidden group block h-full focus-ring">
-                      {/* h-full matters: the feature panel is 16/9 across six
-                          columns, so it is taller than a 4/3 card across three.
-                          Grid stretches every card in that row to the feature's
-                          height, but an aspect-only media box keeps its own —
-                          leaving ~120px of bare card below the photograph. The
-                          aspect still sets the natural height wherever the row
-                          is not stretched (one column, and the four-card row). */}
-                      <div className={`relative h-full ${feature ? "aspect-[16/9]" : "aspect-[4/3]"}`}>
+                      {/* h-full lets the media fill a cell the grid has
+                          stretched — the feature spans two rows, so its own
+                          box is taller than one 16/9 tile — while the aspect
+                          still sets the natural height everywhere the cell is
+                          not stretched. Without it the stretched cells show
+                          bare card below the photograph. */}
+                      <div className="relative h-full aspect-[16/9]">
                         {img ? (
                           <img
                             src={img}
