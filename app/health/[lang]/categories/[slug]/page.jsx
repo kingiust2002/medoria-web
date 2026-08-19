@@ -39,12 +39,12 @@ export async function generateMetadata(props) {
     const name = healthCategoryName(category, lang);
     const description = healthCategoryDescription(category, lang) || FALLBACK_DESCRIPTION[lang] || FALLBACK_DESCRIPTION.en;
     return {
-      title: `${name} — ${t.common.brand}`,
+      title: name,
       description,
       alternates: buildAlternates(lang, `/categories/${category.slug}`),
       robots: robotsFor(lang),
       openGraph: {
-        title: `${name} — ${t.common.brand}`,
+        title: name,
         description,
         images: [{ url: ogImage(name), width: 1200, height: 630, alt: name }],
       },

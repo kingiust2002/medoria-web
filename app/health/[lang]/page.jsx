@@ -18,12 +18,12 @@ export async function generateMetadata(props) {
   if (!LOCALES.includes(lang)) return {};
   const t = getTranslations(lang);
   return {
-    title: `${t.common.brand} — ${t.home.heroH1Pre} ${t.home.heroH1Accent}`,
-    description: t.home.heroSub,
+    title: t.seo.homeTitle,
+    description: t.seo.homeDesc,
     alternates: buildAlternates(lang, ""),
     openGraph: {
-      title: `${t.common.brand} — ${t.home.heroH1Pre} ${t.home.heroH1Accent}`,
-      description: t.home.heroSub,
+      title: t.seo.homeTitle,
+      description: t.seo.homeDesc,
       type: "website",
       images: [{ url: ogImage(), width: 1200, height: 630, alt: t.common.brand }],
     },

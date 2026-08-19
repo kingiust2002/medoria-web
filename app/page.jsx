@@ -12,10 +12,23 @@ import { gatewayLumenMedia } from "@/lib/gateway/media";
 import { DEFAULT_LOCALE, LANG_META } from "@/lib/i18n";
 
 export const metadata = {
-  title: "Medoria — Professional Health & Beauty in Tajikistan",
+  // `absolute` because the root layout's "%s | Medoria" template would
+  // otherwise append the brand to a title that already opens with it.
+  title: { absolute: "Medoria — Medical Supplies & Professional Beauty, Tajikistan" },
   description:
-    "Ду каталоги касбӣ — Medoria Health барои маводи тиббӣ ва Medoria Beauty барои атр, беҳдошт, ороиш, мӯй ва абзори зебоӣ дар Тоҷикистон.",
-  alternates: { canonical: "/" },
+    "Ду каталоги касбӣ дар Тоҷикистон: Medoria Health барои маводи сарфшавандаи тиббӣ ва Medoria Beauty барои атр, беҳдошт, ороиш ва мӯй.",
+  // The gateway is the one page that serves every language, so it is the
+  // right place to declare them to search engines. Each locale lands on the
+  // Health home, which is the indexable side of the house.
+  alternates: {
+    canonical: "/",
+    languages: {
+      tg: "/health/tg",
+      ru: "/health/ru",
+      en: "/health/en",
+      "x-default": "/health/en",
+    },
+  },
   robots: { index: true, follow: true },
   openGraph: {
     type: "website",

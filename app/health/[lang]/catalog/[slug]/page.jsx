@@ -31,7 +31,7 @@ export async function generateMetadata(props) {
   const og = p.image_url ? imageUrl(p.image_url) : "/logo.png";
 
   return {
-    title: `${name}${p.sku ? ` — ${p.sku}` : ""} — ${t.common.brand}`,
+    title: `${name}${p.sku ? ` — ${p.sku}` : ""}`,
     description: desc,
     alternates: buildAlternates(lang, path),
     openGraph: {
