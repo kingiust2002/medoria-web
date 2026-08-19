@@ -48,7 +48,18 @@ export default function FilDorThread() {
       const rtl = getComputedStyle(parent).direction === "rtl";
       pts = Array.from(anchors).map((el) => {
         const r = el.getBoundingClientRect();
-        const x = rtl ? r.right - pr.left + GUTTER : r.left - pr.left - GUTTER;
+        // x comes from the station's content column, not from the station's own
+        // box. The stations are not aligned with each other: four are left-hand
+        // section tags, but the hero's is a centred inline pill, so measuring
+        // the label itself put that one point near the middle of the page and
+        // the run to the next station became a long diagonal straight across
+        // the content — which is not a thread in the margin, it is a scratch
+        // over the page. Every column shares the same max-width, so anchoring
+        // to it puts every station on one vertical line and leaves the bezier
+        // swing to do the drifting.
+        const col = el.closest(".container-x") || el;
+        const cr = col.getBoundingClientRect();
+        const x = rtl ? cr.right - pr.left + GUTTER : cr.left - pr.left - GUTTER;
         return {
           x: Math.min(Math.max(x, 10), pr.width - 10),
           y: r.top - pr.top + r.height / 2,
