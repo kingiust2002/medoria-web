@@ -40,7 +40,6 @@ if (!fs.existsSync(envPath)) {
 const values = parseEnv(fs.readFileSync(envPath, "utf8"));
 
 const required = [
-  "STAGING_HOST",
   "ACME_EMAIL",
   "NEXT_PUBLIC_SITE_URL",
   "NEXT_PUBLIC_SUPABASE_URL",
@@ -87,12 +86,26 @@ for (const key of ["NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_SUPABASE_URL"]) {
   }
 }
 
+// deploy/Caddyfile routes these hosts to the app service directly. Keep this
+// set in sync with the site block there -- NEXT_PUBLIC_SITE_URL pointing at
+// a host Caddy doesn't route is a real outage, not a style nit (see the
+// STAGING_HOST/ambiguous-site-definition incident in
+// docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md §18.2).
+const CADDY_ROUTED_APP_HOSTS = new Set([
+  "medoriaco.com",
+  "www.medoriaco.com",
+  "staging.medoriaco.com",
+]);
+
 const siteUrl = values.get("NEXT_PUBLIC_SITE_URL");
-const stagingHost = values.get("STAGING_HOST");
-if (siteUrl && stagingHost) {
+if (siteUrl) {
   try {
-    if (new URL(siteUrl).hostname !== stagingHost) {
-      fail("NEXT_PUBLIC_SITE_URL hostname must match STAGING_HOST during app staging");
+    const siteHost = new URL(siteUrl).hostname;
+    if (!CADDY_ROUTED_APP_HOSTS.has(siteHost)) {
+      fail(
+        "NEXT_PUBLIC_SITE_URL hostname must be a host deploy/Caddyfile " +
+          `routes to the app (${[...CADDY_ROUTED_APP_HOSTS].join(", ")})`,
+      );
     }
   } catch {
     // Invalid URL is reported above.
