@@ -10,7 +10,7 @@ import { getBeautyTranslations } from "./i18n";
 
 export default function BeautyFooter({ lang }) {
   const t = getBeautyTranslations(lang);
-  const email = process.env.NEXT_PUBLIC_EMAIL || "sales@medoria.tj";
+  const email = process.env.NEXT_PUBLIC_EMAIL || "";
   const home = `/beauty/${lang}`;
   const links = [
     [`${home}/catalog`, t.nav.collections],
@@ -70,10 +70,12 @@ export default function BeautyFooter({ lang }) {
           <div className="md:col-span-2">
             <div className="text-white font-semibold text-[12px] tracking-wider uppercase mb-4">{t.footer.colContact}</div>
             <ul className="space-y-2.5 text-[13px] text-white/55">
-              <li className="flex items-start gap-2">
-                <Icon name="mail" size={13} className="mt-0.5 shrink-0" />
-                <a href={`mailto:${email}`} className="hover:text-white transition-colors break-all">{email}</a>
-              </li>
+              {email && (
+                <li className="flex items-start gap-2">
+                  <Icon name="mail" size={13} className="mt-0.5 shrink-0" />
+                  <a href={`mailto:${email}`} className="hover:text-white transition-colors break-all">{email}</a>
+                </li>
+              )}
             </ul>
           </div>
         </div>

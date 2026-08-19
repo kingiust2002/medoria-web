@@ -10,6 +10,7 @@ import ThemeToggle from "@/components/shared/ThemeToggle";
 
 export default function Footer({ lang }) {
   const t = getTranslations(lang);
+  const email = process.env.NEXT_PUBLIC_EMAIL || "";
 
   return (
     <footer className="bg-navy text-white/50 pt-14 pb-24 md:pb-10 relative overflow-hidden noise">
@@ -72,12 +73,14 @@ export default function Footer({ lang }) {
             <div className="text-white font-semibold text-[12px] tracking-wider uppercase mb-4">{t.footer.contact}</div>
             <ul className="space-y-2.5 text-[13px] text-white/55">
               <li className="flex items-start gap-2"><Icon name="mapPin" size={13} className="mt-0.5 shrink-0" />{t.common.address}</li>
-              <li className="flex items-start gap-2">
-                <Icon name="mail" size={13} className="mt-0.5 shrink-0" />
-                <a href={`mailto:${process.env.NEXT_PUBLIC_EMAIL || "sales@medoria.tj"}`} className="hover:text-white transition-colors break-all">
-                  {process.env.NEXT_PUBLIC_EMAIL || "sales@medoria.tj"}
-                </a>
-              </li>
+              {email && (
+                <li className="flex items-start gap-2">
+                  <Icon name="mail" size={13} className="mt-0.5 shrink-0" />
+                  <a href={`mailto:${email}`} className="hover:text-white transition-colors break-all">
+                    {email}
+                  </a>
+                </li>
+              )}
               <li className="text-white/40 pt-2 leading-relaxed">{t.footer.work}</li>
             </ul>
           </div>

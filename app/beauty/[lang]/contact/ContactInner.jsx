@@ -20,7 +20,7 @@ const PHONE = process.env.NEXT_PUBLIC_PHONE || "+992900000000";
 export default function ContactInner({ lang }) {
   const t = getBeautyTranslations(lang);
   const c = CONTACT_COPY[lang] || CONTACT_COPY.en;
-  const email = process.env.NEXT_PUBLIC_EMAIL || "sales@medoria.tj";
+  const email = process.env.NEXT_PUBLIC_EMAIL || "";
 
   return (
     <div className="bg-canvas-soft">
