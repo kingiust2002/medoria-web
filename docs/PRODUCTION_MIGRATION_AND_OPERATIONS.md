@@ -80,6 +80,15 @@ Production-relevant merges recorded during and after close-out:
   - merge commit: `53f4f0a`
 - PR #148: this runbook and the production-architecture documentation.
   - merge commit: `47b14b6`
+- PR #153: the Git unification itself — `main` adopts the deployment
+  branch's tree. Superseding note: this entry predates the note at the top
+  of this section; §18.2's closing status has the full account.
+  - merge commit: `ea5f967`
+- PR #155–#158: the four fixes CI surfaced once it could finally run to
+  completion on the unified tree, plus this runbook's own record of it —
+  §18.2's closing status has the table. (#154 opened first, was superseded
+  by #158, and was closed without merge.)
+  - `main` tip after all of it: `955f096`
 
 Ordinary feature PRs also land on `main` and are deliberately not enumerated
 here; this list would rot. `git log origin/main` is the authority for what
@@ -1883,7 +1892,8 @@ tip, not at `main`'s, before trusting the documented rollback path.**
   CAPTCHA/import flows from the full §9/§12 matrix are still unexercised.
 - the post-deploy stable observation window (§18.2 step 11) has not started
   (restarted by the incident below; start it fresh from the incident's
-  resolution time, not from the original switch).
+  resolution time, not from the original switch) — **started 2026-08-19**,
+  see the closing status below for the clock.
 
 Do not delete or rename `staging/self-hosting-sync-20260802`, and do not
 delete §1.1/§1.3 below, until the observation window is closed out.
@@ -1955,6 +1965,69 @@ after any `docker compose up -d` that touches Caddy, always follow with
 "Started") and a live curl against `https://medoriaco.com/`, not just the
 compose command's own exit status.
 
+#### Closing status (2026-08-19)
+
+Everything opened during this unification is merged and deployed. This is
+the single place to read for the full outcome — the sections above are the
+work-in-progress trail that got here.
+
+**Merged to `main`, in order:**
+
+| PR | What | Commit |
+| --- | --- | --- |
+| #153 | the unification merge itself — `main` adopts the deployment branch's tree | `ea5f967` |
+| #154 | *(closed, superseded by #158 — see below)* | — |
+| #155 | this runbook's execution record and the Caddy incident writeup | `072ddfd` |
+| #156 | `lib/seo.js`'s `SITE_URL` fallback corrected from the retired `medoria.co` to `medoriaco.com` | `dc255d3` |
+| #157 | the site-wide sales-email fallback corrected off the unowned `medoria.tj` (header, both footers, both contact pages) | `2322227` |
+| #158 | the `STAGING_HOST`/Caddy incident's permanent fix — vestigial block and variable removed everywhere | `955f096` |
+
+`main` tip after all of it: **`955f096`**.
+
+**Deployed and verified live, same day:**
+
+```bash
+git log --oneline -1        # 955f096
+docker compose ... ps       # app: Up (healthy); caddy: Up, no restart count
+curl https://medoriaco.com/            # 200
+curl https://medoriaco.com/api/health  # 200
+```
+
+Confirmed stable at 21+ minutes uptime with zero restarts on both containers
+— the specific check the Caddy incident proved is necessary and that a bare
+`up -d` does not give you.
+
+**What this closes out, from the "Outstanding" list above:**
+
+- branch-label fix — confirmed done;
+- public-route smoke subset — confirmed done, including through the Caddy
+  incident and its fix;
+- observation window — **starts now** (2026-08-19, from this confirmed-stable
+  deploy), not yet closed. §18.1's precedent for the frozen Supabase Cloud
+  project used roughly a two-week window (cutover to its 2026-08-24 review
+  date); use similar judgment here rather than a same-day retirement of
+  `staging/self-hosting-sync-20260802`.
+
+**What is still open, deliberately, not overlooked:**
+
+- `NEXT_PUBLIC_EMAIL` and `NEXT_PUBLIC_PHONE` in production's `deploy/.env`
+  are still whatever they were before #157. That PR only removed the
+  *unowned-domain fallback* — it did not set real values. Until real values
+  are set, the header/footer email link is simply absent (safe) rather than
+  wrong (unsafe), which is the intended interim state, not a bug. Set the
+  real values, then `docker compose build --pull app && up -d` to pick them
+  up (they are build-time `NEXT_PUBLIC_*` values, so this needs a rebuild,
+  not just a container restart).
+- `deploy/.env`'s harmless leftover line `STAGING_HOST=unused.invalid` can be
+  deleted outright — nothing reads it any more — but there is no urgency;
+  it is inert.
+- the full §9/§12 operator-panel, CAPTCHA, and import smoke matrix is still
+  unexercised against the post-unification build. The public-route subset
+  above is not a substitute for it.
+- `staging/self-hosting-sync-20260802` is still the rollback target. Do not
+  rename or delete it, and do not delete §1.1/§1.3 above, until the
+  observation window closes.
+
 #### Known deprecation to clear while unifying
 
 The build emits:
@@ -1977,11 +2050,11 @@ did not change — only the build warning went away.
 
 #### Definition of done
 
-- [x] one branch carries both the application and the deployment surface — `main`, as of `ea5f967`;
-- [x] the VPS checks out that branch — done 2026-08-18, pending the branch-label correction noted above;
-- [x] `npm run build` on it is the same build production runs — confirmed via CI and the live rebuild;
-- [x] CI runs on PRs — `self-hosting-ci.yml` is on `main` and ran on PR #153 and #154;
-- [ ] §1.1 and §1.3 are deleted from this runbook rather than updated — **not yet**. Keep them until the outstanding items above are closed and a stable observation window has passed; they still correctly describe the difference between `main` and the (still-extant) deployment branch until that branch is retired.
+- [x] one branch carries both the application and the deployment surface — `main`, currently at `955f096` (§18.2 closing status);
+- [x] the VPS checks out that branch — done 2026-08-18, branch-label snag found and fixed the same day, re-confirmed on the `955f096` deploy 2026-08-19;
+- [x] `npm run build` on it is the same build production runs — confirmed via CI and every live rebuild since, including the `955f096` one;
+- [x] CI runs on PRs — `self-hosting-ci.yml` is on `main` and has run green on #153, #155, #156, #157, #158 (#154 closed, superseded by #158);
+- [ ] §1.1 and §1.3 are deleted from this runbook rather than updated — **not yet**. The observation window that started 2026-08-19 (§18.2 closing status) has not closed; keep them and `staging/self-hosting-sync-20260802` until it does.
 
 ---
 
@@ -2088,3 +2161,24 @@ Migration status         = COMPLETE
 ```
 
 Any future maintainer should preserve this architecture unless the owner explicitly authorizes another migration.
+
+### 21.1 Git-unification state, as of 2026-08-19
+
+The statement above is about the *infrastructure* migration (Vercel/Supabase
+Cloud → self-hosted). It was already complete when written. The
+Git-repository unification (§18.2 — one branch instead of two) is a separate,
+later milestone with its own status:
+
+```text
+Repository model  = single-branch-in-practice; `main` is production's tree
+`main` tip        = 955f096
+Deployed on VPS   = yes, confirmed live 2026-08-19 (§18.2 closing status)
+Rollback target   = staging/self-hosting-sync-20260802 (still kept, unmerged
+                    since ea5f967 -- do not delete/rename yet)
+Observation window = open, started 2026-08-19
+§1.1 / §1.3       = intentionally still present (pre-unification history);
+                    delete only once the observation window closes
+```
+
+Read §18.2's closing status for the full account before assuming either
+milestone is further along than this.
