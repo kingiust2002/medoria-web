@@ -9,7 +9,7 @@ api-staging.medoriaco.com, api.medoriaco.com {
   @supabase_api path /rest/v1 /rest/v1/* /auth/v1 /auth/v1/* /storage/v1 /storage/v1/*
 
   handle @supabase_api {
-    reverse_proxy supabase-kong:8000 {
+    reverse_proxy supabase-envoy:8000 {
       header_up X-Real-IP {remote_host}
     }
   }

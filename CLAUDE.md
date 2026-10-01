@@ -13,7 +13,7 @@ ivory/champagne/copper). Gateway at `/` presents both and routes to
 - Production Supabase API: **`https://api.medoriaco.com`**.
 - `www.medoriaco.com` redirects to the apex domain.
 - **Do not use or restore `medoria.tj`, `medoria.co`, or `medoria.com` as the canonical production domain.**
-- Production compute is the self-hosted VPS at `91.107.161.56`, not Vercel compute.
+- Production compute is the self-hosted VPS at **`91.107.182.97`**, not Vercel compute. The previous VPS (`91.107.161.56`) died in September 2026 and was replaced on 2026-09-23 by restoring from R2 — runbook **§22** is the record and the open-items list (notably: automated backups are not yet re-established, and data written after the `20260901T023001Z` snapshot is missing). Never point DNS or restores at the old IP.
 - Production app checkout on the VPS: `/home/medoria/apps/medoria-staging`.
 - Self-hosted Supabase lives under `/home/medoria/infra/supabase-staging`.
 - DNS is still administered through Vercel DNS; this does **not** mean Vercel is the production application host.
@@ -26,8 +26,9 @@ ivory/champagne/copper). Gateway at `/` presents both and routes to
 **Unified 2026-08-18–19 (runbook §18.2 — read its "Closing status" first).**
 `main` now carries the deployment surface and is Next 15 / React 19 — the
 framework-generation gap and the 42-file divergence described below no
-longer exist. `main` tip is **`955f096`**, confirmed live and stable on the
-VPS. Some detail from the pre-unification era is kept here because the
+longer exist. `main` tip was **`955f096`** at unification (2026-08-19) and
+has moved on since; `git log origin/main` is the authority, and the
+2026-09-23 replacement VPS was built from `main` at `c7b01da`. Some detail from the pre-unification era is kept here because the
 observation window hasn't closed and `staging/self-hosting-sync-20260802`
 hasn't been retired yet:
 

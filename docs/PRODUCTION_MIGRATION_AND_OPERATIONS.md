@@ -2,7 +2,7 @@
 
 > **Authoritative operational record.**
 >
-> Last reconciled: **2026-08-10 UTC** after the production cutover, off-site backup validation, controlled VPS reboot, and Git cleanup; then after PR #116/#117 were closed and their branches deleted; then after the deployment-branch documentation cleanup (`6920df0`) and the framework-divergence audit (§1.3).
+> Last reconciled: **2026-10-01 UTC** after the emergency server replacement of 2026-09-23 (**§22 — read it first**: the production VPS IP changed to `91.107.182.97`). Before that: **2026-08-10 UTC** after the production cutover, off-site backup validation, controlled VPS reboot, and Git cleanup; then after PR #116/#117 were closed and their branches deleted; then after the deployment-branch documentation cleanup (`6920df0`) and the framework-divergence audit (§1.3).
 >
 > This file exists so a future maintainer or AI coding agent can reconstruct what happened, understand what is live now, make changes in the correct place, and repeat or reverse the migration without relying on chat history.
 
@@ -39,9 +39,10 @@ Related live hosts:
 
 ### Current production VPS
 
-- Public IPv4: `91.107.161.56`
-- SSH user: `medoria`
-- Hostname seen during migration: `ps-c25645-s2373`
+- Public IPv4: `91.107.182.97` (since 2026-09-23 — see §22)
+- SSH user: `medoria` (root login was used for the initial build-out)
+- Hostname: `ps-c25681-s2471`
+- **Dead:** the original VPS `91.107.161.56` (`ps-c25645-s2373`) became unreachable in September 2026 and was replaced. Do not use, restore to, or point DNS at it. Older sections of this runbook that name it describe history.
 - Application checkout: `/home/medoria/apps/medoria-staging`
 - Self-hosted Supabase checkout/config: `/home/medoria/infra/supabase-staging`
 - Backup scripts: `/home/medoria/bin/`
@@ -385,11 +386,13 @@ Observed production containers after reboot:
 - `realtime-dev.supabase-realtime`
 - `supabase-meta`
 - `supabase-pooler`
-- `supabase-kong`
+- `supabase-kong` (**superseded** — see below)
 - `supabase-db`
 - `supabase-imgproxy`
 
 All were configured with `restart=unless-stopped` and successfully came back after a real server reboot.
+
+> **Changed 2026-09-23 (§22):** the replacement VPS runs a newer Supabase self-host release whose API gateway is **Envoy** (`supabase-envoy`, compose service `api-gw`), not Kong. There is no `supabase-kong` container there. The two Compose projects (`medoria-app` and Supabase) also share an external Docker network, `medoria-shared`, so Caddy can resolve the gateway by name.
 
 ### App Compose behavior
 
@@ -414,7 +417,7 @@ The active repository Caddy routing includes:
 api-staging.medoriaco.com, api.medoriaco.com
 ```
 
-For those API hosts only these Supabase routes are forwarded to `supabase-kong:8000`:
+For those API hosts only these Supabase routes are forwarded to `supabase-envoy:8000` (was `supabase-kong:8000` before 2026-09-23):
 
 - `/rest/v1`
 - `/rest/v1/*`
@@ -478,17 +481,17 @@ ns1.vercel-dns.com
 ns2.vercel-dns.com
 ```
 
-Explicit production/staging A records used during cutover:
+Explicit production/staging A records (current since 2026-09-23; they pointed at the dead VPS `91.107.161.56` from 2026-08-08 until then):
 
 ```text
-@           -> 91.107.161.56
-www         -> 91.107.161.56
-api         -> 91.107.161.56
-staging     -> 91.107.161.56
-api-staging -> 91.107.161.56
+@           -> 91.107.182.97
+www         -> 91.107.182.97
+api         -> 91.107.182.97
+staging     -> 91.107.182.97
+api-staging -> 91.107.182.97
 ```
 
-TTL was set to 60 seconds during migration/cutover.
+TTL was set to 60 seconds during migration/cutover and left at 60.
 
 Vercel may also show locked/default ALIAS records and CAA records. The explicit records above were used for the VPS cutover. Do not delete provider-managed records casually.
 
@@ -745,7 +748,7 @@ The final restore and exact storage synchronization passed.
 
 ### Phase H — DNS cutover
 
-The production A records were pointed at:
+The production A records were pointed at (historical — the VPS died and DNS moved to `91.107.182.97` on 2026-09-23, §22.6):
 
 ```text
 91.107.161.56
@@ -1192,6 +1195,8 @@ End state: deployment checkout clean.
 
 ## 7. Current backup and disaster-recovery design
 
+> **Status after 2026-09-23 (§22.7):** this section is the *design*. On the replacement VPS the runner script (`/home/medoria/bin/medoria-production-backup-runner.sh`), its cron entry, and the retention scripts lived only on the dead VPS and are **not yet recreated**. The last snapshot in R2 is `20260901T023001Z`. Until §22.7 is closed, treat production as having **no automated backup**.
+
 ### Local backup
 
 Frequency:
@@ -1422,10 +1427,10 @@ docker exec medoria-app-caddy-1 \
   caddy validate --config /etc/caddy/Caddyfile
 ```
 
-Current API upstream:
+Current API upstream (reachable because Caddy is attached to the external `medoria-shared` Docker network, see §22.4):
 
 ```text
-supabase-kong:8000
+supabase-envoy:8000
 ```
 
 Current app upstream:
@@ -1550,8 +1555,10 @@ C:\Users\erfan\Downloads\OpenSSH-Win64\OpenSSH-Win64
 Connection pattern:
 
 ```powershell
-.\ssh.exe -o ServerAliveInterval=20 -o ServerAliveCountMax=15 medoria@91.107.161.56
+.\ssh.exe -o ServerAliveInterval=20 -o ServerAliveCountMax=15 medoria@91.107.182.97
 ```
+
+(During the 2026-09-23 rebuild the plain Windows `ssh root@<ip>` from PowerShell also worked, but sessions dropped several times — keep `ServerAliveInterval` and prefer tmux.)
 
 Native WSL SSH previously failed public-key authentication in this environment, so do not switch clients during a critical operation without testing first.
 
@@ -1611,6 +1618,8 @@ Check `pg_restore --version`. Host 16.14 failed; PostgreSQL 17.10 succeeded.
 ---
 
 ## 17. Current operational PASS baseline
+
+> This is the **2026-08-10 baseline on the original VPS**. It is not a claim about the replacement VPS (§22): there only the site root, `/api/health` and the main routes were re-verified (2026-09-23). Database/Storage writability, storage health, the whole Backup block, and reboot survival were **not** re-proven.
 
 The migration was closed only after all of the following had been demonstrated:
 
@@ -2064,7 +2073,7 @@ did not change — only the build warning went away.
 
 ```powershell
 cd "C:\Users\erfan\Downloads\OpenSSH-Win64\OpenSSH-Win64"
-.\ssh.exe -o ServerAliveInterval=20 -o ServerAliveCountMax=15 medoria@91.107.161.56
+.\ssh.exe -o ServerAliveInterval=20 -o ServerAliveCountMax=15 medoria@91.107.182.97
 ```
 
 ### Reattach tmux
@@ -2143,10 +2152,10 @@ Do not treat an old Vercel deployment or the frozen Supabase Cloud project as cu
 
 ## 21. Final state statement
 
-As of **2026-08-10**, the migration is considered complete:
+As of **2026-08-10**, the migration was considered complete. The block below is kept in its original shape but **the VPS line was updated on 2026-09-23** (§22); the backup lines describe the design, and on the replacement VPS they are **not yet re-established** (§22.7):
 
 ```text
-Production compute       = VPS 91.107.161.56
+Production compute       = VPS 91.107.182.97
 Production application   = self-hosted Docker / Next.js
 Production reverse proxy = Caddy
 Production database      = self-hosted Supabase PostgreSQL
@@ -2182,3 +2191,106 @@ Observation window = open, started 2026-08-19
 
 Read §18.2's closing status for the full account before assuming either
 milestone is further along than this.
+
+---
+
+## 22. Server replacement — 2026-09-23
+
+> **Read this before trusting any older section's IP, container name, or backup claim.**
+> Everything below was done live over SSH on 2026-09-23 and recorded afterwards. No secret values appear here; they live in the owner's password manager and in the server-side env files only.
+
+### 22.1 What happened
+
+The original production VPS (`91.107.161.56`) became completely unreachable. It was not recoverable, so production was **rebuilt on a new server from the encrypted Cloudflare R2 backups** — a disaster-recovery restore, not the live-migration procedure of §12/§13 (there was no source left to freeze, snapshot, or copy from).
+
+The newest snapshot in R2 was `20260901T023001Z`. The daily runner therefore stopped writing snapshots roughly **22 days** before the replacement, and **anything written to production between 2026-09-01 02:30 UTC and the outage is not in the restored data**. See §22.7.
+
+### 22.2 The replacement server
+
+```text
+Provider / plan   = Pouyasazan (panel.pouyasazan.org), plan "DE-CX43"
+Location          = Finland (Germany was out of stock; both are on the accepted list in
+                    docs/self-hosting/VPS_PURCHASE_CHECKLIST.md)
+Spec              = 8 vCPU, 16 GB RAM, 160 GB disk, x86_64, KVM
+OS                = Ubuntu 24.04 LTS
+IPv4              = 91.107.182.97
+Hostname          = ps-c25681-s2471
+Paths             = identical to the old layout:
+                    /home/medoria/apps/medoria-staging       (this repo, branch main)
+                    /home/medoria/infra/supabase-staging     (official Supabase clone; compose in docker/)
+                    /home/medoria/backups, /home/medoria/bin
+```
+
+The `DE-CX33` plan (4 vCPU / 8 GB / 80 GB) was rejected: it is below every floor in `scripts/self-host/verify-vps.sh` (8 vCPU, 15000 MB, 145 GiB).
+
+### 22.3 Build-out sequence (what was actually run)
+
+1. First root login forced a password change (provider policy). Preflight `verify-vps.sh` → 0 failures.
+2. `bootstrap-vps.sh` (Docker Engine 29.8.1, Compose v5.5.1, rclone, ufw, `postgresql-client` = **16.x**). Rebooted once for the pending kernel, before any service existed.
+3. `ufw`: allow `22/tcp`, `80/tcp`, `443/tcp`, then `ufw --force enable`. (Plain `ufw enable` crashed with a `UnicodeDecodeError` when the `y` came from a non-Latin keyboard layout — use `--force`.)
+4. User `medoria` (in group `docker`), directories under `/home/medoria`.
+5. Cloned this repo to `/home/medoria/apps/medoria-staging` (`main`).
+6. Cloned the official Supabase repo **shallow into `/home/medoria/infra/supabase-staging`** and recorded the revision (this is the pin that §5's Supabase runbook asks for and that the old server never exported):
+
+   ```text
+   supabase/supabase @ d1d9620cdf08d8e6c64ee646f3ab6bfa911df882   (master, 2026-09)
+   postgres 17.6.1.136 · gotrue v2.196.0 · postgrest v14.17 · storage-api v1.74.0
+   realtime v2.134.10 · postgres-meta v0.99.0 · supavisor 2.9.12 · studio 2026.09.07-sha-7996410
+   imgproxy v3.31.4 · edge-runtime v1.76.2 · envoy v1.39.1
+   ```
+
+7. In `docker/`: `cp .env.example .env`, then `sh utils/generate-keys.sh` and `sh utils/add-new-auth-keys.sh` (fresh Postgres password, JWT secret, anon/service keys, dashboard credentials, etc. — **all new; none reused from the old instance**). Set `POOLER_TENANT_ID`, `SUPABASE_PUBLIC_URL=https://api.medoriaco.com`, `API_EXTERNAL_URL=https://api.medoriaco.com/auth/v1`, `SITE_URL=https://medoriaco.com`. `docker compose pull && docker compose up -d` → all containers healthy.
+8. Restored the data (§22.5), built `deploy/.env` (§22.4), built and started the app + Caddy, switched DNS (§22.6).
+
+### 22.4 Deviations from the original layout
+
+| Area | Original VPS | Replacement VPS | Why |
+|---|---|---|---|
+| Supabase API gateway | Kong (`supabase-kong:8000`) | **Envoy** (`supabase-envoy:8000`, service `api-gw`) | newer upstream release |
+| `deploy/Caddyfile` | upstream `supabase-kong:8000` | upstream `supabase-envoy:8000` | follows the gateway; **committed to the repo** |
+| Cross-stack networking | (not recorded) | external Docker network **`medoria-shared`**; `caddy` (app stack) and `api-gw` (Supabase stack) both join it | the two Compose projects have separate default networks, so a container name does not resolve across them |
+| Supabase override file | — | `docker/docker-compose.override.yml` attaches `api-gw` to `medoria-shared`; the Supabase `.env` has `COMPOSE_FILE=docker-compose.yml:docker-compose.override.yml` | `COMPOSE_FILE` is set explicitly, so an override file is **not** auto-merged unless listed |
+| Pooler ports | — | `docker/docker-compose.yml` pooler `ports:` edited to `127.0.0.1:${POSTGRES_PORT}:5432` and `127.0.0.1:${POOLER_PROXY_PORT_TRANSACTION}:6543` | upstream publishes them on `0.0.0.0`, and **Docker's published ports bypass ufw** — `docker compose ps` showed `0.0.0.0:5432/6543` exposed with ufw "active". Verify with `ss -H -ltn 'sport = :5432 or sport = :6543'`; the Local Address must be `127.0.0.1` |
+| Node on the host | not needed on the host | Node 22 (NodeSource) installed on the host | `scripts/self-host/deploy.sh` runs `npm ci` and `npm run check:self-host-env` on the host before `docker compose build` |
+| `deploy/.env` | created by hand | built by copying the backed-up `config/app.env` from the snapshot, then overriding `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ACME_EMAIL` with the new values (read programmatically from the new Supabase `.env`, never retyped) | preserves operator credentials, session secrets, captcha secret and third-party API keys; `npm run check:self-host-env -- deploy/.env` passed |
+
+`docker network create medoria-shared` **must exist before** `docker compose ... up` on the app stack, otherwise Compose refuses with "network medoria-shared declared as external, but could not be found".
+
+### 22.5 Restore recipe that worked (reusable)
+
+The R2 snapshot layout differs from the older `roles.sql/schema.sql/data.sql` format that `scripts/self-host/restore-self-hosted-db.sh` expects. A `production-auto` snapshot contains `database-full.dump`, `database-public.dump`, `database-globals.sql`, `database-counts.txt`, `manifest.txt`, `git-state.txt`, `checksums.sha256` (not `SHA256SUMS`), `config/` (app.env, supabase.env, Caddyfile, rclone.conf) and `storage/<bucket>/<key>`.
+
+1. **Reconstruct rclone first.** `r2raw:` = type `s3`, provider `Cloudflare`, bucket-scoped token, `no_check_bucket = true`; `r2crypt:` = crypt over `r2raw:medoria-production-backups` with `filename_encryption = standard`, `directory_name_encryption = true`, and the two crypt passwords (obscured with `rclone obscure`). The config was written by a small script that reads secrets with `read -s`, so nothing touched shell history or chat. `rclone lsf r2crypt:production-auto --dirs-only` decrypting to timestamps proves the crypt secrets are right.
+2. `rclone copy r2crypt:production-auto/<timestamp> ~/backups/restore-latest/`, then `sha256sum -c checksums.sha256` — all `OK`. Compare `database-counts.txt` against the restored tables.
+3. **Use PostgreSQL 17 tools inside the `supabase-db` container, not the host.** The host client is 16.x and cannot read archives written by `pg_dump` 17 (§5/§16). `docker cp` the dumps in, then `pg_restore -l` to inspect.
+4. **Public schema:** `docker exec supabase-db pg_restore -U postgres -d postgres --no-owner --role=postgres /tmp/database-public.dump`. The single error `schema "public" already exists` is expected and harmless ("errors ignored: 1"). Verified counts matched the manifest exactly (products 3, categories 429, beauty_products 2, beauty_categories 193, beauty_brands 1, quote_requests 7).
+5. **Do not restore `database-full.dump` wholesale.** It carries `auth`, `storage`, `realtime`, `vault`, `supabase_functions`… from the old Supabase release; the new stack already created current versions of those. Pull only the storage rows: `docker exec supabase-db pg_restore -U supabase_admin -d postgres --data-only --disable-triggers --schema=storage --table=buckets --table=objects /tmp/database-full.dump`. Use **`supabase_admin`** — the `storage.*` tables are owned by `supabase_storage_admin`, and as `postgres` the `DISABLE/ENABLE TRIGGER` statements fail with "must be owner" (the `COPY` still goes through, so a second run then reports duplicate keys — that means it already worked). Result: 3 buckets, 4 objects.
+6. **Storage bytes.** `STORAGE_BACKEND=file`, `FILE_STORAGE_BACKEND_PATH=/var/lib/storage`, host path `docker/volumes/storage/`, and because `GLOBAL_S3_BUCKET=stub` the layout is `volumes/storage/stub/<bucket_id>/<object name>`. The `stub/` directory is created root-owned by the container, so copy as root and set `755`/`644`. The four paths were then confirmed to match `storage.objects` exactly.
+7. The `auth` schema was **not** restored. If any Supabase Auth users or identities existed on the old instance, they are still only in `database-full.dump` in the snapshot.
+
+### 22.6 DNS and TLS cutover
+
+- Vercel DNS records were edited **by hand in the Vercel dashboard**: the five A records `@`, `www`, `api`, `staging`, `api-staging` from `91.107.161.56` to `91.107.182.97`, TTL 60. The locked CAA and ALIAS rows were not touched. The Vercel MCP connector was deliberately **not** used: it offers no "list records" call, and its `replace_domains_by_domain_records` replaces the entire zone, so using it blind could delete CAA/verification records.
+- Before DNS moved, Caddy could not issue certificates (ACME validators still resolved to the old IP) and `curl https://medoriaco.com` returned `000`. After the change Caddy had already built up a long retry backoff; **`docker restart medoria-app-caddy-1`** triggered immediate issuance (Let's Encrypt; the apex, `www`, `api` and `staging` were then served over valid TLS — `api-staging` was not separately checked). Expect this whenever DNS is repointed to a Caddy that already failed ACME.
+- Probes from Vercel (`User-Agent: vercel-fetch`, path `/.well-known/acme-challenge/__resolve-check`) keep appearing in the Caddy log while the domain is still attached to a Vercel project. They are not ACME challenges.
+- Verified live on 2026-09-23: `/` 200, `/api/health` 200, `/health/en` 200, `/beauty/en` 200, `www` → 308, `api.medoriaco.com/rest/v1/` 401 (no key, expected). The operator panel page loads; the credentials carried over in `deploy/.env` are the old ones.
+
+### 22.7 Open items (not done as of this entry)
+
+1. **Automated backups are not re-established.** The runner, cron entry and retention script lived only on the old VPS. Recreate them, run one full chain, and require local + R2 to PASS (§7 restore rule) before calling backups healthy. Until then production has no automated backup.
+2. **Data gap**: 2026-09-01 02:30 UTC → outage. Anything created in that window (quote requests, imported products, uploaded images, edits) is missing and must be re-entered from other sources.
+3. **A catalog product image did not load on 2026-09-23** (the `Varicose veins socks` card on `/health/en/catalog` showed a broken image; the other card appears to have no image and shows the placeholder). Only 4 storage objects exist in total. Root cause not yet determined — compare `products.image_url` with `storage.objects` and with the URL Caddy receives.
+3b. **Production write test is unfinished.** A test quote was submitted from `/health/en/contact` ("TEST MIGRATION - please delete"), but its arrival in `quote_requests` was not confirmed and the test row, if present, has not been deleted. Confirm the write path, then delete that row.
+4. **Repo/VPS drift**: the VPS checkout was edited by hand for `deploy/Caddyfile` and `deploy/compose.app.yml`; `deploy.sh` refuses a dirty tree. The same two changes are now in the repo (this entry's PR). After it merges, on the VPS: `git stash` (or `git checkout -- deploy/Caddyfile deploy/compose.app.yml`) and `git pull --ff-only origin main` so the checkout equals `main`, then `bash scripts/self-host/deploy.sh`.
+5. `scripts/self-host/verify-vps.sh` reports a **false FAIL** for ports 5432/6543 even when they are bound to `127.0.0.1`: it greps the whole `ss` line for `0.0.0.0`, which also matches the peer column (`0.0.0.0:*`). Check the Local Address column instead. Not yet fixed in the script.
+6. Reboot-survival of the new host (containers `restart: unless-stopped`) has not been proven; reboot once in a quiet window and confirm `docker compose ps` for both stacks plus a live curl.
+7. The Supabase `.env` and `deploy/.env` on the new VPS are not covered by any backup until item 1 is done. Keep the owner-held copies current.
+
+### 22.8 Lessons that generalize
+
+- **Docker published ports bypass ufw.** "Firewall active" is not evidence a container port is private; check `ss`/`docker compose ps`.
+- **A backup that silently stopped is worse than no alert.** The R2 listing was the only place the 22-day gap was visible. Add a staleness check (newest snapshot older than ~36 h → alert).
+- **Pin and export infrastructure revisions off the server.** The Supabase release SHA, image versions and local compose edits existed only on the dead host; §22.3/§22.4 now hold them.
+- **The right Cloudflare account matters.** The owner has more than one Cloudflare login; the one with the R2 bucket is not the first one the browser opens. A fresh-looking account with no buckets does not mean the backups are gone. R2 secret keys are shown once; **Roll** on the existing bucket-scoped token (`medoria-vps-backup-r2`) issues a new secret without creating another token.
+- **Host PostgreSQL client ≠ server major.** Run restore tooling inside the matching `supabase-db` container.
+- Chat clients can auto-link text such as the `www` hostname and paste it back into a terminal as Markdown. Verify file contents with a boolean check (`grep -c`, `sed -n 'Np' | grep -cE '^...$'`) rather than eyeballing pasted output.
