@@ -54,10 +54,10 @@ Production is currently:
 ```text
 Internet
   -> Vercel DNS
-  -> VPS 91.107.161.56
+  -> VPS 91.107.182.97
       -> Caddy
           -> Next.js application container
-          -> self-hosted Supabase Kong
+          -> self-hosted Supabase gateway (Envoy)
               -> REST / Auth / Storage
               -> PostgreSQL / Storage services
 ```

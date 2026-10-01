@@ -63,10 +63,13 @@ services:
     logging: *default-logging
     networks:
       - web
+      - medoria-shared
 
 networks:
   web:
     driver: bridge
+  medoria-shared:
+    external: true
 
 volumes:
   next_cache:
