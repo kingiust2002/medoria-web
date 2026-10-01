@@ -58,6 +58,12 @@ RUN rm -rf /usr/local/lib/node_modules/npm \
     /usr/local/bin/npm \
     /usr/local/bin/npx
 
+# Pull in the Debian security fix for libpcre2 (CVE-2026-86145, -89157,
+# -89161) until the Node base image is rebuilt with it.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends --only-upgrade libpcre2-8-0 \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd --system --gid 1001 nodejs \
     && useradd --system --uid 1001 --gid nodejs --create-home nextjs
 
