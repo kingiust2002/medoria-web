@@ -11,6 +11,7 @@ import { getBeautyNavTree } from "@/lib/beauty/catalog";
 import BeautyHeader from "@/components/beauty/BeautyHeader";
 import BeautyFooter from "@/components/beauty/BeautyFooter";
 import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
+import { EMAIL_BEAUTY } from "@/lib/contact";
 import BeautyAiAssistant from "@/components/beauty/BeautyAiAssistant";
 
 // Beauty's own mark — overrides the root's neutral fused favicon. Tight-
@@ -91,7 +92,7 @@ export default async function BeautyLayout(props) {
       </Suspense>
       <main>{children}</main>
       <BeautyFooter lang={lang} />
-      <FloatingWhatsApp lang={lang} />
+      <FloatingWhatsApp lang={lang} email={EMAIL_BEAUTY} emailSubject="Medoria Beauty" />
       <BeautyAiAssistant lang={lang} />
     </div>
   );
