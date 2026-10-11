@@ -73,6 +73,7 @@ const T = {
       ctaSub: "Бигӯед чӣ меҷӯед ва мавҷудии ҷорӣ ҳамроҳи маълумоти ҳамкориро дархост кунед.",
       ctaWa: "Паём дар WhatsApp",
       ctaTg: "Паём дар Telegram",
+      ctaEmail: "Паём тавассути почта",
     },
     footer: {
       desc: "Каталоги андешидашудаи атр, беҳдошт, ороиш, мӯй, абзори барқӣ, мӯд ва иловагиҳо барои бизнесҳои Тоҷикистон.",
@@ -128,6 +129,7 @@ const T = {
       ctaSub: "Расскажите, что вы ищете — запросим текущее наличие и информацию о сотрудничестве.",
       ctaWa: "Написать в WhatsApp",
       ctaTg: "Написать в Telegram",
+      ctaEmail: "Написать на e-mail",
     },
     footer: {
       desc: "Продуманный каталог парфюмерии, гигиены, макияжа, волос, техники, аксессуаров и добавок для бизнеса в Таджикистане.",
@@ -183,6 +185,7 @@ const T = {
       ctaSub: "Tell us what you are looking for and request current availability and partnership information.",
       ctaWa: "Message on WhatsApp",
       ctaTg: "Message on Telegram",
+      ctaEmail: "Message by email",
     },
     footer: {
       desc: "A considered catalog of fragrance, personal care, makeup, hair, electricals, accessories and supplements for businesses in Tajikistan.",
@@ -238,6 +241,7 @@ const T = {
       ctaSub: "بگویید دنبال چه هستید — موجودی فعلی و اطلاعات همکاری را استعلام می‌گیریم.",
       ctaWa: "پیام در واتساپ",
       ctaTg: "پیام در تلگرام",
+      ctaEmail: "پیام از طریق ایمیل",
     },
     footer: {
       desc: "کاتالوگی سنجیده از عطر، بهداشتی، آرایشی، مو، لوازم برقی، مد و مکمل برای کسب‌وکارهای تاجیکستان.",

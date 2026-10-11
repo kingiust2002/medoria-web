@@ -7,16 +7,18 @@
 "use client";
 import { useState, useEffect } from "react";
 import { TG_USER, waLink, bulkInquiryMessage } from "@/lib/whatsapp";
+import { mailtoLink } from "@/lib/contact";
 import Icon from "./Icon";
 
 const COPY = {
-  tg: { title: "Бо мо дар тамос шавед", hint: "Одатан зуд ҷавоб медиҳем" },
-  fa: { title: "با ما در تماس باشید", hint: "معمولاً سریع پاسخ می‌دهیم" },
-  ru: { title: "Свяжитесь с нами", hint: "Обычно отвечаем быстро" },
-  en: { title: "Get in touch", hint: "We usually reply fast" },
+  tg: { title: "Бо мо дар тамос шавед", hint: "Одатан зуд ҷавоб медиҳем", email: "Почта" },
+  fa: { title: "با ما در تماس باشید", hint: "معمولاً سریع پاسخ می‌دهیم", email: "ایمیل" },
+  ru: { title: "Свяжитесь с нами", hint: "Обычно отвечаем быстро", email: "Эл. почта" },
+  en: { title: "Get in touch", hint: "We usually reply fast", email: "Email" },
 };
 
-export default function FloatingWhatsApp({ lang }) {
+// `email` / `emailSubject` come from the house layout (Health or Beauty address).
+export default function FloatingWhatsApp({ lang, email = "", emailSubject = "Medoria" }) {
   const c = COPY[lang] || COPY.en;
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -30,13 +32,13 @@ export default function FloatingWhatsApp({ lang }) {
 
   const wa = waLink(bulkInquiryMessage(lang));
   const tg = `https://t.me/${TG_USER}`;
+  const mail = mailtoLink(email, { subject: emailSubject, body: bulkInquiryMessage(lang) });
   const arrow = lang === "fa" ? "arrowL" : "arrow";
 
-  const Row = ({ href, icon, chip, label }) => (
+  const Row = ({ href, icon, chip, label, external = true }) => (
     <a
       href={href}
-      target="_blank"
-      rel="noopener noreferrer"
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
       className="group/row flex items-center gap-3 rounded-2xl bg-canvas border border-line px-3 py-2.5 hover:border-brand-violet/30 hover:-translate-y-0.5 hover:shadow-soft transition-all"
     >
       <span className={`w-9 h-9 rounded-xl grid place-items-center shrink-0 ${chip}`}>
@@ -67,6 +69,7 @@ export default function FloatingWhatsApp({ lang }) {
             <div className="flex flex-col gap-1.5">
               <Row href={wa} icon="chat" chip="bg-[#22C55E]/12 text-[#22C55E]" label="WhatsApp" />
               <Row href={tg} icon="send" chip="bg-[#229ED9]/12 text-[#229ED9]" label="Telegram" />
+              {mail && <Row href={mail} icon="mail" chip="bg-brand-violet/10 text-brand-violet" label={c.email} external={false} />}
             </div>
           </div>
         )}
@@ -94,6 +97,13 @@ export default function FloatingWhatsApp({ lang }) {
           <span className="w-6 h-6 rounded-lg bg-[#229ED9]/20 text-[#229ED9] grid place-items-center"><Icon name="send" size={14} /></span>
           Telegram
         </a>
+        {mail && (
+          <a href={mail}
+             className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl bg-navy text-white text-[13px] font-semibold active:scale-95 transition-transform">
+            <span className="w-6 h-6 rounded-lg bg-brand-violet/25 text-white grid place-items-center"><Icon name="mail" size={14} /></span>
+            {c.email}
+          </a>
+        )}
       </div>
     </>
   );

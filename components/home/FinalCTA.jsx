@@ -3,6 +3,7 @@ import { getTranslations } from "@/lib/i18n";
 import { waLink, tgLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import { Reveal } from "@/components/shared/Reveal";
+import { EMAIL_HEALTH, mailtoLink } from "@/lib/contact";
 
 export default function FinalCTA({ lang }) {
   const t = getTranslations(lang);
@@ -52,6 +53,13 @@ export default function FinalCTA({ lang }) {
                 <Icon name="send" size={18} />
                 {t.home.ctaTg}
               </a>
+              {EMAIL_HEALTH && (
+                <a href={mailtoLink(EMAIL_HEALTH, { subject: "Medoria Health", body: bulkInquiryMessage(lang) })}
+                   className="btn h-14 px-7 rounded-2xl text-[14px] bg-white/15 hover:bg-white/25 text-white border border-white/30 w-full justify-center transition-colors">
+                  <Icon name="mail" size={18} />
+                  {t.home.ctaEmail}
+                </a>
+              )}
             </div>
           </div>
         </div>
