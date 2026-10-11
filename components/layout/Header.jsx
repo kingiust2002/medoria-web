@@ -8,7 +8,8 @@ import LanguageSwitcher from "./LanguageSwitcher";
 import MobilePrefs from "./MobilePrefs";
 import HealthCollectionMegaMenu from "./HealthCollectionMegaMenu";
 import { getTranslations } from "@/lib/i18n";
-import { bulkInquiryMessage, waLink } from "@/lib/whatsapp";
+import ContactMenu from "@/components/shared/ContactMenu";
+import { EMAIL_HEALTH } from "@/lib/contact";
 import Icon from "@/components/shared/Icon";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 import SearchCommand from "@/components/shared/SearchCommand";
@@ -124,15 +125,15 @@ export default function Header({ lang, categoryTree = [] }) {
             <div className="md:hidden"><MobilePrefs lang={lang} /></div>
             <div className="hidden md:block"><LanguageSwitcher lang={lang} /></div>
 
-            <a
-              href={waLink(bulkInquiryMessage(lang))}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden md:inline-flex btn-primary size-sm"
-            >
-              <Icon name="chat" size={14} />
-              {t.common.contactUs}
-            </a>
+            <div className="hidden md:block">
+              <ContactMenu
+                lang={lang}
+                label={t.common.contactUs}
+                email={EMAIL_HEALTH}
+                emailSubject="Medoria Health"
+                className="btn-primary h-10 px-5 text-[13px] rounded-xl"
+              />
+            </div>
 
             <button
               onClick={() => setOpen(!open)}
@@ -260,16 +261,17 @@ export default function Header({ lang, categoryTree = [] }) {
               </Link>
             </nav>
 
-            <a
-              href={waLink(bulkInquiryMessage(lang))}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary size-lg w-full mt-6"
-              onClick={closeMobile}
-            >
-              <Icon name="chat" size={16} />
-              {t.common.contactUs}
-            </a>
+            <div className="mt-6">
+              <ContactMenu
+                lang={lang}
+                label={t.common.contactUs}
+                email={EMAIL_HEALTH}
+                emailSubject="Medoria Health"
+                className="btn-primary size-lg w-full"
+                mode="inline"
+                onNavigate={closeMobile}
+              />
+            </div>
           </div>
         </div>
       )}
