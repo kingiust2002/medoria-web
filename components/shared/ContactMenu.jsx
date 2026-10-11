@@ -66,7 +66,7 @@ export default function ContactMenu({
       id={listId}
       className={
         mode === "dropdown"
-          ? "absolute end-0 top-full mt-2 w-[210px] z-50 rounded-xl border border-line bg-surface/95 backdrop-blur-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-fade-up"
+          ? "absolute inset-x-0 top-full mt-2 z-50 rounded-xl border border-line bg-surface/95 backdrop-blur-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-fade-up"
           : "mt-2 flex flex-col gap-1.5"
       }
     >
@@ -96,7 +96,8 @@ export default function ContactMenu({
   return (
     <div
       ref={wrapRef}
-      className={mode === "dropdown" ? "relative" : "w-full"}
+      // dropdown: the wrapper is exactly as wide as the button and the list matches it
+      className={mode === "dropdown" ? "relative min-w-[136px]" : "w-full"}
       onBlur={(e) => {
         // close when focus leaves the whole widget (keyboard users tabbing out)
         if (open && wrapRef.current && !wrapRef.current.contains(e.relatedTarget)) setOpen(false);
@@ -108,7 +109,7 @@ export default function ContactMenu({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls={listId}
-        className={className}
+        className={`${className} ${mode === "dropdown" ? "w-full justify-center" : ""}`}
       >
         <Icon name="chat" size={mode === "dropdown" ? 15 : 16} />
         {label}
