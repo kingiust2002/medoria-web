@@ -2,10 +2,11 @@
 import { getTranslations } from "@/lib/i18n";
 import { WA_NUMBER, TG_USER } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
+import { EMAIL_HEALTH } from "@/lib/contact";
 
 export default function TopBar({ lang }) {
   const t = getTranslations(lang);
-  const email = process.env.NEXT_PUBLIC_EMAIL || "";
+  const email = EMAIL_HEALTH;
   const phone = process.env.NEXT_PUBLIC_PHONE || "";
 
   return (

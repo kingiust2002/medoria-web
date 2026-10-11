@@ -1150,4 +1150,27 @@ html.lenis, html.lenis body { height: auto; }
   color: rgba(255,255,255,0.92); text-shadow: 0 1px 6px rgba(0,0,0,0.45);
   pointer-events: none;
 }
+/* neutral parent contact address (mailto) in the gateway footers */
+.lumen-mail {
+  color: inherit; text-decoration: underline; text-decoration-thickness: 1px;
+  text-underline-offset: 3px; transition: color 0.2s var(--ease-lux);
+}
+.lumen-mail:hover { color: rgb(20 28 46 / 0.95); }
+/* desktop: a small frosted pill, centred on the seam */
+.lumen-mail-pill {
+  display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem;
+  border-radius: 999px; font-size: 12.5px; font-weight: 500; letter-spacing: 0.01em;
+  text-decoration: none; color: rgb(20 28 46 / 0.86);
+  background: rgb(255 255 255 / 0.58); border: 1px solid rgb(20 28 46 / 0.14);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  box-shadow: 0 6px 22px rgb(20 28 46 / 0.12);
+  transition: background 0.2s var(--ease-lux), box-shadow 0.2s var(--ease-lux);
+}
+.lumen-mail-pill:hover { color: rgb(20 28 46 / 1); background: rgb(255 255 255 / 0.8); box-shadow: 0 8px 26px rgb(20 28 46 / 0.18); }
+/* the mobile footer ignores pointers so it never blocks the door taps;
+   the address itself must stay tappable, with a comfortable hit area */
+.lumen-mail-mo {
+  pointer-events: auto; display: inline-block; padding: 0.55rem 0.2rem; margin: -0.55rem 0;
+}
+.lumen-mail-mo:hover { color: #fff; }
 

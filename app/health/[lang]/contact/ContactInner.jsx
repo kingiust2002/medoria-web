@@ -11,13 +11,14 @@ import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import PageHeaderVisual from "@/components/shared/PageHeaderVisual";
 import SplitText from "@/components/shared/SplitText";
+import { EMAIL_HEALTH } from "@/lib/contact";
 
 const PHONE = process.env.NEXT_PUBLIC_PHONE || "+992900000000";
 
 export default function ContactInner({ lang }) {
   const t = getTranslations(lang);
   const c = t.contact;
-  const email = process.env.NEXT_PUBLIC_EMAIL || "";
+  const email = EMAIL_HEALTH;
 
   return (
     <div className="bg-canvas-soft">

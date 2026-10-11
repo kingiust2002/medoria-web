@@ -7,10 +7,11 @@ import { WA_NUMBER, TG_USER, waLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
 import ThemeToggle from "@/components/shared/ThemeToggle";
+import { EMAIL_HEALTH } from "@/lib/contact";
 
 export default function Footer({ lang }) {
   const t = getTranslations(lang);
-  const email = process.env.NEXT_PUBLIC_EMAIL || "";
+  const email = EMAIL_HEALTH;
 
   return (
     <footer className="bg-navy text-white/50 pt-14 pb-24 md:pb-10 relative overflow-hidden noise">

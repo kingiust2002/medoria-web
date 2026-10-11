@@ -22,11 +22,12 @@
 import { forwardRef, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import WorldLockup from "./WorldLockup";
+import Icon from "@/components/shared/Icon";
 
 const clamp = (min, max, v) => Math.max(min, Math.min(max, v));
 const LENS_R = 96; // px radius of the counter-lens
 
-export default function LumenStage({ media, copy, defaultLang, langs, langLabels, langDirs, year }) {
+export default function LumenStage({ media, copy, defaultLang, langs, langLabels, langDirs, year, email = "" }) {
   const rootRef = useRef(null);
   const healthDoorRef = useRef(null);
   const beautyDoorRef = useRef(null);
@@ -522,12 +523,21 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
       <div className="flex-1" />
 
       <footer
-        className="lumen-rise relative z-20 flex items-center justify-center gap-3 px-6 pb-5 text-center text-[11px]"
+        className="lumen-rise relative z-20 flex flex-col items-center justify-center gap-3 px-6 pb-5 text-center text-[11px]"
         style={{ "--d": "1.9s", color: "rgb(20 28 46 / 0.55)" }}
       >
-        <span>© {year} Medoria</span>
-        <span aria-hidden="true" className="h-3 w-px" style={{ background: "rgb(20 28 46 / 0.2)" }} />
-        <span dir="ltr" translate="no">Health · Beauty</span>
+        {/* neutral parent address, centred on the seam between the two worlds */}
+        {email && (
+          <a href={`mailto:${email}`} dir="ltr" translate="no" className="lumen-mail lumen-mail-pill v-focus">
+            <Icon name="mail" size={13} />
+            {email}
+          </a>
+        )}
+        <div className="flex items-center justify-center gap-3">
+          <span>© {year} Medoria</span>
+          <span aria-hidden="true" className="h-3 w-px" style={{ background: "rgb(20 28 46 / 0.2)" }} />
+          <span dir="ltr" translate="no">Health · Beauty</span>
+        </div>
       </footer>
 
       {/* ── MOBILE: a vertical two-door split (phones only). Top = Health
@@ -586,7 +596,17 @@ export default function LumenStage({ media, copy, defaultLang, langs, langLabels
           </section>
         ))}
         <span aria-hidden="true" className="lumen-mo-seam" />
-        <footer className="lumen-mo-footer">© {year} Medoria · Health · Beauty</footer>
+        <footer className="lumen-mo-footer">
+          © {year} Medoria · Health · Beauty
+          {email && (
+            <>
+              {" · "}
+              <a href={`mailto:${email}`} dir="ltr" translate="no" className="lumen-mail lumen-mail-mo v-focus">
+                {email}
+              </a>
+            </>
+          )}
+        </footer>
       </div>
     </section>
   );
