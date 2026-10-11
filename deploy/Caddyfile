@@ -44,3 +44,18 @@ staging.medoriaco.com, medoriaco.com, www.medoriaco.com {
     format json
   }
 }
+
+# Owned secondary domain: send every request to the canonical site. medoria.co is
+# NOT a canonical host (CLAUDE.md) -- it only forwards, permanently, keeping path+query.
+medoria.co, www.medoria.co {
+  redir https://medoriaco.com{uri} 308
+
+  header {
+    -Server
+  }
+
+  log {
+    output stdout
+    format json
+  }
+}
