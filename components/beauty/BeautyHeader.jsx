@@ -126,7 +126,7 @@ export default function BeautyHeader({ lang, categoryTree = [] }) {
                 label={t.nav.contact}
                 email={EMAIL_BEAUTY}
                 emailSubject="Medoria Beauty"
-                className="btn-primary size-sm"
+                className="btn-primary h-10 px-5 text-[13px] rounded-xl"
               />
             </div>
             <button onClick={() => setOpen(!open)} className="lg:hidden -me-1 p-2 text-ink" aria-label="Menu" aria-expanded={open}>

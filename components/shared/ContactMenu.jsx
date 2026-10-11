@@ -66,7 +66,7 @@ export default function ContactMenu({
       id={listId}
       className={
         mode === "dropdown"
-          ? "absolute end-0 top-full mt-2 w-[250px] z-50 rounded-2xl border border-line bg-surface/95 backdrop-blur-xl shadow-2xl p-2 flex flex-col gap-1.5 animate-fade-up"
+          ? "absolute end-0 top-full mt-2 w-[210px] z-50 rounded-xl border border-line bg-surface/95 backdrop-blur-xl shadow-2xl p-1.5 flex flex-col gap-1 animate-fade-up"
           : "mt-2 flex flex-col gap-1.5"
       }
     >
@@ -79,12 +79,12 @@ export default function ContactMenu({
               setOpen(false);
               onNavigate?.();
             }}
-            className="flex items-center gap-3 rounded-xl bg-canvas border border-line px-3 py-2.5 text-ink hover:border-brand-violet/30 hover:shadow-soft transition-all"
+            className="flex items-center gap-2.5 rounded-lg bg-canvas border border-line px-2 py-1.5 text-ink hover:border-brand-violet/30 hover:shadow-soft transition-all"
           >
-            <span className={`w-9 h-9 rounded-xl grid place-items-center shrink-0 ${it.chip}`}>
-              <Icon name={it.icon} size={17} />
+            <span className={`w-7 h-7 rounded-lg grid place-items-center shrink-0 ${it.chip}`}>
+              <Icon name={it.icon} size={14} />
             </span>
-            <span className="flex-1 min-w-0 text-[13px] font-semibold leading-tight" dir="auto">
+            <span className="flex-1 min-w-0 text-[12px] font-semibold leading-tight" dir="auto">
               {it.label}
             </span>
           </a>
@@ -110,11 +110,11 @@ export default function ContactMenu({
         aria-controls={listId}
         className={className}
       >
-        <Icon name="chat" size={mode === "dropdown" ? 14 : 16} />
+        <Icon name="chat" size={mode === "dropdown" ? 15 : 16} />
         {label}
         <Icon
           name="chevronDown"
-          size={13}
+          size={14}
           className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         />
       </button>

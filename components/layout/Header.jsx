@@ -131,7 +131,7 @@ export default function Header({ lang, categoryTree = [] }) {
                 label={t.common.contactUs}
                 email={EMAIL_HEALTH}
                 emailSubject="Medoria Health"
-                className="btn-primary size-sm"
+                className="btn-primary h-10 px-5 text-[13px] rounded-xl"
               />
             </div>
 
