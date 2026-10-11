@@ -58,10 +58,11 @@ RUN rm -rf /usr/local/lib/node_modules/npm \
     /usr/local/bin/npm \
     /usr/local/bin/npx
 
-# Pull in the Debian security fix for libpcre2 (CVE-2026-86145, -89157,
-# -89161) until the Node base image is rebuilt with it.
+# Pull in Debian security fixes until the Node base image is rebuilt with them:
+# libpcre2 (CVE-2026-86145, -89157, -89161) and perl-base 5.36.0-7+deb12u4
+# (CVE-2026-13221, -42496, -42497, -48962, -8376, -57432, -57433).
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends --only-upgrade libpcre2-8-0 \
+    && apt-get install -y --no-install-recommends --only-upgrade libpcre2-8-0 perl-base \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --system --gid 1001 nodejs \

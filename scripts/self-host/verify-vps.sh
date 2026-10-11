@@ -99,6 +99,16 @@ else
   warn 'Docker Compose v2 is not available yet'
 fi
 
+# True when something listens on $1 bound to a wildcard address. Only the Local
+# Address column (field 4 of `ss -H -ltn`) counts: the Peer column of a LISTEN
+# socket is always `0.0.0.0:*` / `[::]:*`, so grepping the whole line reports a
+# false FAIL even for a port bound to 127.0.0.1.
+listening_on_all_interfaces() {
+  ss -H -ltn "sport = :$1" 2>/dev/null \
+    | awk '{print $4}' \
+    | grep -Eq '^(0\.0\.0\.0|\[::\]|\*):'
+}
+
 for port in 80 443; do
   if ss -H -ltn "sport = :$port" 2>/dev/null | grep -q .; then
     warn "TCP port $port is already listening"
@@ -107,13 +117,13 @@ for port in 80 443; do
   fi
 done
 
-if ss -H -ltn 'sport = :5432' 2>/dev/null | grep -q '0.0.0.0\|\[::\]'; then
+if listening_on_all_interfaces 5432; then
   fail 'PostgreSQL port 5432 is listening on all interfaces'
 else
   pass 'PostgreSQL is not publicly listening on TCP 5432'
 fi
 
-if ss -H -ltn 'sport = :6543' 2>/dev/null | grep -q '0.0.0.0\|\[::\]'; then
+if listening_on_all_interfaces 6543; then
   fail 'pooler port 6543 is listening on all interfaces'
 else
   pass 'pooler is not publicly listening on TCP 6543'
