@@ -35,7 +35,7 @@ Related live hosts:
 - `https://staging.medoriaco.com` -> staging application hostname accepted by the same Caddy deployment.
 - `https://api-staging.medoriaco.com` -> legacy staging API hostname still accepted by Caddy.
 
-**Important:** `medoria.tj`, `medoria.co`, and `medoria.com` are not the canonical production domain. Do not reintroduce redirects to them. The owner explicitly confirmed that `.tj` is not owned and no ownership claim should be made about it.
+**Important:** `medoria.tj`, `medoria.co`, and `medoria.com` are not the canonical production domain. Do not reintroduce redirects *to* them. (Since 2026-10-11 the owned `medoria.co` is the one allowed exception in the other direction: it only redirects *from* itself *to* `medoriaco.com` — §22.9.) The owner explicitly confirmed that `.tj` is not owned and no ownership claim should be made about it.
 
 ### Current production VPS
 
@@ -2285,6 +2285,14 @@ The R2 snapshot layout differs from the older `roles.sql/schema.sql/data.sql` fo
 5. ~~`scripts/self-host/verify-vps.sh` false FAIL for ports 5432/6543~~ **Fixed 2026-10-11** (on the working branch, reaches `main` with its PR): the check now looks at the Local Address column only (`listening_on_all_interfaces`), so a port bound to `127.0.0.1` passes and a wildcard bind still fails.
 6. Reboot-survival of the new host (containers `restart: unless-stopped`) has not been proven; reboot once in a quiet window and confirm `docker compose ps` for both stacks plus a live curl.
 7. The Supabase `.env` and `deploy/.env` are now included (encrypted) in every snapshot's `config/`, but the rclone crypt passwords are not recoverable from R2 alone — keep the owner-held copies current.
+
+### 22.9 Secondary domain `medoria.co` (2026-10-11)
+
+The owner registered `medoria.co` at GoDaddy (auto-renew on, renews 2028-06-11). It is **not canonical**; it only forwards to `https://medoriaco.com`.
+
+- **DNS** is managed at GoDaddy (nameservers `ns61/ns62.domaincontrol.com`). The only record changed: `A @` from "WebsiteBuilder Site" to `91.107.182.97` (TTL 1 h). `www` is already a CNAME to `medoria.co`, so it follows. **Do not touch the other records**: `MX`, `autodiscover`, `lyncdiscover`, `msoid`, `sip`, the SPF/DMARC/Microsoft verification `TXT` records and the `SRV` records belong to the live Microsoft 365 mailbox for `@medoria.co`; `_domainconnect` and `email` are GoDaddy's.
+- **Caddy** (`deploy/Caddyfile`, PR #168): `medoria.co, www.medoria.co { redir https://medoriaco.com{uri} 308 }`. Caddy runs with `admin off`, so a Caddyfile change needs `docker restart medoria-app-caddy-1` — `deploy.sh` alone does not apply it. Verified after the restart: `https://medoria.co` → `308 https://medoriaco.com/`, `https://www.medoria.co/health/en?x=1` → `308 https://medoriaco.com/health/en?x=1`; certificates issued by Caddy.
+- The mailbox is separate from the website: the site shows no `@medoria.co` address yet (`NEXT_PUBLIC_EMAIL` is a build-time value in `deploy/.env`; changing it needs an image rebuild), and the contact form only stores rows in `quote_requests` — it sends no email.
 
 ### 22.8 Lessons that generalize
 
