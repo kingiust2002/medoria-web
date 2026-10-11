@@ -12,7 +12,8 @@ import { BeautyWordLockup } from "./BeautyBrand";
 import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
 import Icon from "@/components/shared/Icon";
 import ThemeToggle from "@/components/shared/ThemeToggle";
-import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
+import ContactMenu from "@/components/shared/ContactMenu";
+import { EMAIL_BEAUTY } from "@/lib/contact";
 import { getBeautyTranslations } from "./i18n";
 import BeautyMegaMenu from "./BeautyMegaMenu";
 
@@ -119,10 +120,15 @@ export default function BeautyHeader({ lang, categoryTree = [] }) {
             <div className="hidden md:block"><ThemeToggle lang={lang} /></div>
             <div className="hidden md:block"><LanguageSwitcher lang={lang} /></div>
             <div className="md:hidden"><LanguageSwitcher lang={lang} variant="dropdown" /></div>
-            <a href={waLink(bulkInquiryMessage(lang))} target="_blank" rel="noopener noreferrer" className="hidden md:inline-flex btn-primary size-sm">
-              <Icon name="chat" size={14} />
-              {t.nav.contact}
-            </a>
+            <div className="hidden md:block">
+              <ContactMenu
+                lang={lang}
+                label={t.nav.contact}
+                email={EMAIL_BEAUTY}
+                emailSubject="Medoria Beauty"
+                className="btn-primary size-sm"
+              />
+            </div>
             <button onClick={() => setOpen(!open)} className="lg:hidden -me-1 p-2 text-ink" aria-label="Menu" aria-expanded={open}>
               <Icon name={open ? "close" : "list"} size={22} strokeWidth={2} />
             </button>
@@ -201,11 +207,17 @@ export default function BeautyHeader({ lang, categoryTree = [] }) {
               })}
             </nav>
             <div className="mt-6"><ThemeToggle lang={lang} withLabel className="w-full justify-center" /></div>
-            <a href={waLink(bulkInquiryMessage(lang))} target="_blank" rel="noopener noreferrer"
-              className="btn-primary size-lg w-full mt-3" onClick={() => setOpen(false)}>
-              <Icon name="chat" size={16} />
-              {t.nav.contact}
-            </a>
+            <div className="mt-3">
+              <ContactMenu
+                lang={lang}
+                label={t.nav.contact}
+                email={EMAIL_BEAUTY}
+                emailSubject="Medoria Beauty"
+                className="btn-primary size-lg w-full"
+                mode="inline"
+                onNavigate={() => setOpen(false)}
+              />
+            </div>
           </div>
         </div>
       )}
