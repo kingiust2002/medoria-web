@@ -7,10 +7,11 @@ import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
 import Icon from "@/components/shared/Icon";
 import { waLink, tgLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import { getBeautyTranslations } from "./i18n";
+import { EMAIL_BEAUTY } from "@/lib/contact";
 
 export default function BeautyFooter({ lang }) {
   const t = getBeautyTranslations(lang);
-  const email = process.env.NEXT_PUBLIC_EMAIL || "";
+  const email = EMAIL_BEAUTY;
   const home = `/beauty/${lang}`;
   const links = [
     [`${home}/catalog`, t.nav.collections],

@@ -10,6 +10,7 @@ import Footer from "@/components/layout/Footer";
 import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
 import AiAssistant from "@/components/shared/AiAssistant";
 import ScrollProgress from "@/components/shared/ScrollProgress";
+import { EMAIL_GENERAL } from "@/lib/contact";
 
 // Next.js 15: preserve cached public Supabase fetch behavior.
 export const fetchCache = "default-cache";
@@ -49,7 +50,7 @@ export default async function LangLayout(props) {
   const t = getTranslations(lang);
 
   const phone = process.env.NEXT_PUBLIC_PHONE;
-  const email = process.env.NEXT_PUBLIC_EMAIL;
+  const email = EMAIL_GENERAL;
   const jsonLd = [
     {
       "@context": "https://schema.org",

@@ -73,3 +73,33 @@ test("fails when NEXT_PUBLIC_SITE_URL is not a host deploy/Caddyfile routes to t
   assert.equal(code, 1);
   assert.match(stderr, /NEXT_PUBLIC_SITE_URL hostname must be a host deploy\/Caddyfile routes/);
 });
+
+test("accepts the per-house contact addresses and leaves empty ones alone", async () => {
+  const { code, stdout } = await runChecker({
+    NEXT_PUBLIC_SITE_URL: "https://medoriaco.com",
+    NEXT_PUBLIC_EMAIL: "",
+    NEXT_PUBLIC_EMAIL_HEALTH: "health@medoria.co",
+    NEXT_PUBLIC_EMAIL_BEAUTY: "beauty@medoria.co",
+    NEXT_PUBLIC_EMAIL_INFO: "info@medoria.co",
+  });
+  assert.equal(code, 0);
+  assert.match(stdout, /preflight passed/);
+});
+
+test("fails on the '.con' typo in a contact address", async () => {
+  const { code, stderr } = await runChecker({
+    NEXT_PUBLIC_SITE_URL: "https://medoriaco.com",
+    NEXT_PUBLIC_EMAIL: "someone@gmail.con",
+  });
+  assert.equal(code, 1);
+  assert.match(stderr, /NEXT_PUBLIC_EMAIL ends in "\.con"/);
+});
+
+test("fails on a contact address that is not an e-mail address", async () => {
+  const { code, stderr } = await runChecker({
+    NEXT_PUBLIC_SITE_URL: "https://medoriaco.com",
+    NEXT_PUBLIC_EMAIL_HEALTH: "health-at-medoria.co",
+  });
+  assert.equal(code, 1);
+  assert.match(stderr, /NEXT_PUBLIC_EMAIL_HEALTH is not a valid e-mail address/);
+});

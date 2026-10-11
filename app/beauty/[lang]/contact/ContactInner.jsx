@@ -14,13 +14,14 @@ import Breadcrumb from "@/components/shared/Breadcrumb";
 import SplitText from "@/components/shared/SplitText";
 import BeautyPageHeader from "@/components/beauty/BeautyPageHeader";
 import { CONTACT_COPY } from "./copy";
+import { EMAIL_BEAUTY } from "@/lib/contact";
 
 const PHONE = process.env.NEXT_PUBLIC_PHONE || "+992900000000";
 
 export default function ContactInner({ lang }) {
   const t = getBeautyTranslations(lang);
   const c = CONTACT_COPY[lang] || CONTACT_COPY.en;
-  const email = process.env.NEXT_PUBLIC_EMAIL || "";
+  const email = EMAIL_BEAUTY;
 
   return (
     <div className="bg-canvas-soft">

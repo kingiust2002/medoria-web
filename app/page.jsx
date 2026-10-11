@@ -10,6 +10,7 @@
 import LumenStage from "@/components/gateway/LumenStage";
 import { gatewayLumenMedia } from "@/lib/gateway/media";
 import { DEFAULT_LOCALE, LANG_META } from "@/lib/i18n";
+import { EMAIL_GENERAL } from "@/lib/contact";
 
 export const metadata = {
   // `absolute` because the root layout's "%s | Medoria" template would
@@ -72,6 +73,7 @@ export default function Gateway() {
         langLabels={langLabels}
         langDirs={langDirs}
         year={new Date().getFullYear()}
+        email={EMAIL_GENERAL}
       />
     </main>
   );

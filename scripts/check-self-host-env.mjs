@@ -86,6 +86,25 @@ for (const key of ["NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_SUPABASE_URL"]) {
   }
 }
 
+// Public contact addresses end up in mailto: links on the live site, so a typo
+// ships straight to customers (a ".con" address sat in production for weeks).
+// Empty is fine (the link is simply hidden); a non-empty value must look like
+// an address and must not use the classic ".con" typo.
+for (const key of [
+  "NEXT_PUBLIC_EMAIL",
+  "NEXT_PUBLIC_EMAIL_HEALTH",
+  "NEXT_PUBLIC_EMAIL_BEAUTY",
+  "NEXT_PUBLIC_EMAIL_INFO",
+]) {
+  const value = values.get(key);
+  if (!value) continue;
+  if (!/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(value)) {
+    fail(`${key} is not a valid e-mail address`);
+  } else if (/\.con$/i.test(value)) {
+    fail(`${key} ends in ".con" -- did you mean ".com"?`);
+  }
+}
+
 // deploy/Caddyfile routes these hosts to the app service directly. Keep this
 // set in sync with the site block there -- NEXT_PUBLIC_SITE_URL pointing at
 // a host Caddy doesn't route is a real outage, not a style nit (see the
