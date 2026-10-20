@@ -26,6 +26,7 @@ export default function ComparePage(props) {
     supabase
       .from("products")
       .select("*")
+      .eq("is_active", true)
       .in("id", ids)
       .then(({ data }) => {
         // Preserve order from ids

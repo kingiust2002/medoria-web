@@ -19,6 +19,7 @@ export default function CompareDrawer({ lang }) {
     supabase
       .from("products")
       .select("id,name_ru,name_tg,name_en,name_fa,price,unit,image_url")
+      .eq("is_active", true)
       .in("id", ids)
       .then(({ data }) => setProducts(data || []));
   }, [ids]);

@@ -2390,9 +2390,65 @@ cd /home/medoria && sudo -u medoria /home/medoria/bin/medoria-production-backup.
 
 The rerun passed (snapshot `20261020T115759Z`, local and R2). The `501 NotImplemented` lines from R2 on the first attempt are the known harmless noise (§22.7 item 1). The cron job runs from `medoria`'s home and is not affected. (Making the script `cd /` first would remove the trap.)
 
-### 23.5 Follow-ups (not done yet)
+### 23.5 Follow-ups
 
-- **Code:** `getProductBySlug` has no `is_active` filter (the database now hides archived rows; the page should return a 404). Health `revalidatePath` calls in `lib/operator/actions.js` and `lib/operator/importActions.js` still use the pre-migration locale-first paths, and together with `fetchCache = "default-cache"` product pages keep **stale data**: reproduced locally on Next 15.5.27 and observed on the live product page after the policy change above. When the fix is deployed, clear the Next fetch cache once (`.next/cache/fetch-cache` in the persistent `next_cache` volume), or old entries will survive the redeploy.
+**In review — PR `fix/customer-data-and-product-visibility` (nothing in it is applied to production by merging; §23.6 is the release procedure):**
+
+- Archived Health products return a real 404 (`getProductBySlug` filters `is_active`; `not-found.jsx` shows the localized page; wishlist, compare and the compare drawer exclude archived rows) and the database hides them from the public API (migration 28).
+- Health operator edits now purge the real `/health/{lang}/…` routes and the sitemap through `lib/health/revalidate.js`; the old calls used the pre-migration locale-first paths and purged nothing. Public Supabase GETs also carry a 60 s fetch lifetime, because with `fetchCache = "default-cache"` a fetch without its own `revalidate` never expired (reproduced locally on Next 15.5.27 and seen on the live product page).
+- Customer-request tables (Health and Beauty) are service-role only: migration 28 drops every policy and revokes all `anon`/`authenticated`/`PUBLIC` privileges; the two public quote actions no longer fall back to the anon key; `npm run check:rls` now also proves archived products are hidden, all five private tables are unreadable, and Auth signup is closed.
+- Tests: `product-visibility`, `health-revalidate`, `db-policies`, `access-guards`, `check-rls-script`. Migrations 27 + 28 were also run against a throw-away PostgreSQL 18 with `anon`/`authenticated`/`service_role` roles, a production-like policy set and two oddly named leftover policies: before, anon saw the archived row and any signed-in user read every quote; after, both are denied, `service_role` can still read/insert/update everything, a re-run changes nothing, and with `products.is_active` missing the transaction aborts and rolls back.
+
+**Still open:**
+
 - **Code hardening:** prefer `x-real-ip` in `clientIpFromHeaders` (`lib/security/rateLimit.js`); override `postcss` to `^8.5.30` (clears the two moderate `npm audit` findings without Next 16; only the audit was tested).
 - **Operations:** a dead-man's-switch for the backup job and an external uptime monitor (§22.8); the Docker unhold/upgrade above; the end-to-end contact-form test (§22.7 item 3b).
 - **GitHub:** Dependency graph, Dependabot alerts and Dependabot security updates were reported enabled by the owner on 2026-10-20; a classic token mentioned in `SECURITY-CHECKLIST.md` should be revoked once this work is finished. `SECURITY-CHECKLIST.md` is still Vercel-era in places.
+- Health `categories` are still readable by `anon` regardless of `is_active` (the UI filters them); not part of the PR above.
+
+### 23.6 Release procedure for the customer-data / product-visibility PR
+
+Order matters only loosely: the database step is safe before the new code (the old product page just shows its empty state once the row is hidden) and the new code is safe before the database step. Do it in this order anyway.
+
+**0. Backup and baseline.**
+
+```bash
+cd /home/medoria && sudo -u medoria /home/medoria/bin/medoria-production-backup.sh     # wait for AUTO_BACKUP=PASS
+```
+
+In Studio's SQL editor (tunnel, §23.2) save the current state: `select tablename, policyname, cmd, qual from pg_policies where schemaname='public' order by 1,2;`
+
+**1. Database — run `migrations/28_private_tables_and_active_products.sql` once** (27 is already applied in production; 28 repeats and extends it, so re-running is harmless). Expected: the transaction ends with `COMMIT`; any `RAISE EXCEPTION` aborts it with nothing changed. Verify with the queries at the bottom of the file: exactly one policy in the whole `public` schema (`products_public_read … (is_active = true)`), `has_table_privilege('anon','public.quote_requests','SELECT')` = `false`, `service_role` = `true`.
+*Rollback:* the SQL block at the bottom of the file.
+
+**2. Supabase Auth signups** — already closed in production on 2026-10-20 (§23.2). Verify: `curl -s -H "apikey: <anon key>" https://api.medoriaco.com/auth/v1/settings` shows `"disable_signup": true`, `"phone_autoconfirm": false`. On any other environment set `DISABLE_SIGNUP=true`, `ENABLE_PHONE_SIGNUP=false`, `ENABLE_PHONE_AUTOCONFIRM=false` in the Supabase `.env` and `docker compose -p supabase up -d --no-deps auth`.
+
+**3. Application.** Keep the current image as the rollback target, then deploy `main` deliberately (runbook §1):
+
+```bash
+docker tag medoria-app-app:latest medoria-app-app:rollback-$(date +%Y%m%d)
+sudo -iu medoria bash -lc 'cd ~/apps/medoria-staging && bash scripts/self-host/deploy.sh'
+```
+
+**4. Clear the Next fetch cache once.** `next_cache` is a persistent volume, so entries written by the old code (which never expired) survive the redeploy:
+
+```bash
+docker exec medoria-app-app-1 sh -c 'rm -rf /app/.next/cache/fetch-cache'
+docker restart medoria-app-app-1          # ~10–20 s; drops the in-memory copy too
+```
+
+**5. Verify.**
+
+- `check:rls` with only the two public values (read-only; it never prints the key):
+
+  ```bash
+  cd /home/medoria/apps/medoria-staging
+  export $(grep -E '^NEXT_PUBLIC_SUPABASE_(URL|ANON_KEY)=' deploy/.env | xargs) && npm run check:rls
+  ```
+
+  Every line must say `✓ PASS` (exit code 0). Add `--insert-test` only if you accept that it writes a test row when a table is still open.
+- The archived product (`operating-room-gown`) answers 404, an active one answers 200: `curl -s -o /dev/null -w '%{http_code}\n' https://medoriaco.com/health/en/catalog/<slug>`; `https://medoriaco.com/health/en/catalog/operating-room-gown` must now return `404`.
+- Operator panels (these write data, so the owner runs them): log in to `/operator` and `/beauty/operator`; open Quotes in both; edit a **test** product's price, hard-refresh its public page — the new price must appear within seconds; archive it — the page must become a 404; reactivate it.
+- Contact forms (§22.7 item 3b): submit one clearly named test inquiry from `/health/en/contact` and one from `/beauty/en/contact`, confirm each appears in the matching panel's Quotes list, then delete the rows.
+
+**6. Rollback.** Database: §1. Application: `docker tag medoria-app-app:rollback-YYYYMMDD medoria-app-app:latest`, then `docker compose --env-file deploy/.env -f deploy/compose.app.yml up -d app` from the checkout (check out the previous commit first, as in §22.7 item 4) and repeat step 4. Auth: restore the three values and recreate `auth` (not recommended).
