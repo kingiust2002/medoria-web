@@ -16,6 +16,7 @@ idempotent (safe to re-run) and **purely additive** — none delete or overwrite
 | 8 | `08_import_logs.sql` | `import_logs` history table (service-role only, RLS locked) |
 | 9 | `09_security_hardening.sql` | Length/quantity CHECK constraints on `quote_requests` (new rows only), query indexes. Step 3 inside the file (commented out) drops the anon public-insert policy — run that step **only after** the release that submits quotes via the server action is live with `SUPABASE_SERVICE_ROLE_KEY` set |
 | 10 | `10_beauty_catalog.sql` | The **entire Medoria Beauty catalog** in one file (Beauty starts fresh): `beauty_categories` (world-linked), `beauty_products`, `beauty_quote_requests` (born hardened — no anon insert), `beauty_import_logs`, unique slug/SKU indexes, active-only public-read RLS, `increment_beauty_product_views()` RPC, `beauty-product-images` storage bucket, starter category seed. Touches **nothing** in the Health tables |
+| 27 | `27_security_policy_cleanup.sql` | Security cleanup applied to production on 2026-10-20 (runbook §23.3): drops `quote_requests_auth_read` and the leftover public-insert policies, and limits `products` public read to `is_active = true`. **Removes policies only; no data is touched.** Migrations 11–26 are not listed in this table (Beauty brands, Beauty/Health category trees) — see the files |
 
 ## Operator panel — required migrations
 
