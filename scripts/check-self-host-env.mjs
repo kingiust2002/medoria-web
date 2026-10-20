@@ -105,6 +105,25 @@ for (const key of [
   }
 }
 
+// Optional Telegram notice for new customer inquiries (docs/QUOTE_NOTIFICATIONS.md):
+// both values or neither. Values are never printed.
+{
+  const token = values.get("TELEGRAM_BOT_TOKEN") || "";
+  const chat = values.get("TELEGRAM_CHAT_ID") || "";
+  if (token || chat) {
+    if (!token || !chat) {
+      fail("TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set together (or both left empty)");
+    } else {
+      if (!/^\d{6,}:[A-Za-z0-9_-]{30,}$/.test(token)) {
+        fail("TELEGRAM_BOT_TOKEN does not look like a bot token (<digits>:<35 characters>)");
+      }
+      if (!/^(-?\d{5,}|@[A-Za-z][A-Za-z0-9_]{4,})$/.test(chat)) {
+        fail("TELEGRAM_CHAT_ID must be a numeric chat id (groups start with -) or @channelusername");
+      }
+    }
+  }
+}
+
 // deploy/Caddyfile routes these hosts to the app service directly. Keep this
 // set in sync with the site block there -- NEXT_PUBLIC_SITE_URL pointing at
 // a host Caddy doesn't route is a real outage, not a style nit (see the
