@@ -10,6 +10,24 @@ lead (the daily backup can be up to 24 h old).
 It is **off by default**. A house sends nothing until it has a chat id; merging the code
 changes nothing in production.
 
+## Status
+
+| Date | State |
+| --- | --- |
+| 2026-10-24 | Code merged ([#175](https://github.com/kingiust2002/medoria-web/pull/175)) and deployed (`main` `a3c8924`). Setup parts A–C below were done on the server: bot token and the two private group ids (Health, Beauty) are in `deploy/.env`, the env preflight passed, `deploy.sh` finished and the app container is healthy. |
+| 2026-10-24 — owner-confirmed | The owner confirmed that both contact forms and Telegram work correctly, after being asked to test Health and Beauty delivery to their matching groups. Panel visibility and deletion of the test rows are still awaiting confirmation. |
+
+For the full part D acceptance check (forms and delivery are already owner-confirmed), verify all of the following: (1) a `TEST Health` inquiry from
+`/health/en/contact` is stored, appears in `/operator` → Quotes, and its notice arrives in
+the **Health group only**; (2) a `TEST Beauty` inquiry from `/beauty/en/contact` is stored,
+appears in `/beauty/operator` → Quotes, and its notice arrives in the **Beauty group
+only**; (3) both test rows are deleted afterwards. The form/delivery confirmation is recorded above and in runbook §23.7.3; record panel
+visibility and cleanup when confirmed to close the remaining part of §22.7 item 3b. If a notice does not arrive,
+use the log check in part D; a failed notice never blocks the inquiry itself.
+
+The token and chat ids are not written in this repository; they exist only in
+`deploy/.env` on the server (which is also kept, encrypted, in every backup snapshot).
+
 ## Design
 
 - **One bot, two private groups.** One token to protect and one bot to create; the groups
@@ -52,7 +70,10 @@ token, the URL or the inquiry) and the visitor still sees success.
 ## Setup, step by step
 
 Do this **after** the pull request with this feature is merged and deployed (until then
-the variables would simply be ignored). Each step says where it happens. The bot token
+the variables would simply be ignored). *As of 2026-10-24 the code is deployed and A–C are
+done in production; this list stays as the procedure for a new server or a changed bot
+or group. Step 10 can equally be done by running `scripts/self-host/deploy.sh`, which was
+the method used.* Each step says where it happens. The bot token
 is a password: it goes from Telegram straight into the server's `deploy/.env`. Never
 paste it into a chat, a ticket, an e-mail or a command line.
 

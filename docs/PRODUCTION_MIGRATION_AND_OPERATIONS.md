@@ -2292,6 +2292,12 @@ The R2 snapshot layout differs from the older `roles.sql/schema.sql/data.sql` fo
 - Item 3b is **still open**: `quote_requests` contains no `TEST MIGRATION` row, and no write has been confirmed since the 2026-09-23 replacement. The table holds 7 rows (latest 2026-06-13), all still `new`. Submit one real test inquiry from `/health/en/contact`, confirm it appears in `/operator/quotes`, then delete it.
 - Backup alerting (item 1, "Remaining") is still open. Freshness was re-confirmed on 2026-10-20 (`--check`: local and R2 `PASS`, age 0 h).
 
+**Status update 2026-10-24** (details in §23.7):
+
+- Item 3b is **partly verified**: on 2026-10-24 the owner confirmed that both contact forms and Telegram notifications work, in response to the requested Health/Beauty routing test. Panel visibility and deletion of the test rows have not yet been reported. §23.7 records the verified and outstanding parts.
+- Backup alerting (item 1, "Remaining") is still open. A fresh full chain `20261024T115301Z` passed before the 2026-10-24 changes.
+- Item 4 (checkout equals `main`) holds again: the VPS checkout was fast-forwarded to `main` `a3c8924` and redeployed on 2026-10-24. The rollback image for that deploy is `medoria-app-app:rollback-before-20261024`.
+
 
 ### 22.9 Secondary domain `medoria.co` (2026-10-11)
 
@@ -2392,16 +2398,16 @@ The rerun passed (snapshot `20261020T115759Z`, local and R2). The `501 NotImplem
 
 ### 23.5 Follow-ups
 
-**In review — PR `fix/customer-data-and-product-visibility` (nothing in it is applied to production by merging; §23.6 is the release procedure):**
+**Status 2026-10-24: merged and deployed** (PR `fix/customer-data-and-product-visibility`, now [#174](https://github.com/kingiust2002/medoria-web/pull/174); §23.7 records what ran and what is still unverified). The text below is the 2026-10-20 description of the PR, kept as history. It originally read "in review — nothing in it is applied to production by merging; §23.6 is the release procedure":
 
 - Archived Health products return a real 404 (`getProductBySlug` filters `is_active`; `not-found.jsx` shows the localized page; wishlist, compare and the compare drawer exclude archived rows) and the database hides them from the public API (migration 28).
 - Health operator edits now purge the real `/health/{lang}/…` routes and the sitemap through `lib/health/revalidate.js`; the old calls used the pre-migration locale-first paths and purged nothing. Public Supabase GETs also carry a 60 s fetch lifetime, because with `fetchCache = "default-cache"` a fetch without its own `revalidate` never expired (reproduced locally on Next 15.5.27 and seen on the live product page).
 - Customer-request tables (Health and Beauty) are service-role only: migration 28 drops every policy and revokes all `anon`/`authenticated`/`PUBLIC` privileges; the two public quote actions no longer fall back to the anon key; `npm run check:rls` now also proves archived products are hidden, all five private tables are unreadable, and Auth signup is closed.
 - Tests: `product-visibility`, `health-revalidate`, `db-policies`, `access-guards`, `check-rls-script`. Migrations 27 + 28 were also run against a throw-away PostgreSQL 18 with `anon`/`authenticated`/`service_role` roles, a production-like policy set and two oddly named leftover policies: before, anon saw the archived row and any signed-in user read every quote; after, both are denied, `service_role` can still read/insert/update everything, a re-run changes nothing, and with `products.is_active` missing the transaction aborts and rolls back.
 
-**Still open:**
+**Still open** (as written on 2026-10-20; the current list is §23.7.4):
 
-- **Code hardening:** prefer `x-real-ip` in `clientIpFromHeaders` (`lib/security/rateLimit.js`); override `postcss` to `^8.5.30` (clears the two moderate `npm audit` findings without Next 16; only the audit was tested).
+- ~~**Code hardening:** prefer `x-real-ip` in `clientIpFromHeaders` (`lib/security/rateLimit.js`); override `postcss` to `^8.5.30`.~~ **Done 2026-10-24** in [#173](https://github.com/kingiust2002/medoria-web/pull/173) (`x-real-ip` first, `postcss` 8.5.31, Next 15.5.28 for newly published advisories). Deployed 2026-10-24.
 - **Operations:** a dead-man's-switch for the backup job and an external uptime monitor (§22.8); the Docker unhold/upgrade above; the end-to-end contact-form test (§22.7 item 3b).
 - **GitHub:** Dependency graph, Dependabot alerts and Dependabot security updates were reported enabled by the owner on 2026-10-20; a classic token mentioned in `SECURITY-CHECKLIST.md` should be revoked once this work is finished. `SECURITY-CHECKLIST.md` is still Vercel-era in places.
 - Health `categories` are still readable by `anon` regardless of `is_active` (the UI filters them); not part of the PR above.
@@ -2452,3 +2458,71 @@ docker restart medoria-app-app-1          # ~10–20 s; drops the in-memory copy
 - Contact forms (§22.7 item 3b): submit one clearly named test inquiry from `/health/en/contact` and one from `/beauty/en/contact`, confirm each appears in the matching panel's Quotes list, then delete the rows.
 
 **6. Rollback.** Database: §1. Application: `docker tag medoria-app-app:rollback-YYYYMMDD medoria-app-app:latest`, then `docker compose --env-file deploy/.env -f deploy/compose.app.yml up -d app` from the checkout (check out the previous commit first, as in §22.7 item 4) and repeat step 4. Auth: restore the three values and recreate `auth` (not recommended).
+
+
+### 23.7 Rollout of 2026-10-24
+
+The three pull requests prepared after the 2026-10-20 review were merged into `main` and deployed to the VPS on 2026-10-24. The work on the server was done by the owner with ChatGPT's help; this section records what ran, and separates what was checked from GitHub from what is the owner's report. Nothing here contains a token, the content of an `.env` file, a chat id or customer data.
+
+#### 23.7.1 Repository state (checked on GitHub)
+
+| PR | Content | Merged (UTC) |
+| --- | --- | --- |
+| [#175](https://github.com/kingiust2002/medoria-web/pull/175) | Telegram notice per house (`lib/notify/telegram.js`, `scripts/telegram-chat-ids.mjs`, preflight rules, `docs/QUOTE_NOTIFICATIONS.md`) | 2026-10-24 11:37 |
+| [#173](https://github.com/kingiust2002/medoria-web/pull/173) | `x-real-ip` for rate-limit keys, `postcss` 8.5.31, Next 15.5.28, Vercel-era notes removed | 2026-10-24 11:47 |
+| [#174](https://github.com/kingiust2002/medoria-web/pull/174) | Migrations 27/28, archived products hidden, Health cache refresh, private customer tables (§23.5) | 2026-10-24 11:47 |
+| [#172](https://github.com/kingiust2002/medoria-web/pull/172) | Dependabot: `tailwindcss` 3.4.6 → 4.3.3 | **closed, not merged** |
+
+- `main` at the end of the rollout is `a3c8924` (merge of #174). Each of #173–#175 had a green `self-hosting-ci` run (all 31 steps, including the `npm audit` gate and Trivy) before merging; no `self-hosting-ci` run is recorded for the merge commit itself, so the owner's combined-tree results below are the only check of the merged result.
+- #172 was closed unmerged: Tailwind 4 is a breaking major (the PostCSS plugin moved to `@tailwindcss/postcss`) and the standalone build failed on it. A comment on the PR tells Dependabot to ignore the Tailwind major version. Its `postcss` part is covered by #173; its other bumps (`brace-expansion`, `browserslist`, `js-yaml`, `baseline-browser-mapping`, `postcss-selector-parser`) are dev-only and were **not** taken.
+- Reported by the owner for the merged tree: 92 tests pass, lint and build pass, and `npm audit --omit=dev` reports 0 vulnerabilities.
+
+#### 23.7.2 What ran on production (owner's report)
+
+In this order:
+
+1. **Backup first.** Snapshot `20261024T115301Z`: local backup, encrypted upload to R2 and the off-server verification all `PASS`. The first R2 attempt answered `501` and the retry succeeded (the known noise, §22.7 item 1).
+2. **Code.** `git pull --ff-only` took the checkout to `a3c8924`.
+3. **Database.** `migrations/28_private_tables_and_active_products.sql` ran against the production database as one transaction (`BEGIN → DO → DO → DO → COMMIT`; no `RAISE EXCEPTION`). Its post-check queries at the bottom of the file were not reported separately; `check:rls` (below) covers the same ground from the public side.
+4. **Rollback target kept:** the previous image is tagged `medoria-app-app:rollback-before-20261024`.
+5. **Telegram configuration.** The real ids of the two private groups (Health and Beauty) were set in `deploy/.env`, replacing earlier values, and `npm run check:self-host-env -- deploy/.env` passed. The token and the ids are in that file only.
+6. **Deploy.** `scripts/self-host/deploy.sh` finished successfully; the app container is `healthy`. Live checks: `/`, `/api/health`, `/health/en`, `/beauty/en` = `200`; the `www` host → `308` to the apex.
+7. **Fetch cache cleared.** `/app/.next/cache/fetch-cache` was removed and the app container restarted (§23.6 step 4).
+8. **`npm run check:rls`** on the server: all 11 checks `PASS`. The write probe `--insert-test` was **not** run (§23.6 step 5 makes it optional).
+
+#### 23.7.3 Live-test status and remaining verification
+
+- **Contact forms and Telegram — owner-confirmed on 2026-10-24.** After being asked to submit `TEST Health` and `TEST Beauty` and check that each notice reaches only its matching group, the owner reported that the forms and Telegram work correctly. This is a manual production result reported by the owner, not a test run by the reviewing agent.
+- **Panel visibility and cleanup — not yet reported.** Confirm that the test requests appear in `/operator` → Quotes and `/beauty/operator` → Quotes, then delete the two test rows. Keep §22.7 item 3b partly open until these remaining checks are confirmed.
+- **Panel actions from §23.6 step 5:** price edit of a test product showing on the public page within seconds, archiving it giving a 404, reactivating it. Not reported.
+- **The archived product page answering 404** (`https://medoriaco.com/health/en/catalog/operating-room-gown`). `check:rls` proves the *API* hides archived rows; the page itself was not reported.
+- **`check:rls --insert-test`** (write probe) was not run.
+
+#### 23.7.4 Open items after 2026-10-24
+
+Operations and production:
+
+1. Finish the panel-visibility checks and delete the test rows (§23.7.3). Both contact forms and Telegram delivery were confirmed by the owner on 2026-10-24.
+2. The 7 old `new` inquiries in `quote_requests` (latest 2026-06-13) still need a business follow-up; their content is not recorded here.
+3. The data gap since the `20260901T023001Z` snapshot (§22.7 item 2) remains.
+4. Backup alerting: a dead-man's switch for the cron job, and an external uptime monitor (§22.8). `production-backup.sh --check` is still the only freshness test.
+5. Remove the rollback images once the new build has run cleanly for a few days: `docker rmi medoria-app-app:rollback-before-20261024` (and `medoria-app-app:rollback-20261011` if it still exists).
+6. Docker packages are still on hold (§23.2). Plan a fresh backup, `apt-mark unhold`, upgrade `docker-ce`/`containerd.io`, then run the live checks. Until then Docker security updates do not install.
+7. Rotate the Supavisor Erlang cookie: it appeared in a pasted process listing during the 2026-10-20 session.
+
+Repository and GitHub:
+
+8. Revoke the old classic GitHub token mentioned in `SECURITY-CHECKLIST.md`.
+9. Delete the superseded remote branches, which still exist: `chore/trusted-client-ip-and-postcss`, `fix/customer-data-and-product-visibility`, `feat/quote-telegram-notification` and `docs/security-hardening-20261020`; the merged `...-v2` branches of #173–#175 can go too. **Keep** `staging/self-hosting-sync-20260802` (rollback target, CLAUDE.md).
+10. Dependabot housekeeping: add a `.github/dependabot.yml` that groups updates and ignores majors of `tailwindcss` and `next`, and take the dev-only bumps from #172 in a small PR without Tailwind 4. Not started.
+
+Code and data:
+
+11. Health `categories` are still readable by `anon` regardless of `is_active` (the UI filters them); migration 28 did not cover it.
+12. `SECURITY-CHECKLIST.md` still has Vercel-era passages elsewhere.
+
+#### 23.7.5 Rollback for this rollout
+
+Unchanged from §23.6 step 6: database via the rollback SQL at the bottom of migration 28; application by re-tagging `medoria-app-app:rollback-before-20261024` as `medoria-app-app:latest` after checking out the previous commit (`233589d`) and recreating the `app` service; then clear `fetch-cache` and restart the container. To silence Telegram without a rollback, empty the chat ids in `deploy/.env` and recreate the container (`docs/QUOTE_NOTIFICATIONS.md`).
+
+This documentation change is docs-only, so the code running on the VPS (`a3c8924`) differs from the following `main` commits only in documentation; no new deploy is needed for it.
