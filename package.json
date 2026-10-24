@@ -10,7 +10,8 @@
     "test": "node --test tests/*.test.mjs",
     "check:rls": "node scripts/check-rls.mjs",
     "check:self-host-env": "node scripts/check-self-host-env.mjs",
-    "audit:supabase": "node scripts/self-host/audit-supabase-services.mjs"
+    "audit:supabase": "node scripts/self-host/audit-supabase-services.mjs",
+    "telegram:chat-ids": "node scripts/telegram-chat-ids.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.69.0",

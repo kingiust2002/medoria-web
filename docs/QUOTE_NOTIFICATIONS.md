@@ -1,12 +1,26 @@
-# New-inquiry notifications (Telegram)
+# New-inquiry notifications (Telegram, one group per house)
 
 Every customer inquiry is stored in `quote_requests` (Health) or
-`beauty_quote_requests` (Beauty) and appears in the operator panel, but nobody is
-told. With this feature each new inquiry also posts a short notice to a **private
-Telegram group**, so the team sees it within seconds and the group is a second copy
-of the lead (the daily backup is up to 24 h old).
+`beauty_quote_requests` (Beauty) and appears in the matching operator panel, but nobody
+is told. With this feature each new inquiry also posts a short notice to a **private
+Telegram group**: Health inquiries to the Health group, Beauty inquiries to the Beauty
+group. The team sees a lead within seconds, and each group is a second copy of the
+lead (the daily backup can be up to 24 h old).
 
-It is **off by default**: nothing is sent until both variables below are set.
+It is **off by default**. A house sends nothing until it has a chat id; merging the code
+changes nothing in production.
+
+## Design
+
+- **One bot, two private groups.** One token to protect and one bot to create; the groups
+  keep the two houses' leads and teams apart. (A separate bot per house is possible with
+  `TELEGRAM_BOT_TOKEN_HEALTH` / `TELEGRAM_BOT_TOKEN_BEAUTY`, each overrides the shared
+  token for its house.)
+- **No shared fallback chat.** The old single `TELEGRAM_CHAT_ID` is ignored (and the
+  preflight rejects it), so a Beauty inquiry can never end up in the Health group by
+  misconfiguration.
+- Each house is switched on independently: set only `TELEGRAM_CHAT_ID_HEALTH` to start
+  with Health alone.
 
 ## What is sent
 
@@ -21,59 +35,121 @@ Open: https://medoriaco.com/operator/quotes
 
 Beauty inquiries say `Medoria Beauty` and link to `/beauty/operator/quotes`.
 **The phone number and the message text are not included** unless you set
-`TELEGRAM_INCLUDE_DETAILS=true`. The notice is plain text (no markup), and every
-visitor-typed field is trimmed and length-capped.
+`TELEGRAM_INCLUDE_DETAILS=true` (applies to both houses). The notice is plain text (no
+markup) and every visitor-typed field is trimmed and length-capped.
 
 The name and organization a visitor types do leave the server and reach Telegram's
-servers: keep the group private, limit it to the people who answer inquiries, and
+servers: keep both groups private, limit them to the people who answer inquiries, and
 decide consciously about `TELEGRAM_INCLUDE_DETAILS`.
 
 ## Failure behaviour
 
-The inquiry is saved first. The notice is sent afterwards with a 2.5 s timeout and
-can never fail or slow the form for the visitor: if Telegram is unreachable or
-rejects the request, the server log gets one line (`telegram notice failed: HTTP 401`
-or `... TimeoutError`; never the token or the message) and the visitor still sees
-success.
+The inquiry is saved first. The notice is sent afterwards with a 2.5 s timeout and can
+never fail or slow the form: if Telegram is unreachable or refuses, the server log gets
+one line (`telegram notice failed: HTTP 401`, `HTTP 403`, `... TimeoutError`; never the
+token, the URL or the inquiry) and the visitor still sees success.
 
-## Setup
+## Setup, step by step
 
-1. In Telegram, open **@BotFather**, send `/newbot`, pick a name and copy the bot
-   token (`123456789:AA...`). Treat it like a password.
-2. Create a **private group** with the people who answer inquiries and add the bot
-   to it (a bot cannot read a group's history; it only needs to post).
-3. Get the group's chat id: send any message in the group, then open
-   `https://api.telegram.org/bot<TOKEN>/getUpdates` in a browser and read
-   `"chat":{"id":-100…}` (groups are negative). Do not paste the token anywhere
-   shared.
-4. On the VPS add to `deploy/.env` (mode `600`, never committed):
+Do this **after** the pull request with this feature is merged and deployed (until then
+the variables would simply be ignored). Each step says where it happens. The bot token
+is a password: it goes from Telegram straight into the server's `deploy/.env`. Never
+paste it into a chat, a ticket, an e-mail or a command line.
 
-   ```text
-   TELEGRAM_BOT_TOKEN=<token>
-   TELEGRAM_CHAT_ID=<chat id>
-   TELEGRAM_INCLUDE_DETAILS=
+### A. In Telegram (phone or desktop)
+
+1. Open **@BotFather**, send `/newbot`, choose a display name and a username ending in
+   `bot`. BotFather replies with the **token** (`123456789:AA...`). Keep that message
+   open; do not forward or screenshot it.
+2. Create the group **"Medoria Health inquiries"** (a normal private group): add the
+   people who answer Health inquiries, then add your bot as a member. Make sure the group
+   has no public link.
+3. Create the group **"Medoria Beauty inquiries"** the same way, with the Beauty team,
+   and add the same bot.
+4. In **each** group send `/start@<your bot username>` once. (This lets the bot see the
+   group so its id can be looked up; the bot only ever *posts* afterwards.)
+
+### B. On Windows (PowerShell)
+
+5. Connect to the server with your key:
+
+   ```powershell
+   ssh root@91.107.182.97
    ```
 
-5. Validate and apply (the container reads `deploy/.env` only when it is created):
+   The prompt becomes `root@…#`: every command below is typed there.
+
+### C. On the server (the SSH window)
+
+6. Go to the app checkout and make sure there are no Telegram lines yet:
 
    ```bash
    cd /home/medoria/apps/medoria-staging
-   npm run check:self-host-env -- deploy/.env          # both-or-neither and format checks
-   docker compose --env-file deploy/.env -f deploy/compose.app.yml up -d app
-   docker compose --env-file deploy/.env -f deploy/compose.app.yml ps   # app must be healthy
+   grep -c '^TELEGRAM_' deploy/.env      # expect 0
    ```
 
-6. Test: submit one clearly named inquiry from `/health/en/contact` and one from
-   `/beauty/en/contact`; both notices must arrive in the group. Then delete the two
-   rows in the panel (Quotes).
+7. Store the token without showing it or saving it in the shell history (paste the token
+   from Telegram when asked; nothing is echoed; press Enter):
+
+   ```bash
+   read -rsp "Paste the bot token, then press Enter: " TG; echo
+   printf 'TELEGRAM_BOT_TOKEN=%s\n' "$TG" >> deploy/.env; unset TG
+   ```
+
+8. Find the two group ids (this prints only ids and group names, never the token):
+
+   ```bash
+   node scripts/telegram-chat-ids.mjs deploy/.env
+   ```
+
+   Groups have a **negative** number such as `-1001234567890`. Note which one is the
+   Health group and which is the Beauty group. If the list is empty, repeat step 4 and
+   run it again.
+
+9. Add the two ids (they are not secret), replacing the example numbers:
+
+   ```bash
+   printf 'TELEGRAM_CHAT_ID_HEALTH=%s\nTELEGRAM_CHAT_ID_BEAUTY=%s\n' -1001111111111 -1002222222222 >> deploy/.env
+   ```
+
+   To start with one house only, add just that line.
+
+10. Validate and apply (the container reads `deploy/.env` only when it is created):
+
+    ```bash
+    npm run check:self-host-env -- deploy/.env        # must end with "preflight passed"
+    docker compose --env-file deploy/.env -f deploy/compose.app.yml up -d app
+    docker compose --env-file deploy/.env -f deploy/compose.app.yml ps   # app must be healthy
+    ```
+
+### D. Test (browser on Windows, then the panels)
+
+11. Open `https://medoriaco.com/health/en/contact` and send an inquiry with an obvious
+    name such as `TEST Health`; then the same on `/beauty/en/contact` with `TEST Beauty`.
+    The first notice must appear in the Health group only, the second in the Beauty group
+    only.
+12. Open the operator panels (`/operator` and `/beauty/operator`, Quotes) and delete the
+    two test rows.
+
+If nothing arrives, on the server:
+
+```bash
+docker logs --since 10m medoria-app-app-1 2>&1 | grep "telegram notice failed"
+```
+
+`HTTP 401` = wrong or revoked token. `HTTP 400`/`403` = wrong chat id or the bot is not in
+that group. No line at all and no message = that house has no chat id (or the container
+was not recreated in step 10).
 
 ## Turn it off or roll back
 
-Empty both variables in `deploy/.env` and recreate the app container (same
-`up -d app`). To revoke the bot completely, use `/revoke` in @BotFather.
+Remove the `TELEGRAM_*` lines from `deploy/.env` (or empty a house's chat id to stop just
+that house) and recreate the app container (step 10). To revoke the bot completely, send
+`/revoke` to @BotFather. Also, if the token ever appears somewhere it should not, revoke it
+there and create a new one.
 
 ## Not included (on purpose)
 
 An e-mail channel (needs a transactional-mail provider and SPF/DKIM records), per-person
-assignment, and follow-up reminders: add them when the team is larger than the
-current one or two people.
+assignment, and follow-up reminders: add them when the team is larger than the current one
+or two people.

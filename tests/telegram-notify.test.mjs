@@ -6,7 +6,14 @@ import fs from "node:fs";
 import { telegramConfig, formatQuoteNotice, notifyNewQuote } from "../lib/notify/telegram.js";
 
 const TOKEN = "123456789:AAH-testtoken_testtoken_testtoken_1234";
-const ENV = { TELEGRAM_BOT_TOKEN: TOKEN, TELEGRAM_CHAT_ID: "-1001234567890", NEXT_PUBLIC_SITE_URL: "https://medoriaco.com/" };
+const HEALTH_CHAT = "-1001111111111";
+const BEAUTY_CHAT = "-1002222222222";
+const ENV = {
+  TELEGRAM_BOT_TOKEN: TOKEN,
+  TELEGRAM_CHAT_ID_HEALTH: HEALTH_CHAT,
+  TELEGRAM_CHAT_ID_BEAUTY: BEAUTY_CHAT,
+  NEXT_PUBLIC_SITE_URL: "https://medoriaco.com/",
+};
 const ROW = {
   name: "Dr. Rahimi",
   phone: "+992 900 000 000",
@@ -19,18 +26,48 @@ const ROW = {
   language: "tg",
 };
 
-test("off unless both variables are set", () => {
-  assert.equal(telegramConfig({}), null);
-  assert.equal(telegramConfig({ TELEGRAM_BOT_TOKEN: TOKEN }), null);
-  assert.equal(telegramConfig({ TELEGRAM_CHAT_ID: "-1" }), null);
-  assert.equal(telegramConfig({ TELEGRAM_BOT_TOKEN: "  ", TELEGRAM_CHAT_ID: "  " }), null);
-  assert.equal(telegramConfig(ENV).chatId, "-1001234567890");
+test("off unless a house has BOTH a token and its own chat id", () => {
+  for (const kind of ["health", "beauty"]) {
+    assert.equal(telegramConfig(kind, {}), null);
+    assert.equal(telegramConfig(kind, { TELEGRAM_BOT_TOKEN: TOKEN }), null);
+    assert.equal(telegramConfig(kind, { TELEGRAM_CHAT_ID_HEALTH: "-1", TELEGRAM_CHAT_ID_BEAUTY: "-2" }), null);
+    assert.equal(telegramConfig(kind, { TELEGRAM_BOT_TOKEN: "  ", TELEGRAM_CHAT_ID_HEALTH: "  ", TELEGRAM_CHAT_ID_BEAUTY: "  " }), null);
+  }
+  assert.equal(telegramConfig("health", ENV).chatId, HEALTH_CHAT);
+  assert.equal(telegramConfig("beauty", ENV).chatId, BEAUTY_CHAT);
+});
+
+test("each house is switched on independently", () => {
+  const onlyHealth = { TELEGRAM_BOT_TOKEN: TOKEN, TELEGRAM_CHAT_ID_HEALTH: HEALTH_CHAT };
+  assert.ok(telegramConfig("health", onlyHealth));
+  assert.equal(telegramConfig("beauty", onlyHealth), null);
+  const onlyBeauty = { TELEGRAM_BOT_TOKEN: TOKEN, TELEGRAM_CHAT_ID_BEAUTY: BEAUTY_CHAT };
+  assert.equal(telegramConfig("health", onlyBeauty), null);
+  assert.ok(telegramConfig("beauty", onlyBeauty));
+});
+
+test("the old single TELEGRAM_CHAT_ID is ignored: a Beauty inquiry can never land in a shared group", () => {
+  const legacy = { TELEGRAM_BOT_TOKEN: TOKEN, TELEGRAM_CHAT_ID: "-100999" };
+  assert.equal(telegramConfig("health", legacy), null);
+  assert.equal(telegramConfig("beauty", legacy), null);
+});
+
+test("a per-house token overrides the shared one; the other house keeps the shared token", () => {
+  const OTHER = "987654321:AAH-other_other_other_other_other_12";
+  const env = { ...ENV, TELEGRAM_BOT_TOKEN_BEAUTY: OTHER };
+  assert.equal(telegramConfig("beauty", env).token, OTHER);
+  assert.equal(telegramConfig("health", env).token, TOKEN);
+  const separate = { TELEGRAM_BOT_TOKEN_HEALTH: TOKEN, TELEGRAM_BOT_TOKEN_BEAUTY: OTHER, TELEGRAM_CHAT_ID_HEALTH: HEALTH_CHAT, TELEGRAM_CHAT_ID_BEAUTY: BEAUTY_CHAT };
+  assert.equal(telegramConfig("health", separate).token, TOKEN);
+  assert.equal(telegramConfig("beauty", separate).token, OTHER);
 });
 
 test("not configured: no network call at all", async () => {
   let called = false;
-  const out = await notifyNewQuote({ kind: "health", id: 1, row: ROW }, { env: {}, fetchImpl: () => ((called = true), null) });
-  assert.deepEqual(out, { sent: false, reason: "not_configured" });
+  for (const kind of ["health", "beauty"]) {
+    const out = await notifyNewQuote({ kind, id: 1, row: ROW }, { env: {}, fetchImpl: () => ((called = true), null) });
+    assert.deepEqual(out, { sent: false, reason: "not_configured" });
+  }
   assert.equal(called, false);
 });
 
@@ -47,8 +84,9 @@ test("the notice carries no phone number and no message text by default", () => 
 });
 
 test("TELEGRAM_INCLUDE_DETAILS adds phone and a one-line message", () => {
-  assert.equal(telegramConfig({ ...ENV, TELEGRAM_INCLUDE_DETAILS: "true" }).includeDetails, true);
-  assert.equal(telegramConfig({ ...ENV, TELEGRAM_INCLUDE_DETAILS: "" }).includeDetails, false);
+  assert.equal(telegramConfig("health", { ...ENV, TELEGRAM_INCLUDE_DETAILS: "true" }).includeDetails, true);
+  assert.equal(telegramConfig("beauty", { ...ENV, TELEGRAM_INCLUDE_DETAILS: "true" }).includeDetails, true);
+  assert.equal(telegramConfig("health", { ...ENV, TELEGRAM_INCLUDE_DETAILS: "" }).includeDetails, false);
   const text = formatQuoteNotice({ kind: "health", id: 1, row: ROW, siteUrl: "https://x.test", includeDetails: true });
   assert.match(text, /Phone: \+992 900 000 000/);
   assert.match(text, /Message: Please quote for 40 units/); // newline collapsed
@@ -78,11 +116,34 @@ test("sends one JSON POST to the bot API with the chat id, plain text, no markup
   assert.equal(calls[0].url, `https://api.telegram.org/bot${TOKEN}/sendMessage`);
   assert.equal(calls[0].init.method, "POST");
   const body = JSON.parse(calls[0].init.body);
-  assert.equal(body.chat_id, "-1001234567890");
+  assert.equal(body.chat_id, HEALTH_CHAT);
   assert.match(body.text, /new inquiry #7/);
   assert.equal(body.parse_mode, undefined);
   assert.match(body.text, /Open: https:\/\/medoriaco\.com\/operator\/quotes$/, "trailing slash of NEXT_PUBLIC_SITE_URL is normalised");
   assert.ok(calls[0].init.signal, "the request is time-boxed");
+});
+
+test("Health inquiries go to the Health group and Beauty inquiries to the Beauty group", async () => {
+  const sent = [];
+  const fetchImpl = async (url, init) => ((sent.push(JSON.parse(init.body))), new Response("{}", { status: 200 }));
+  await notifyNewQuote({ kind: "health", id: 1, row: ROW }, { env: ENV, fetchImpl });
+  await notifyNewQuote({ kind: "beauty", id: 2, row: ROW }, { env: ENV, fetchImpl });
+  assert.equal(sent.length, 2);
+  assert.equal(sent[0].chat_id, HEALTH_CHAT);
+  assert.match(sent[0].text, /^Medoria Health: new inquiry #1/);
+  assert.equal(sent[1].chat_id, BEAUTY_CHAT);
+  assert.match(sent[1].text, /^Medoria Beauty: new inquiry #2/);
+  assert.match(sent[1].text, /\/beauty\/operator\/quotes$/);
+});
+
+test("a house without a chat id sends nothing while the other house still works", async () => {
+  const sent = [];
+  const fetchImpl = async (url, init) => ((sent.push(JSON.parse(init.body))), new Response("{}", { status: 200 }));
+  const env = { TELEGRAM_BOT_TOKEN: TOKEN, TELEGRAM_CHAT_ID_HEALTH: HEALTH_CHAT };
+  assert.deepEqual(await notifyNewQuote({ kind: "beauty", id: 1, row: ROW }, { env, fetchImpl }), { sent: false, reason: "not_configured" });
+  assert.deepEqual(await notifyNewQuote({ kind: "health", id: 2, row: ROW }, { env, fetchImpl }), { sent: true });
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].chat_id, HEALTH_CHAT);
 });
 
 test("never throws and never logs the token or the message, whatever Telegram does", async () => {
