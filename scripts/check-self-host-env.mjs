@@ -105,6 +105,42 @@ for (const key of [
   }
 }
 
+// Optional Telegram notices for new customer inquiries (docs/QUOTE_NOTIFICATIONS.md):
+// one bot token (shared, optionally overridden per house) and one private group per house.
+// A house with a chat id needs a token; a token without any chat id is a half-finished setup.
+// Values are never printed.
+{
+  const TOKEN_RE = /^\d{6,}:[A-Za-z0-9_-]{30,}$/;
+  const CHAT_RE = /^(-?\d{5,}|@[A-Za-z][A-Za-z0-9_]{4,})$/;
+  const get = (key) => values.get(key) || "";
+  const shared = get("TELEGRAM_BOT_TOKEN");
+
+  if (get("TELEGRAM_CHAT_ID")) {
+    fail("TELEGRAM_CHAT_ID is not used any more: set TELEGRAM_CHAT_ID_HEALTH and/or TELEGRAM_CHAT_ID_BEAUTY (one private group per house)");
+  }
+  for (const key of ["TELEGRAM_BOT_TOKEN", "TELEGRAM_BOT_TOKEN_HEALTH", "TELEGRAM_BOT_TOKEN_BEAUTY"]) {
+    if (get(key) && !TOKEN_RE.test(get(key))) {
+      fail(`${key} does not look like a bot token (<digits>:<35 characters>)`);
+    }
+  }
+  let anyChat = false;
+  for (const house of ["HEALTH", "BEAUTY"]) {
+    const chat = get(`TELEGRAM_CHAT_ID_${house}`);
+    if (!chat) continue;
+    anyChat = true;
+    if (!CHAT_RE.test(chat)) {
+      fail(`TELEGRAM_CHAT_ID_${house} must be a numeric chat id (groups start with -) or @channelusername`);
+    }
+    if (!get(`TELEGRAM_BOT_TOKEN_${house}`) && !shared) {
+      fail(`TELEGRAM_CHAT_ID_${house} is set but there is no bot token (set TELEGRAM_BOT_TOKEN)`);
+    }
+  }
+  const anyToken = shared || get("TELEGRAM_BOT_TOKEN_HEALTH") || get("TELEGRAM_BOT_TOKEN_BEAUTY");
+  if (anyToken && !anyChat) {
+    fail("a Telegram bot token is set but no TELEGRAM_CHAT_ID_HEALTH / TELEGRAM_CHAT_ID_BEAUTY (or leave all Telegram variables empty)");
+  }
+}
+
 // deploy/Caddyfile routes these hosts to the app service directly. Keep this
 // set in sync with the site block there -- NEXT_PUBLIC_SITE_URL pointing at
 // a host Caddy doesn't route is a real outage, not a style nit (see the

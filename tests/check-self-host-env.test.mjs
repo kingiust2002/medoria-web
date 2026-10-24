@@ -103,3 +103,37 @@ test("fails on a contact address that is not an e-mail address", async () => {
   assert.equal(code, 1);
   assert.match(stderr, /NEXT_PUBLIC_EMAIL_HEALTH is not a valid e-mail address/);
 });
+
+const TG_TOKEN = "123456789:AAH-testtoken_testtoken_testtoken_1234";
+
+test("Telegram notice variables: everything empty, or a valid one-bot/two-groups setup, passes", async () => {
+  const site = { NEXT_PUBLIC_SITE_URL: "https://medoriaco.com" };
+  assert.equal((await runChecker({ ...site, TELEGRAM_BOT_TOKEN: "", TELEGRAM_CHAT_ID_HEALTH: "", TELEGRAM_CHAT_ID_BEAUTY: "" })).code, 0);
+  assert.equal((await runChecker({ ...site, TELEGRAM_BOT_TOKEN: TG_TOKEN, TELEGRAM_CHAT_ID_HEALTH: "-1001111111111", TELEGRAM_CHAT_ID_BEAUTY: "-1002222222222" })).code, 0);
+  // one house only is fine
+  assert.equal((await runChecker({ ...site, TELEGRAM_BOT_TOKEN: TG_TOKEN, TELEGRAM_CHAT_ID_HEALTH: "-1001111111111" })).code, 0);
+  assert.equal((await runChecker({ ...site, TELEGRAM_BOT_TOKEN: TG_TOKEN, TELEGRAM_CHAT_ID_BEAUTY: "@medoria_beauty" })).code, 0);
+  // a separate bot per house instead of the shared one
+  assert.equal((await runChecker({ ...site, TELEGRAM_BOT_TOKEN_HEALTH: TG_TOKEN, TELEGRAM_BOT_TOKEN_BEAUTY: TG_TOKEN, TELEGRAM_CHAT_ID_HEALTH: "-1001111111111", TELEGRAM_CHAT_ID_BEAUTY: "-1002222222222" })).code, 0);
+});
+
+test("Telegram notice variables: half-finished or malformed setups fail without printing the values", async () => {
+  const site = { NEXT_PUBLIC_SITE_URL: "https://medoriaco.com" };
+  const noChat = await runChecker({ ...site, TELEGRAM_BOT_TOKEN: TG_TOKEN });
+  assert.equal(noChat.code, 1);
+  assert.match(noChat.stderr, /no TELEGRAM_CHAT_ID_HEALTH/);
+  const noToken = await runChecker({ ...site, TELEGRAM_CHAT_ID_BEAUTY: "-1002222222222" });
+  assert.equal(noToken.code, 1);
+  assert.match(noToken.stderr, /TELEGRAM_CHAT_ID_BEAUTY is set but there is no bot token/);
+  const legacy = await runChecker({ ...site, TELEGRAM_BOT_TOKEN: TG_TOKEN, TELEGRAM_CHAT_ID: "-1001111111111" });
+  assert.equal(legacy.code, 1);
+  assert.match(legacy.stderr, /TELEGRAM_CHAT_ID is not used any more/);
+  const badToken = await runChecker({ ...site, TELEGRAM_BOT_TOKEN: "not-a-token", TELEGRAM_CHAT_ID_HEALTH: "-100123456" });
+  assert.equal(badToken.code, 1);
+  assert.match(badToken.stderr, /TELEGRAM_BOT_TOKEN does not look like a bot token/);
+  assert.ok(!badToken.stderr.includes("not-a-token"));
+  const badChat = await runChecker({ ...site, TELEGRAM_BOT_TOKEN: TG_TOKEN, TELEGRAM_CHAT_ID_HEALTH: "my group" });
+  assert.equal(badChat.code, 1);
+  assert.match(badChat.stderr, /TELEGRAM_CHAT_ID_HEALTH must be a numeric chat id/);
+  assert.ok(!badChat.stderr.includes("my group"));
+});
