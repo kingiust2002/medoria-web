@@ -1,15 +1,16 @@
 // app/[lang]/catalog/[slug]/page.jsx — server wrapper: SEO + JSON-LD + client.
-import Link from "next/link";
+import { notFound } from "next/navigation";
 import { getProductBySlug, imageUrl } from "@/lib/supabase";
 import { LOCALES, getTranslations, getCategoryName } from "@/lib/i18n";
 import { buildAlternates, SITE_URL, safeJsonLd } from "@/lib/seo";
 import { isOnRequest } from "@/lib/price";
-import Icon from "@/components/shared/Icon";
 import ProductDetailClient from "./ProductDetailClient";
 
 // ISR instead of force-dynamic: product pages are served from the CDN cache
 // and re-render at most every 5 minutes per slug — Supabase sees revalidations,
-// not every pageview. Operator saves still refresh instantly via revalidatePath.
+// not every pageview. Operator saves refresh instantly via revalidateHealthPublic
+// (lib/health/revalidate.js); a short fetch lifetime (lib/supabase.js) covers edits
+// made any other way, e.g. directly in the database.
 export const revalidate = 300;
 
 // Empty on purpose: no DB dependency at build time. Each slug renders on its
@@ -51,17 +52,9 @@ export default async function ProductPage(props) {
   // alive instead of caching a "not found" for a real product.
   const product = await getProductBySlug(slug, { throwOnError: true });
 
-  if (!product) {
-    return (
-      <div className="container-x py-20 text-center">
-        <Icon name="package" size={48} className="text-ink-faint mx-auto mb-4" strokeWidth={1.2} />
-        <p className="text-ink-muted">{t.common.noResults}</p>
-        <Link href={`/health/${lang}/catalog`} className="btn-primary size-md mt-6 inline-flex">
-          {t.product.backToCatalog.replace(/[←→]/g, "").trim()}
-        </Link>
-      </div>
-    );
-  }
+  // Unknown slug OR archived product (getProductBySlug only returns active rows):
+  // a real 404, not a 200 "no results" page (see not-found.jsx).
+  if (!product) notFound();
 
   const name = product[`name_${lang}`] || product.name_en;
   const desc = product[`description_${lang}`] || product.description_en || "";

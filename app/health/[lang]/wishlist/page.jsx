@@ -30,7 +30,7 @@ export default function WishlistPage(props) {
   useEffect(() => {
     if (!ids.length) { setProducts([]); setLoading(false); return; }
     setLoading(true);
-    supabase.from("products").select("*").in("id", ids).then(({ data }) => {
+    supabase.from("products").select("*").eq("is_active", true).in("id", ids).then(({ data }) => {
       const ordered = ids.map((id) => data?.find((p) => p.id === id)).filter(Boolean);
       setProducts(ordered);
       setLoading(false);

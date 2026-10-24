@@ -2286,6 +2286,13 @@ The R2 snapshot layout differs from the older `roles.sql/schema.sql/data.sql` fo
 6. Reboot-survival of the new host (containers `restart: unless-stopped`) has not been proven; reboot once in a quiet window and confirm `docker compose ps` for both stacks plus a live curl.
 7. The Supabase `.env` and `deploy/.env` are now included (encrypted) in every snapshot's `config/`, but the rclone crypt passwords are not recoverable from R2 alone — keep the owner-held copies current.
 
+**Status update 2026-10-20** (details in §23):
+
+- Item 6 (reboot survival) is now **proven**: the host was rebooted on 2026-10-20 (kernel `6.8.0-139` → `6.8.0-147`); all 13 containers came back `healthy` within about a minute and the live checks passed.
+- Item 3b is **still open**: `quote_requests` contains no `TEST MIGRATION` row, and no write has been confirmed since the 2026-09-23 replacement. The table holds 7 rows (latest 2026-06-13), all still `new`. Submit one real test inquiry from `/health/en/contact`, confirm it appears in `/operator/quotes`, then delete it.
+- Backup alerting (item 1, "Remaining") is still open. Freshness was re-confirmed on 2026-10-20 (`--check`: local and R2 `PASS`, age 0 h).
+
+
 ### 22.9 Secondary domain `medoria.co` (2026-10-11)
 
 The owner registered `medoria.co` at GoDaddy (auto-renew on, renews 2028-06-11). It is **not canonical**; it only forwards to `https://medoriaco.com`.
@@ -2303,3 +2310,145 @@ The owner registered `medoria.co` at GoDaddy (auto-renew on, renews 2028-06-11).
 - **The right Cloudflare account matters.** The owner has more than one Cloudflare login; the one with the R2 bucket is not the first one the browser opens. A fresh-looking account with no buckets does not mean the backups are gone. R2 secret keys are shown once; **Roll** on the existing bucket-scoped token (`medoria-vps-backup-r2`) issues a new secret without creating another token.
 - **Host PostgreSQL client ≠ server major.** Run restore tooling inside the matching `supabase-db` container.
 - Chat clients can auto-link text such as the `www` hostname and paste it back into a terminal as Markdown. Verify file contents with a boolean check (`grep -c`, `sed -n 'Np' | grep -cE '^...$'`) rather than eyeballing pasted output.
+
+
+## 23. Security review and hardening — 2026-10-20
+
+A review of the repository, the live site and the VPS, followed by a set of hardening changes applied the same day. Nothing in this section contains a secret; values live only in `deploy/.env` and the Supabase `.env`.
+
+### 23.1 Baseline verified before any change
+
+- The live checkout `/home/medoria/apps/medoria-staging` was `233589d` = `main`, clean (`git status`, `git diff --stat HEAD` empty). The running image was built 2026-10-11 13:35 UTC, two minutes after that commit.
+- Backups: cron under user `medoria`; `last-run.status` and `--check` both `PASS` (local and R2), newest snapshot 7 h old.
+- AI chat is **off** in production (`/api/chat` and `/api/beauty-chat` answer `{"available":false}`; no AI key in `deploy/.env`).
+- Rate limiting is **in-memory only** (no `UPSTASH_*` set), and the apex has **no AAAA record**.
+- All containers carry `restart: unless-stopped` and `docker` is enabled at boot.
+- SSH accepted **root + password from the whole internet**, with about 76,000 failed password attempts in 7 days (automated guessing). No successful login from an unrecognised source in that window; no extra shell users; `/root/.ssh/authorized_keys` was empty.
+
+### 23.2 Changes applied on the VPS
+
+**SSH — key only.** `/etc/ssh/sshd_config.d/00-hardening.conf` (the `00-` prefix matters: sshd takes the first value, and `50-cloud-init.conf` may say otherwise):
+
+```text
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin prohibit-password
+MaxAuthTries 3
+```
+
+Applied with `sshd -t && systemctl reload ssh`; `sshd -T` now reports `passwordauthentication no`, `permitrootlogin without-password`, and the setting survived the reboot. One ed25519 admin key (comment `medoria-admin`) was installed in `/root/.ssh/authorized_keys`; protect its private half with a passphrase. **Break-glass if the key is lost:** the hosting provider's web console, then remove `00-hardening.conf` and `systemctl reload ssh`. Any tool that used to log in as root with the password no longer can: give it its own key.
+
+**OS updates and reboot.** 29 packages upgraded and the host rebooted (Ubuntu 24.04.5, kernel `6.8.0-147`). After boot: 13 containers `Up (healthy)`, `/`, `/api/health`, `/health/en`, `/beauty/en` all `200`, `https://api.medoriaco.com/rest/v1/` and `/auth/v1/health` `401` (they need an API key, as expected).
+
+**Docker packages are deliberately on hold** so the OS update could be separated from a Docker/containerd change:
+
+```bash
+apt-mark hold docker-ce docker-ce-cli docker-ce-rootless-extras containerd.io docker-compose-plugin docker-buildx-plugin
+```
+
+Pending: `docker-ce` 29.8.1 → 29.9.1 and `containerd.io` 2.3.5 → 2.4.2. **Do not forget the hold** — it also blocks Docker security updates. When ready: take a fresh backup, `apt-mark unhold` the same packages, upgrade in a quiet window, then run the live checks above.
+
+**Supabase API gateway no longer listens on the internet.** `supabase-envoy` published `0.0.0.0:8000` (and `[::]:8000`) and answered Basic-auth challenges over plain HTTP; Docker-published ports bypass `ufw` (§22.8). In `/home/medoria/infra/supabase-staging/docker/.env`, `API_GW_HTTP_PORT=8000` became `API_GW_HTTP_PORT=127.0.0.1:8000`, which makes the mapping in `docker-compose.yml` (`${API_GW_HTTP_PORT:-…}:8000/tcp`) `127.0.0.1:8000:8000/tcp`. Applied with:
+
+```bash
+cd /home/medoria/infra/supabase-staging/docker
+docker compose -p supabase up -d --no-deps api-gw     # compose project name is "supabase"
+```
+
+Caddy still reaches `supabase-envoy:8000` over the `medoria-shared` Docker network, so the site and `api.medoriaco.com` are unaffected. From outside, `http://<server>:8000/` now times out (it used to return `401`). **Rollback:** set the variable back to `8000` and re-run the command above.
+
+*Reaching Supabase Studio now:* open an SSH tunnel from your own computer, `ssh -L 8000:127.0.0.1:8000 root@<server>`, then browse `http://localhost:8000` and sign in with the dashboard credentials from the Supabase `.env`. Close the tunnel when done.
+
+**Supabase Auth signups closed.** The app never uses Supabase Auth (operator panels use their own signed cookies), but `/auth/v1/settings` showed signups open with phone auto-confirm on. In the same `.env`: `DISABLE_SIGNUP=true`, `ENABLE_PHONE_SIGNUP=false`, `ENABLE_PHONE_AUTOCONFIRM=false`, then `docker compose -p supabase up -d --no-deps auth`. `/auth/v1/settings` now reports `disable_signup: true`, `phone_autoconfirm: false`, and only the email provider enabled. `auth.users` was empty before the change (no abuse). **Rollback:** restore the three values and recreate `auth`.
+
+**File permissions.** The Supabase `.env` was `-rw-rw-r--`; it is now `600` (owner `medoria`), like `deploy/.env`.
+
+### 23.3 Changes applied in the database
+
+Run in Supabase Studio's SQL editor (through the SSH tunnel above) after a fresh backup was on disk; recorded as `migrations/27_security_policy_cleanup.sql`.
+
+- `quote_requests_auth_read` dropped: it let **any** signed-in Supabase user read every quote request. The server reads quotes with the service-role key. (`quote_requests_public_insert` and `contact_public_insert` were already absent: step 3 of migration 09 had been applied.)
+- `products`: the two `USING (true)` public-read policies (`Allow public read`, `products_public_read`) were replaced by one, `products_public_read … USING (is_active = true)`, so archived products are no longer readable through the public API.
+
+Verification with the public anon key: 2 products visible, 0 with `is_active = false`; `quote_requests` returns 0 rows. **Rollback SQL:**
+
+```sql
+create policy "quote_requests_auth_read" on public.quote_requests for select using (auth.role() = 'authenticated');
+drop policy if exists "products_public_read" on public.products;
+create policy "Allow public read" on public.products for select using (true);
+create policy "products_public_read" on public.products for select using (true);
+```
+
+### 23.4 Operational lesson
+
+Run the backup script from a directory the `medoria` user can read. A manual run from `/root` (`sudo -u medoria …` keeps the caller's working directory) failed with `find: Failed to restore initial working directory: /root` → `FAILED at step: storage copy` and left `last-run.status` at `AUTO_BACKUP=FAIL`. Use:
+
+```bash
+cd /home/medoria && sudo -u medoria /home/medoria/bin/medoria-production-backup.sh
+cd /home/medoria && sudo -u medoria /home/medoria/bin/medoria-production-backup.sh --check
+```
+
+The rerun passed (snapshot `20261020T115759Z`, local and R2). The `501 NotImplemented` lines from R2 on the first attempt are the known harmless noise (§22.7 item 1). The cron job runs from `medoria`'s home and is not affected. (Making the script `cd /` first would remove the trap.)
+
+### 23.5 Follow-ups
+
+**In review — PR `fix/customer-data-and-product-visibility` (nothing in it is applied to production by merging; §23.6 is the release procedure):**
+
+- Archived Health products return a real 404 (`getProductBySlug` filters `is_active`; `not-found.jsx` shows the localized page; wishlist, compare and the compare drawer exclude archived rows) and the database hides them from the public API (migration 28).
+- Health operator edits now purge the real `/health/{lang}/…` routes and the sitemap through `lib/health/revalidate.js`; the old calls used the pre-migration locale-first paths and purged nothing. Public Supabase GETs also carry a 60 s fetch lifetime, because with `fetchCache = "default-cache"` a fetch without its own `revalidate` never expired (reproduced locally on Next 15.5.27 and seen on the live product page).
+- Customer-request tables (Health and Beauty) are service-role only: migration 28 drops every policy and revokes all `anon`/`authenticated`/`PUBLIC` privileges; the two public quote actions no longer fall back to the anon key; `npm run check:rls` now also proves archived products are hidden, all five private tables are unreadable, and Auth signup is closed.
+- Tests: `product-visibility`, `health-revalidate`, `db-policies`, `access-guards`, `check-rls-script`. Migrations 27 + 28 were also run against a throw-away PostgreSQL 18 with `anon`/`authenticated`/`service_role` roles, a production-like policy set and two oddly named leftover policies: before, anon saw the archived row and any signed-in user read every quote; after, both are denied, `service_role` can still read/insert/update everything, a re-run changes nothing, and with `products.is_active` missing the transaction aborts and rolls back.
+
+**Still open:**
+
+- **Code hardening:** prefer `x-real-ip` in `clientIpFromHeaders` (`lib/security/rateLimit.js`); override `postcss` to `^8.5.30` (clears the two moderate `npm audit` findings without Next 16; only the audit was tested).
+- **Operations:** a dead-man's-switch for the backup job and an external uptime monitor (§22.8); the Docker unhold/upgrade above; the end-to-end contact-form test (§22.7 item 3b).
+- **GitHub:** Dependency graph, Dependabot alerts and Dependabot security updates were reported enabled by the owner on 2026-10-20; a classic token mentioned in `SECURITY-CHECKLIST.md` should be revoked once this work is finished. `SECURITY-CHECKLIST.md` is still Vercel-era in places.
+- Health `categories` are still readable by `anon` regardless of `is_active` (the UI filters them); not part of the PR above.
+
+### 23.6 Release procedure for the customer-data / product-visibility PR
+
+Order matters only loosely: the database step is safe before the new code (the old product page just shows its empty state once the row is hidden) and the new code is safe before the database step. Do it in this order anyway.
+
+**0. Backup and baseline.**
+
+```bash
+cd /home/medoria && sudo -u medoria /home/medoria/bin/medoria-production-backup.sh     # wait for AUTO_BACKUP=PASS
+```
+
+In Studio's SQL editor (tunnel, §23.2) save the current state: `select tablename, policyname, cmd, qual from pg_policies where schemaname='public' order by 1,2;`
+
+**1. Database — run `migrations/28_private_tables_and_active_products.sql` once** (27 is already applied in production; 28 repeats and extends it, so re-running is harmless). Expected: the transaction ends with `COMMIT`; any `RAISE EXCEPTION` aborts it with nothing changed. Verify with the queries at the bottom of the file: exactly one policy in the whole `public` schema (`products_public_read … (is_active = true)`), `has_table_privilege('anon','public.quote_requests','SELECT')` = `false`, `service_role` = `true`.
+*Rollback:* the SQL block at the bottom of the file.
+
+**2. Supabase Auth signups** — already closed in production on 2026-10-20 (§23.2). Verify: `curl -s -H "apikey: <anon key>" https://api.medoriaco.com/auth/v1/settings` shows `"disable_signup": true`, `"phone_autoconfirm": false`. On any other environment set `DISABLE_SIGNUP=true`, `ENABLE_PHONE_SIGNUP=false`, `ENABLE_PHONE_AUTOCONFIRM=false` in the Supabase `.env` and `docker compose -p supabase up -d --no-deps auth`.
+
+**3. Application.** Keep the current image as the rollback target, then deploy `main` deliberately (runbook §1):
+
+```bash
+docker tag medoria-app-app:latest medoria-app-app:rollback-$(date +%Y%m%d)
+sudo -iu medoria bash -lc 'cd ~/apps/medoria-staging && bash scripts/self-host/deploy.sh'
+```
+
+**4. Clear the Next fetch cache once.** `next_cache` is a persistent volume, so entries written by the old code (which never expired) survive the redeploy:
+
+```bash
+docker exec medoria-app-app-1 sh -c 'rm -rf /app/.next/cache/fetch-cache'
+docker restart medoria-app-app-1          # ~10–20 s; drops the in-memory copy too
+```
+
+**5. Verify.**
+
+- `check:rls` with only the two public values (read-only; it never prints the key):
+
+  ```bash
+  cd /home/medoria/apps/medoria-staging
+  export $(grep -E '^NEXT_PUBLIC_SUPABASE_(URL|ANON_KEY)=' deploy/.env | xargs) && npm run check:rls
+  ```
+
+  Every line must say `✓ PASS` (exit code 0). Add `--insert-test` only if you accept that it writes a test row when a table is still open.
+- The archived product (`operating-room-gown`) answers 404, an active one answers 200: `curl -s -o /dev/null -w '%{http_code}\n' https://medoriaco.com/health/en/catalog/<slug>`; `https://medoriaco.com/health/en/catalog/operating-room-gown` must now return `404`.
+- Operator panels (these write data, so the owner runs them): log in to `/operator` and `/beauty/operator`; open Quotes in both; edit a **test** product's price, hard-refresh its public page — the new price must appear within seconds; archive it — the page must become a 404; reactivate it.
+- Contact forms (§22.7 item 3b): submit one clearly named test inquiry from `/health/en/contact` and one from `/beauty/en/contact`, confirm each appears in the matching panel's Quotes list, then delete the rows.
+
+**6. Rollback.** Database: §1. Application: `docker tag medoria-app-app:rollback-YYYYMMDD medoria-app-app:latest`, then `docker compose --env-file deploy/.env -f deploy/compose.app.yml up -d app` from the checkout (check out the previous commit first, as in §22.7 item 4) and repeat step 4. Auth: restore the three values and recreate `auth` (not recommended).
