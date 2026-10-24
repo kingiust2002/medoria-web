@@ -74,7 +74,8 @@ NEXT_PUBLIC_SUPABASE_URL=... NEXT_PUBLIC_SUPABASE_ANON_KEY=... npm run check:rls
   less, hash the few inline snippets, adopt nonces only if ISR is dropped.
 - `npm audit`: the production audit (`npm audit --omit=dev`, the CI gate) is clean as
   of 2026-10-20 (Next 15.5.27, `postcss` pinned to a patched release through
-  `overrides`). The app is self-hosted behind Caddy (runbook §20), not on Vercel; a
+  `overrides`); on 2026-10-24 it moved to Next 15.5.28 and `postcss` 8.5.31 and the
+  owner reported 0 production vulnerabilities (runbook §23.7). The app is self-hosted behind Caddy (runbook §20), not on Vercel; a
   Next major bump is a deliberate project, not a hardening hotfix.
 
 ## Secrets hygiene
