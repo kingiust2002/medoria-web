@@ -1,20 +1,24 @@
 "use client";
 import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
-import { updateQuoteStatus, updateQuoteNotes } from "@/lib/operator/actions";
+import { updateQuoteStatus, updateQuoteNotes, deleteQuote } from "@/lib/operator/actions";
 import { QUOTE_STATUSES, QUOTE_STATUS_FA, QUOTE_STATUS_TONE, CONTACT_FA, LANG_FA } from "@/lib/operator/constants";
 import { PageHeader, Input, Select, Badge, EmptyState, Spinner } from "@/components/operator/ui";
+import DeleteQuoteModal from "@/components/operator/DeleteQuoteModal";
 
 const digits = (s) => String(s || "").replace(/[^\d]/g, "");
 function faDate(v) { try { return new Date(v).toLocaleString("fa-IR", { dateStyle: "medium", timeStyle: "short" }); } catch { return "—"; } }
 
 export default function QuotesManager({ quotes: initial }) {
+  const router = useRouter();
   const [quotes, setQuotes] = useState(initial);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [openId, setOpenId] = useState(null);
   const [savingId, setSavingId] = useState(null);
   const [msg, setMsg] = useState(null);
+  const [deleting, setDeleting] = useState(null);
   const [pending, startTransition] = useTransition();
 
   const counts = useMemo(() => { const c = {}; for (const x of quotes) c[x.status] = (c[x.status] || 0) + 1; return c; }, [quotes]);
@@ -37,6 +41,13 @@ export default function QuotesManager({ quotes: initial }) {
       const res = await updateQuoteStatus(id, val);
       if (!res.ok) { patch(id, { status: prev }); flash(res.error); }
     });
+  }
+  function afterDelete(id, res) {
+    setQuotes((qs) => qs.filter((x) => x.id !== id));
+    setOpenId((cur) => (cur === id ? null : cur));
+    setDeleting(null);
+    flash(res?.ok ? "درخواست حذف شد." : res?.error, !!res?.ok);
+    router.refresh();
   }
   function saveNotes(id, notes) {
     setSavingId(id);
@@ -77,7 +88,8 @@ export default function QuotesManager({ quotes: initial }) {
             const wa = digits(x.phone);
             return (
               <div key={x.id} className="card overflow-hidden">
-                <button onClick={() => setOpenId(open ? null : x.id)} className="w-full px-4 py-3.5 flex items-center gap-3 text-right hover:bg-line-soft/40 transition-colors">
+                <div className="flex items-stretch">
+                <button onClick={() => setOpenId(open ? null : x.id)} className="min-w-0 flex-1 px-4 py-3.5 flex items-center gap-3 text-right hover:bg-line-soft/40 transition-colors">
                   <span className="grid place-items-center w-10 h-10 rounded-xl bg-brand-violet/10 text-brand-violet shrink-0"><Icon name="user" size={18} /></span>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-ink truncate">{x.name || "بدون نام"}{x.organization ? <span className="text-ink-faint font-normal"> · {x.organization}</span> : null}</p>
@@ -86,6 +98,8 @@ export default function QuotesManager({ quotes: initial }) {
                   <Badge tone={QUOTE_STATUS_TONE[x.status] || "neutral"}>{QUOTE_STATUS_FA[x.status] || x.status}</Badge>
                   <Icon name="chevronDown" size={16} className={`text-ink-faint transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
                 </button>
+                <button type="button" onClick={() => setDeleting(x)} title="حذف درخواست" aria-label={`حذف درخواست ${x.name || ""}`.trim()} className="grid place-items-center w-12 shrink-0 border-r border-line text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors"><Icon name="trash" size={17} /></button>
+                </div>
 
                 {open && (
                   <div className="px-4 pb-4 border-t border-line">
@@ -115,6 +129,16 @@ export default function QuotesManager({ quotes: initial }) {
             );
           })}
         </div>
+      )}
+
+      {deleting && (
+        <DeleteQuoteModal
+          quote={deleting}
+          statusLabel={QUOTE_STATUS_FA[deleting.status] || deleting.status}
+          onClose={() => setDeleting(null)}
+          onDelete={deleteQuote}
+          onDone={(res) => afterDelete(deleting.id, res)}
+        />
       )}
     </>
   );
