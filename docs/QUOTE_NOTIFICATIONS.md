@@ -15,14 +15,14 @@ changes nothing in production.
 | Date | State |
 | --- | --- |
 | 2026-10-24 | Code merged ([#175](https://github.com/kingiust2002/medoria-web/pull/175)) and deployed (`main` `a3c8924`). Setup parts A–C below were done on the server: bot token and the two private group ids (Health, Beauty) are in `deploy/.env`, the env preflight passed, `deploy.sh` finished and the app container is healthy. |
-| **Pending** | **Live test (part D): configured and deployed, awaiting a real test.** No notice has been seen arriving yet, and no inquiry has been submitted from either contact form since the 2026-09-23 server replacement. |
+| 2026-10-24 — owner-confirmed | The owner confirmed that both contact forms and Telegram work correctly, after being asked to test Health and Beauty delivery to their matching groups. Panel visibility and deletion of the test rows are still awaiting confirmation. |
 
-Part D passes only when all of this is observed: (1) a `TEST Health` inquiry from
+For the full part D acceptance check (forms and delivery are already owner-confirmed), verify all of the following: (1) a `TEST Health` inquiry from
 `/health/en/contact` is stored, appears in `/operator` → Quotes, and its notice arrives in
 the **Health group only**; (2) a `TEST Beauty` inquiry from `/beauty/en/contact` is stored,
 appears in `/beauty/operator` → Quotes, and its notice arrives in the **Beauty group
-only**; (3) both test rows are deleted afterwards. Record the date and result in this
-table and in runbook §23.7.3 (it also closes §22.7 item 3b). If a notice does not arrive,
+only**; (3) both test rows are deleted afterwards. The form/delivery confirmation is recorded above and in runbook §23.7.3; record panel
+visibility and cleanup when confirmed to close the remaining part of §22.7 item 3b. If a notice does not arrive,
 use the log check in part D; a failed notice never blocks the inquiry itself.
 
 The token and chat ids are not written in this repository; they exist only in
