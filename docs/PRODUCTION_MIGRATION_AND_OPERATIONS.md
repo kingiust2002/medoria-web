@@ -2294,7 +2294,7 @@ The R2 snapshot layout differs from the older `roles.sql/schema.sql/data.sql` fo
 
 **Status update 2026-10-24** (details in §23.7):
 
-- Item 3b is **still open**, now with a sharper definition: the application was redeployed and Telegram is configured, but no real inquiry has been submitted from `/health/en/contact` or `/beauty/en/contact` since the 2026-09-23 replacement. §23.7 lists what the test must show.
+- Item 3b is **partly verified**: on 2026-10-24 the owner confirmed that both contact forms and Telegram notifications work, in response to the requested Health/Beauty routing test. Panel visibility and deletion of the test rows have not yet been reported. §23.7 records the verified and outstanding parts.
 - Backup alerting (item 1, "Remaining") is still open. A fresh full chain `20261024T115301Z` passed before the 2026-10-24 changes.
 - Item 4 (checkout equals `main`) holds again: the VPS checkout was fast-forwarded to `main` `a3c8924` and redeployed on 2026-10-24. The rollback image for that deploy is `medoria-app-app:rollback-before-20261024`.
 
@@ -2490,10 +2490,10 @@ In this order:
 7. **Fetch cache cleared.** `/app/.next/cache/fetch-cache` was removed and the app container restarted (§23.6 step 4).
 8. **`npm run check:rls`** on the server: all 11 checks `PASS`. The write probe `--insert-test` was **not** run (§23.6 step 5 makes it optional).
 
-#### 23.7.3 Not yet verified — do not treat as done
+#### 23.7.3 Live-test status and remaining verification
 
-- **Contact forms end to end.** No real inquiry has been submitted from `/health/en/contact` or `/beauty/en/contact`. Still to see, for each house: the submission succeeds for the visitor; the row appears in that house's panel (`/operator` → Quotes, `/beauty/operator` → Quotes); the Telegram notice arrives **only in that house's group**, not in the other. Then delete the two test rows. When this passes, §22.7 item 3b is closed and `docs/QUOTE_NOTIFICATIONS.md` can be marked verified.
-- **Telegram status: configured and deployed, awaiting the live test.** The code path is covered by unit tests only; no notice has been observed arriving.
+- **Contact forms and Telegram — owner-confirmed on 2026-10-24.** After being asked to submit `TEST Health` and `TEST Beauty` and check that each notice reaches only its matching group, the owner reported that the forms and Telegram work correctly. This is a manual production result reported by the owner, not a test run by the reviewing agent.
+- **Panel visibility and cleanup — not yet reported.** Confirm that the test requests appear in `/operator` → Quotes and `/beauty/operator` → Quotes, then delete the two test rows. Keep §22.7 item 3b partly open until these remaining checks are confirmed.
 - **Panel actions from §23.6 step 5:** price edit of a test product showing on the public page within seconds, archiving it giving a 404, reactivating it. Not reported.
 - **The archived product page answering 404** (`https://medoriaco.com/health/en/catalog/operating-room-gown`). `check:rls` proves the *API* hides archived rows; the page itself was not reported.
 - **`check:rls --insert-test`** (write probe) was not run.
@@ -2502,7 +2502,7 @@ In this order:
 
 Operations and production:
 
-1. The live test in §23.7.3, then deleting its test rows.
+1. Finish the panel-visibility checks and delete the test rows (§23.7.3). Both contact forms and Telegram delivery were confirmed by the owner on 2026-10-24.
 2. The 7 old `new` inquiries in `quote_requests` (latest 2026-06-13) still need a business follow-up; their content is not recorded here.
 3. The data gap since the `20260901T023001Z` snapshot (§22.7 item 2) remains.
 4. Backup alerting: a dead-man's switch for the cron job, and an external uptime monitor (§22.8). `production-backup.sh --check` is still the only freshness test.
