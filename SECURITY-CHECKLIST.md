@@ -72,14 +72,15 @@ NEXT_PUBLIC_SUPABASE_URL=... NEXT_PUBLIC_SUPABASE_ANON_KEY=... npm run check:rls
   GA/Metrica bootstraps without nonce infrastructure; nonces would force every
   page dynamic and defeat ISR. Next stricter step: move GA/YM to tag-manager-
   less, hash the few inline snippets, adopt nonces only if ISR is dropped.
-- `npm audit`: remaining advisories are fixed only in Next 15/16 (major). Several are
-  platform-mitigated on Vercel (image optimizer, smuggling) or N/A (no CSP
-  nonces, no WebSocket upgrades, no Pages-Router i18n). Plan the major bump
-  deliberately, not in a hardening hotfix.
+- `npm audit`: the production audit (`npm audit --omit=dev`, the CI gate) is clean as
+  of 2026-10-20 (Next 15.5.27, `postcss` pinned to a patched release through
+  `overrides`). The app is self-hosted behind Caddy (runbook §20), not on Vercel; a
+  Next major bump is a deliberate project, not a hardening hotfix.
 
 ## Secrets hygiene
 
-- Never commit `.env*`. Service role key exists ONLY as a Vercel env var.
+- Never commit `.env*`. The service-role key exists ONLY in `deploy/.env` on the VPS
+  (mode `600`) and in the Supabase `.env`; never in the repository or a client bundle.
 - `lib/operator/supabaseAdmin.js` and the import engine are `server-only` —
   the build fails if they ever reach a client bundle.
 - **Rotate the GitHub classic token that was shared in chat for CI pushes**,

@@ -20,8 +20,8 @@ const GENERIC_FAIL = "نام کاربری یا رمز عبور نادرست اس
 const LOCKED_OUT = "تلاش‌های ناموفق زیاد است. چند دقیقه بعد دوباره امتحان کنید.";
 const UNAVAILABLE = "سرویس در دسترس نیست.";
 
-// Prefer the platform-set x-real-ip (Vercel overwrites it with the true client
-// IP) over the left-most x-forwarded-for token, which a client can prepend.
+// Prefer x-real-ip (production Caddy sets it from the TCP peer, deploy/Caddyfile)
+// over the left-most x-forwarded-for token, which a client can prepend.
 function clientIp(req) {
   const real = req.headers.get("x-real-ip");
   if (real && real.trim()) return real.trim();
