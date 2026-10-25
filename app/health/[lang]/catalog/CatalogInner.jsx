@@ -1,12 +1,12 @@
 // app/health/[lang]/catalog/CatalogInner.jsx — interactive catalog.
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { Drawer } from "vaul";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { getCategories, getProducts } from "@/lib/supabase";
+import { getCategories, getProductsPage, getProductBrands } from "@/lib/supabase";
 import { getTranslations } from "@/lib/i18n";
 import {
   buildHealthCategoryTree,
@@ -17,7 +17,6 @@ import {
   getHealthDescendantSlugs,
   healthCategoryName,
 } from "@/lib/health/categories";
-import { isOnRequest } from "@/lib/price";
 import ProductCard from "@/components/catalog/ProductCard";
 import CompareDrawer from "@/components/catalog/CompareDrawer";
 import QuoteModal from "@/components/product/QuoteModal";
@@ -28,44 +27,62 @@ import FancySelect from "@/components/shared/FancySelect";
 
 const BADGES = ["NEW", "TOP", "SALE"];
 const SORTS = ["default", "newest", "price_asc", "price_desc", "popular", "name"];
+const PAGE = 24;
+const LOAD_ERROR = {
+  fa: "بارگذاری محصولات ممکن نشد.", ru: "Не удалось загрузить товары.", tg: "Боркунии маҳсулот иҷро нашуд.", en: "Could not load products.",
+};
+const RETRY = { fa: "تلاش دوباره", ru: "Повторить", tg: "Бори дигар", en: "Try again" };
 
 export default function CatalogInner({ params }) {
   const { lang } = params;
   const t = getTranslations(lang);
   const searchParams = useSearchParams();
 
+  // The database filters, sorts, counts and pages (lib/catalogQuery.js); the browser holds only the pages
+  // it has shown, not the whole catalog.
   const [products, setProducts] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [categoriesReady, setCategoriesReady] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [cat, setCat] = useState("all");
   const [brand, setBrand] = useState("all");
   const [badge, setBadge] = useState("all");
   const [sortIdx, setSortIdx] = useState(0);
   const [stockOnly, setStockOnly] = useState(false);
   const [view, setView] = useState("grid");
-  const [visible, setVisible] = useState(12);
   const [quickView, setQuickView] = useState(null);
   const [quoteFor, setQuoteFor] = useState(null);
   const [gridParent] = useAutoAnimate();
+  const requestId = useRef(0);   // only the newest request may write the state (typing fast must not show old results)
 
   useEffect(() => {
     const q = searchParams?.get("q");
     const c = searchParams?.get("category");
     const b = searchParams?.get("brand");
-    if (q) setSearch(q);
+    if (q) { setSearch(q); setDebouncedSearch(q); }
     if (c) setCat(c);
     if (b) setBrand(b);
   }, [searchParams]);
 
   useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    Promise.all([getProducts(), getCategories()]).then(([productRows, categoryRows]) => {
+    Promise.all([getCategories(), getProductBrands()]).then(([categoryRows, brandRows]) => {
       if (cancelled) return;
-      setProducts(productRows);
       setCategories(categoryRows);
-      setLoading(false);
+      setBrands(brandRows);
+      setCategoriesReady(true);
     });
     return () => { cancelled = true; };
   }, []);
@@ -74,60 +91,56 @@ export default function CatalogInner({ params }) {
   const flatCategories = useMemo(() => flattenHealthCategoryTree(categoryTree), [categoryTree]);
   const selectedCategory = useMemo(() => cat === "all" ? null : findHealthCategory(categoryTree, cat), [categoryTree, cat]);
   const selectedPath = useMemo(() => selectedCategory ? getHealthCategoryPath(categoryTree, selectedCategory.slug) : [], [categoryTree, selectedCategory]);
-  const selectedIds = useMemo(() => selectedCategory ? getHealthDescendantIds(selectedCategory) : new Set(), [selectedCategory]);
-  const selectedSlugs = useMemo(() => selectedCategory ? getHealthDescendantSlugs(selectedCategory) : new Set(), [selectedCategory]);
-  const activeIds = useMemo(() => new Set(flatCategories.map(({ node }) => node.id).filter((id) => id != null)), [flatCategories]);
-  const activeSlugs = useMemo(() => new Set(flatCategories.map(({ node }) => node.slug).filter(Boolean)), [flatCategories]);
+  // Which categories the query may return: the chosen branch, or every visible (active) category. Products
+  // with no category stay visible in the unfiltered list, as before.
+  const categoryIds = useMemo(() => {
+    if (selectedCategory) return Array.from(getHealthDescendantIds(selectedCategory)).filter((id) => id != null);
+    return flatCategories.map(({ node }) => node.id).filter((id) => id != null);
+  }, [selectedCategory, flatCategories]);
 
-  const brands = useMemo(() => {
-    const set = new Set();
-    products.forEach((product) => { if (product.brand) set.add(product.brand); });
-    return Array.from(set).sort();
-  }, [products]);
+  const runQuery = useCallback((pageNo) => getProductsPage({
+    search: debouncedSearch,
+    categoryIds,
+    keepUncategorized: !selectedCategory,
+    brand: brand === "all" ? undefined : brand,
+    badge: badge === "all" ? undefined : badge,
+    stockOnly,
+    sort: SORTS[sortIdx],
+    lang,
+    page: pageNo,
+    pageSize: PAGE,
+  }), [debouncedSearch, categoryIds, selectedCategory, brand, badge, stockOnly, sortIdx, lang]);
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    let result = products.filter((product) => {
-      const visibleCategory = product.category_id != null
-        ? activeIds.has(product.category_id)
-        : product.category ? activeSlugs.has(product.category) : true;
-      if (!visibleCategory) return false;
-
-      const matchesSearch = !q
-        || (product.name_ru || "").toLowerCase().includes(q)
-        || (product.name_tg || "").toLowerCase().includes(q)
-        || (product.name_en || "").toLowerCase().includes(q)
-        || (product.name_fa || "").toLowerCase().includes(q)
-        || (product.sku || "").toLowerCase().includes(q)
-        || (product.brand || "").toLowerCase().includes(q);
-      const matchesCategory = !selectedCategory || (
-        product.category_id != null ? selectedIds.has(product.category_id) : selectedSlugs.has(product.category)
-      );
-      const matchesBrand = brand === "all" || product.brand === brand;
-      const matchesBadge = badge === "all" || (badge === "none" ? !product.badge : product.badge === badge);
-      const matchesStock = !stockOnly || product.in_stock;
-      return matchesSearch && matchesCategory && matchesBrand && matchesBadge && matchesStock;
+  // First page again whenever a filter changes.
+  useEffect(() => {
+    if (!categoriesReady) return;
+    const mine = ++requestId.current;
+    setLoading(true); setFailed(false);
+    runQuery(1).then((res) => {
+      if (mine !== requestId.current) return;
+      if (res.error) { setFailed(true); setProducts([]); setTotal(0); }
+      else { setProducts(res.rows); setTotal(res.total); setPage(1); }
+      setLoading(false);
     });
+  }, [categoriesReady, runQuery]);
 
-    const byPrice = (direction) => (a, b) => {
-      const aRequest = isOnRequest(a), bRequest = isOnRequest(b);
-      if (aRequest && bRequest) return 0;
-      if (aRequest) return 1;
-      if (bRequest) return -1;
-      return direction * (Number(a.price) - Number(b.price));
-    };
-    const sort = SORTS[sortIdx];
-    if (sort === "newest") result = [...result].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-    else if (sort === "price_asc") result = [...result].sort(byPrice(1));
-    else if (sort === "price_desc") result = [...result].sort(byPrice(-1));
-    else if (sort === "popular") result = [...result].sort((a, b) => (b.views || 0) - (a.views || 0));
-    else if (sort === "name") result = [...result].sort((a, b) => (a[`name_${lang}`] || "").localeCompare(b[`name_${lang}`] || ""));
-    return result;
-  }, [products, activeIds, activeSlugs, selectedCategory, selectedIds, selectedSlugs, search, brand, badge, stockOnly, sortIdx, lang]);
+  const loadMore = () => {
+    if (loadingMore || products.length >= total) return;
+    const mine = requestId.current;
+    setLoadingMore(true);
+    runQuery(page + 1).then((res) => {
+      if (mine !== requestId.current) return;
+      if (res.error) setFailed(true);
+      else {
+        setProducts((cur) => { const seen = new Set(cur.map((p) => p.id)); return [...cur, ...res.rows.filter((p) => !seen.has(p.id))]; });
+        setTotal(res.total); setPage(page + 1);
+      }
+      setLoadingMore(false);
+    });
+  };
 
-  const reset = () => setVisible(12);
-  const selectCategory = (slug) => { setCat(slug); reset(); };
-  const clearAll = () => { setSearch(""); setCat("all"); setBrand("all"); setBadge("all"); setStockOnly(false); setSortIdx(0); reset(); };
+  const selectCategory = (slug) => { setCat(slug); };
+  const clearAll = () => { setSearch(""); setCat("all"); setBrand("all"); setBadge("all"); setStockOnly(false); setSortIdx(0); };
   const hasFilters = search || cat !== "all" || brand !== "all" || badge !== "all" || stockOnly || sortIdx !== 0;
   const activeCount = (cat !== "all" ? 1 : 0) + (brand !== "all" ? 1 : 0) + (badge !== "all" ? 1 : 0) + (stockOnly ? 1 : 0) + (sortIdx ? 1 : 0);
   const filtersLabel = lang === "fa" ? "فیلترها" : lang === "ru" ? "Фильтры" : lang === "tg" ? "Филтрҳо" : "Filters";
@@ -154,12 +167,12 @@ export default function CatalogInner({ params }) {
         <div className="flex flex-col md:flex-row gap-3 mb-5">
           <div className="relative flex-1">
             <Icon name="search" size={16} className="absolute start-4 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
-            <input value={search} onChange={(event) => { setSearch(event.target.value); reset(); }} placeholder={t.catalog.searchPh} className="input w-full h-12 ps-12 pe-10 rounded-2xl shadow-soft" />
-            {search && <button onClick={() => { setSearch(""); reset(); }} aria-label="Clear search" className="absolute end-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink p-1"><Icon name="close" size={16} /></button>}
+            <input value={search} onChange={(event) => { setSearch(event.target.value); }} placeholder={t.catalog.searchPh} className="input w-full h-12 ps-12 pe-10 rounded-2xl shadow-soft" />
+            {search && <button onClick={() => { setSearch(""); }} aria-label="Clear search" className="absolute end-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink p-1"><Icon name="close" size={16} /></button>}
           </div>
           <div className="hidden md:flex gap-3">
-            {brands.length > 0 && <FancySelect ariaLabel={t.common.allBrands} value={brand} onChange={(value) => { setBrand(value); reset(); }} className="min-w-[150px]" options={[{ value: "all", label: t.common.allBrands }, ...brands.map((item) => ({ value: item, label: item }))]} />}
-            <FancySelect ariaLabel={t.catalog.sortDefault} value={sortIdx} onChange={(value) => { setSortIdx(Number(value)); reset(); }} className="min-w-[160px]" options={[
+            {brands.length > 0 && <FancySelect ariaLabel={t.common.allBrands} value={brand} onChange={(value) => { setBrand(value); }} className="min-w-[150px]" options={[{ value: "all", label: t.common.allBrands }, ...brands.map((item) => ({ value: item, label: item }))]} />}
+            <FancySelect ariaLabel={t.catalog.sortDefault} value={sortIdx} onChange={(value) => { setSortIdx(Number(value)); }} className="min-w-[160px]" options={[
               { value: 0, label: t.catalog.sortDefault }, { value: 1, label: t.catalog.sortNewest },
               { value: 2, label: t.catalog.sortPriceAsc }, { value: 3, label: t.catalog.sortPriceDesc },
               { value: 4, label: t.catalog.sortPopular }, { value: 5, label: t.catalog.sortName },
@@ -180,19 +193,19 @@ export default function CatalogInner({ params }) {
                 <Drawer.Title className="font-display text-lg font-bold text-ink mb-4">{filtersLabel}</Drawer.Title>
                 <CategoryFilterRows tree={categoryTree} selectedPath={selectedPath} selectedSlug={cat} lang={lang} allLabel={t.common.all} onSelect={selectCategory} />
                 <div className="grid grid-cols-2 gap-3 mb-5">
-                  {brands.length > 0 && <select value={brand} onChange={(event) => { setBrand(event.target.value); reset(); }} className="input h-11 px-3 cursor-pointer"><option value="all">{t.common.allBrands}</option>{brands.map((item) => <option key={item} value={item}>{item}</option>)}</select>}
-                  <select value={sortIdx} onChange={(event) => { setSortIdx(Number(event.target.value)); reset(); }} className="input h-11 px-3 cursor-pointer">
+                  {brands.length > 0 && <select value={brand} onChange={(event) => { setBrand(event.target.value); }} className="input h-11 px-3 cursor-pointer"><option value="all">{t.common.allBrands}</option>{brands.map((item) => <option key={item} value={item}>{item}</option>)}</select>}
+                  <select value={sortIdx} onChange={(event) => { setSortIdx(Number(event.target.value)); }} className="input h-11 px-3 cursor-pointer">
                     <option value={0}>{t.catalog.sortDefault}</option><option value={1}>{t.catalog.sortNewest}</option><option value={2}>{t.catalog.sortPriceAsc}</option><option value={3}>{t.catalog.sortPriceDesc}</option><option value={4}>{t.catalog.sortPopular}</option><option value={5}>{t.catalog.sortName}</option>
                   </select>
                 </div>
                 <div className="text-[11px] font-bold uppercase tracking-wide text-ink-faint mb-2">{t.catalog.filterBadge}</div>
                 <div className="flex flex-wrap gap-2 mb-5">
-                  <BadgePill active={badge === "all"} onClick={() => { setBadge("all"); reset(); }} label={t.common.all} />
-                  {BADGES.map((item) => <BadgePill key={item} active={badge === item} onClick={() => { setBadge(item); reset(); }} label={item} variant={item} />)}
-                  <BadgePill active={badge === "none"} onClick={() => { setBadge("none"); reset(); }} label={t.catalog.noBadge} />
+                  <BadgePill active={badge === "all"} onClick={() => { setBadge("all"); }} label={t.common.all} />
+                  {BADGES.map((item) => <BadgePill key={item} active={badge === item} onClick={() => { setBadge(item); }} label={item} variant={item} />)}
+                  <BadgePill active={badge === "none"} onClick={() => { setBadge("none"); }} label={t.catalog.noBadge} />
                 </div>
-                <label className="flex items-center gap-2 cursor-pointer select-none mb-6"><div onClick={() => { setStockOnly(!stockOnly); reset(); }} className={["relative w-10 h-6 rounded-full transition-colors shrink-0", stockOnly ? "bg-brand-gradient" : "bg-line"].join(" ")}><div className={["absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all", stockOnly ? "start-[18px]" : "start-0.5"].join(" ")} /></div><span className="text-[13px] text-ink-muted">{t.catalog.stockOnly}</span></label>
-                <div className="grid grid-cols-2 gap-2"><button onClick={clearAll} className="btn-ghost size-lg">{t.catalog.clearFilters}</button><Drawer.Close className="btn-primary size-lg">{t.catalog.found(filtered.length)}</Drawer.Close></div>
+                <label className="flex items-center gap-2 cursor-pointer select-none mb-6"><div onClick={() => { setStockOnly(!stockOnly); }} className={["relative w-10 h-6 rounded-full transition-colors shrink-0", stockOnly ? "bg-brand-gradient" : "bg-line"].join(" ")}><div className={["absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all", stockOnly ? "start-[18px]" : "start-0.5"].join(" ")} /></div><span className="text-[13px] text-ink-muted">{t.catalog.stockOnly}</span></label>
+                <div className="grid grid-cols-2 gap-2"><button onClick={clearAll} className="btn-ghost size-lg">{t.catalog.clearFilters}</button><Drawer.Close className="btn-primary size-lg">{t.catalog.found(total)}</Drawer.Close></div>
               </Drawer.Content>
             </Drawer.Portal>
           </Drawer.Root>
@@ -203,22 +216,24 @@ export default function CatalogInner({ params }) {
           <CategoryFilterRows tree={categoryTree} selectedPath={selectedPath} selectedSlug={cat} lang={lang} allLabel={t.common.all} onSelect={selectCategory} />
           <div className="flex gap-2 mb-6 flex-wrap items-center">
             <span className="text-[11px] text-ink-faint uppercase tracking-wide me-1">{t.catalog.filterBadge}:</span>
-            <BadgePill active={badge === "all"} onClick={() => { setBadge("all"); reset(); }} label={t.common.all} />
-            {BADGES.map((item) => <BadgePill key={item} active={badge === item} onClick={() => { setBadge(item); reset(); }} label={item} variant={item} />)}
-            <BadgePill active={badge === "none"} onClick={() => { setBadge("none"); reset(); }} label={t.catalog.noBadge} />
+            <BadgePill active={badge === "all"} onClick={() => { setBadge("all"); }} label={t.common.all} />
+            {BADGES.map((item) => <BadgePill key={item} active={badge === item} onClick={() => { setBadge(item); }} label={item} variant={item} />)}
+            <BadgePill active={badge === "none"} onClick={() => { setBadge("none"); }} label={t.catalog.noBadge} />
             <div className="flex-1" />
-            <label className="flex items-center gap-2 cursor-pointer select-none me-1"><div onClick={() => { setStockOnly(!stockOnly); reset(); }} className={["relative w-9 h-5 rounded-full transition-colors shrink-0", stockOnly ? "bg-primary" : "bg-line"].join(" ")}><div className={["absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all", stockOnly ? "start-[18px]" : "start-0.5"].join(" ")} /></div><span className="text-[11px] text-ink-muted whitespace-nowrap">{t.catalog.stockOnly}</span></label>
+            <label className="flex items-center gap-2 cursor-pointer select-none me-1"><div onClick={() => { setStockOnly(!stockOnly); }} className={["relative w-9 h-5 rounded-full transition-colors shrink-0", stockOnly ? "bg-primary" : "bg-line"].join(" ")}><div className={["absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all", stockOnly ? "start-[18px]" : "start-0.5"].join(" ")} /></div><span className="text-[11px] text-ink-muted whitespace-nowrap">{t.catalog.stockOnly}</span></label>
             <ViewToggle view={view} setView={setView} labels={t.catalog} />
           </div>
         </div>
 
-        <div className="flex items-center justify-between mb-4 text-[12px]"><span className="text-ink-faint">{!loading && t.catalog.found(filtered.length)}</span>{hasFilters && !loading && <button onClick={clearAll} className="text-primary font-semibold hover:underline">{t.catalog.clearFilters} ×</button>}</div>
+        <div className="flex items-center justify-between mb-4 text-[12px]"><span className="text-ink-faint">{!loading && t.catalog.found(total)}</span>{hasFilters && !loading && <button onClick={clearAll} className="text-primary font-semibold hover:underline">{t.catalog.clearFilters} ×</button>}</div>
 
         {loading && <div className={view === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5" : "space-y-3"}>{Array.from({ length: 8 }).map((_, index) => <div key={index} className="card overflow-hidden"><div className={view === "grid" ? "aspect-[4/3] skeleton" : "h-32 skeleton"} /><div className="p-4 space-y-2"><div className="h-3 skeleton w-1/3" /><div className="h-4 skeleton" /></div></div>)}</div>}
 
-        {!loading && filtered.length === 0 && <div className="text-center py-20"><Icon name="search" size={48} className="text-ink-faint mx-auto mb-4" strokeWidth={1.2} /><p className="text-base text-ink-muted">{t.common.noResults}</p><button onClick={clearAll} className="mt-4 text-[13px] font-semibold text-primary">{t.catalog.clearFilters}</button></div>}
+        {!loading && failed && <div role="alert" className="text-center py-16"><p className="text-base text-ink-muted">{LOAD_ERROR[lang] || LOAD_ERROR.en}</p><button onClick={() => runQuery(1).then((res) => { if (!res.error) { setFailed(false); setProducts(res.rows); setTotal(res.total); setPage(1); } })} className="mt-4 text-[13px] font-semibold text-primary">{RETRY[lang] || RETRY.en}</button></div>}
 
-        {!loading && filtered.length > 0 && <><div ref={gridParent} className={view === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5" : "space-y-3"}>{filtered.slice(0, visible).map((product) => <ProductCard key={product.id} product={product} lang={lang} view={view} onQuickView={setQuickView} />)}</div>{visible < filtered.length && <div className="text-center mt-10"><button onClick={() => setVisible((current) => current + 12)} className="btn-primary size-lg">{t.catalog.loadMore} ({filtered.length - visible})</button></div>}</>}
+        {!loading && !failed && products.length === 0 && <div className="text-center py-20"><Icon name="search" size={48} className="text-ink-faint mx-auto mb-4" strokeWidth={1.2} /><p className="text-base text-ink-muted">{t.common.noResults}</p><button onClick={clearAll} className="mt-4 text-[13px] font-semibold text-primary">{t.catalog.clearFilters}</button></div>}
+
+        {!loading && products.length > 0 && <><div ref={gridParent} className={view === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5" : "space-y-3"}>{products.map((product) => <ProductCard key={product.id} product={product} lang={lang} view={view} onQuickView={setQuickView} />)}</div>{products.length < total && <div className="text-center mt-10"><button onClick={loadMore} disabled={loadingMore} className="btn-primary size-lg disabled:opacity-60">{t.catalog.loadMore} ({total - products.length})</button></div>}</>}
       </div>
       <CompareDrawer lang={lang} />
     </div>
