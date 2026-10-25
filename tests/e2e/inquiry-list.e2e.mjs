@@ -30,11 +30,11 @@ test("add two products from the catalog, set quantities, send one request", asyn
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   await ctx.addInitScript(() => { window.__opened = []; window.open = (u) => { window.__opened.push(String(u)); return null; }; });   // record the messenger link instead of leaving the page
   const page = await ctx.newPage();
-  await page.goto(`${BASE}/health/en/catalog`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/health/en/catalog`, { waitUntil: "load" });
 
   const add = page.getByRole("button", { name: "Add to inquiry list" });
   await add.first().waitFor();
-  assert.equal(await add.count(), 2, "two active products, two buttons");
+  await poll(async () => (await add.count()) === 2, { label: "two active products, two buttons" });
   await add.first().click();
   await add.first().click();
   assert.equal(await page.getByRole("link", { name: "In your inquiry list" }).count(), 2);
@@ -42,8 +42,8 @@ test("add two products from the catalog, set quantities, send one request", asyn
   assert.match(await page.getByRole("link", { name: "Inquiry list", exact: true }).first().innerText(), /2/, "the header count shows 2");
 
   // survives a reload; then open the list from the header
-  await page.reload({ waitUntil: "networkidle" });
-  assert.equal(await page.getByRole("link", { name: "In your inquiry list" }).count(), 2);
+  await page.reload({ waitUntil: "load" });
+  await poll(async () => (await page.getByRole("link", { name: "In your inquiry list" }).count()) === 2, { label: "both cards show 'In your inquiry list' after a reload" });
   await page.getByRole("link", { name: "Inquiry list", exact: true }).first().click();
   await page.waitForURL(/\/health\/en\/inquiry/);
   await page.getByText("E2E Product 1").first().waitFor();
@@ -87,7 +87,7 @@ test("a tampered list is cleaned: archived and unknown ids never reach a request
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   await ctx.addInitScript(() => { if (!localStorage.getItem("medoria.inquiry.health.v1")) localStorage.setItem("medoria.inquiry.health.v1", JSON.stringify([{ id: 1, qty: 3 }, { id: 2, qty: 9 }, { id: 99999, qty: 1 }, { id: "x", qty: 1 }, { id: 1, qty: 5 }])); });
   const page = await ctx.newPage();
-  await page.goto(`${BASE}/health/en/inquiry`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/health/en/inquiry`, { waitUntil: "load" });
   await page.getByText("E2E Product 1").first().waitFor();
   assert.equal(await page.getByLabel("Quantity").count(), 1, "only the active product is listed (product 2 is archived)");
   await page.getByText(/no longer available/i).waitFor();
@@ -102,7 +102,7 @@ test("the operator panel shows the products of a list request", async () => {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
   await login(page, "health");
-  await page.goto(`${BASE}/operator/quotes`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/operator/quotes`, { waitUntil: "load" });
   await page.getByText("E2E Panel Lister").first().click();
   await page.getByText("محصولات درخواستی (2)").waitFor();
   const box = page.locator("li").filter({ hasText: "E2E Product 1" });
@@ -116,13 +116,13 @@ test("the inquiry page fits a 320px phone with a very long unbroken product name
   const ctx = await browser.newContext({ viewport: { width: 320, height: 800 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   await ctx.addInitScript((id) => localStorage.setItem("medoria.inquiry.health.v1", JSON.stringify([{ id, qty: 1000000 }, { id: 1, qty: 12 }])), p.id);
   const page = await ctx.newPage();
-  await page.goto(`${BASE}/health/en/inquiry`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/health/en/inquiry`, { waitUntil: "load" });
   await page.getByText("E2E Product 1").first().waitFor();
   const res = await page.evaluate(measureInPage);
   assert.equal(res.count, 0, JSON.stringify(res.offenders.slice(0, 3)));
   assert.equal(await page.evaluate(() => { window.scrollTo(300, 0); return window.scrollX; }), 0);
   // the mobile menu offers the list
-  await page.goto(`${BASE}/health/en`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/health/en`, { waitUntil: "load" });
   await page.locator('button[aria-label="Menu"]').click();
   await page.getByRole("link", { name: /Inquiry list/ }).last().waitFor();
   await ctx.close();
@@ -131,7 +131,7 @@ test("the inquiry page fits a 320px phone with a very long unbroken product name
 test("the Health list does not touch another house's storage key, and the page is closed to search engines", async () => {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
-  await page.goto(`${BASE}/health/en/catalog`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/health/en/catalog`, { waitUntil: "load" });
   await page.getByRole("button", { name: "Add to inquiry list" }).first().click();
   const keys = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("medoria.inquiry")));
   assert.deepEqual(keys, ["medoria.inquiry.health.v1"]);
