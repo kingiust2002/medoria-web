@@ -172,18 +172,23 @@ test("customer requests are deleted only through the shared guarded helper", () 
 });
 
 test("both panels show a delete button per request and confirm with the request's details", () => {
+  // Each house's QuotesManager is a thin wrapper that passes ITS OWN actions to the shared screen.
   for (const [file, actions] of [
     ["components/operator/QuotesManager.jsx", "@/lib/operator/actions"],
     ["components/beauty/operator/QuotesManager.jsx", "@/lib/beauty/operator/actions"],
   ]) {
     const s = read(file);
-    assert.match(s, new RegExp(`import \\{[^}]*deleteQuote[^}]*\\} from "${actions.replace(/\//g, "\\/")}"`), `${file}: wrong deleteQuote import`);
-    assert.match(s, /onClick=\{\(\) => setDeleting\(x\)\}[^>]*title="حذف درخواست"/, `${file}: no per-row delete button`);
-    assert.match(s, /<DeleteQuoteModal[\s\S]*?onDelete=\{deleteQuote\}/, `${file}: modal not wired to deleteQuote`);
-    assert.match(s, /router\.refresh\(\)/, `${file}: list is not refreshed after deleting`);
-    // the row toggle is a <button>, so the delete button must follow its closing tag, never nest inside it
-    assert.match(s, /setOpenId\(open \? null : x\.id\)\}[\s\S]*?<\/button>\s*<button type="button" onClick=\{\(\) => setDeleting\(x\)\}/, `${file}: delete button is nested in the row toggle`);
+    assert.match(s, new RegExp(`import \\{[^}]*\\bdeleteQuote\\b[^}]*\\} from "${actions.replace(/\//g, "\\/")}"`), `${file}: wrong deleteQuote import`);
+    assert.match(s, /<QuotesPanel quotes=\{quotes\} actions=\{actions\}/, `${file}: does not render the shared screen`);
   }
+  const panel = read("components/operator/QuotesPanel.jsx");
+  assert.match(panel, /onClick=\{\(\) => setDeleting\(x\)\}[^>]*title="حذف درخواست"/, "no per-row delete button");
+  assert.match(panel, /<DeleteQuoteModal[\s\S]*?onDelete=\{actions\.deleteQuote\}/, "modal not wired to deleteQuote");
+  assert.match(panel, /router\.refresh\(\)/, "list is not refreshed after deleting");
+  // the row toggle is a <button>, so the delete button must follow its closing tag, never nest inside it
+  assert.match(panel, /setOpenId\(open \? null : x\.id\)\}[\s\S]*?<\/button>\s*<button type="button" onClick=\{\(\) => setDeleting\(x\)\}/, "delete button is nested in the row toggle");
+  assert.ok(!/lib\/(beauty\/)?operator\/actions/.test(panel), "the shared screen must not import a panel's actions");
+
   const modal = read("components/operator/DeleteQuoteModal.jsx");
   for (const field of ["quote.name", "quote.organization", "quote.phone", "quote.product_name", "quote.created_at"]) {
     assert.ok(modal.includes(field), `confirmation does not show ${field}`);
