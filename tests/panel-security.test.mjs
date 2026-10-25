@@ -288,6 +288,7 @@ test("every changing server action writes to the activity log; the few exception
     "parseSpreadsheet", "downloadTemplateXlsx", "dryRunProductRows", "checkSkusExist", "exportProductsCsv", // read-only
     "commitProductRows",                                                                                  // chunks: finalizeProductBatch logs the import once
     "deleteQuote", "deleteQuotes", "updateQuotesStatus",                                                  // logged inside quoteDelete.js via `audit`
+    "assignQuote",                                                                                        // logged inside quoteOps.js via `audit` (quote.assign, never the typed name)
   ]);
   const missing = [];
   let checked = 0;
@@ -305,6 +306,7 @@ test("every changing server action writes to the activity log; the few exception
   const helper = read("lib/operator/quoteDelete.js");
   assert.match(helper, /logFirst\(audit, \{ action: "quote\.delete"/);
   assert.match(helper, /logAfter\(audit, \{ action: "quote\.status"/);
+  assert.match(read("lib/operator/quoteOps.js"), /action: "quote\.assign"/);
   assert.match(read("lib/operator/importActions.js"), /action: "product\.import"/);
 });
 

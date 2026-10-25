@@ -46,9 +46,11 @@ const baseEnv = {
   NEXT_PUBLIC_SITE_URL: `http://127.0.0.1:${APP_PORT}`,
   NEXT_DIST_DIR: DIST,
 };
+const reminderToken = `e2e-${secret()}`;   // throw-away value for the reminder endpoint test
 const serverEnv = {
   ...baseEnv,
   SUPABASE_SERVICE_ROLE_KEY: SERVICE_KEY,
+  QUOTE_REMINDER_TOKEN: reminderToken,
   OPERATOR_USERNAME: creds.health.user, OPERATOR_PASSWORD_HASH: hash(creds.health.password), OPERATOR_SESSION_SECRET: secret(),
   BEAUTY_OPERATOR_USERNAME: creds.beauty.user, BEAUTY_OPERATOR_PASSWORD_HASH: hash(creds.beauty.password), BEAUTY_OPERATOR_SESSION_SECRET: secret(),
   BEAUTY_OPERATOR_TOTP_SECRET: beautyTotp.secret, BEAUTY_OPERATOR_RECOVERY_CODE_HASHES: beautyTotp.recovery.map((c) => c.hash).join(","),
@@ -97,6 +99,7 @@ try {
         E2E_BASE_URL: base, E2E_DB_URL: `http://127.0.0.1:${DB_PORT}`,
         E2E_HEALTH_USER: creds.health.user, E2E_HEALTH_PASSWORD: creds.health.password,
         E2E_HEALTH_SESSION_SECRET: serverEnv.OPERATOR_SESSION_SECRET, E2E_HEALTH_PASSWORD_HASH: serverEnv.OPERATOR_PASSWORD_HASH,
+        E2E_REMINDER_TOKEN: reminderToken,
         E2E_BEAUTY_USER: creds.beauty.user, E2E_BEAUTY_PASSWORD: creds.beauty.password,
         E2E_BEAUTY_TOTP_SECRET: beautyTotp.secret, E2E_BEAUTY_RECOVERY_CODES: beautyTotp.recovery.map((c) => c.code).join(","),
       },

@@ -100,6 +100,10 @@ function applyOrder(rows, order) {
   });
 }
 
+const TRACKING_PREFIX = { quote_requests: "MH", beauty_quote_requests: "MB" };
+const ANSWERED = ["contacted", "in_progress", "quoted", "closed"];
+const hex4 = () => Math.floor(Math.random() * 0x10000).toString(16).toUpperCase().padStart(4, "0");
+
 export function createFakeDb(seedFactory) {
   let tables = clone(seedFactory());
   let counters = {};
@@ -195,6 +199,8 @@ export function createFakeDb(seedFactory) {
             return respond(res, 409, { code: "23505", message: `duplicate key value violates unique constraint on ${cols.join(",")}` });
           }
         }
+        if (TRACKING_PREFIX[t] && row.status == null) row.status = "new";   // the column default
+        if (TRACKING_PREFIX[t] && row.tracking_code == null) row.tracking_code = `${TRACKING_PREFIX[t]}-${hex4()}-${hex4()}-${hex4()}`;   // migration 32's insert trigger
         if (row.id == null) row.id = nextId(t);
         if (row.created_at == null) row.created_at = now();
         if (row.updated_at == null) row.updated_at = now();
@@ -208,7 +214,11 @@ export function createFakeDb(seedFactory) {
     if (req.method === "PATCH") {
       const patch = await readBody(req);
       const hit = tables[t].filter(pred);
-      for (const row of hit) Object.assign(row, patch, { updated_at: now() });
+      for (const row of hit) {
+        Object.assign(row, patch, { updated_at: now() });
+        // migration 32's trigger: the first time a request is answered
+        if (TRACKING_PREFIX[t] && !row.first_response_at && ANSWERED.includes(row.status)) row.first_response_at = now();
+      }
       if (!wantRep) return respond(res, 204);
       return finish(hit.map(clone));
     }
