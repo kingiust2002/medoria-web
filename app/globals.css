@@ -69,7 +69,7 @@
   html, body { overflow-x: clip; }
   .grid { grid-template-columns: minmax(0, 1fr); }
   body { overflow-wrap: anywhere; }
-  table, th, td, pre, code, input, textarea, select { overflow-wrap: normal; }
+  table, th, td, pre, input, textarea, select { overflow-wrap: normal; }
 
   .tabular { font-feature-settings: "tnum"; }
   :focus-visible { outline: 2px solid theme("colors.brand.violet"); outline-offset: 2px; }
@@ -177,6 +177,12 @@
   }
 
   .blob         { @apply absolute rounded-full blur-3xl pointer-events-none; }
+
+  /* Fluid header lockups (components/layout/Brand.jsx, components/beauty/BeautyBrand.jsx):
+     --bh is the lockup height. Phones use --bh-base; from the md breakpoint the header
+     carries more controls, so --bh-md (when given) replaces it. See lib/brandFluid.js. */
+  .brand-fluid { --bh: var(--bh-base); }
+  @media (min-width: 768px) { .brand-fluid { --bh: var(--bh-md, var(--bh-base)); } }
 
   /* ── Image placeholder surface (adaptive) ────────────────────────────── */
   .img-ph {

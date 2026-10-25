@@ -88,12 +88,12 @@ export default function Header({ lang, categoryTree = [] }) {
         <div className={`absolute inset-x-0 top-0 h-[2px] bg-brand-gradient transition-opacity ${scrolled ? "opacity-100" : "opacity-0"}`} />
         <div className="container-x flex h-[4.5rem] items-center justify-between gap-2">
           <Link href={home} className="shrink-0 min-w-0" aria-label="Medoria home">
-            <Brand height={30} reserved={210} />
+            <Brand height={30} reserved={210} reservedMd={540} />
           </Link>
 
           {/* Desktop navigation. Collection is the same progressive tree pattern
               used by Beauty World: hover/focus, select any level, no page hop. */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav className="hidden xl:flex items-center gap-1">
             <NavLink item={nav[0]} active={isActive(nav[0].href)} />
 
             <HealthCollectionMegaMenu
@@ -137,7 +137,7 @@ export default function Header({ lang, categoryTree = [] }) {
 
             <button
               onClick={() => setOpen(!open)}
-              className="lg:hidden -me-1 p-2 text-ink"
+              className="xl:hidden -me-1 p-2 text-ink"
               aria-label="Menu"
               aria-expanded={open}
             >
@@ -148,7 +148,7 @@ export default function Header({ lang, categoryTree = [] }) {
       </header>
 
       {open && (
-        <div className="fixed inset-0 top-[4.5rem] z-50 lg:hidden bg-canvas overflow-y-auto">
+        <div className="fixed inset-0 top-[4.5rem] z-50 xl:hidden bg-canvas overflow-y-auto">
           <div className="container-x py-6">
             <nav className="flex flex-col">
               <MobileNavLink item={nav[0]} active={isActive(nav[0].href)} onClick={closeMobile} />
@@ -287,7 +287,7 @@ function NavLink({ item, active }) {
       href={item.href}
       aria-current={active ? "page" : undefined}
       className={[
-        "group relative px-4 py-2.5 text-[14px] font-medium rounded-lg transition-colors",
+        "group relative whitespace-nowrap px-4 py-2.5 text-[14px] font-medium rounded-lg transition-colors",
         active ? "text-brand-violet" : "text-ink-muted hover:text-brand-violet",
       ].join(" ")}
     >

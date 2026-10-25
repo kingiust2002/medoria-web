@@ -83,13 +83,17 @@ function ClippedWord({ src, alt, k, m }) {
 // `reserved` makes the lockup fluid (see lib/brandFluid.js): the height shrinks
 // with the viewport — never above `height`, never below `minHeight` — so the
 // lockup can never push the page wider than the screen.
-export function BeautyWordLockup({ height = 30, reserved = 0, minHeight = 11 }) {
+export function BeautyWordLockup({ height = 30, reserved = 0, reservedMd = 0, minHeight = 11 }) {
   // `height` mirrors Health's <Brand height> semantics (header 30, footer 32,
   // card 22). Health's wordmark visually fills ~0.867 of that; we target the
   // same visible cap so the two houses read at an identical size, and sit
   // "Beauty" a touch smaller on the SAME baseline as "Medoria" (like Health).
+  const fluidArgs = { height, minHeight, widthPerH: BEAUTY_WIDTH_PER_H, gaps: BEAUTY_GAPS };
+  const vars = reserved
+    ? { "--bh-base": fluidLockupHeight({ ...fluidArgs, reserved }), ...(reservedMd ? { "--bh-md": fluidLockupHeight({ ...fluidArgs, reserved: reservedMd }) } : {}) }
+    : { "--bh": `${height}px` };
   return (
-    <span dir="ltr" translate="no" aria-label="Medoria Beauty" className="inline-flex items-end gap-2" style={{ "--bh": fluidLockupHeight({ height, reserved, minHeight, widthPerH: BEAUTY_WIDTH_PER_H, gaps: BEAUTY_GAPS }) }}>
+    <span dir="ltr" translate="no" aria-label="Medoria Beauty" className={`inline-flex items-end gap-2${reserved ? " brand-fluid" : ""}`} style={vars}>
       <ClippedWord src="/brand/beauty-wordmark.webp" alt="Medoria" k={K_MEDORIA} m={MED} />
       <ClippedWord src="/images/Beauty.webp" alt="" k={K_BEAUTY} m={BTY} />
     </span>
