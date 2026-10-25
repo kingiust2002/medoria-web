@@ -2528,3 +2528,28 @@ Code and data:
 Unchanged from §23.6 step 6: database via the rollback SQL at the bottom of migration 28; application by re-tagging `medoria-app-app:rollback-before-20261024` as `medoria-app-app:latest` after checking out the previous commit (`233589d`) and recreating the `app` service; then clear `fetch-cache` and restart the container. To silence Telegram without a rollback, empty the chat ids in `deploy/.env` and recreate the container (`docs/QUOTE_NOTIFICATIONS.md`).
 
 This documentation change is docs-only, so the code running on the VPS (`a3c8924`) differs from the following `main` commits only in documentation; no new deploy is needed for it.
+
+
+### 23.8 Archive, spam and bulk actions for customer requests (2026-10-25)
+
+Both operator panels (Health `/operator`, Beauty `/beauty/operator`) get a better Quotes screen. **Status: built and tested, not deployed. It needs one database step first (migration 29).** Nothing here contains a token, `.env` content or customer data.
+
+**What changes for the operators**
+
+- Tabs: **Active** (everything except archive and spam), **Archive**, **Spam**, **All**, each with a count.
+- A tick box beside every request, "select all" for what is on screen, and a bulk bar: **Archive**, **Spam**, **Restore to "new"** (in the Archive/Spam/All tabs) and **Delete** (with a confirmation that names what will be deleted). Only requests visible in the current tab and filter can be in a bulk action; changing tab clears the selection.
+- Per request: Archive / Spam / Restore buttons next to the status menu, and the delete button from [#178](https://github.com/kingiust2002/medoria-web/pull/178).
+- "Spam" already existed as a status; **"archived" is new**.
+
+**Code.** One shared screen (`components/operator/QuotesPanel.jsx`); each house's `QuotesManager.jsx` only passes that house's own server actions. New server actions per panel, `updateQuotesStatus(ids, status)` and `deleteQuotes(ids)`, built on `lib/operator/quoteDelete.js`: session first, then the service-role client, then the input (1–200 numeric ids, status from the single list in `lib/operator/constants.js`), then one query on that panel's own table only. Any bad id or status rejects the whole call.
+
+**Database: `migrations/29_quote_status_archived.sql`.** One transaction; replaces the status CHECK of `quote_requests` and `beauty_quote_requests` with one that also allows `archived`; **no row is read or changed**; idempotent; ends with a self-check that aborts on any mismatch. Tested on a throw-away PostgreSQL 16 with the production-like constraint layout (renamed 02+05 constraint, Beauty's unnamed inline one, a legacy 02-only table and a missing Beauty table): single named constraint afterwards, `archived` accepted, an unknown value rejected, rows untouched, second run changes nothing. Until it runs, "Archive" shows a clear "run migration 29" message and everything else (spam, restore, delete, tabs) works.
+
+**Release procedure** (application + one SQL step):
+
+1. Backup first, as in §23.6 step 0 (`AUTO_BACKUP=PASS`).
+2. Run `migrations/29_quote_status_archived.sql` once in Studio's SQL editor (SSH tunnel, §23.2). Expected: `COMMIT`. Verify with the query at the bottom of the file: one `*_status_check` per table, listing `archived` and `spam`.
+3. Deploy `main` (§23.6 step 3): tag the current image as the rollback target, then `git pull --ff-only` and `scripts/self-host/deploy.sh`. Order is not critical (migration first is slightly cleaner).
+4. Verify: `/`, `/api/health`, `/health/en`, `/beauty/en` = 200; in each panel open Quotes, archive one test request, check it appears in the Archive tab and can be restored; tick two test requests and delete them.
+
+**Rollback.** Application: re-tag the rollback image and recreate `app` (§23.6 step 6). Database, only after moving archived rows back (`UPDATE … SET status = 'closed' WHERE status = 'archived'`): the rollback SQL in the header of migration 29.
