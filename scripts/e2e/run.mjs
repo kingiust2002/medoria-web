@@ -15,6 +15,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createFakeDb, ANON_KEY, SERVICE_KEY } from "../../tests/e2e/fakeDb.mjs";
 import { seed } from "../../tests/e2e/seed.mjs";
+import { generateTotpSecret, generateRecoveryCodes } from "../../lib/operator/security.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const DB_PORT = Number(process.env.E2E_DB_PORT || 54399);
@@ -34,6 +35,9 @@ const creds = {
   beauty: { user: "e2e-beauty", password: `pw-${secret()}` },
 };
 
+// The Beauty panel runs WITH two-step login, the Health panel without: both modes are exercised.
+const beautyTotp = { secret: generateTotpSecret(), recovery: generateRecoveryCodes(3) };
+
 const baseEnv = {
   ...process.env,
   NO_PROXY: "localhost,127.0.0.1", no_proxy: "localhost,127.0.0.1",
@@ -47,6 +51,7 @@ const serverEnv = {
   SUPABASE_SERVICE_ROLE_KEY: SERVICE_KEY,
   OPERATOR_USERNAME: creds.health.user, OPERATOR_PASSWORD_HASH: hash(creds.health.password), OPERATOR_SESSION_SECRET: secret(),
   BEAUTY_OPERATOR_USERNAME: creds.beauty.user, BEAUTY_OPERATOR_PASSWORD_HASH: hash(creds.beauty.password), BEAUTY_OPERATOR_SESSION_SECRET: secret(),
+  BEAUTY_OPERATOR_TOTP_SECRET: beautyTotp.secret, BEAUTY_OPERATOR_RECOVERY_CODE_HASHES: beautyTotp.recovery.map((c) => c.hash).join(","),
 };
 for (const k of Object.keys(serverEnv)) if (/^(TELEGRAM_|UPSTASH_)/.test(k)) delete serverEnv[k];
 
@@ -81,7 +86,8 @@ try {
   }
   if (!up) { console.error("✗ the app did not start\n" + appLog.slice(-2000)); await stop(1); }
 
-  const files = fs.readdirSync(path.join(root, "tests/e2e")).filter((f) => f.endsWith(".e2e.mjs")).map((f) => path.join("tests/e2e", f));
+  const only = (process.env.E2E_FILES || "").split(",").filter(Boolean);   // run some files: E2E_FILES=security,panel-flows
+  const files = fs.readdirSync(path.join(root, "tests/e2e")).filter((f) => f.endsWith(".e2e.mjs") && (!only.length || only.some((o) => f.startsWith(o)))).map((f) => path.join("tests/e2e", f));
   // async spawn: the fake database lives in THIS process and must keep answering while the tests run
   const code = await new Promise((resolve) => {
     const t = spawn(process.execPath, ["--test", "--test-concurrency=1", ...files], {
@@ -90,7 +96,9 @@ try {
         ...process.env,
         E2E_BASE_URL: base, E2E_DB_URL: `http://127.0.0.1:${DB_PORT}`,
         E2E_HEALTH_USER: creds.health.user, E2E_HEALTH_PASSWORD: creds.health.password,
+        E2E_HEALTH_SESSION_SECRET: serverEnv.OPERATOR_SESSION_SECRET, E2E_HEALTH_PASSWORD_HASH: serverEnv.OPERATOR_PASSWORD_HASH,
         E2E_BEAUTY_USER: creds.beauty.user, E2E_BEAUTY_PASSWORD: creds.beauty.password,
+        E2E_BEAUTY_TOTP_SECRET: beautyTotp.secret, E2E_BEAUTY_RECOVERY_CODES: beautyTotp.recovery.map((c) => c.code).join(","),
       },
     });
     t.on("exit", (c) => resolve(c ?? 1));

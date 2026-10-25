@@ -141,6 +141,29 @@ for (const key of [
   }
 }
 
+// Optional two-step login of the operator panels (docs/OPERATOR_SECURITY.md): a base32 TOTP secret per
+// panel and the SHA-256 hashes of its one-time recovery codes (scripts/operator-2fa.mjs prints both).
+// Half-configured states are refused: recovery hashes without a secret do nothing, and a secret
+// without recovery hashes leaves no way back in when the phone is lost. Values are never printed.
+{
+  const get = (key) => values.get(key) || "";
+  for (const prefix of ["OPERATOR", "BEAUTY_OPERATOR"]) {
+    const secret = get(`${prefix}_TOTP_SECRET`);
+    const hashes = get(`${prefix}_RECOVERY_CODE_HASHES`);
+    if (secret && !/^[A-Z2-7]{26,64}$/.test(secret.toUpperCase().replace(/[\s=-]/g, ""))) {
+      fail(`${prefix}_TOTP_SECRET is not a valid base32 secret (generate it with scripts/operator-2fa.mjs)`);
+    }
+    if (hashes) {
+      const list = hashes.split(/[\s,]+/).filter(Boolean);
+      if (!list.length || !list.every((h) => /^[0-9a-fA-F]{64}$/.test(h))) {
+        fail(`${prefix}_RECOVERY_CODE_HASHES must be a comma-separated list of 64-character hex hashes (scripts/operator-2fa.mjs)`);
+      }
+    }
+    if (hashes && !secret) fail(`${prefix}_RECOVERY_CODE_HASHES is set but ${prefix}_TOTP_SECRET is not`);
+    if (secret && !hashes) fail(`${prefix}_TOTP_SECRET is set without ${prefix}_RECOVERY_CODE_HASHES: there would be no way in if the phone is lost`);
+  }
+}
+
 // deploy/Caddyfile routes these hosts to the app service directly. Keep this
 // set in sync with the site block there -- NEXT_PUBLIC_SITE_URL pointing at
 // a host Caddy doesn't route is a real outage, not a style nit (see the

@@ -18,6 +18,7 @@ const NAV = [
   { href: `${BASE}/categories`, label: "دسته‌بندی‌ها", icon: "layers" },
   { href: `${BASE}/brands`, label: "برندها", icon: "award" },
   { href: `${BASE}/quotes`, label: "استعلام‌ها", icon: "quote" },
+  { href: `${BASE}/activity`, label: "تاریخچه", icon: "clock" },
   { href: `${BASE}/settings`, label: "تنظیمات", icon: "settings" },
 ];
 

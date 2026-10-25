@@ -1,22 +1,15 @@
-// app/api/beauty-operator/logout/route.js — clears the Beauty session cookie.
+// app/api/beauty-operator/logout/route.js — ends the Beauty session on the server and clears the cookie.
 // POST-only + origin check so a cross-site page can't log the operator out.
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { BOP_COOKIE } from "@/lib/beauty/operator/session";
-import { isSameOrigin } from "@/lib/beauty/operator/auth";
+import { BOP_COOKIE, signSession, verifySession, sessionTtlMs } from "@/lib/beauty/operator/session";
+import { verifyCredentials, isBeautyOperatorConfigured, sessionCookieOptions, credentialsVersion, isSameOrigin } from "@/lib/beauty/operator/auth";
+import { handleLogout } from "@/lib/operator/loginFlow";
 
 export const runtime = "nodejs";
 
-export async function POST(req) {
-  if (!isSameOrigin(req)) {
-    return NextResponse.json({ error: "درخواست نامعتبر است." }, { status: 403 });
-  }
-  (await cookies()).set(BOP_COOKIE, "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
-  return NextResponse.json({ ok: true });
-}
+const config = {
+  panel: "beauty", cookieName: BOP_COOKIE, role: "beauty-admin",
+  auth: { verifyCredentials, isConfigured: isBeautyOperatorConfigured, sessionCookieOptions, credentialsVersion, isSameOrigin },
+  session: { signSession, verifySession, sessionTtlMs },
+};
+
+export const POST = (req) => handleLogout(req, config);

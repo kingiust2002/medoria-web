@@ -1,6 +1,10 @@
 // app/operator/(panel)/settings/page.jsx — configuration status + setup guidance.
 import Icon from "@/components/shared/Icon";
-import { hasSessionSecret, hasPasswordHash, hasUsername } from "@/lib/operator/auth";
+import { hasSessionSecret, hasPasswordHash, hasUsername, getSession, isTwoStepEnabled, recoveryCodesLeft } from "@/lib/operator/auth";
+import { getAdminClient } from "@/lib/operator/supabaseAdmin";
+import { listSessions } from "@/lib/operator/security";
+import SessionsCard from "@/components/operator/SessionsCard";
+import { revokeOtherSessions, revokeAllSessions } from "@/lib/operator/securityActions";
 import { isAdminConfigured } from "@/lib/operator/supabaseAdmin";
 import { PageHeader, SectionCard } from "@/components/operator/ui";
 import LogoutButton from "@/components/operator/LogoutButton";
@@ -21,12 +25,16 @@ function StatusRow({ ok, label, hint }) {
   );
 }
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
   const secret = hasSessionSecret();
   const user = hasUsername();
   const pass = hasPasswordHash();
   const admin = isAdminConfigured();
   const translate = Boolean(process.env.GOOGLE_TRANSLATE_API_KEY);
+  const session = await getSession();
+  const sessions = await listSessions(getAdminClient(), { panel: "health" });
+  const registryReady = Boolean(session?.sid) && sessions.some((s) => s.sid === session.sid);
+  const twoStep = isTwoStepEnabled();
 
   return (
     <>
@@ -35,6 +43,16 @@ export default function SettingsPage() {
       </PageHeader>
 
       <div className="grid lg:grid-cols-2 gap-6">
+        <SectionCard title="نشست‌ها" desc="هر ورود یک نشست ثبت‌شده است؛ خروج و «پایان نشست‌ها» نشست را روی سرور می‌بندد" icon="lock">
+          <SessionsCard sessions={sessions} currentSid={session?.sid} registryReady={registryReady} loginHref="/login/health"
+            actions={{ revokeOthers: revokeOtherSessions, revokeAll: revokeAllSessions }} />
+        </SectionCard>
+
+        <SectionCard title="ورود دومرحله‌ای" desc="کد ۶ رقمی برنامهٔ احراز هویت + کدهای بازیابی یک‌بارمصرف" icon="shield">
+          <StatusRow ok={twoStep} label={twoStep ? "فعال" : "غیرفعال"}
+            hint={twoStep ? `کدهای بازیابی باقی‌مانده در تنظیمات سرور: ${recoveryCodesLeft()}. گم‌شدن گوشی: از یک کد بازیابی استفاده کنید.` : "فعال‌سازی فقط روی سرور و با اسکریپت انجام می‌شود: node scripts/operator-2fa.mjs health (راهنما: docs/OPERATOR_SECURITY.md)."} />
+        </SectionCard>
+
         <SectionCard title="وضعیت پیکربندی" desc="این متغیرها در محیط سرور (env) تنظیم می‌شوند" icon="shield">
           <div className="divide-y divide-line">
             <StatusRow ok={secret} label="OPERATOR_SESSION_SECRET" hint={secret ? "تنظیم شده — نشست‌ها امضا می‌شوند." : "اجباری. بدون آن ورود غیرممکن است."} />

@@ -9,6 +9,9 @@ export default function LoginForm() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [needCode, setNeedCode] = useState(false);          // the panel has two-step login: ask for the code
+  const [useRecovery, setUseRecovery] = useState(false);
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -20,7 +23,7 @@ export default function LoginForm() {
       const res = await fetch("/api/beauty-operator/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, ...(needCode ? (useRecovery ? { recovery: code } : { code }) : {}) }),
       });
       if (res.ok) {
         router.push("/beauty/operator");
@@ -28,6 +31,7 @@ export default function LoginForm() {
         return;
       }
       const data = await res.json().catch(() => ({}));
+      if (data.needCode) setNeedCode(true);
       setError(data.error || "ورود ناموفق بود.");
     } catch {
       setError("ارتباط برقرار نشد. دوباره تلاش کنید.");
@@ -87,6 +91,28 @@ export default function LoginForm() {
             />
           </label>
 
+          {needCode && (
+            <label className="block">
+              <span className="block text-[13px] font-medium text-ink-soft mb-1.5">{useRecovery ? "کد بازیابی" : "کد ۶ رقمی برنامهٔ احراز هویت"}</span>
+              <input
+                type="text"
+                name="code"
+                dir="ltr"
+                inputMode={useRecovery ? "text" : "numeric"}
+                autoComplete="one-time-code"
+                autoFocus
+                spellCheck={false}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                className="input w-full tabular"
+                placeholder={useRecovery ? "XXXX-XXXX-XXXX" : "123456"}
+              />
+              <button type="button" onClick={() => { setUseRecovery((v) => !v); setCode(""); }} className="text-[12px] text-ink-muted underline underline-offset-2 mt-1.5">
+                {useRecovery ? "استفاده از کد برنامه" : "کد را ندارم — استفاده از کد بازیابی"}
+              </button>
+            </label>
+          )}
+
           {error && (
             <div className="flex items-center gap-2 text-[13px] text-warn bg-warn/10 rounded-xl px-3 py-2.5">
               <Icon name="alertTriangle" size={16} />
@@ -94,7 +120,7 @@ export default function LoginForm() {
             </div>
           )}
 
-          <button type="submit" disabled={loading || !username || !password} className="btn-primary size-lg w-full disabled:opacity-60">
+          <button type="submit" disabled={loading || !username || !password || (needCode && !code)} className="btn-primary size-lg w-full disabled:opacity-60">
             {loading ? <Spinner /> : <Icon name="arrowL" size={18} />}
             {loading ? "در حال ورود…" : "ورود"}
           </button>

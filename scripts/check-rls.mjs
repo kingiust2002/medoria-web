@@ -9,7 +9,7 @@
 //   1. products / categories SELECT → allowed   (public catalog read)
 //   2. ARCHIVED products (is_active = false) → invisible (Health and Beauty)
 //   3. quote_requests, beauty_quote_requests, contact_inquiries, import_logs,
-//      beauty_import_logs → not readable (customer data is private)
+//      beauty_import_logs, operator_* (log, sessions, 2FA state) → not readable (private)
 //   4. Supabase Auth signup → disabled (the app never uses Supabase Auth, so an
 //      open signup only lets strangers become "authenticated" users)
 //   5. quote_requests / beauty_quote_requests INSERT → blocked — run ONLY with
@@ -58,7 +58,7 @@ const hiddenBeauty = await selectProbe("beauty_products", "&is_active=eq.false")
 report("anon CANNOT see archived (inactive) Beauty products", !hiddenBeauty.readable, hiddenBeauty.detail);
 
 // 3) customer data and operator logs are private
-for (const table of ["quote_requests", "beauty_quote_requests", "contact_inquiries", "import_logs", "beauty_import_logs"]) {
+for (const table of ["quote_requests", "beauty_quote_requests", "contact_inquiries", "import_logs", "beauty_import_logs", "operator_audit_log", "operator_sessions", "operator_totp_state", "operator_recovery_used"]) {
   const probe = await selectProbe(table);
   report(`anon CANNOT read ${table}`, !probe.readable, probe.detail);
 }
