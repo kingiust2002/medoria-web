@@ -57,6 +57,12 @@ report("anon CANNOT see archived (inactive) Health products", !hiddenHealth.read
 const hiddenBeauty = await selectProbe("beauty_products", "&is_active=eq.false");
 report("anon CANNOT see archived (inactive) Beauty products", !hiddenBeauty.readable, hiddenBeauty.detail);
 
+// inactive categories and brands are not public either (migration 31)
+for (const [table, label] of [["categories", "Health categories"], ["beauty_categories", "Beauty categories"], ["beauty_brands", "Beauty brands"]]) {
+  const probe = await selectProbe(table, "&is_active=eq.false");
+  report(`anon CANNOT see inactive ${label}`, !probe.readable, probe.detail);
+}
+
 // 3) customer data and operator logs are private
 for (const table of ["quote_requests", "beauty_quote_requests", "contact_inquiries", "import_logs", "beauty_import_logs", "operator_audit_log", "operator_sessions", "operator_totp_state", "operator_recovery_used"]) {
   const probe = await selectProbe(table);
