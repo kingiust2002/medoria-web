@@ -20,6 +20,7 @@ export default function robots() {
           "/*/compare",
           "/*/wishlist",
           "/*/inquiry",
+          "/*/print-catalog",
         ],
       },
     ],

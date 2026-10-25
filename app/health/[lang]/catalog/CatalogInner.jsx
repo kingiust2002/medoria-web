@@ -31,6 +31,7 @@ const PAGE = 24;
 const LOAD_ERROR = {
   fa: "بارگذاری محصولات ممکن نشد.", ru: "Не удалось загрузить товары.", tg: "Боркунии маҳсулот иҷро нашуд.", en: "Could not load products.",
 };
+const PRINT_LABEL = { fa: "کاتالوگ قابل چاپ (PDF)", ru: "Каталог для печати (PDF)", tg: "Каталог барои чоп (PDF)", en: "Printable catalog (PDF)" };
 const RETRY = { fa: "تلاش دوباره", ru: "Повторить", tg: "Бори дигар", en: "Try again" };
 
 export default function CatalogInner({ params }) {
@@ -225,7 +226,7 @@ export default function CatalogInner({ params }) {
           </div>
         </div>
 
-        <div className="flex items-center justify-between mb-4 text-[12px]"><span className="text-ink-faint">{!loading && t.catalog.found(total)}</span>{hasFilters && !loading && <button onClick={clearAll} className="text-primary font-semibold hover:underline">{t.catalog.clearFilters} ×</button>}</div>
+        <div className="flex items-center justify-between mb-4 text-[12px]"><span className="text-ink-faint flex flex-wrap items-center gap-x-3 gap-y-1">{!loading && t.catalog.found(total)}<a href={`/health/${lang}/print-catalog${cat !== "all" && selectedCategory ? `?category=${encodeURIComponent(selectedCategory.slug)}` : ""}`} target="_blank" rel="noopener" className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"><Icon name="invoice" size={12} />{PRINT_LABEL[lang] || PRINT_LABEL.en}</a></span>{hasFilters && !loading && <button onClick={clearAll} className="text-primary font-semibold hover:underline">{t.catalog.clearFilters} ×</button>}</div>
 
         {loading && <div className={view === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5" : "space-y-3"}>{Array.from({ length: 8 }).map((_, index) => <div key={index} className="card overflow-hidden"><div className={view === "grid" ? "aspect-[4/3] skeleton" : "h-32 skeleton"} /><div className="p-4 space-y-2"><div className="h-3 skeleton w-1/3" /><div className="h-4 skeleton" /></div></div>)}</div>}
 
