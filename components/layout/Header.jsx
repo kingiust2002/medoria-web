@@ -88,7 +88,7 @@ export default function Header({ lang, categoryTree = [] }) {
         <div className={`absolute inset-x-0 top-0 h-[2px] bg-brand-gradient transition-opacity ${scrolled ? "opacity-100" : "opacity-0"}`} />
         <div className="container-x flex h-[4.5rem] items-center justify-between gap-2">
           <Link href={home} className="shrink-0 min-w-0" aria-label="Medoria home">
-            <Brand height={30} />
+            <Brand height={30} reserved={210} />
           </Link>
 
           {/* Desktop navigation. Collection is the same progressive tree pattern

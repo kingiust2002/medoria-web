@@ -121,6 +121,29 @@ hasn't been retired yet:
   (reduced-motion, save-data, low cores, small screens), paused offscreen,
   and fully disposed. See `.claude/skills/medoria-performance-a11y-gate`.
 
+## Mobile-width law
+
+- **No page, Health or Beauty or gateway or operator panel, may ever be wider than the
+  screen on a phone (320–430 px).** No sideways scrolling, no zoomed-out page, no
+  content cut off at the edge.
+- The base layer in `app/globals.css` enforces it once: `html, body { overflow-x: clip }`,
+  every `.grid` starts as one `minmax(0, 1fr)` column, and long unbroken words (SKU,
+  brand, URL) wrap. **Do not remove or override these**, and never use
+  `overflow-x: hidden` on `html`/`body` (it breaks `sticky`).
+- Header lockups are fluid: pass `reserved={px}` (what the rest of the row needs) to
+  `<Brand>` / `<BeautyWordLockup>`; the math lives in `lib/brandFluid.js`. A new header
+  control means raising `reserved`.
+- The guard is a safety net, not permission: fix the element that overflows (add
+  `min-w-0`, `flex-wrap`, `truncate`, a smaller size) instead of relying on the clip,
+  because clipped content is still cut off.
+- **Before any PR that touches layout, header, grids, cards, tables or long text:** run
+  the site (`npm run build && npm start`) and `npm run check:mobile` (Playwright; it
+  measures every route in all four languages at 320/360/390/430 px and fails on any
+  element past the screen edge). For database-driven pages pass real slugs:
+  `npm run check:mobile -- --routes=/health/en/catalog/<slug>`. Test with long
+  unbroken strings, not just pretty demo data. `tests/mobile-width.test.mjs` pins the
+  guards in CI.
+
 ## Project skills
 
 `medoria-brand-guardian` · `medoria-gateway-creative-qa` ·

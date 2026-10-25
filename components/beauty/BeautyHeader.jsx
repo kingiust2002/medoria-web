@@ -75,7 +75,7 @@ export default function BeautyHeader({ lang, categoryTree = [] }) {
             {/* The official Beauty wordmark is navy-toned (no white variant), so
                 on the dark header it sits on a light plate — like the footer. */}
             <span className="inline-flex items-center rounded-full dark:bg-white/95 dark:px-3 dark:py-1.5">
-              <BeautyWordLockup height={30} />
+              <BeautyWordLockup height={30} reserved={240} />
             </span>
           </Link>
 

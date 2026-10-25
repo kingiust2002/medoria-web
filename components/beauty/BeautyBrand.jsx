@@ -14,6 +14,7 @@
 // pixel geometry is load-bearing, see the metrics comment), which means no
 // next/image optimization: whatever file is named here goes over the wire
 // as-is, and these two are on every Beauty page via the header lockup.
+import { MED, BTY, K_MEDORIA, K_BEAUTY, BEAUTY_WIDTH_PER_H, BEAUTY_GAPS, fluidLockupHeight } from "@/lib/brandFluid";
 import Image from "next/image";
 
 export function BeautyMarkImg({ size = 40, priority = false, className = "", opacity }) {
@@ -56,40 +57,41 @@ export function BeautyWordmarkImg({ height = 24, priority = false, className = "
 // fillY = glyph height / image height · leftX = left transparent pad · fillX =
 // glyph width / image width · botFrac = bottom glyph edge / image height (used
 // to sit both words on a common baseline, like Health's items-baseline lockup).
-const MED = { aspect: 702 / 355, fillY: 0.2845, leftX: 0.1083, fillX: 0.8219, botFrac: 0.6169 };
-const BTY = { aspect: 866 / 288, fillY: 0.6493, leftX: 0.0912, fillX: 0.8418, botFrac: 0.8403 };
-
-// One official wordmark PNG, scaled so its VISIBLE glyphs are `cap` px tall and
-// clipped tight to those glyphs (transparent padding removed via overflow). The
-// glyphs are bottom-aligned in the box so sibling words share a baseline.
-function ClippedWord({ src, alt, cap, m }) {
-  const imgH = cap / m.fillY;
-  const imgW = imgH * m.aspect;
-  const boxW = imgW * m.fillX;
+// One official wordmark PNG, scaled so its VISIBLE glyphs are `k × --bh` tall
+// (--bh is set by the lockup) and clipped tight to those glyphs (transparent
+// padding removed via overflow). The glyphs are bottom-aligned in the box so
+// sibling words share a baseline. Every size is a calc() of --bh so the whole
+// lockup can scale with the viewport (see BeautyWordLockup `reserved`).
+function ClippedWord({ src, alt, k, m }) {
+  const imgH = k / m.fillY;            // image height, in units of --bh
+  const imgW = imgH * m.aspect;        // image width
+  const boxW = imgW * m.fillX;         // visible glyph box width
+  const u = (n) => `calc(var(--bh) * ${n.toFixed(5)})`;
   return (
-    <span className="relative inline-block overflow-hidden shrink-0" style={{ height: cap, width: boxW }}>
+    <span className="relative inline-block overflow-hidden shrink-0" style={{ height: u(k), width: u(boxW) }}>
       <img
         src={src}
         alt={alt}
         aria-hidden={alt ? undefined : "true"}
         className="absolute max-w-none select-none"
-        style={{ height: imgH, width: imgW, top: cap - m.botFrac * imgH, left: -(m.leftX * imgW) }}
+        style={{ height: u(imgH), width: u(imgW), top: u(k - m.botFrac * imgH), left: u(-(m.leftX * imgW)) }}
       />
     </span>
   );
 }
 
-export function BeautyWordLockup({ height = 30 }) {
+// `reserved` makes the lockup fluid (see lib/brandFluid.js): the height shrinks
+// with the viewport — never above `height`, never below `minHeight` — so the
+// lockup can never push the page wider than the screen.
+export function BeautyWordLockup({ height = 30, reserved = 0, minHeight = 11 }) {
   // `height` mirrors Health's <Brand height> semantics (header 30, footer 32,
   // card 22). Health's wordmark visually fills ~0.867 of that; we target the
   // same visible cap so the two houses read at an identical size, and sit
   // "Beauty" a touch smaller on the SAME baseline as "Medoria" (like Health).
-  const capMedoria = Math.round(height * 0.867);
-  const capBeauty = Math.round(capMedoria * 0.62);
   return (
-    <span dir="ltr" translate="no" aria-label="Medoria Beauty" className="inline-flex items-end gap-2">
-      <ClippedWord src="/brand/beauty-wordmark.webp" alt="Medoria" cap={capMedoria} m={MED} />
-      <ClippedWord src="/images/Beauty.webp" alt="" cap={capBeauty} m={BTY} />
+    <span dir="ltr" translate="no" aria-label="Medoria Beauty" className="inline-flex items-end gap-2" style={{ "--bh": fluidLockupHeight({ height, reserved, minHeight, widthPerH: BEAUTY_WIDTH_PER_H, gaps: BEAUTY_GAPS }) }}>
+      <ClippedWord src="/brand/beauty-wordmark.webp" alt="Medoria" k={K_MEDORIA} m={MED} />
+      <ClippedWord src="/images/Beauty.webp" alt="" k={K_BEAUTY} m={BTY} />
     </span>
   );
 }

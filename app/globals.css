@@ -54,6 +54,23 @@
   html[lang="fa"] body { @apply font-farsi; }
   html[lang="fa"] { direction: rtl; }
 
+  /* ── MOBILE-WIDTH LAW: no page may ever be wider than the screen ───────────
+     The causes are always the same, so the base layer removes them once:
+     1. A Tailwind `grid` with only `lg:grid-cols-N` has ONE implicit `auto`
+        column, which grows to the widest unbroken word inside it (a long SKU,
+        brand or URL) and drags the whole page sideways. Every grid therefore
+        starts as a single shrinkable column; `grid-cols-*` utilities (layered
+        after this) still win.
+     2. Long unbroken strings must wrap instead of forcing width.
+     3. Last resort: clip anything that still pokes out at the page edge
+        (`clip`, not `hidden`: no scroll container, so `sticky` keeps working).
+     tests/mobile-width.test.mjs pins this; `npm run check:mobile` measures a
+     running site in a phone-sized browser. */
+  html, body { overflow-x: clip; }
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  body { overflow-wrap: anywhere; }
+  table, th, td, pre, code, input, textarea, select { overflow-wrap: normal; }
+
   .tabular { font-feature-settings: "tnum"; }
   :focus-visible { outline: 2px solid theme("colors.brand.violet"); outline-offset: 2px; }
 }
