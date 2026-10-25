@@ -12,20 +12,25 @@
 // is NOT swapped for dark — only the flat "Medoria" wordmark is.
 //   onDark  → force the white "Medoria" logotype (for always-dark surfaces: footer, etc.)
 
-const HEALTH_RATIO = 682 / 2048; // Health.png intrinsic aspect ratio
+import { HEALTH_RATIO, HEALTH_WIDTH_PER_H, HEALTH_GAPS, fluidLockupHeight } from "@/lib/brandFluid";
 
-export default function Brand({ height = 28, symbol = true, onDark = false, className = "" }) {
-  const sym = Math.round(height * 1.18);
+// `reserved` makes the lockup fluid: the pixels the rest of its row needs
+// (sibling controls + container padding). The height then shrinks with the
+// viewport (never above `height`, never below `minHeight`) so the lockup can
+// never push the page wider than the screen. Without `reserved` the size is fixed.
+export default function Brand({ height = 28, symbol = true, onDark = false, className = "", reserved = 0, minHeight = 12 }) {
+  const H = fluidLockupHeight({ height, reserved, minHeight, widthPerH: HEALTH_WIDTH_PER_H, gaps: HEALTH_GAPS });
+  const sym = `calc(${H} * 1.18)`;
   // "Health" is set a touch smaller than "Medoria" so the two wordmarks read
   // as one balanced lockup rather than "Health" overpowering it.
-  const healthHeight = Math.round(height * 0.6);
+  const healthHeight = `calc(${H} * 0.6)`;
   const Mark = symbol ? (
     <img
       src="/logo-mark.png"
       alt=""
       aria-hidden="true"
-      width={sym}
-      height={sym}
+      width={Math.round(height * 1.18)}
+      height={Math.round(height * 1.18)}
       style={{ width: sym, height: sym }}
       className="shrink-0 object-contain transition-transform duration-300 group-hover:scale-105 group-hover:rotate-[6deg]"
     />
@@ -41,19 +46,19 @@ export default function Brand({ height = 28, symbol = true, onDark = false, clas
       {Mark}
       <span className="inline-flex items-baseline gap-2">
         {onDark ? (
-          <img src="/brand/wordmark-white.png" alt="Medoria" style={{ height }} className="w-auto object-contain" />
+          <img src="/brand/wordmark-white.png" alt="Medoria" style={{ height: H }} className="w-auto object-contain" />
         ) : (
           <>
-            <img src="/brand/wordmark-navy.png"  alt="Medoria" style={{ height }} className="w-auto object-contain dark:hidden" />
-            <img src="/brand/wordmark-white.png" alt="" aria-hidden="true" style={{ height }} className="hidden dark:block w-auto object-contain" />
+            <img src="/brand/wordmark-navy.png"  alt="Medoria" style={{ height: H }} className="w-auto object-contain dark:hidden" />
+            <img src="/brand/wordmark-white.png" alt="" aria-hidden="true" style={{ height: H }} className="hidden dark:block w-auto object-contain" />
           </>
         )}
         <img
           src="/images/Health.png"
           alt=""
           aria-hidden="true"
-          height={healthHeight}
-          width={Math.round(healthHeight / HEALTH_RATIO)}
+          height={Math.round(height * 0.6)}
+          width={Math.round((height * 0.6) / HEALTH_RATIO)}
           style={{ height: healthHeight }}
           className="w-auto object-contain"
         />
