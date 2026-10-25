@@ -2494,6 +2494,7 @@ In this order:
 
 - **Contact forms and Telegram — owner-confirmed on 2026-10-24.** After being asked to submit `TEST Health` and `TEST Beauty` and check that each notice reaches only its matching group, the owner reported that the forms and Telegram work correctly. This is a manual production result reported by the owner, not a test run by the reviewing agent.
 - **Panel visibility and cleanup — not yet reported.** Confirm that the test requests appear in `/operator` → Quotes and `/beauty/operator` → Quotes, then delete the two test rows. Keep §22.7 item 3b partly open until these remaining checks are confirmed.
+- **Deleting the test rows was impossible until [#178](https://github.com/kingiust2002/medoria-web/pull/178)** (merged 2026-10-24, **not yet deployed**): neither panel had a delete operation at all, not merely a hidden button. #178 adds a trash button per request with a confirmation showing the request's details, for Health (`quote_requests`) and Beauty (`beauty_quote_requests`) separately; the server checks the panel's own session first. It is application code only (no migration, no `.env` change). Do not remove the test rows with SQL from Studio unless there is an urgent reason; after deploying, use the new button.
 - **Panel actions from §23.6 step 5:** price edit of a test product showing on the public page within seconds, archiving it giving a 404, reactivating it. Not reported.
 - **The archived product page answering 404** (`https://medoriaco.com/health/en/catalog/operating-room-gown`). `check:rls` proves the *API* hides archived rows; the page itself was not reported.
 - **`check:rls --insert-test`** (write probe) was not run.
@@ -2502,7 +2503,7 @@ In this order:
 
 Operations and production:
 
-1. Finish the panel-visibility checks and delete the test rows (§23.7.3). Both contact forms and Telegram delivery were confirmed by the owner on 2026-10-24.
+1. Deploy `main` (it contains #178 and #179, below), then finish the panel-visibility checks and delete the test rows with the new delete button (§23.7.3). Both contact forms and Telegram delivery were confirmed by the owner on 2026-10-24.
 2. The 7 old `new` inquiries in `quote_requests` (latest 2026-06-13) still need a business follow-up; their content is not recorded here.
 3. The data gap since the `20260901T023001Z` snapshot (§22.7 item 2) remains.
 4. Backup alerting: a dead-man's switch for the cron job, and an external uptime monitor (§22.8). `production-backup.sh --check` is still the only freshness test.
@@ -2520,6 +2521,7 @@ Code and data:
 
 11. Health `categories` are still readable by `anon` regardless of `is_active` (the UI filters them); migration 28 did not cover it.
 12. `SECURITY-CHECKLIST.md` still has Vercel-era passages elsewhere.
+13. **Phone width fix, merged and not deployed:** [#179](https://github.com/kingiust2002/medoria-web/pull/179) (2026-10-25). Health pages (and Beauty at 320/360 px) were wider than a phone screen: the Health logo lockup did not fit beside the mobile header buttons, and 62 grids grew to the widest unbroken word (up to 1146 px on a 390 px phone for a product with a long SKU or brand). Fixed with base-layer rules in `app/globals.css`, fluid header lockups (`lib/brandFluid.js`) and a permanent check, `npm run check:mobile` (see "Mobile-width law" in `CLAUDE.md`). Verified in a local browser against a mock database (340 page loads, four languages, 320–430 px), **not** on production: after deploying, open a Health product page, the Health home and the Quotes page of both panels on a real phone. Application code only; no migration or `.env` change.
 
 #### 23.7.5 Rollback for this rollout
 
