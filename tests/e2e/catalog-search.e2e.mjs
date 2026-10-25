@@ -160,7 +160,8 @@ test("the pagers and the long catalog fit a 320px phone", async () => {
   const ctx = await browser.newContext({ viewport: { width: 320, height: 800 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
   for (const url of ["/beauty/en/catalog?sort=price_asc", "/beauty/en/catalog?sort=price_asc&page=2", "/beauty/fa/catalog?sort=price_asc&page=2"]) {
-    await page.goto(BASE + url, { waitUntil: "networkidle" });
+    await page.goto(BASE + url, { waitUntil: "load" });   // not "networkidle": link prefetches keep a slow CI runner busy past 30 s
+    await page.waitForTimeout(500);
     const res = await page.evaluate(measureInPage);
     assert.equal(res.count, 0, `${url}: ${JSON.stringify(res.offenders.slice(0, 3))}`);
   }
