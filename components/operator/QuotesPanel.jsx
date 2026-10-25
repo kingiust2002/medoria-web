@@ -197,6 +197,19 @@ export default function QuotesPanel({ quotes: initial, actions }) {
                       <Detail label="زبان" value={LANG_FA[x.language] || x.language} />
                       <Detail label="صفحه مبدأ" value={x.source_url} ltr />
                     </div>
+                    {Array.isArray(x.items) && x.items.length > 0 && (
+                      <div className="rounded-xl border border-line mb-3 overflow-hidden">
+                        <p className="px-3 py-2 text-[12px] font-medium text-ink-soft bg-canvas-soft border-b border-line">محصولات درخواستی ({x.items.length})</p>
+                        <ul className="divide-y divide-line">
+                          {x.items.map((it, i) => (
+                            <li key={`${it.product_id}-${i}`} className="px-3 py-2 text-sm flex items-start gap-3 min-w-0">
+                              <span className="min-w-0 flex-1 text-ink-soft">{it.name}{it.sku ? <span className="text-ink-faint" dir="ltr"> · {it.sku}</span> : null}</span>
+                              <span className="shrink-0 tabular text-ink" dir="ltr">× {it.quantity}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     {x.message && <div className="rounded-xl bg-canvas-soft border border-line p-3 text-sm text-ink-soft leading-relaxed mb-3 whitespace-pre-wrap">{x.message}</div>}
 
                     <div className="flex flex-wrap items-center gap-2 mb-4">
