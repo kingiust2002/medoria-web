@@ -65,34 +65,48 @@ if (!process.env.E2E_SKIP_BUILD || !fs.existsSync(path.join(root, DIST))) {
 
 const db = createFakeDb(seed);
 await db.start(DB_PORT);
-const app = spawn("npx", ["next", "start", "-p", String(APP_PORT), "-H", "127.0.0.1"], { cwd: root, env: serverEnv, stdio: ["ignore", "pipe", "pipe"] });
+let app = null;
 let appLog = "";
-app.stdout.on("data", (d) => { appLog += d; });
-app.stderr.on("data", (d) => { appLog += d; });
-
-const stop = async (code) => {
-  app.kill("SIGTERM");
+const startApp = () => {
+  app = spawn("npx", ["next", "start", "-p", String(APP_PORT), "-H", "127.0.0.1"], { cwd: root, env: serverEnv, stdio: ["ignore", "pipe", "pipe"] });
+  app.stdout.on("data", (d) => { appLog += d; });
+  app.stderr.on("data", (d) => { appLog += d; });
+};
+const killApp = async () => {
+  app?.kill("SIGTERM");
   // `npx` wraps next-server; make sure nothing keeps the port
   spawnSync("pkill", ["-f", `next start -p ${APP_PORT}`]);
   spawnSync("pkill", ["-f", `next-server`]);
+  for (let i = 0; i < 40; i++) {                                   // wait until the port is really free
+    try { await fetch(`http://127.0.0.1:${APP_PORT}/api/health`); await new Promise((r) => setTimeout(r, 250)); } catch { break; }
+  }
+};
+const waitUp = async (base) => {
+  for (let i = 0; i < 60; i++) {
+    try { if ((await fetch(`${base}/api/health`)).ok) return true; } catch { /* not yet */ }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  return false;
+};
+const stop = async (code) => {
+  await killApp();
   await db.stop().catch(() => {});
   process.exit(code);
 };
 
 try {
   const base = `http://127.0.0.1:${APP_PORT}`;
-  let up = false;
-  for (let i = 0; i < 60 && !up; i++) {
-    try { up = (await fetch(`${base}/api/health`)).ok; } catch { /* not yet */ }
-    if (!up) await new Promise((r) => setTimeout(r, 500));
-  }
-  if (!up) { console.error("✗ the app did not start\n" + appLog.slice(-2000)); await stop(1); }
+  startApp();
+  if (!(await waitUp(base))) { console.error("✗ the app did not start\n" + appLog.slice(-2000)); await stop(1); }
 
   const only = (process.env.E2E_FILES || "").split(",").filter(Boolean);   // run some files: E2E_FILES=security,panel-flows
   const files = fs.readdirSync(path.join(root, "tests/e2e")).filter((f) => f.endsWith(".e2e.mjs") && (!only.length || only.some((o) => f.startsWith(o)))).map((f) => path.join("tests/e2e", f));
+  // One test file at a time, each against a freshly started app: the app keeps its login throttles in memory (8 a
+  // minute per IP, 10 second-factor attempts per 15 minutes), so files sharing one process would eat into each other's
+  // allowance and fail with 429 depending on how many files ran before them.
   // async spawn: the fake database lives in THIS process and must keep answering while the tests run
-  const code = await new Promise((resolve) => {
-    const t = spawn(process.execPath, ["--test", "--test-concurrency=1", ...files], {
+  const runFile = (file) => new Promise((resolve) => {
+    const t = spawn(process.execPath, ["--test", "--test-concurrency=1", file], {
       cwd: root, stdio: "inherit",
       env: {
         ...process.env,
@@ -107,6 +121,15 @@ try {
     });
     t.on("exit", (c) => resolve(c ?? 1));
   });
+  let code = 0;
+  for (const [i, file] of files.entries()) {
+    if (i > 0) {
+      await killApp();
+      startApp();
+      if (!(await waitUp(base))) { console.error("✗ the app did not restart\n" + appLog.slice(-2000)); await stop(1); }
+    }
+    if ((await runFile(file)) !== 0) code = 1;                     // keep going: report every failing file in one run
+  }
   await stop(code);
 } catch (e) {
   console.error(e);
