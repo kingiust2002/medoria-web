@@ -7,8 +7,11 @@ that every page fits on phone screens.
 
 ```bash
 npm run test:e2e                     # builds into .next-e2e (about 2 minutes), then runs everything
+E2E_FILES=security,panel-flows npm run test:e2e   # only the files whose name starts with one of these
 E2E_SKIP_BUILD=1 npm run test:e2e    # reuse the last e2e build
 ```
+
+Every test file runs against its own start of the app: the app keeps its login throttles in memory, so files sharing one process would use up each other's allowance and fail with HTTP 429.
 
 Needs Playwright's Chromium (`npx playwright install chromium`; pre-installed in the Claude Code
 cloud sandbox). Nothing touches production: the app's Supabase URL is `127.0.0.1`, the keys are
@@ -25,6 +28,10 @@ dummy values and the operator passwords are generated per run.
 | `tests/e2e/catalog-search.e2e.mjs` | Server-side catalog paging (docs/CATALOG_PAGING.md): the Health catalog fetches pages of 24 (never the whole table) and "load more" appends without repeats; search is answered by the database; the ⌘K palette asks for 6 matches; the Beauty catalog pages with plain links, works without JavaScript, sends a page past the end back to page 1; the pagers fit 320 px |
 | `tests/e2e/inquiry-list.e2e.mjs` | Inquiry list (docs/INQUIRY_LIST.md): two products added from the catalog → header count → quantities → ONE stored request with database names/SKUs and a messenger link carrying the whole list; tampered localStorage (archived/unknown ids) is cleaned; the panel shows the list; 320 px fit with a 140-character unbroken name; Health-only storage key, page noindex |
 | `tests/e2e/print-catalog.e2e.mjs` | Printable catalog (docs/CATALOG_DOCUMENTS_NEEDS.md): active products only, in the page language, no placeholder data; `?category=`; print mode hides the site chrome; a real multi-page PDF in fa/ru/tg/en; 320 px fit; the panel's incomplete-product filter, badge and dashboard count |
+| `tests/e2e/security.e2e.mjs` | Two-step login (Beauty on, Health off): wrong password / wrong code / right code / replay / recovery codes; logout ends the session on the server (a copied cookie stops working); cookies from before the registry or for an unknown session are refused; ending other/all sessions; the activity log records actions and never customer data; a deletion is refused while the log cannot be written |
+| `tests/e2e/security-fail-closed.e2e.mjs` | Both panels: a database or schema-cache outage never opens a signed session, login or deletion; a table that really does not exist yet keeps the previous behaviour; a failed logout keeps the cookie, shows an alert, and a retry works |
+| `tests/e2e/quote-management.e2e.mjs`, `quotes-reliability.e2e.mjs` | Customer-request management (code, assignee, waiting/overdue markers, filters); the Quotes list follows rows changed by another session without losing local edits; the delete dialogs stay reachable at 320×568 |
+| `tests/e2e/check-mobile.e2e.mjs` | `npm run check:mobile` itself: a 404 page, a fixed over-wide control and an unreachable button are all reported |
 | `tests/e2e/live-check.e2e.mjs` | The owner-run live script below works against the local stack |
 | `tests/e2e/fakeDb.mjs`, `seed.mjs` | The fake PostgREST (filters, order, single-object responses, insert/update/delete, rpc) and invented demo rows |
 
