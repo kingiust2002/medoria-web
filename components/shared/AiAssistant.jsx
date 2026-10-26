@@ -255,8 +255,9 @@ export default function AiAssistant({ lang, endpoint = "/api/chat", ui = UI }) {
           aria-expanded={open}
           className="group relative h-14 w-14 rounded-full bg-brand-gradient shadow-brand text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
         >
+          {/* decoration (aria-hidden): the pulse may pass the screen edge, it carries no content */}
           {!reduce && !open && (
-            <span className="absolute inset-0 rounded-full bg-brand-gradient opacity-60 animate-ping" style={{ animationDuration: "2.4s" }} />
+            <span aria-hidden="true" className="absolute inset-0 rounded-full bg-brand-gradient opacity-60 animate-ping pointer-events-none" style={{ animationDuration: "2.4s" }} />
           )}
           <span className="relative">
             <Icon name={open ? "close" : "sparkles"} size={24} strokeWidth={2} />

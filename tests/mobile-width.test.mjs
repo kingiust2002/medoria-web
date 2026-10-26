@@ -69,12 +69,17 @@ test("Beauty header lockup fits beside the mobile controls at every phone width"
 
 test("the mobile check covers both houses, all four languages and the real phone widths", () => {
   const routes = defaultRoutes();
+  // pages that really exist in each house (a 404 route now FAILS the check instead of passing as coverage)
+  const real = { health: ["", "/catalog", "/categories", "/about", "/contact", "/compare", "/wishlist", "/inquiry", "/print-catalog"], beauty: ["", "/catalog", "/about", "/contact", "/brands", "/worlds"] };
   for (const house of ["health", "beauty"]) {
     for (const l of LOCALES) {
-      for (const p of ["", "/catalog", "/categories", "/about", "/contact"]) {
+      for (const p of real[house]) {
         assert.ok(routes.includes(`/${house}/${l}${p}`), `missing /${house}/${l}${p}`);
       }
     }
+  }
+  for (const gone of ["/beauty/en/wishlist", "/beauty/en/compare", "/beauty/en/categories", "/health/en/brands", "/health/en/worlds"]) {
+    assert.ok(!routes.includes(gone), `${gone} answers 404 and must not be listed`);
   }
   assert.ok(routes.includes("/"));
   assert.deepEqual([...LOCALES].sort(), ["en", "fa", "ru", "tg"]);
