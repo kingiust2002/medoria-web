@@ -42,6 +42,15 @@ test("Health header lockup fits beside the mobile controls at every phone width"
     const { width } = lockupWidthAt(vw, cfg);
     if (vw < 1024) assert.ok(width <= vw - reserved + 0.5, `lockup ${width.toFixed(0)}px does not fit at ${vw}px`);
   }
+  // tablets (md ≤ width < lg) carry more header controls: the md reserve must make the lockup fit there too
+  const reservedMd = Number(read("components/layout/Header.jsx").match(/reservedMd=\{(\d+)\}/)?.[1]);
+  assert.ok(reservedMd > reserved, "Header.jsx must pass a larger reservedMd={…} for tablet widths");
+  for (let vw = 768; vw < 1280; vw += 8) {   // the compact header (with the menu button) is used up to the xl breakpoint
+    const { width } = lockupWidthAt(vw, { ...cfg, reserved: reservedMd });
+    assert.ok(width <= vw - reservedMd + 0.5, `lockup ${width.toFixed(0)}px does not fit at ${vw}px (tablet / small laptop)`);
+  }
+  assert.match(css, /\.brand-fluid\s*\{\s*--bh:\s*var\(--bh-base\);\s*\}/);
+  assert.match(css, /@media \(min-width: 768px\)\s*\{\s*\.brand-fluid\s*\{\s*--bh:\s*var\(--bh-md, var\(--bh-base\)\);\s*\}\s*\}/);
   assert.equal(lockupWidthAt(1440, cfg).height, 30, "desktop keeps the full 30px lockup");
   assert.equal(fluidLockupHeight({ ...cfg, reserved: 0 }), "30px", "without `reserved` the size is fixed");
   assert.match(fluidLockupHeight(cfg), /^clamp\(12px, calc\(\(100vw - \d+px\) \* 0\.\d+\), 30px\)$/);

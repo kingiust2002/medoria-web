@@ -18,8 +18,13 @@ import { HEALTH_RATIO, HEALTH_WIDTH_PER_H, HEALTH_GAPS, fluidLockupHeight } from
 // (sibling controls + container padding). The height then shrinks with the
 // viewport (never above `height`, never below `minHeight`) so the lockup can
 // never push the page wider than the screen. Without `reserved` the size is fixed.
-export default function Brand({ height = 28, symbol = true, onDark = false, className = "", reserved = 0, minHeight = 12 }) {
-  const H = fluidLockupHeight({ height, reserved, minHeight, widthPerH: HEALTH_WIDTH_PER_H, gaps: HEALTH_GAPS });
+export default function Brand({ height = 28, symbol = true, onDark = false, className = "", reserved = 0, reservedMd = 0, minHeight = 12 }) {
+  // --bh = the lockup height; every size below is a calc() of it (see lib/brandFluid.js).
+  const fluidArgs = { height, minHeight, widthPerH: HEALTH_WIDTH_PER_H, gaps: HEALTH_GAPS };
+  const vars = reserved
+    ? { "--bh-base": fluidLockupHeight({ ...fluidArgs, reserved }), ...(reservedMd ? { "--bh-md": fluidLockupHeight({ ...fluidArgs, reserved: reservedMd }) } : {}) }
+    : { "--bh": `${height}px` };
+  const H = "var(--bh)";
   const sym = `calc(${H} * 1.18)`;
   // "Health" is set a touch smaller than "Medoria" so the two wordmarks read
   // as one balanced lockup rather than "Health" overpowering it.
@@ -41,7 +46,8 @@ export default function Brand({ height = 28, symbol = true, onDark = false, clas
       dir="ltr"
       translate="no"
       aria-label="Medoria Health"
-      className={`inline-flex items-center gap-2.5 select-none group ${className}`}
+      className={`inline-flex items-center gap-2.5 select-none group ${reserved ? "brand-fluid " : ""}${className}`}
+      style={vars}
     >
       {Mark}
       <span className="inline-flex items-baseline gap-2">

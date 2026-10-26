@@ -75,6 +75,9 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  // End-to-end tests build into their own folder (their NEXT_PUBLIC_* values point
+  // at a fake database); unset in production, so the default `.next` is unchanged.
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   poweredByHeader: false,
   images: {
     formats: ["image/avif", "image/webp"],

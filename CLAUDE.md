@@ -86,6 +86,8 @@ hasn't been retired yet:
 - Never ask the owner for a PAT when the GitHub App/connector path is
   available — use the built-in GitHub tools.
 - Always run `npm run lint`, `npm test`, and `npm run build` before a PR.
+- Changes to the operator panels, the public product pages, caching or the header also need
+  `npm run test:e2e` (real browser, fake database; see `docs/E2E_TESTS.md`).
 - Design work is not done until real-screenshot visual QA ran
   (`medoria-gateway-visual-qa`) and was reviewed.
 
@@ -131,8 +133,9 @@ hasn't been retired yet:
   brand, URL) wrap. **Do not remove or override these**, and never use
   `overflow-x: hidden` on `html`/`body` (it breaks `sticky`).
 - Header lockups are fluid: pass `reserved={px}` (what the rest of the row needs) to
-  `<Brand>` / `<BeautyWordLockup>`; the math lives in `lib/brandFluid.js`. A new header
-  control means raising `reserved`.
+  `<Brand>` / `<BeautyWordLockup>` (and `reservedMd` for tablet widths, where the header
+  carries more controls); the math lives in `lib/brandFluid.js`. A new header control
+  means raising `reserved` / `reservedMd`.
 - The guard is a safety net, not permission: fix the element that overflows (add
   `min-w-0`, `flex-wrap`, `truncate`, a smaller size) instead of relying on the clip,
   because clipped content is still cut off.
