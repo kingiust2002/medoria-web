@@ -22,7 +22,10 @@ const SECRET = "hc-secret-token-4f9a";
 const STUB_DOCKER = `#!/usr/bin/env bash
 case "$1" in
   inspect) echo true ;;
-  ps) [ -n "\${STUB_UNHEALTHY:-}" ] && echo "\${STUB_UNHEALTHY}"; exit 0 ;;
+  ps)
+    [ "\${STUB_DOCKER_FAIL:-}" = ps ] && { echo "Cannot connect to the Docker daemon at unix:///var/run/docker.sock" >&2; exit 1; }
+    [ "\${STUB_DOCKER_HANG:-}" = ps ] && sleep 30
+    [ -n "\${STUB_UNHEALTHY:-}" ] && echo "\${STUB_UNHEALTHY}"; exit 0 ;;
   exec)
     all="$*"
     if   [[ "$all" == *pg_dumpall* ]]; then echo "-- globals"
@@ -278,6 +281,34 @@ test("heartbeat: everything fine → success ping; each kind of problem → /fai
     assert.match(srv.hits[0].body, /site health answered http 000/);
     assert.ok(!(ok.all + disk.all + unhealthy.all + bad.all + down.all).includes(SECRET));
   } finally { await srv.close(); sb.cleanup(); }
+});
+
+test("heartbeat: a Docker inspection that FAILS or HANGS is a problem, never 'no unhealthy containers'", async () => {
+  const sb = sandbox(), srv = await alertServer();
+  const site = await siteServer(200);
+  try {
+    // docker exits 1 (daemon down, no permission): site fine, disk fine, yet the heartbeat must say so
+    const failed = await heartbeat(sb, srv, site, { DISK_MAX_PERCENT: "101", STUB_DOCKER_FAIL: "ps" });
+    assert.equal(failed.code, 1, `docker ps failed but the heartbeat reported success:\n${failed.all}`);
+    assert.deepEqual(paths(srv), [`/${SECRET}-site/fail`], "a failure ping must be sent");
+    assert.match(srv.hits[0].body, /could not inspect docker/);
+    assert.ok(!srv.hits[0].body.includes("docker.sock"), "docker's own error text is not forwarded to the alert service");
+    assert.ok(!failed.all.includes(SECRET));
+
+    // docker hangs: bounded by DOCKER_TIMEOUT, also a problem
+    srv.hits.length = 0;
+    const t0 = Date.now();
+    const hung = await heartbeat(sb, srv, site, { DISK_MAX_PERCENT: "101", STUB_DOCKER_HANG: "ps", DOCKER_TIMEOUT: "1" });
+    assert.equal(hung.code, 1, hung.all);
+    assert.ok(Date.now() - t0 < 15000, "a hanging docker must not hang the heartbeat");
+    assert.match(srv.hits[0].body, /could not inspect docker/);
+
+    // a working docker that lists nothing is still healthy
+    srv.hits.length = 0;
+    const fine = await heartbeat(sb, srv, site, { DISK_MAX_PERCENT: "101" });
+    assert.equal(fine.code, 0, fine.all);
+    assert.deepEqual(paths(srv), [`/${SECRET}-site`]);
+  } finally { await site.close(); await srv.close(); sb.cleanup(); }
 });
 
 test("heartbeat: no configuration or a dead alert service changes nothing about the checks", async () => {
