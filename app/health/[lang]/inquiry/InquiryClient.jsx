@@ -39,7 +39,9 @@ export default function InquiryClient({ lang }) {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  // The list holds only ids; show what the database says about them now.
+  // The list holds only ids; show what the database says about them now. Dropping archived ids changes the list and
+  // fetches again: rows already loaded stay on screen meanwhile (`rows` only has items whose product is known), so
+  // the valid rows do not blink out and back.
   const idKey = items.map((x) => x.id).join(",");
   useEffect(() => {
     let cancelled = false;
@@ -135,7 +137,7 @@ export default function InquiryClient({ lang }) {
                 <button type="button" onClick={clear} className="text-[12px] font-semibold text-warn hover:underline">{c.clear}</button>
               </div>
               <ul className="space-y-3">
-                {(loading ? [] : rows).map((r) => (
+                {rows.map((r) => (
                   <li key={r.id} className="card p-3 flex items-start gap-3 min-w-0">
                     <div className="w-16 h-16 rounded-lg bg-canvas-soft border border-line overflow-hidden shrink-0 grid place-items-center text-brand-violet">
                       {r.product.image_url ? <img src={imageUrl(r.product.image_url)} alt="" className="w-full h-full object-cover" /> : <Icon name="package" size={22} />}

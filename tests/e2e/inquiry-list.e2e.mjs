@@ -141,3 +141,35 @@ test("the Health list does not touch another house's storage key, and the page i
   assert.match(html, /<meta name="robots" content="noindex/);
   await ctx.close();
 });
+
+// A list with archived/unknown ids is cleaned in two steps (fetch, drop what is gone, fetch again). The rows that are
+// still valid must stay on screen the whole time: a row that blinks out for a moment is a flicker for visitors and
+// made the test above read an empty list now and then (the old behaviour hid every row while re-fetching).
+test("cleaning a tampered list never blanks the rows that are still valid", async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  await ctx.addInitScript(() => {
+    if (!localStorage.getItem("medoria.inquiry.health.v1")) localStorage.setItem("medoria.inquiry.health.v1", JSON.stringify([{ id: 1, qty: 3 }, { id: 2, qty: 9 }, { id: 99999, qty: 1 }]));
+    // one sample per DOM change: how many quantity boxes are on screen, and is the "empty list" card shown
+    window.__timeline = [];
+    const sample = () => {
+      const rows = document.querySelectorAll('input[id^="qty-"]').length;
+      const empty = /list is empty|inquiry list is empty/i.test(document.body?.innerText || "") ? 1 : 0;
+      const last = window.__timeline[window.__timeline.length - 1];
+      if (!last || last.rows !== rows || last.empty !== empty) window.__timeline.push({ rows, empty });
+    };
+    new MutationObserver(sample).observe(document, { childList: true, subtree: true, attributes: true });
+    document.addEventListener("DOMContentLoaded", sample);
+  });
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/health/en/inquiry`, { waitUntil: "load" });
+  await page.getByText(/no longer available/i).waitFor();
+  await poll(async () => (await listOf(page)).length === 1, { label: "stored list cleaned" });
+  await page.waitForTimeout(800);                                   // let any second fetch finish
+  const timeline = await page.evaluate(() => window.__timeline);
+  const firstRow = timeline.findIndex((s) => s.rows > 0);
+  assert.ok(firstRow >= 0, `the valid row was never shown: ${JSON.stringify(timeline)}`);
+  const afterwards = timeline.slice(firstRow);
+  assert.ok(afterwards.every((s) => s.rows === 1 && !s.empty), `the valid row blinked out or the empty card flashed after it appeared: ${JSON.stringify(timeline)}`);
+  assert.equal(await page.getByLabel("Quantity").count(), 1);
+  await ctx.close();
+});
