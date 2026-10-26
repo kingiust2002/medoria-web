@@ -8,6 +8,7 @@ import { waLink, tgLink, quickInquiryMessage } from "@/lib/whatsapp";
 import { priceLabel, isOnRequest, formatPrice } from "@/lib/price";
 import { useCompare } from "@/lib/compare";
 import { useWishlist } from "@/lib/wishlist";
+import InquiryToggle from "@/components/inquiry/InquiryToggle";
 import QuoteModal from "@/components/product/QuoteModal";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
@@ -284,6 +285,8 @@ export default function ProductCard({ product: p, lang, compact = false, view = 
               {t.common.requestQuote}
             </button>
           </div>
+
+          <InquiryToggle productId={p.id} lang={lang} className="mt-1.5" />
 
           <Link
             href={`/health/${lang}/catalog/${p.slug || p.id}`}
