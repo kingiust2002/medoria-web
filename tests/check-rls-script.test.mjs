@@ -89,6 +89,7 @@ test("an open project fails: archived products, customer data and open signup ar
   const { code, out } = await run();
   assert.equal(code, 1, out);
   assert.match(out, /✗ FAIL\s+anon CANNOT see archived \(inactive\) Health products/);
+  for (const label of ["Health categories", "Beauty categories", "Beauty brands"]) assert.match(out, new RegExp(`✗ FAIL\\s+anon CANNOT see inactive ${label}`), `${label} (migration 31)`);
   assert.match(out, /✗ FAIL\s+anon CANNOT read quote_requests/);
   assert.match(out, /✗ FAIL\s+anon CANNOT read beauty_quote_requests/);
   assert.match(out, /✗ FAIL\s+Supabase Auth signup is disabled/);
@@ -130,6 +131,7 @@ for (const failing of ["server500", "schemacache", "badjson"]) {
       assert.match(out, new RegExp(`\\? UNKNOWN\\s+anon CANNOT read ${t}\\b`), `${t} must be UNKNOWN\n${out}`);
     }
     assert.match(out, /\? UNKNOWN\s+anon CANNOT see archived \(inactive\) Health products/);
+    for (const label of ["Health categories", "Beauty categories", "Beauty brands"]) assert.match(out, new RegExp(`\\? UNKNOWN\\s+anon CANNOT see inactive ${label}`), `${label} must be UNKNOWN on an error answer`);
     assert.ok(!/✓ PASS\s+anon CANNOT/.test(out), `no "CANNOT" check may pass on an error answer\n${out}`);
     assert.match(out, /inconclusive/i);
   });

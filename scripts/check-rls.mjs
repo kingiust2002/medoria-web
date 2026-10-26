@@ -111,6 +111,11 @@ expectReadable("anon can read categories", await select("categories"));
 expectInvisible("anon CANNOT see archived (inactive) Health products", await select("products", "&is_active=eq.false"));
 expectInvisible("anon CANNOT see archived (inactive) Beauty products", await select("beauty_products", "&is_active=eq.false"));
 
+// inactive categories and brands are not public either (migration 31)
+for (const [table, label] of [["categories", "Health categories"], ["beauty_categories", "Beauty categories"], ["beauty_brands", "Beauty brands"]]) {
+  expectInvisible(`anon CANNOT see inactive ${label}`, await select(table, "&is_active=eq.false"));
+}
+
 // 3) customer data and operator logs are private
 for (const table of ["quote_requests", "beauty_quote_requests", "contact_inquiries", "import_logs", "beauty_import_logs", "operator_audit_log", "operator_sessions", "operator_totp_state", "operator_recovery_used"]) {
   expectDenied(`anon CANNOT read ${table}`, await select(table));

@@ -69,3 +69,20 @@ test("Beauty already limits public reads to active rows (the model Health now fo
   const s = sql("10_beauty_catalog.sql");
   assert.match(s, /beauty_products_public_read[\s\S]*?USING \(is_active = true\)/);
 });
+
+test("migration 31 leaves exactly one active-only SELECT policy on the category and brand tables", () => {
+  const f = files.find((x) => x.startsWith("31_"));
+  assert.ok(f, "migration 31 is missing");
+  const s = sql(f);
+  for (const t of ["categories", "beauty_categories", "beauty_brands"]) assert.ok(s.includes(`'${t}'`), `31 does not cover ${t}`);
+  assert.match(s, /FROM pg_policies/);                                   // drops policies by lookup, not by remembered names
+  assert.match(s, /DROP POLICY %I ON public\.%I/);
+  assert.match(s, /CREATE POLICY %I ON public\.%I FOR SELECT USING \(is_active = true\)/);
+  assert.match(s, /RAISE EXCEPTION 'public\.%\.is_active is missing/);  // an old schema aborts instead of half-applying
+  assert.match(s, /^BEGIN;/m);
+  assert.match(s, /^COMMIT;/m);
+  assert.ok(!/\b(DELETE FROM|TRUNCATE|DROP TABLE|ALTER TABLE\s+\S+\s+(DROP|ADD))\b/i.test(s), "migration 31 must only touch policies");
+  // the live probe watches it
+  const probe = fs.readFileSync(new URL("../scripts/check-rls.mjs", import.meta.url), "utf8");
+  assert.match(probe, /anon CANNOT see inactive/);
+});
