@@ -15,7 +15,8 @@ import {
   ASSIGNEE_MAX, QUOTE_OPS_MESSAGES as M,
 } from "../lib/operator/quoteOps.js";
 import { notifyOutcome, recordNotifyResult } from "../lib/notify/record.js";
-import { formatQuoteNotice, formatReminderNotice, sendTelegramText } from "../lib/notify/telegram.js";
+import { formatQuoteNotice, formatReminderNotice, sendTelegramText, notifyNewQuote } from "../lib/notify/telegram.js";
+import { insertRequest } from "../lib/inquiry/save.js";
 import { runQuoteReminders } from "../lib/notify/reminders.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -182,16 +183,89 @@ test("recordNotifyResult writes the outcome to the right row and never throws", 
   assert.equal(await recordNotifyResult(throwing, "quote_requests", 7, { sent: true }), false);
 });
 
-test("both submit actions record the notice result and pass the tracking code into the notice", () => {
+test("both submit actions go through the shared insert, record the notice result and pass the tracking code into the notice", () => {
+  // The insert moved into lib/inquiry/save.js (inquiry list, #192); what #189 needs from it is unchanged: the stored row
+  // comes back, so its tracking code can reach the notice.
+  const save = read("lib/inquiry/save.js");
+  assert.match(save, /await db\.from\(table\)\.insert\(row\)\.select\(\)\.single\(\)/, "insertRequest must read the stored row back");
+  assert.match(save, /await db\.from\(table\)\.insert\(\{ \.\.\.rest, message \}\)\.select\(\)\.single\(\)/, "the fallback insert (no items column) must read it back too");
   for (const [file, table] of [["lib/actions/quote.js", "quote_requests"], ["lib/beauty/actions/quote.js", "beauty_quote_requests"]]) {
     const src = read(file);
-    assert.match(src, /\.insert\(row\)\.select\(\)\.single\(\)/, `${file} must read the stored row back`);
+    assert.match(src, new RegExp(`const \\{ data: saved, error \\} = await insertRequest\\(db, "${table}", row\\);`), `${file} must insert through insertRequest and keep the stored row`);
+    assert.ok(!/\.insert\(row\)/.test(src), `${file} must not bypass the shared insert`);
     assert.match(src, /tracking_code: saved\?\.tracking_code/);
     assert.match(src, new RegExp(`recordNotifyResult\\(db, "${table}", saved\\?\\.id, notice\\)`));
     // the visitor's answer never depends on the notice or on the code
     assert.match(src, /return \{ ok: true \};/);
     assert.ok(!/tracking_code[^\n]*return \{ ok: true,/.test(src), "the code must not be returned to the visitor");
+    // order: items resolved -> insert -> notice -> record -> ok
+    const order = ["resolveItems(", "await insertRequest(", "await notifyNewQuote(", "await recordNotifyResult(", "return { ok: true };"].map((t) => src.lastIndexOf(t));
+    assert.ok(order.every((n, k) => n > 0 && (k === 0 || n > order[k - 1])), `${file}: wrong order ${order}`);
   }
+});
+
+// The same pipeline the two actions run, with the real modules and a stand-in database: the stored row comes back from
+// the shared insert with its tracking code, the notice carries code AND product list, the result is recorded on that row.
+test("saving a list request keeps everything: stored row, tracking_code, notice result, product list (also before migration 33)", async () => {
+  const ENV = { TELEGRAM_BOT_TOKEN: "123456789:AAH-testtoken_testtoken_testtoken_1234", TELEGRAM_CHAT_ID_HEALTH: "-1001111111111", NEXT_PUBLIC_SITE_URL: "https://medoriaco.com" };
+  const items = [{ product_id: 1, sku: "G-1", name: "Gloves", quantity: 50 }, { product_id: 2, sku: "M-2", name: "Masks", quantity: 7 }, { product_id: 3, sku: null, name: "Gowns", quantity: 1 }, { product_id: 4, sku: null, name: "Caps", quantity: 2 }];
+  const row = { name: "Dr K", phone: "+992900", message: "hello", preferred_contact: "whatsapp", language: "en", product_name: "Gloves +3", product_id: null, product_sku: null, quantity: null, items };
+
+  async function pipeline({ failItemsColumn }) {
+    const calls = [];
+    let failed = !failItemsColumn;
+    const db = {
+      from: (table) => {
+        const c = { table };
+        calls.push(c);
+        const chain = {
+          insert(r) { c.insert = r; return chain; },
+          select() { return chain; },
+          single() {
+            if (!failed && "items" in c.insert) { failed = true; return Promise.resolve({ data: null, error: { code: "PGRST204", message: "Could not find the 'items' column" } }); }
+            return Promise.resolve({ data: { id: 77, tracking_code: "MH-AAAA-BBBB-CCCC", ...c.insert }, error: null });
+          },
+          update(v) { c.update = v; return chain; },
+          eq(col, val) { c.eq = [col, val]; return Promise.resolve({ error: null }); },
+        };
+        return chain;
+      },
+    };
+    const sent = [];
+    const fetchImpl = async (_url, init) => { sent.push(JSON.parse(init.body)); return { ok: true, status: 200 }; };
+    const { data: saved, error } = await insertRequest(db, "quote_requests", row);
+    assert.equal(error, undefined ?? error);
+    const notice = await notifyNewQuote({ kind: "health", id: saved?.id, row: { ...row, tracking_code: saved?.tracking_code } }, { env: ENV, fetchImpl });
+    const recorded = await recordNotifyResult(db, "quote_requests", saved?.id, notice);
+    return { calls, sent, saved, recorded };
+  }
+
+  for (const failItemsColumn of [false, true]) {
+    const r = await pipeline({ failItemsColumn });
+    const label = failItemsColumn ? "database without the items column" : "database with migration 33";
+    assert.equal(r.saved.id, 77, label);
+    assert.equal(r.saved.tracking_code, "MH-AAAA-BBBB-CCCC", `${label}: the stored row's tracking code must come back`);
+    assert.equal(r.sent.length, 1, label);
+    const text = r.sent[0].text;
+    assert.match(text, /^Medoria Health: new inquiry #77\nCode: MH-AAAA-BBBB-CCCC\n/, label);
+    assert.match(text, /Products \(4\): Gloves x 50; Masks x 7; Gowns x 1 \+1 more/, `${label}: the product list is in the notice`);
+    assert.equal(r.recorded, true, label);
+    const upd = r.calls.find((c) => c.update);
+    assert.deepEqual(upd.update, { notify_status: "sent", notify_detail: null }, label);
+    assert.deepEqual(upd.eq, ["id", 77], `${label}: the result is recorded on the stored row`);
+    const inserts = r.calls.filter((c) => c.insert);
+    if (failItemsColumn) {
+      assert.equal(inserts.length, 2, "the insert is repeated once without the items column");
+      assert.ok(!("items" in inserts[1].insert));
+      assert.match(inserts[1].insert.message, /- Gloves \(G-1\) × 50\n- Masks \(M-2\) × 7/, "the product list moved into the message: nothing is lost");
+    } else {
+      assert.equal(inserts.length, 1);
+      assert.deepEqual(inserts[0].insert.items, items);
+    }
+  }
+  // a failed notice is recorded as failed, with a class only
+  const failedDb = { from: () => { const ch = { update(v) { ch.v = v; return ch; }, eq() { return Promise.resolve({ error: null, v: ch.v }); } }; return ch; } };
+  assert.equal(await recordNotifyResult(failedDb, "quote_requests", 77, { sent: false, reason: "http_401" }), true);
 });
 
 // ── Telegram text ───────────────────────────────────────────────────────────
