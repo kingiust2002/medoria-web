@@ -100,12 +100,13 @@ export function createFakeDb(seedFactory) {
   let tables = clone(seedFactory());
   let counters = {};
   const log = [];
+  const faults = [];   // injected failures: { table, method, status, code }
 
   const nextId = (t) => {
     if (counters[t] == null) counters[t] = Math.max(0, ...((tables[t] || []).map((r) => Number(r.id) || 0)));
     return ++counters[t];
   };
-  const reset = () => { tables = clone(seedFactory()); counters = {}; log.length = 0; };
+  const reset = () => { tables = clone(seedFactory()); counters = {}; log.length = 0; faults.length = 0; };
 
   function respond(res, status, body, headers = {}) {
     res.writeHead(status, { "content-type": "application/json", "access-control-allow-origin": "*", "access-control-expose-headers": "content-range", ...headers });
@@ -125,6 +126,9 @@ export function createFakeDb(seedFactory) {
     if (url.pathname === "/__state") return respond(res, 200, tables);
     if (url.pathname === "/__log") return respond(res, 200, log);
     if (url.pathname === "/__reset") { reset(); return respond(res, 200, { ok: true }); }
+    // fault injection: POST /__fault {table, method, status, code}  → every such request answers with that error
+    if (url.pathname === "/__fault") { faults.push(await readBody(req)); return respond(res, 200, { ok: true }); }
+    if (url.pathname === "/__fault/clear") { faults.length = 0; return respond(res, 200, { ok: true }); }
 
     const key = String(req.headers.apikey || "").trim() || String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
     const kind = key === SERVICE_KEY ? "service" : key === ANON_KEY ? "anon" : "other";
@@ -136,6 +140,8 @@ export function createFakeDb(seedFactory) {
     if (!m) return respond(res, 404, { message: "not found" });
 
     const t = m[1];
+    const fault = faults.find((f) => f.table === t && f.method === req.method);
+    if (fault) { await readBody(req); return respond(res, fault.status, { code: fault.code || "XX000", message: "injected fault" }); }
     const prefer = String(req.headers.prefer || "");
     const wantRep = /return=representation/.test(prefer);
     const wantCount = /count=/.test(prefer);

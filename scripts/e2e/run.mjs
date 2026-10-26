@@ -81,7 +81,8 @@ try {
   }
   if (!up) { console.error("✗ the app did not start\n" + appLog.slice(-2000)); await stop(1); }
 
-  const files = fs.readdirSync(path.join(root, "tests/e2e")).filter((f) => f.endsWith(".e2e.mjs")).map((f) => path.join("tests/e2e", f));
+  const only = (process.env.E2E_FILES || "").split(",").filter(Boolean);   // run some files: E2E_FILES=security,panel-flows
+  const files = fs.readdirSync(path.join(root, "tests/e2e")).filter((f) => f.endsWith(".e2e.mjs") && (!only.length || only.some((o) => f.startsWith(o)))).map((f) => path.join("tests/e2e", f));
   // async spawn: the fake database lives in THIS process and must keep answering while the tests run
   const code = await new Promise((resolve) => {
     const t = spawn(process.execPath, ["--test", "--test-concurrency=1", ...files], {

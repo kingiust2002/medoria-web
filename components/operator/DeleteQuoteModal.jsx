@@ -36,7 +36,7 @@ export default function DeleteQuoteModal({ quote, statusLabel, onClose, onDelete
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4" onClick={busy ? undefined : onClose}>
       <div className="absolute inset-0 bg-navy/40 backdrop-blur-sm" />
-      <div onClick={(e) => e.stopPropagation()} dir="rtl" role="dialog" aria-modal="true" aria-labelledby="del-quote-title" className="relative card p-6 w-full max-w-md animate-fade-in">
+      <div onClick={(e) => e.stopPropagation()} dir="rtl" role="dialog" aria-modal="true" aria-labelledby="del-quote-title" className="relative card p-6 w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain animate-fade-in">
         <div className="flex items-center justify-between mb-4">
           <h2 id="del-quote-title" className="font-bold text-lg text-ink">حذف این درخواست؟</h2>
           <button type="button" onClick={onClose} disabled={busy} aria-label="بستن" className="grid place-items-center w-9 h-9 rounded-lg hover:bg-line-soft text-ink-muted"><Icon name="close" size={18} /></button>
@@ -59,7 +59,7 @@ export default function DeleteQuoteModal({ quote, statusLabel, onClose, onDelete
           فقط همین درخواست برای همیشه حذف می‌شود و قابل بازگشت نیست. اگر فقط می‌خواهید آن را کنار بگذارید، به‌جای حذف وضعیتش را «بسته‌شده» یا «اسپم» کنید.
         </p>
 
-        <div className="flex gap-2 mt-5">
+        <div className="flex gap-2 mt-5 sticky bottom-0 -mx-6 -mb-6 px-6 pb-6 pt-3 bg-surface border-t border-line">
           <button type="button" onClick={run} disabled={busy} className="btn-primary size-md flex-1 disabled:opacity-60 !bg-warn hover:!bg-warn/90">
             {busy ? <Spinner /> : <Icon name="trash" size={17} />}{busy ? "در حال حذف…" : "حذف درخواست"}
           </button>

@@ -30,6 +30,9 @@ export async function get(path, init = {}) {
 
 const sessions = {};   // house -> Playwright storageState, filled by the first login
 
+export const setFault = (table, method, status, code) => fetch(`${DB}/__fault`, { method: "POST", body: JSON.stringify({ table, method, status, code }) });
+export const clearFaults = () => fetch(`${DB}/__fault/clear`, { method: "POST" });
+
 // Logs `page` into the panel. The login endpoint is rate limited (8 per minute per IP), so the
 // browser form is used ONCE per house and the session is reused afterwards.
 export async function login(page, house = "health") {
