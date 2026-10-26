@@ -8,6 +8,11 @@ function fail(message) {
   process.exitCode = 1;
 }
 
+// A warning never changes the exit code: it names something the owner must decide, not a broken setup.
+function warn(message) {
+  console.error(`[self-host-env] WARNING ${message}`);
+}
+
 function parseEnv(text) {
   const values = new Map();
 
@@ -102,6 +107,16 @@ for (const key of [
     fail(`${key} is not a valid e-mail address`);
   } else if (/\.con$/i.test(value)) {
     fail(`${key} ends in ".con" -- did you mean ".com"?`);
+  }
+}
+
+// Visitor analytics (docs/PRIVACY_AND_ANALYTICS.md): off unless an id is set. Turning one on sends every
+// visitor's page views to Google / Yandex, which needs a privacy notice (and, depending on the visitors'
+// countries, consent) first. Only a reminder: the ids are not printed.
+{
+  const on = ["NEXT_PUBLIC_GA_MEASUREMENT_ID", "NEXT_PUBLIC_YANDEX_METRICA_ID"].filter((k) => values.get(k));
+  if (on.length) {
+    warn(`${on.join(" and ")} ${on.length > 1 ? "are" : "is"} set: visitor analytics will be active. Publish a privacy notice (and consent if required) BEFORE deploying this; see docs/PRIVACY_AND_ANALYTICS.md`);
   }
 }
 

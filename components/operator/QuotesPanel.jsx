@@ -9,6 +9,7 @@ import Icon from "@/components/shared/Icon";
 import { QUOTE_STATUSES, QUOTE_ACTIVE_STATUSES, QUOTE_STATUS_FA, QUOTE_STATUS_TONE, CONTACT_FA, LANG_FA } from "@/lib/operator/constants";
 import { PageHeader, Input, Select, Badge, EmptyState, Spinner } from "@/components/operator/ui";
 import { isOverdue, notifyFailed, waitingHours } from "@/lib/operator/quoteOps";
+import { reconcileQuotes, pruneSelection } from "@/lib/operator/quotesSync";
 import DeleteQuoteModal from "@/components/operator/DeleteQuoteModal";
 import BulkDeleteQuotesModal from "@/components/operator/BulkDeleteQuotesModal";
 
@@ -33,7 +34,10 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
   const [status, setStatus] = useState("");
   const [who, setWho] = useState("");                 // "" = everyone · "__none" = unassigned · else a name
   const [attention, setAttention] = useState(false);  // only requests that need follow-up
-  const [now] = useState(() => nowProp ?? Date.now());   // the server page passes it, so SSR and hydration agree
+  // The server page passes its clock, so SSR and hydration agree; every refresh brings a newer one, so "waiting for 24 h"
+  // keeps counting while the screen stays open.
+  const [now, setNow] = useState(() => nowProp ?? Date.now());
+  useEffect(() => { if (nowProp) setNow(nowProp); }, [nowProp]);
   const [openId, setOpenId] = useState(null);
   const [savingId, setSavingId] = useState(null);
   const [msg, setMsg] = useState(null);
@@ -42,6 +46,27 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
   const [selected, setSelected] = useState(() => new Set());
   const [pending, startTransition] = useTransition();
   const allRef = useRef(null);
+  const inflight = useRef(new Set());   // ids whose own edit has not reached the server yet: a refresh must not undo them
+
+  // Fresh rows from the server (router.refresh(), a request added/changed/removed in another session) reach the
+  // screen; an edit still in flight keeps its local version.
+  useEffect(() => {
+    setQuotes((cur) => reconcileQuotes(cur, initial, inflight.current));
+    setSelected((sel) => pruneSelection(sel, initial));
+  }, [initial]);
+
+  // Coming back to this tab asks the server again, so a request that arrived meanwhile shows up without a reload.
+  useEffect(() => {
+    let last = 0;
+    const again = () => {
+      if (document.visibilityState === "hidden" || Date.now() - last < 15000) return;
+      last = Date.now();
+      router.refresh();
+    };
+    window.addEventListener("focus", again);
+    document.addEventListener("visibilitychange", again);
+    return () => { window.removeEventListener("focus", again); document.removeEventListener("visibilitychange", again); };
+  }, [router]);
 
   const counts = useMemo(() => { const c = {}; for (const x of quotes) c[x.status] = (c[x.status] || 0) + 1; return c; }, [quotes]);
   const tabCounts = useMemo(() => Object.fromEntries(TABS.map((t) => [t.id, quotes.filter((x) => inTab(x, t.id)).length])), [quotes]);
@@ -75,8 +100,10 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
   function changeStatus(id, val, okText) {
     const prev = quotes.find((x) => x.id === id)?.status;
     patch(id, { status: val });
+    inflight.current.add(id);
     startTransition(async () => {
-      const res = await actions.updateQuoteStatus(id, val);
+      let res;
+      try { res = await actions.updateQuoteStatus(id, val); } finally { inflight.current.delete(id); }
       if (!res.ok) { patch(id, { status: prev }); flash(res.error); }
       else if (okText) flash(okText, true);
     });
@@ -95,14 +122,16 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
     startTransition(async () => {
       const res = await actions.updateQuoteNotes(id, notes);
       setSavingId(null);
-      if (res.ok) flash("یادداشت ذخیره شد.", true); else flash(res.error);
+      if (res.ok) { patch(id, { internal_notes: notes }); flash("یادداشت ذخیره شد.", true); } else flash(res.error);
     });
   }
 
   function bulkStatus(val) {
     const ids = selectedRows.map((x) => x.id);
+    ids.forEach((id) => inflight.current.add(id));
     startTransition(async () => {
-      const res = await actions.updateQuotesStatus(ids, val);
+      let res;
+      try { res = await actions.updateQuotesStatus(ids, val); } finally { ids.forEach((id) => inflight.current.delete(id)); }
       if (!res.ok) { flash(res.error); if (res.notFound) router.refresh(); return; }
       const done = new Set(res.updatedIds || ids);
       setQuotes((qs) => qs.map((x) => (done.has(x.id) ? { ...x, status: val } : x)));
@@ -236,6 +265,19 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
                       <Detail label="زبان" value={LANG_FA[x.language] || x.language} />
                       <Detail label="صفحه مبدأ" value={x.source_url} ltr />
                     </div>
+                    {Array.isArray(x.items) && x.items.length > 0 && (
+                      <div className="rounded-xl border border-line mb-3 overflow-hidden">
+                        <p className="px-3 py-2 text-[12px] font-medium text-ink-soft bg-canvas-soft border-b border-line">محصولات درخواستی ({x.items.length})</p>
+                        <ul className="divide-y divide-line">
+                          {x.items.map((it, i) => (
+                            <li key={`${it.product_id}-${i}`} className="px-3 py-2 text-sm flex items-start gap-3 min-w-0">
+                              <span className="min-w-0 flex-1 text-ink-soft">{it.name}{it.sku ? <span className="text-ink-faint" dir="ltr"> · {it.sku}</span> : null}</span>
+                              <span className="shrink-0 tabular text-ink" dir="ltr">× {it.quantity}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     {x.message && <div className="rounded-xl bg-canvas-soft border border-line p-3 text-sm text-ink-soft leading-relaxed mb-3 whitespace-pre-wrap">{x.message}</div>}
 
                     <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -293,7 +335,17 @@ function Detail({ label, value, ltr }) {
 }
 
 function AssigneeBox({ quote, saving, suggestions, onSave }) {
-  const [v, setV] = useState(quote.assigned_to || "");
+  const server = quote.assigned_to || "";
+  const [v, setV] = useState(server);
+  const [base, setBase] = useState(server);   // the server value this box last followed
+  // Same rule as the notes box: a change made in another session is followed while the field is untouched; text the
+  // user is typing is never overwritten.
+  useEffect(() => {
+    if (server === base) return;
+    const dirty = v !== base;
+    if (!dirty) setV(server);
+    setBase(server);
+  }, [server]); // eslint-disable-line react-hooks/exhaustive-deps
   const listId = `assignees-${quote.id}`;
   return (
     <div className="mb-4">
@@ -308,7 +360,17 @@ function AssigneeBox({ quote, saving, suggestions, onSave }) {
 }
 
 function NotesBox({ quote, saving, onSave }) {
-  const [v, setV] = useState(quote.internal_notes || "");
+  const server = quote.internal_notes || "";
+  const [v, setV] = useState(server);
+  const [base, setBase] = useState(server);   // the server text this box last followed
+  // New text from the server (another session saved a note) is followed only while the box is untouched; text the
+  // user is typing (dirty) is never overwritten.
+  useEffect(() => {
+    if (server === base) return;
+    const dirty = v !== base;
+    if (!dirty) setV(server);
+    setBase(server);
+  }, [server]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div>
       <span className="block text-[12px] font-medium text-ink-soft mb-1.5">یادداشت داخلی (فقط برای تیم)</span>

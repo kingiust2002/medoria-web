@@ -173,7 +173,7 @@ test("both quote actions save first, then notify, and never let the notice decid
   for (const file of ["lib/actions/quote.js", "lib/beauty/actions/quote.js"]) {
     const s = fs.readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
     assert.match(s, /from "@\/lib\/notify\/telegram"/, file);
-    const insert = s.indexOf(".insert(row).select().single()")   // the stored row (with its tracking code) is read back;
+    const insert = s.indexOf("await insertRequest(db, ");   // the shared insert (lib/inquiry/save.js) reads the stored row back, with its tracking code
     const notify = s.indexOf("await notifyNewQuote(");
     const ok = s.indexOf("return { ok: true };", notify);
     assert.ok(insert > 0 && notify > insert && ok > notify, `${file}: order must be insert -> notify -> ok`);

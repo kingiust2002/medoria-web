@@ -18,6 +18,7 @@ changes nothing in production.
 | --- | --- |
 | 2026-10-24 | Code merged ([#175](https://github.com/kingiust2002/medoria-web/pull/175)) and deployed (`main` `a3c8924`). Setup parts A–C below were done on the server: bot token and the two private group ids (Health, Beauty) are in `deploy/.env`, the env preflight passed, `deploy.sh` finished and the app container is healthy. |
 | 2026-10-24 — owner-confirmed | The owner confirmed that both contact forms and Telegram work correctly, after being asked to test Health and Beauty delivery to their matching groups. Panel visibility and deletion of the test rows are still awaiting confirmation: the panels had no delete option, which is added by [#178](https://github.com/kingiust2002/medoria-web/pull/178) (merged 2026-10-24, not yet deployed); after deploying, delete the test rows with the new button (part D step 12). |
+| 2026-10-25 — **final** | The owner declared the notifications **final and done**. The delete option ([#178](https://github.com/kingiust2002/medoria-web/pull/178)) and the archive/spam/bulk screen ([#181](https://github.com/kingiust2002/medoria-web/pull/181), migration 29) are deployed; the test and old inquiries were deleted (owner's report). Part D is complete, including the cleanup that was pending on 2026-10-24. |
 
 For the full part D acceptance check (forms and delivery are already owner-confirmed), verify all of the following: (1) a `TEST Health` inquiry from
 `/health/en/contact` is stored, appears in `/operator` → Quotes, and its notice arrives in

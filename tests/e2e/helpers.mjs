@@ -30,7 +30,7 @@ export async function get(path, init = {}) {
 
 const sessions = {};   // house -> Playwright storageState, filled by the first login
 
-export const setFault = (table, method, status, code) => fetch(`${DB}/__fault`, { method: "POST", body: JSON.stringify({ table, method, status, code }) });
+export const setFault = (table, method, status, code, message) => fetch(`${DB}/__fault`, { method: "POST", body: JSON.stringify({ table, method, status, code, message }) });
 export const clearFaults = () => fetch(`${DB}/__fault/clear`, { method: "POST" });
 
 // A TOTP code that the server will still accept: a time step newer than the last one it accepted, within

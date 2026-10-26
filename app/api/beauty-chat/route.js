@@ -61,8 +61,8 @@ async function buildSystem(lang) {
     })
     .join("\n");
 
-  // Optional operator-defined rules (Beauty-specific), editable from Vercel
-  // without a code redeploy. Falls back to the shared ASSISTANT_RULES.
+  // Optional operator-defined rules (Beauty-specific): set BEAUTY_ASSISTANT_RULES in deploy/.env on the
+  // server (read per request; restarting the app container is enough). Falls back to ASSISTANT_RULES.
   const operatorRules =
     process.env.BEAUTY_ASSISTANT_RULES?.trim() || process.env.ASSISTANT_RULES?.trim();
   const extra = operatorRules

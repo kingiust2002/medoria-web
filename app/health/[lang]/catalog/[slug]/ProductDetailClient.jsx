@@ -8,6 +8,7 @@ import { waLink, tgLink, productInquiryMessage } from "@/lib/whatsapp";
 import { priceLabel, priceLine, isOnRequest, formatPrice } from "@/lib/price";
 import { useCompare } from "@/lib/compare";
 import { useWishlist } from "@/lib/wishlist";
+import InquiryToggle from "@/components/inquiry/InquiryToggle";
 import ProductCard from "@/components/catalog/ProductCard";
 import QuoteModal from "@/components/product/QuoteModal";
 import ProductGallery from "@/components/product/ProductGallery";
@@ -174,6 +175,7 @@ export default function ProductDetailClient({ product, lang }) {
                   <Icon name="star" size={14} fill={isWished ? "currentColor" : "none"} />
                   {{ fa: "ذخیره در علاقه‌مندی‌ها", ru: "В избранное", tg: "Ба дӯстдошта", en: "Save to wishlist" }[lang] || "Save to wishlist"}
                 </button>
+                <InquiryToggle productId={product.id} lang={lang} className="mt-2" />
               </div>
 
               {/* Meta */}

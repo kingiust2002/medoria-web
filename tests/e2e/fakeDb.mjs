@@ -156,7 +156,7 @@ export function createFakeDb(seedFactory) {
 
     const t = m[1];
     const fault = faults.find((f) => f.table === t && f.method === req.method);
-    if (fault) { await readBody(req); return respond(res, fault.status, { code: fault.code || "XX000", message: "injected fault" }); }
+    if (fault) { await readBody(req); return respond(res, fault.status, { code: fault.code || "XX000", message: fault.message || "injected fault" }); }
     const prefer = String(req.headers.prefer || "");
     const wantRep = /return=representation/.test(prefer);
     const wantCount = /count=/.test(prefer);

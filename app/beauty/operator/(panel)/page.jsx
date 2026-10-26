@@ -56,6 +56,7 @@ export default async function BeautyDashboardPage() {
         <StatCard icon="badgeCheck" tone="ok"   label="محصولات فعال"       value={stats?.active ?? "—"} />
         <StatCard icon="dollar"   tone="warn"   label="بدون قیمت (استعلام)" value={stats?.noPrice ?? "—"} />
         <StatCard icon="image"    tone="muted"  label="بدون تصویر"          value={stats?.noImage ?? "—"} />
+        <StatCard icon="alertTriangle" tone="warn" label="محصولات با اطلاعات ناقص" value={stats?.incomplete ?? "—"} />
         <StatCard icon="quote"    tone="blue"   label="استعلام‌های جدید"     value={stats?.newQuotes ?? "—"} />
         <StatCard icon="chat"     tone="violet" label="کل استعلام‌ها"        value={stats?.totalQuotes ?? "—"} />
         <StatCard icon="alertTriangle" tone="warn" label="بدون پاسخ بیش از ۲۴ ساعت" value={stats?.overdueQuotes ?? "—"} />

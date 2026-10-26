@@ -94,8 +94,8 @@ const BADGE_TONES = {
   violet: "bg-brand-violet/10 text-brand-violet",
   pink: "bg-brand-pink/10 text-brand-pink",
 };
-export function Badge({ tone = "neutral", children, className = "" }) {
-  return <span className={`pill font-semibold !text-[11px] ${BADGE_TONES[tone] || BADGE_TONES.neutral} ${className}`}>{children}</span>;
+export function Badge({ tone = "neutral", children, className = "", title }) {
+  return <span title={title} className={`pill font-semibold !text-[11px] ${BADGE_TONES[tone] || BADGE_TONES.neutral} ${className}`}>{children}</span>;
 }
 
 const STAT_TONES = {
