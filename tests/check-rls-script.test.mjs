@@ -37,6 +37,16 @@ function handle(req, res) {
     return open ? json(201, {}) : json(401, { code: "42501", message: "permission denied" });
   }
   const table = u.pathname.replace("/rest/v1/", "");
+  // Match migration 30's real schema. SQL resolves selected columns before checking table grants:
+  // querying the nonexistent `id` must not be hidden by this fixture's generic 403 response.
+  const securityColumns = {
+    operator_sessions: ["sid", "panel", "created_at", "expires_at", "revoked_at", "ip_hash"],
+    operator_totp_state: ["panel", "last_step", "updated_at"],
+    operator_recovery_used: ["panel", "code_hash", "used_at"],
+  };
+  if (securityColumns[table] && u.searchParams.get("select")?.split(",").some((c) => !securityColumns[table].includes(c))) {
+    return json(400, { code: "42703", message: "selected column does not exist" });
+  }
   const archivedOnly = u.searchParams.get("is_active") === "eq.false";
   if (table === "products" || table === "categories") return json(200, archivedOnly ? (open ? [{ id: 2 }] : []) : [{ id: 1 }]);
   if (table === "beauty_products") return json(200, archivedOnly && open ? [{ id: 3 }] : []);

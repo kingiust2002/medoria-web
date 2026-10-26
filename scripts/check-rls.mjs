@@ -73,7 +73,10 @@ async function call(path, init = {}) {
 }
 
 // `extra` is an optional PostgREST filter such as "&is_active=eq.false".
-const select = (table, extra = "") => call(`/rest/v1/${table}?select=id&limit=1${extra}`);
+// Migration 30's session and second-factor tables have no `id` column. Probe their real keys so a
+// hardened database can return a permission denial instead of an unrelated undefined-column error.
+const PROBE_KEY = { operator_sessions: "sid", operator_totp_state: "panel", operator_recovery_used: "panel" };
+const select = (table, extra = "") => call(`/rest/v1/${table}?select=${PROBE_KEY[table] || "id"}&limit=1${extra}`);
 
 const INCONCLUSIVE = { server_error: 1, invalid: 1, network: 1, other: 1 };
 
