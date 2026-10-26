@@ -1,22 +1,15 @@
-// app/api/operator/logout/route.js — clears the operator session cookie.
+// app/api/operator/logout/route.js — ends the Health session on the server and clears the cookie.
 // POST-only + origin check so a cross-site page can't log the operator out.
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { OP_COOKIE } from "@/lib/operator/session";
-import { isSameOrigin } from "@/lib/operator/auth";
+import { OP_COOKIE, signSession, verifySession, sessionTtlMs } from "@/lib/operator/session";
+import { verifyCredentials, isOperatorConfigured, sessionCookieOptions, credentialsVersion, isSameOrigin } from "@/lib/operator/auth";
+import { handleLogout } from "@/lib/operator/loginFlow";
 
 export const runtime = "nodejs";
 
-export async function POST(req) {
-  if (!isSameOrigin(req)) {
-    return NextResponse.json({ error: "درخواست نامعتبر است." }, { status: 403 });
-  }
-  (await cookies()).set(OP_COOKIE, "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
-  return NextResponse.json({ ok: true });
-}
+const config = {
+  panel: "health", cookieName: OP_COOKIE, role: "admin",
+  auth: { verifyCredentials, isConfigured: isOperatorConfigured, sessionCookieOptions, credentialsVersion, isSameOrigin },
+  session: { signSession, verifySession, sessionTtlMs },
+};
+
+export const POST = (req) => handleLogout(req, config);

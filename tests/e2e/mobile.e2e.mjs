@@ -100,7 +100,7 @@ for (const width of WIDTHS) {
   test(`Health panel at ${width}px: pages, drawer, Quotes bulk bar and dialogs fit`, async () => {
     const { ctx, page } = await phone(width);
     await login(page, "health");
-    for (const route of ["/operator", "/operator/products", "/operator/categories", "/operator/settings"]) {
+    for (const route of ["/operator", "/operator/products", "/operator/categories", "/operator/settings", "/operator/activity"]) {
       await page.goto(BASE + route, { waitUntil: "networkidle" });
       await assertFits(page, `${route} @ ${width}`);
     }
@@ -141,12 +141,16 @@ for (const width of WIDTHS) {
   });
 }
 
-test("Beauty panel on a phone: Quotes screen fits", async () => {
+test("Beauty panel on a phone: Quotes screen, settings and activity fit", async () => {
   const { ctx, page } = await phone(360);
   await login(page, "beauty");
   await page.goto(`${BASE}/beauty/operator/quotes`, { waitUntil: "networkidle" });
   await assertFits(page, "beauty quotes @ 360");
   await page.getByLabel(/انتخاب E2E Beauty Customer/).check();
   await assertFits(page, "beauty quotes selected @ 360");
+  for (const route of ["/beauty/operator/settings", "/beauty/operator/activity"]) {
+    await page.goto(BASE + route, { waitUntil: "networkidle" });
+    await assertFits(page, `${route} @ 360`);
+  }
   await ctx.close();
 });

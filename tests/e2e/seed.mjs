@@ -32,5 +32,6 @@ export function seed() {
     quote_requests: [quote(1, "new"), quote(2, "new"), quote(3, "contacted"), quote(4, "spam"), quote(5, "archived")],
     beauty_categories: [], beauty_products: [], beauty_brands: [],
     beauty_quote_requests: [quote(1, "new", { name: "E2E Beauty Customer" })],
+    operator_audit_log: [], operator_sessions: [], operator_totp_state: [], operator_recovery_used: [],
   };
 }

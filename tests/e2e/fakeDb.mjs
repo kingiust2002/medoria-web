@@ -15,7 +15,11 @@ export const ANON_KEY = "anon-test-key";
 export const SERVICE_KEY = "service-test-key";
 
 const RESERVED = new Set(["select", "order", "limit", "offset", "on_conflict", "columns"]);
-const UNIQUE = { products: ["slug"], beauty_products: ["slug"], categories: ["slug"], beauty_categories: ["slug"] };
+// unique constraints, as lists of column sets
+const UNIQUE = {
+  products: [["slug"]], beauty_products: [["slug"]], categories: [["slug"]], beauty_categories: [["slug"]],
+  operator_sessions: [["sid"]], operator_totp_state: [["panel"]], operator_recovery_used: [["panel", "code_hash"]],
+};
 
 const clone = (x) => JSON.parse(JSON.stringify(x));
 const now = () => new Date().toISOString();
@@ -100,12 +104,20 @@ export function createFakeDb(seedFactory) {
   let tables = clone(seedFactory());
   let counters = {};
   const log = [];
+  const faults = [];   // injected failures: { table, method, status, code }
 
   const nextId = (t) => {
     if (counters[t] == null) counters[t] = Math.max(0, ...((tables[t] || []).map((r) => Number(r.id) || 0)));
     return ++counters[t];
   };
-  const reset = () => { tables = clone(seedFactory()); counters = {}; log.length = 0; };
+  // Resetting restores the data between tests but KEEPS the login state (sessions, second-factor memory),
+  // so a session created once per test file stays valid; `?all=1` wipes that too.
+  const AUTH_TABLES = ["operator_sessions", "operator_totp_state", "operator_recovery_used"];
+  const reset = (all = false) => {
+    const keep = all ? {} : Object.fromEntries(AUTH_TABLES.map((t) => [t, tables[t]]));
+    tables = { ...clone(seedFactory()), ...keep };
+    counters = {}; log.length = 0; faults.length = 0;
+  };
 
   function respond(res, status, body, headers = {}) {
     res.writeHead(status, { "content-type": "application/json", "access-control-allow-origin": "*", "access-control-expose-headers": "content-range", ...headers });
@@ -124,7 +136,10 @@ export function createFakeDb(seedFactory) {
     if (req.method === "OPTIONS") { res.writeHead(204, { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*" }); return res.end(); }
     if (url.pathname === "/__state") return respond(res, 200, tables);
     if (url.pathname === "/__log") return respond(res, 200, log);
-    if (url.pathname === "/__reset") { reset(); return respond(res, 200, { ok: true }); }
+    if (url.pathname === "/__reset") { reset(url.searchParams.get("all") === "1"); return respond(res, 200, { ok: true }); }
+    // fault injection: POST /__fault {table, method, status, code}  → every such request answers with that error
+    if (url.pathname === "/__fault") { faults.push(await readBody(req)); return respond(res, 200, { ok: true }); }
+    if (url.pathname === "/__fault/clear") { faults.length = 0; return respond(res, 200, { ok: true }); }
 
     const key = String(req.headers.apikey || "").trim() || String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
     const kind = key === SERVICE_KEY ? "service" : key === ANON_KEY ? "anon" : "other";
@@ -136,6 +151,8 @@ export function createFakeDb(seedFactory) {
     if (!m) return respond(res, 404, { message: "not found" });
 
     const t = m[1];
+    const fault = faults.find((f) => f.table === t && f.method === req.method);
+    if (fault) { await readBody(req); return respond(res, fault.status, { code: fault.code || "XX000", message: fault.message || "injected fault" }); }
     const prefer = String(req.headers.prefer || "");
     const wantRep = /return=representation/.test(prefer);
     const wantCount = /count=/.test(prefer);
@@ -173,8 +190,10 @@ export function createFakeDb(seedFactory) {
       const created = [];
       for (const raw of input) {
         const row = { ...raw };
-        for (const col of UNIQUE[t] || []) {
-          if (row[col] != null && tables[t].some((r) => r[col] === row[col])) return respond(res, 409, { code: "23505", message: `duplicate key value violates unique constraint on ${col}` });
+        for (const cols of UNIQUE[t] || []) {
+          if (cols.every((c) => row[c] != null) && tables[t].some((r) => cols.every((c) => r[c] === row[c]))) {
+            return respond(res, 409, { code: "23505", message: `duplicate key value violates unique constraint on ${cols.join(",")}` });
+          }
         }
         if (row.id == null) row.id = nextId(t);
         if (row.created_at == null) row.created_at = now();

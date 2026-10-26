@@ -24,7 +24,7 @@ function walk(dir) {
 
 const files = ["app", "lib", "components"].flatMap((d) => walk(path.join(root, d)));
 const src = new Map(files.map((f) => [rel(f), fs.readFileSync(f, "utf8")]));
-const PRIVATE_TABLES = "quote_requests|beauty_quote_requests|contact_inquiries|import_logs|beauty_import_logs";
+const PRIVATE_TABLES = "quote_requests|beauty_quote_requests|contact_inquiries|import_logs|beauty_import_logs|operator_audit_log|operator_sessions|operator_totp_state|operator_recovery_used";
 // receiver of every `<receiver>.from("<private table>")`, e.g. `admin`, `a.admin`, `db`
 const PRIVATE_FROM_G = new RegExp(`([\\w.]+)\\s*\\.from\\(\\s*["'\`](${PRIVATE_TABLES})["'\`]\\s*\\)`, "g");
 

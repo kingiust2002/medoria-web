@@ -30,8 +30,40 @@ export async function get(path, init = {}) {
 
 const sessions = {};   // house -> Playwright storageState, filled by the first login
 
-// Logs `page` into the panel. The login endpoint is rate limited (8 per minute per IP), so the
-// browser form is used ONCE per house and the session is reused afterwards.
+export const setFault = (table, method, status, code, message) => fetch(`${DB}/__fault`, { method: "POST", body: JSON.stringify({ table, method, status, code, message }) });
+export const clearFaults = () => fetch(`${DB}/__fault/clear`, { method: "POST" });
+
+// A TOTP code that the server will still accept: a time step newer than the last one it accepted, within
+// the ±1 window. Several test files log in separately, so look at what the fake database remembers.
+export async function freshCode(secret) {
+  const { totpAt, stepOf } = await import("../../lib/operator/security.js");
+  for (let i = 0; i < 40; i++) {
+    const last = Number((await state()).operator_totp_state?.find((r) => r.panel === "beauty")?.last_step || 0);
+    const now = stepOf(Date.now());
+    const step = [now, now + 1].find((s) => s > last);
+    if (step) return totpAt(secret, step);
+    await new Promise((r) => setTimeout(r, 1500));   // the window has no newer step yet
+  }
+  throw new Error("no usable two-step code (the 30 s window is used up)");
+}
+
+// Log in through the API (no browser). `ip` varies x-real-ip so the per-IP login throttle (8 a minute)
+// does not couple unrelated tests. Returns { status, body, cookie }.
+let ipCounter = 10;
+export async function apiLogin(house, { user, password, code, recovery, ip } = {}) {
+  const path = house === "beauty" ? "/api/beauty-operator/login" : "/api/operator/login";
+  const res = await fetch(BASE + path, {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: BASE, "x-real-ip": ip || `198.51.100.${ipCounter++}` },
+    body: JSON.stringify({ username: user ?? process.env[`E2E_${house.toUpperCase()}_USER`], password: password ?? process.env[`E2E_${house.toUpperCase()}_PASSWORD`], code, recovery }),
+  });
+  const cookie = (res.headers.getSetCookie?.() || []).map((c) => c.split(";")[0]).find((c) => /^medoria_/.test(c)) || "";
+  return { status: res.status, body: await res.json().catch(() => ({})), cookie };
+}
+
+// Logs `page` into the panel. The login endpoint is rate limited (8 per minute per IP), so the browser form
+// is used ONCE per house per process and the session is reused afterwards. Beauty has two-step login enabled in
+// the e2e setup, so its form asks for a code too.
 export async function login(page, house = "health") {
   if (!sessions[house]) {
     const user = process.env[`E2E_${house.toUpperCase()}_USER`];
@@ -39,6 +71,10 @@ export async function login(page, house = "health") {
     await page.goto(`${BASE}/login/${house}`, { waitUntil: "networkidle" });
     await page.fill('input[name="username"]', user);
     await page.fill('input[name="password"]', pass);
+    if (house === "beauty") {
+      await page.click('button[type="submit"]');                        // first attempt: the server asks for the code
+      await page.fill('input[name="code"]', await freshCode(process.env.E2E_BEAUTY_TOTP_SECRET));
+    }
     await Promise.all([
       page.waitForURL((u) => /\/operator(\/|$)|\/beauty\/operator/.test(u.pathname), { timeout: 20000 }),
       page.click('button[type="submit"]'),
