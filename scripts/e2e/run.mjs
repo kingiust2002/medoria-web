@@ -98,6 +98,7 @@ try {
         E2E_HEALTH_USER: creds.health.user, E2E_HEALTH_PASSWORD: creds.health.password,
         E2E_HEALTH_SESSION_SECRET: serverEnv.OPERATOR_SESSION_SECRET, E2E_HEALTH_PASSWORD_HASH: serverEnv.OPERATOR_PASSWORD_HASH,
         E2E_BEAUTY_USER: creds.beauty.user, E2E_BEAUTY_PASSWORD: creds.beauty.password,
+        E2E_BEAUTY_SESSION_SECRET: serverEnv.BEAUTY_OPERATOR_SESSION_SECRET, E2E_BEAUTY_PASSWORD_HASH: serverEnv.BEAUTY_OPERATOR_PASSWORD_HASH,
         E2E_BEAUTY_TOTP_SECRET: beautyTotp.secret, E2E_BEAUTY_RECOVERY_CODES: beautyTotp.recovery.map((c) => c.code).join(","),
       },
     });

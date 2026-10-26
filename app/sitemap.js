@@ -6,9 +6,9 @@
 // pages can never contradict each other.
 import { SITE_URL, SEO_LOCALES, SEO_DEFAULT_LOCALE } from "@/lib/seo";
 import { CATEGORIES } from "@/lib/i18n";
-import { getCategories, getProducts } from "@/lib/supabase";
+import { getCategories, getAllProducts } from "@/lib/supabase";
 import { buildHealthCategoryTree, flattenHealthCategoryTree } from "@/lib/health/categories";
-import { getBeautyProducts } from "@/lib/beauty/catalog";
+import { getAllBeautyProducts } from "@/lib/beauty/catalog";
 import { isBeautyIndexable } from "@/lib/beauty/seo";
 
 const HEALTH = "/health";
@@ -109,7 +109,7 @@ export default async function sitemap() {
     }
 
     let beautyProducts = [];
-    try { beautyProducts = await getBeautyProducts(); } catch { /* build-safe */ }
+    try { beautyProducts = await getAllBeautyProducts(); } catch { /* build-safe */ }
     for (const p of beautyProducts || []) {
       const slug = p.slug || p.id;
       if (!slug) continue;
@@ -128,7 +128,7 @@ export default async function sitemap() {
   }
 
   let products = [];
-  try { products = await getProducts(); } catch { /* build-safe: omit products if DB unreachable */ }
+  try { products = await getAllProducts(); } catch { /* build-safe: omit products if DB unreachable */ }
   for (const p of products || []) {
     const slug = p.slug || p.id;
     if (!slug) continue;

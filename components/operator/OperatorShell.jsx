@@ -5,6 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTheme } from "next-themes";
 import Icon from "@/components/shared/Icon";
+import { requestLogout } from "@/lib/operator/logoutClient";
+import LogoutAlert from "@/components/operator/LogoutAlert";
 import { useIdleLogout } from "@/lib/useIdleLogout";
 
 const NAV = [
@@ -36,8 +38,14 @@ export default function OperatorShell({ children }) {
 
   const isActive = (href) => (href === "/operator" ? pathname === "/operator" : pathname.startsWith(href));
 
+  // A logout counts only when the server confirms the session ended; otherwise the panel stays open and says so.
+  const [logoutError, setLogoutError] = useState("");
+  const [loggingOut, setLoggingOut] = useState(false);
   async function logout() {
-    try { await fetch("/api/operator/logout", { method: "POST" }); } catch {}
+    setLoggingOut(true);
+    const r = await requestLogout("/api/operator/logout");
+    setLoggingOut(false);
+    if (!r.ok) { setLogoutError(r.message); return; }
     router.push("/login/health");
     router.refresh();
   }
@@ -68,6 +76,7 @@ export default function OperatorShell({ children }) {
 
   return (
     <div className="lg:grid lg:grid-cols-[264px_1fr] min-h-screen">
+      <LogoutAlert message={logoutError} busy={loggingOut} onRetry={logout} onClose={() => setLogoutError("")} />
       {/* Desktop sidebar (right side in RTL) */}
       <aside className="hidden lg:flex flex-col gap-6 border-l border-line bg-surface p-4 sticky top-0 h-screen">
         <div className="pt-2"><Brandblock /></div>

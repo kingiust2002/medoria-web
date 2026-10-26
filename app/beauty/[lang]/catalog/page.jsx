@@ -6,10 +6,12 @@
 // HONEST pre-launch state — world tiles + "opens soon, request now" — never
 // fake product cards.
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { LOCALES } from "@/lib/i18n";
 import { waLink, tgLink, bulkInquiryMessage } from "@/lib/whatsapp";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
-import { getBeautyCategoryTree, getBeautyCategoryPath, getBeautyBrands, getBeautyProducts } from "@/lib/beauty/catalog";
+import { getBeautyCategoryTree, getBeautyCategoryPath, getBeautyBrands, getBeautyProductsPage } from "@/lib/beauty/catalog";
+import { parsePage } from "@/lib/catalogQuery";
 import { beautyRobots } from "@/lib/beauty/seo";
 import { nameOf, deptHref, copyFor } from "@/lib/beauty/worlds";
 import BeautyProductCard from "@/components/beauty/catalog/BeautyProductCard";
@@ -73,6 +75,32 @@ export async function generateMetadata(props) {
   return { title: `${c.title} — ${t.common.brand}`, description: c.subtitle, robots: await beautyRobots(lang) };
 }
 
+const PAGER = {
+  fa: { nav: "صفحه‌بندی", prev: "قبلی", next: "بعدی", page: "صفحه" },
+  ru: { nav: "Страницы", prev: "Назад", next: "Далее", page: "Страница" },
+  tg: { nav: "Саҳифаҳо", prev: "Қафо", next: "Пеш", page: "Саҳифа" },
+  en: { nav: "Pages", prev: "Previous", next: "Next", page: "Page" },
+};
+
+// Plain links, so paging works without JavaScript and every page is crawlable.
+function Pager({ page, pages, hrefFor, labels }) {
+  if (pages <= 1) return null;
+  const from = Math.max(1, Math.min(page - 2, pages - 4)), to = Math.min(pages, from + 4);
+  const nums = Array.from({ length: to - from + 1 }, (_, i) => from + i);
+  const cell = "min-w-10 h-10 px-3 rounded-xl border text-[13px] font-semibold inline-flex items-center justify-center transition-colors";
+  return (
+    <nav aria-label={labels.nav} className="mt-10 flex flex-wrap items-center justify-center gap-2">
+      {page > 1 && <Link href={hrefFor(page - 1)} rel="prev" className={`${cell} bg-surface border-line text-ink-muted hover:text-ink`}>{labels.prev}</Link>}
+      {nums.map((n) => (
+        <Link key={n} href={hrefFor(n)} aria-label={`${labels.page} ${n}`} aria-current={n === page ? "page" : undefined}
+          className={`${cell} ${n === page ? "text-white border-transparent" : "bg-surface border-line text-ink-muted hover:text-ink"}`}
+          style={n === page ? { background: "linear-gradient(120deg,var(--v-navy),var(--v-copper))" } : undefined}>{n}</Link>
+      ))}
+      {page < pages && <Link href={hrefFor(page + 1)} rel="next" className={`${cell} bg-surface border-line text-ink-muted hover:text-ink`}>{labels.next}</Link>}
+    </nav>
+  );
+}
+
 const str = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 
 export default async function BeautyCatalogPage(props) {
@@ -88,21 +116,24 @@ export default async function BeautyCatalogPage(props) {
   const q = str(sp.q, 80);
   const sort = SORTS.includes(sp.sort) ? sp.sort : "default";
   const hasFilters = Boolean(catSlug || brand || q);
+  const pageNo = parsePage(sp.page);
 
-  const [tree, path, brands, products] = await Promise.all([
+  const [tree, path, brands, result] = await Promise.all([
     getBeautyCategoryTree(),
     catSlug ? getBeautyCategoryPath(catSlug) : Promise.resolve(null),
     getBeautyBrands(),
-    getBeautyProducts({
+    getBeautyProductsPage({
       categorySlug: catSlug || undefined,
       brand: brand || undefined,
       search: q || undefined,
       sort,
+      lang,
+      page: pageNo,
     }),
   ]);
 
   // Live once anything is published; before that, the honest pre-launch state.
-  const live = products.length > 0 || hasFilters;
+  const live = result.total > 0 || hasFilters;
 
   // Tree-aware taxonomy (migration 12): department chips → the active
   // department's children → the active group's children. `trail` is root→…→current.
@@ -116,12 +147,16 @@ export default async function BeautyCatalogPage(props) {
 
   // GET-link builder that preserves the other active filters.
   const href = (patch) => {
-    const merged = { cat: catSlug, brand, q, sort: sort === "default" ? "" : sort, ...patch };
+    const merged = { cat: catSlug, brand, q, sort: sort === "default" ? "" : sort, page: "", ...patch };   // changing a filter returns to page 1
     const p = new URLSearchParams();
     for (const [k, v] of Object.entries(merged)) if (v) p.set(k, v);
     const s = p.toString();
     return `/beauty/${lang}/catalog${s ? `?${s}` : ""}`;
   };
+
+  // A page number past the end (an old link after products were removed) goes to the first page.
+  if (result.clamped) redirect(href({ page: "" }));
+  const products = result.rows;
 
   const catName = (x) => x[`name_${lang}`] || x.name_en || x.slug;
   const pillCls = (active) => `pill text-[12px] font-semibold inline-flex items-center gap-1.5 transition-colors ${active ? "text-white" : "bg-surface border border-line text-ink-muted hover:text-ink"}`;
@@ -204,7 +239,7 @@ export default async function BeautyCatalogPage(props) {
 
             {/* Result count + clear */}
             <div className="flex items-center justify-between gap-3 mb-5">
-              <p className="text-[13px] text-ink-muted"><span className="font-bold text-ink tabular">{products.length}</span> {c.results}</p>
+              <p className="text-[13px] text-ink-muted"><span className="font-bold text-ink tabular">{result.total}</span> {c.results}</p>
               {hasFilters && (
                 <Link href={`/beauty/${lang}/catalog`} className="text-[12px] font-semibold text-[color:var(--v-accent)] inline-flex items-center gap-1">
                   <Icon name="close" size={13} /> {c.clear}
@@ -226,6 +261,8 @@ export default async function BeautyCatalogPage(props) {
                 ))}
               </div>
             )}
+
+            <Pager page={result.page} pages={result.pages} hrefFor={(n) => href({ page: n > 1 ? String(n) : "" })} labels={PAGER[lang] || PAGER.en} />
           </>
         ) : (
           <>

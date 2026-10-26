@@ -2298,6 +2298,12 @@ The R2 snapshot layout differs from the older `roles.sql/schema.sql/data.sql` fo
 - Backup alerting (item 1, "Remaining") is still open. A fresh full chain `20261024T115301Z` passed before the 2026-10-24 changes.
 - Item 4 (checkout equals `main`) holds again: the VPS checkout was fast-forwarded to `main` `a3c8924` and redeployed on 2026-10-24. The rollback image for that deploy is `medoria-app-app:rollback-before-20261024`.
 
+**Status update 2026-10-25** (details in §23.9):
+
+- Item 3b is **closed**: forms, panels, Telegram notices and test-data cleanup are done (owner's report; the delete option exists since #178). The 7 old `new` inquiries were judged obsolete by the owner and deleted.
+- Backup alerting (item 1, "Remaining") is still open; so is the data gap (item 2).
+- Item 4 holds: the checkout was fast-forwarded again on 2026-10-25 (`main` includes #178, #179, #181 and migration 29).
+
 
 ### 22.9 Secondary domain `medoria.co` (2026-10-11)
 
@@ -2495,33 +2501,36 @@ In this order:
 - **Contact forms and Telegram — owner-confirmed on 2026-10-24.** After being asked to submit `TEST Health` and `TEST Beauty` and check that each notice reaches only its matching group, the owner reported that the forms and Telegram work correctly. This is a manual production result reported by the owner, not a test run by the reviewing agent.
 - **Panel visibility and cleanup — not yet reported.** Confirm that the test requests appear in `/operator` → Quotes and `/beauty/operator` → Quotes, then delete the two test rows. Keep §22.7 item 3b partly open until these remaining checks are confirmed.
 - **Deleting the test rows was impossible until [#178](https://github.com/kingiust2002/medoria-web/pull/178)** (merged 2026-10-24, **not yet deployed**): neither panel had a delete operation at all, not merely a hidden button. #178 adds a trash button per request with a confirmation showing the request's details, for Health (`quote_requests`) and Beauty (`beauty_quote_requests`) separately; the server checks the panel's own session first. It is application code only (no migration, no `.env` change). Do not remove the test rows with SQL from Studio unless there is an urgent reason; after deploying, use the new button.
+- **2026-10-25 update:** #178 was deployed and the owner reported the whole deploy checklist done and correct (it included deleting test requests from both panels); the old inquiries were deleted as obsolete. The first two bullets above are therefore resolved. Not itemised in the report, so still listed as unverified below: the price-edit test, the archived-product 404 page, `--insert-test`.
 - **Panel actions from §23.6 step 5:** price edit of a test product showing on the public page within seconds, archiving it giving a 404, reactivating it. Not reported.
 - **The archived product page answering 404** (`https://medoriaco.com/health/en/catalog/operating-room-gown`). `check:rls` proves the *API* hides archived rows; the page itself was not reported.
 - **`check:rls --insert-test`** (write probe) was not run.
 
 #### 23.7.4 Open items after 2026-10-24
 
+*Superseded by §23.9.3 (2026-10-25); kept as history. Struck-through items are done.*
+
 Operations and production:
 
-1. Deploy `main` (it contains #178 and #179, below), then finish the panel-visibility checks and delete the test rows with the new delete button (§23.7.3). Both contact forms and Telegram delivery were confirmed by the owner on 2026-10-24.
-2. The 7 old `new` inquiries in `quote_requests` (latest 2026-06-13) still need a business follow-up; their content is not recorded here.
+1. ~~Deploy `main` (it contains #178 and #179, below), then finish the panel-visibility checks and delete the test rows with the new delete button (§23.7.3). Both contact forms and Telegram delivery were confirmed by the owner on 2026-10-24.~~ **Done 2026-10-25:** #178 deployed, test inquiries deleted (owner's report).
+2. ~~The 7 old `new` inquiries in `quote_requests` (latest 2026-06-13) still need a business follow-up; their content is not recorded here.~~ **Done 2026-10-25:** the owner judged the old inquiries obsolete and deleted them.
 3. The data gap since the `20260901T023001Z` snapshot (§22.7 item 2) remains.
 4. Backup alerting: a dead-man's switch for the cron job, and an external uptime monitor (§22.8). `production-backup.sh --check` is still the only freshness test.
-5. Remove the rollback images once the new build has run cleanly for a few days: `docker rmi medoria-app-app:rollback-before-20261024` (and `medoria-app-app:rollback-20261011` if it still exists).
-6. Docker packages are still on hold (§23.2). Plan a fresh backup, `apt-mark unhold`, upgrade `docker-ce`/`containerd.io`, then run the live checks. Until then Docker security updates do not install.
-7. Rotate the Supavisor Erlang cookie: it appeared in a pasted process listing during the 2026-10-20 session.
+5. Remove the rollback images once the new build has run cleanly for a few days: `docker rmi medoria-app-app:rollback-before-20261024` (and `medoria-app-app:rollback-20261011` if it still exists). **Partly done 2026-10-25:** `rollback-20261011` removed. Keep `rollback-before-20261025b`; remove `rollback-before-20261024` and `rollback-before-20261025` around 2026-10-29 if the site stayed quiet.
+6. ~~Docker packages are still on hold (§23.2). Plan a fresh backup, `apt-mark unhold`, upgrade `docker-ce`/`containerd.io`, then run the live checks. Until then Docker security updates do not install.~~ **Done 2026-10-25:** Docker packages upgraded; containers `healthy`, live checks `200` (owner's report; versions not recorded). The hold was lifted, so Docker security updates install normally from now on.
+7. ~~Rotate the Supavisor Erlang cookie: it appeared in a pasted process listing during the 2026-10-20 session.~~ **Closed 2026-10-25:** no Erlang distribution port is listening (`ss -ltn | grep -E ':4369|:9100'` printed nothing, owner's report), so the cookie cannot be reached; no rotation needed.
 
 Repository and GitHub:
 
 8. Revoke the old classic GitHub token mentioned in `SECURITY-CHECKLIST.md`.
-9. Delete the superseded remote branches, which still exist: `chore/trusted-client-ip-and-postcss`, `fix/customer-data-and-product-visibility`, `feat/quote-telegram-notification` and `docs/security-hardening-20261020`; the merged `...-v2` branches of #173–#175 can go too. **Keep** `staging/self-hosting-sync-20260802` (rollback target, CLAUDE.md).
+9. ~~Delete the superseded remote branches, which still exist: `chore/trusted-client-ip-and-postcss`, `fix/customer-data-and-product-visibility`, `feat/quote-telegram-notification` and `docs/security-hardening-20261020`; the merged `...-v2` branches of #173–#175 can go too. **Keep** `staging/self-hosting-sync-20260802` (rollback target, CLAUDE.md).~~ **Done 2026-10-25:** all twelve superseded/merged branches were deleted by the owner (verified before: old branches had the same tree as their `-v2` copies; migration 27 identical in `main`). `staging/self-hosting-sync-20260802` is kept.
 10. Dependabot housekeeping: add a `.github/dependabot.yml` that groups updates and ignores majors of `tailwindcss` and `next`, and take the dev-only bumps from #172 in a small PR without Tailwind 4. Not started.
 
 Code and data:
 
 11. Health `categories` are still readable by `anon` regardless of `is_active` (the UI filters them); migration 28 did not cover it.
 12. `SECURITY-CHECKLIST.md` still has Vercel-era passages elsewhere.
-13. **Phone width fix, merged and not deployed:** [#179](https://github.com/kingiust2002/medoria-web/pull/179) (2026-10-25). Health pages (and Beauty at 320/360 px) were wider than a phone screen: the Health logo lockup did not fit beside the mobile header buttons, and 62 grids grew to the widest unbroken word (up to 1146 px on a 390 px phone for a product with a long SKU or brand). Fixed with base-layer rules in `app/globals.css`, fluid header lockups (`lib/brandFluid.js`) and a permanent check, `npm run check:mobile` (see "Mobile-width law" in `CLAUDE.md`). Verified in a local browser against a mock database (340 page loads, four languages, 320–430 px), **not** on production: after deploying, open a Health product page, the Health home and the Quotes page of both panels on a real phone. Application code only; no migration or `.env` change.
+13. ~~**Phone width fix, merged and not deployed:** [#179](https://github.com/kingiust2002/medoria-web/pull/179) (2026-10-25). Health pages (and Beauty at 320/360 px) were wider than a phone screen: the Health logo lockup did not fit beside the mobile header buttons, and 62 grids grew to the widest unbroken word (up to 1146 px on a 390 px phone for a product with a long SKU or brand). Fixed with base-layer rules in `app/globals.css`, fluid header lockups (`lib/brandFluid.js`) and a permanent check, `npm run check:mobile` (see "Mobile-width law" in `CLAUDE.md`). Verified in a local browser against a mock database (340 page loads, four languages, 320–430 px), **not** on production: after deploying, open a Health product page, the Health home and the Quotes page of both panels on a real phone. Application code only; no migration or `.env` change.~~ **Done 2026-10-25:** #179 deployed; a check on a real phone was not reported.
 
 #### 23.7.5 Rollback for this rollout
 
@@ -2532,7 +2541,7 @@ This documentation change is docs-only, so the code running on the VPS (`a3c8924
 
 ### 23.8 Archive, spam and bulk actions for customer requests (2026-10-25)
 
-Both operator panels (Health `/operator`, Beauty `/beauty/operator`) get a better Quotes screen. **Status: built and tested, not deployed. It needs one database step first (migration 29).** Nothing here contains a token, `.env` content or customer data.
+Both operator panels (Health `/operator`, Beauty `/beauty/operator`) get a better Quotes screen. **Status: deployed 2026-10-25 (owner's report); migration 29 was applied first.** *(Written before the deploy as: built and tested, not deployed, needs migration 29 first.)* Nothing here contains a token, `.env` content or customer data.
 
 **What changes for the operators**
 
@@ -2553,3 +2562,52 @@ Both operator panels (Health `/operator`, Beauty `/beauty/operator`) get a bette
 4. Verify: `/`, `/api/health`, `/health/en`, `/beauty/en` = 200; in each panel open Quotes, archive one test request, check it appears in the Archive tab and can be restored; tick two test requests and delete them.
 
 **Rollback.** Application: re-tag the rollback image and recreate `app` (§23.6 step 6). Database, only after moving archived rows back (`UPDATE … SET status = 'closed' WHERE status = 'archived'`): the rollback SQL in the header of migration 29.
+
+
+### 23.9 Status report — what is done and what is not (2026-10-25)
+
+A summary of the work that followed the 16-point review of 2026-10-20, in the same order as that review. Sources are marked: **GitHub** = checked by the reviewing agent; **owner** = reported by the owner (done on the server, not observed by the agent). No token, `.env` content, chat id or customer data appears here.
+
+#### 23.9.1 Done and live
+
+| Area | What changed | Source |
+| --- | --- | --- |
+| DB permissions (review 1) | Migrations 27 (2026-10-20) and 28 (2026-10-24): customer-request tables are service-role only; `check:rls` 11/11 PASS | owner / PR #174 |
+| Inactive products (2) | Hidden from API and database, page answers 404, caches fixed | PR #174; the live 404 page is *not* confirmed |
+| X-Forwarded-For (4) | `x-real-ip` preferred in `clientIpFromHeaders` | PR #173 |
+| Dependencies (7, part) | Next 15.5.28, `postcss` 8.5.31, production `npm audit`: 0 vulnerabilities | PR #173, owner |
+| Health cache (11) | Real `/health/{lang}/…` routes purged; 60 s data-cache lifetime | PR #174; the price-edit test is *not* reported |
+| Notifications (12, part) | Telegram notice per house, own group each; **final and confirmed** | PR #175, owner |
+| Server | SSH key-only, port 8000 local only, Supabase signups closed, OS and Docker updated, reboot proven, containers `healthy` | owner |
+| Backups | Re-established; chain `20261024T115301Z` PASS (local, R2, off-server) | owner |
+| Delete a request | Trash button + confirmation with details, both panels, own session and table only | PR #178 |
+| Archive / spam / bulk | Tabs, tick selection, bulk archive / spam / restore / delete; migration 29 | PR #181, owner |
+| Phone width | Header lockups fluid, 62 grids made shrinkable, `check:mobile`, "Mobile-width law" in `CLAUDE.md` | PR #179 |
+| Cleanup | 12 branches deleted; test and old inquiries deleted; old rollback image removed | owner |
+| Tests | 46 → 123 unit tests | GitHub |
+
+#### 23.9.2 Partly done or unverified
+
+- Archived product page answering 404 on the live site; price edit visible on the public page within seconds; `check:rls --insert-test`; the phone-width fix on a real phone.
+- Old classic GitHub token: revoking it is the owner's, later.
+- Rollback images: two to remove around 2026-10-29 (§23.7.4 item 5).
+- Pull request #176 (Dependabot, dev-only bumps) is open with a failing build: **do not merge**. Plan: a clean PR plus `.github/dependabot.yml` ignoring majors of `tailwindcss` and `next`.
+- `unsafe-inline` in the CSP and HSTS without `includeSubDomains` were deliberately left unchanged.
+
+#### 23.9.3 Not done (current open list)
+
+| Review item | Open |
+| --- | --- |
+| 3 Admin security | Panel history/audit log (now more important, since requests can be deleted), session revocation, 2FA. Sessions are stateless signed cookies (8 h); logout only clears the browser cookie |
+| 5 Rate-limit store | Still in memory; resets on restart. Acceptable on one server |
+| 6 Captcha / chat | Unchanged; AI chat is off, math captcha stays |
+| 9, 10 Operations | Backup dead-man's switch, external uptime monitor, single-VPS risk, data gap since the `20260901T023001Z` snapshot |
+| 12 rest | Assigned responder, follow-up reminders, tracking code |
+| 13, 14, 15 | Multi-product inquiry cart, catalog pagination/search beyond 500 rows, product specs and PDF/pro-forma |
+| 16 | Playwright flows in CI (login, form, price change, hiding), remaining Vercel-era references, analytics consent |
+| Other | Health `categories` readable by `anon` regardless of `is_active`; `SECURITY-CHECKLIST.md` still Vercel-era in places |
+
+#### 23.9.4 Closed as unnecessary
+
+- **Supavisor Erlang cookie rotation** (§23.7.4 item 7): nothing is listening on the Erlang distribution ports, so the cookie that appeared in a pasted listing cannot be used from the network.
+

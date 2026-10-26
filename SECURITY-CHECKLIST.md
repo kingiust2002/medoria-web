@@ -57,21 +57,25 @@ NEXT_PUBLIC_SUPABASE_URL=... NEXT_PUBLIC_SUPABASE_ANON_KEY=... npm run check:rls
 - **Honeypot**: hidden `website` field — bots that fill it get a fake success.
 - **Rate limits** (per IP): quotes 5/min + 20/hr; captcha mint 30/min; AI chat
   10/min + 60/hr; operator login 5 fails/10 min per IP **and** per username.
-- Limits are **per server instance** (reset on cold start) until the Upstash
-  env vars are set — then they become global/durable automatically. This is
-  the single most valuable future infra upgrade (~free tier covers this site).
+- Limits are **per server instance** (reset on restart). Production runs one app
+  container, so that is effectively global; IPv6 visitors are counted per /64.
+  A durable store (Upstash, supported in code) is only worth enabling if a second
+  app container is ever run; why Redis is not used today: docs/SECURITY_DECISIONS.md §1.
 
 ## Known residual risks / accepted trade-offs
 
 - Math captcha stops dumb/bulk bots, not a targeted scripted attacker (who is
   then bounded by rate limits). Upgrade path: Cloudflare Turnstile (free,
   privacy-friendly) if targeted spam ever appears.
-- Captcha replay guard and memory rate limits are per-instance until Upstash
-  is configured.
+- Captcha replay guard and memory rate limits are per-instance (= global with
+  the single production container); revisit only if a second app container is
+  ever run (docs/SECURITY_DECISIONS.md §1).
 - CSP keeps `script-src 'unsafe-inline'`: required by Next.js inline runtime +
   GA/Metrica bootstraps without nonce infrastructure; nonces would force every
   page dynamic and defeat ISR. Next stricter step: move GA/YM to tag-manager-
   less, hash the few inline snippets, adopt nonces only if ISR is dropped.
+  Decision and compensating controls: docs/SECURITY_DECISIONS.md §2. Analytics
+  hosts are in the CSP only when their id is configured at build time.
 - `npm audit`: on 2026-10-24, the combined tree with Next 15.5.28 and
   `postcss` 8.5.31 reported 0 production vulnerabilities with
   `npm audit --omit=dev` during the ChatGPT review (runbook §23.7).

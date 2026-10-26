@@ -1,3 +1,7 @@
+> **Historical (Phase 3 design notes).** The deployment line below ("Vercel builds automatically") is
+> obsolete: production is self-hosted on the VPS and a merge never deploys by itself. See
+> `docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md` and `CLAUDE.md` for the current process.
+
 # Medoria — فاز ۳ (Design Refinement)
 
 ## 🎨 تغییرات این فاز

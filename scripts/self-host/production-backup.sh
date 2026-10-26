@@ -7,6 +7,18 @@
 #   production-backup.sh           take a backup (what cron runs)
 #   production-backup.sh --check   freshness check only; exit 1 if the newest local or
 #                                  R2 snapshot is older than MAX_AGE_HOURS (default 36)
+#   production-backup.sh --alert-test        send a deliberate FAILURE signal to the alert service
+#                                            (proves the alert reaches you; no backup is run)
+#   production-backup.sh --alert-test-clear  send the matching SUCCESS signal (clears the test)
+#
+# Alerting (optional, off until configured): a dead-man's switch. The script pings an external
+# heartbeat URL when a run starts, succeeds ("<url>") or fails ("<url>/fail"). If the pings STOP
+# (cron dead, server off, disk full) the external service alerts you after its grace period, so a
+# silent stop cannot go unnoticed. URLs live in $BACKUP_ALERT_ENV (default
+# ~/.config/medoria/backup-alerts.env, mode 600), never in the repo or the logs:
+#   BACKUP_PING_URL=https://...        # the backup run
+#   BACKUP_CHECK_PING_URL=https://...  # the daily --check freshness run (optional)
+# A failing ping never fails the backup. See docs/MONITORING_AND_ALERTS.md.
 #
 # Snapshot layout (compatible with runbook §7/§22.5):
 #   database-full.dump  database-public.dump  database-globals.sql  database-counts.txt
@@ -18,6 +30,9 @@
 # remote -- never point R2_REMOTE at the raw `r2raw:` remote.
 set -Eeuo pipefail
 umask 077
+# Never depend on the caller's directory: `sudo -u medoria` from /root left find/cp unable to restore
+# the working directory ("Failed to restore initial working directory") and failed the run (2026-10-20).
+cd /
 
 APP_DIR="${APP_DIR:-/home/medoria/apps/medoria-staging}"
 SUPABASE_DIR="${SUPABASE_DIR:-/home/medoria/infra/supabase-staging/docker}"
@@ -38,6 +53,40 @@ LOCK_FILE="$(dirname "$BACKUP_ROOT")/.production-backup.lock"
 
 log() { printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 die() { log "ERROR: $*" >&2; exit 1; }
+
+# ---- alerting (heartbeat pings) -------------------------------------------------------------
+ALERT_ENV="${BACKUP_ALERT_ENV:-$HOME/.config/medoria/backup-alerts.env}"
+BACKUP_PING_URL=""
+BACKUP_CHECK_PING_URL=""
+load_alert_config() {
+  [ -f "$ALERT_ENV" ] || return 0
+  local key line val
+  for key in BACKUP_PING_URL BACKUP_CHECK_PING_URL; do
+    # parsed, never sourced: a config file must not be able to run code
+    line="$(grep -E "^${key}=" "$ALERT_ENV" | tail -n 1 || true)"
+    val="${line#*=}"; val="${val%\"}"; val="${val#\"}"
+    if [[ "$val" =~ ^https?://[^[:space:]]+$ ]]; then printf -v "$key" '%s' "$val"
+    elif [ -n "$val" ]; then log "WARNING: $key in $ALERT_ENV is not a valid http(s) URL; ignored"; fi
+  done
+}
+# ping BASE_URL SUFFIX BODY — never fails the caller and never prints the URL.
+ping_url() {
+  local base="$1" suffix="${2:-}" body="${3:-}" code
+  [ -n "$base" ] || return 0
+  command -v curl >/dev/null 2>&1 || { log "WARNING: alert ping skipped (curl is not installed)"; return 0; }
+  local attempt
+  for attempt in 1 2 3; do   # own retry loop: curl --retry misbehaves with `-o /dev/null` on 5xx answers (exit 23)
+    code="$(curl -sS -m 10 -o /dev/null -w '%{http_code}' --data-raw "$body" "${base%/}${suffix}" 2>/dev/null)" || code="000"
+    case "$code" in 2??) break ;; esac
+    [ "$attempt" -lt 3 ] && sleep "${PING_RETRY_DELAY:-2}"
+  done
+  case "$code" in
+    2??) log "alert ping sent (${suffix:-success})" ;;
+    *)   log "WARNING: alert ping '${suffix:-success}' failed (http ${code:-000}); the backup itself is unaffected" ;;
+  esac
+  return 0
+}
+load_alert_config
 
 snapshot_epoch() { # 20260901T023001Z -> epoch seconds
   local n="$1"
@@ -90,7 +139,25 @@ if [ "${1:-}" = "--check" ]; then
     fi
   done
   [ -f "$STATUS_FILE" ] && sed 's/^/last-run: /' "$STATUS_FILE"
+  if [ "$rc" -eq 0 ]; then
+    ping_url "$BACKUP_CHECK_PING_URL" "" "backups fresh: local=$local_newest r2=$r2_newest"
+  else
+    ping_url "$BACKUP_CHECK_PING_URL" "/fail" "backup freshness check FAILED: local=${local_newest:-none} r2=${r2_newest:-none} (limit ${MAX_AGE_HOURS}h)"
+  fi
   exit "$rc"
+fi
+
+# --------------------------------------------------------------------------- alert tests
+if [ "${1:-}" = "--alert-test" ] || [ "${1:-}" = "--alert-test-clear" ]; then
+  [ -n "$BACKUP_PING_URL" ] || die "BACKUP_PING_URL is not configured in $ALERT_ENV"
+  if [ "$1" = "--alert-test" ]; then
+    ping_url "$BACKUP_PING_URL" "/fail" "ALERT TEST: deliberate failure signal, not a real backup failure"
+    echo "ALERT_TEST=SENT (you should receive an alert within a minute or two; then run --alert-test-clear)"
+  else
+    ping_url "$BACKUP_PING_URL" "" "ALERT TEST cleared"
+    echo "ALERT_TEST=CLEARED"
+  fi
+  exit 0
 fi
 
 # ------------------------------------------------------------------------------- backup
@@ -137,12 +204,14 @@ on_exit() {
     rm -rf -- "$stage"
     write_status FAIL || true
     echo "AUTO_BACKUP=FAIL"
+    ping_url "$BACKUP_PING_URL" "/fail" "backup $ts FAILED at step: $step (exit $rc)"
   fi
   exit "$rc"
 }
 trap on_exit EXIT
 
 log "backup $ts starting"
+ping_url "$BACKUP_PING_URL" "/start" "backup $ts starting"
 
 step="preflight"
 [ "$(docker inspect -f '{{.State.Running}}' "$DB_CONTAINER" 2>/dev/null)" = "true" ] \
@@ -263,6 +332,7 @@ RESULT[LOCAL_RETENTION]=PASS
 step="done"
 write_status PASS
 trap - EXIT
+ping_url "$BACKUP_PING_URL" "" "backup $ts PASS local=PASS offsite_upload=PASS offsite_verify=PASS"
 echo "AUTO_BACKUP=PASS"
 echo "LOCAL_BACKUP=PASS"
 echo "NEW_SNAPSHOT=$ts"

@@ -82,6 +82,11 @@ Settings → *نشست‌ها*: "پایان نشست‌های دیگر" keeps yo
 Use the second one when a password, a phone or a computer may have fallen into the wrong hands, **and change the password too**
 (`scripts/hash-operator-password.mjs`; changing `OPERATOR_PASSWORD_HASH` also ends every session on its own).
 
+### Failures are never read as success (review 2026-10-26)
+
+- **An outage is not a missing table.** The session check skips itself only when the registry table really does not exist (Postgres `42P01`, PostgREST `PGRST205`: migration 30 not applied yet). Every other failure refuses: a database outage, a connection error (`PGRST000`/`PGRST001`), a schema cache that cannot be built (`PGRST002`, "Could not query the database for the schema cache"), a permission error, a network failure. The bare words "schema cache" used to count as "missing table", so during a `PGRST002` outage every correctly signed cookie opened the panel; a cookie with a random signature never did. The same classifier decides login (refused while sessions cannot be recorded), the second-factor replay memory (a code is refused if its use cannot be recorded), "end session(s)" (reports failure) and the activity log (a deletion is refused while the log cannot be written). A session already checked is trusted for at most 20 seconds, so a short outage does not log people out mid-click.
+- **Logout is confirmed by the server.** If the server cannot end the session (HTTP 503 `{ ok: false }`), the browser cookie is **kept** (so a retry can still end it), nothing is logged as `auth.logout` (the failure is logged as `auth.logout_failed`), and the panel stays open and says so with a retry button, in both panels (sidebar button and the settings page button). Only `{ ok: true }` from the server sends the user to the login page. The idle auto-logout uses the same path, so after 20 idle minutes with the server failing, the panel shows the error instead of pretending to have left.
+
 ## Reading the log
 
 *تاریخچه* lists the last 200 events of that panel: logins (and failed ones with the reason `password`, `bad_code`, `replay`,
