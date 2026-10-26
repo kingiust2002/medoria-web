@@ -16,7 +16,7 @@
     "telegram:chat-ids": "node scripts/telegram-chat-ids.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.69.0",
+    "@anthropic-ai/sdk": "^1.1.0",
     "@formkit/auto-animate": "^0.8.2",
     "@supabase/supabase-js": "2.108.1",
     "cobe": "^2.0.1",
