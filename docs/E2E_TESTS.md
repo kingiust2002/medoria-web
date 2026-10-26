@@ -14,6 +14,8 @@ Needs Playwright's Chromium (`npx playwright install chromium`; pre-installed in
 cloud sandbox). Nothing touches production: the app's Supabase URL is `127.0.0.1`, the keys are
 dummy values and the operator passwords are generated per run.
 
+**In CI.** `.github/workflows/self-hosting-ci.yml` runs this suite as its own job (`browser-flows`: Node 22, `npx playwright install --with-deps chromium`, `npm run test:e2e`) on every pull request that touches `app/`, `components/`, `lib/`, `migrations/`, `tests/`, `scripts/`, `middleware.js`, the build/config files or `deploy/`. It uses no secrets and never reaches a real database. A red browser job blocks a merge the same way a red `validate` job does.
+
 ## What is in it
 
 | File | What it proves |

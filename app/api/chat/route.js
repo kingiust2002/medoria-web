@@ -60,7 +60,8 @@ function buildSystem(lang) {
     (c) => `- ${getCategoryName(c.slug, lang)} (${c.slug})`
   ).join("\n");
 
-  // Optional operator-defined rules, editable from Vercel without a redeploy of code.
+  // Optional operator-defined rules: set ASSISTANT_RULES in deploy/.env on the server (read per request,
+  // so restarting the app container is enough; no rebuild).
   const operatorRules = process.env.ASSISTANT_RULES?.trim();
   const extra = operatorRules
     ? `\n\nADDITIONAL INSTRUCTIONS FROM MEDORIA (these take priority where relevant):\n${operatorRules}`

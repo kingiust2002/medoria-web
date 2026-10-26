@@ -6,13 +6,19 @@ on:
       - "Dockerfile"
       - ".dockerignore"
       - "app/**"
+      - "components/**"
       - "lib/**"
+      - "migrations/**"
+      - "middleware.js"
+      - "tests/**"
+      - "scripts/**"
       - "next.config.js"
+      - "tailwind.config.js"
+      - "postcss.config.js"
       - "package.json"
       - "package-lock.json"
-      - "scripts/check-self-host-env.mjs"
-      - "scripts/self-host/**"
       - "deploy/**"
+      - "public/**"
       - ".github/workflows/self-hosting-ci.yml"
   workflow_dispatch:
 
@@ -221,3 +227,32 @@ jobs:
 
       - name: Smoke-test production container routes
         run: bash scripts/self-host/smoke-production-container.sh medoria-web:self-host-ci deploy/.env
+
+  # Real-browser flows (docs/E2E_TESTS.md): the operator panels against a production build and a
+  # fake database: price change -> public page, archive -> 404 -> reactivate, Quotes screen, panel
+  # security, request management, and the phone/tablet layouts. Separate job so it runs in parallel
+  # with `validate`; it needs no secrets and never reaches a real database.
+  browser-flows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser flow tests
+        run: npm run test:e2e
