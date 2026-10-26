@@ -1,6 +1,8 @@
 # Review queue, merge order and what is proven: 2026-10-25
 
-Twelve pull requests are open for review. **None is merged and nothing is deployed.** This page says which depends on which, in what order to merge and deploy them, what each one needs from the owner, and, claim by claim, what has been shown and how.
+> **Review update, 2026-10-26:** the original queue below is historical. Read **section 7** for the subsequent independent review, merge disposition and deployment hold. No server deployment or migration was performed by this reviewer.
+
+When this queue was written on 2026-10-25, twelve pull requests (#182–#193) were open; #194 adds this document. At that time none was merged or deployed. Sections 1–6 preserve that original plan and its evidence; they are not a claim about the current GitHub or production state.
 
 ## 1. How the pull requests depend on each other
 
@@ -94,3 +96,53 @@ A stacked pull request shows the diff against its parent branch. **Merge bottom-
 ## 6. Not built, on purpose
 
 A Beauty visitor-facing inquiry list and printable catalog (Beauty has no published products; its server side and panel are ready); a pro-forma invoice and a price list (they need the owner's company, bank, tax and price data); a public tracking-code lookup (reasons in docs/QUOTE_MANAGEMENT.md); Redis for rate limiting; a consent banner (analytics is off); per-person panel accounts (the login is shared, so "assignee" is a typed label).
+
+
+## 7. Independent integration review, 2026-10-26
+
+### 7.1 Merge disposition and production boundary
+
+Selected for `main`: **#182, #186, #183, #184, #188, #190, #191, #192 and #193**, plus this documentation PR (#194). Check the PR merge records for the exact resulting commits. #192 required a normal merge of `main` into its branch to preserve both the owner-confirmed migration-29 record and the migration-33 entry; its history was not rewritten.
+
+**Held: #185, #187 and #189.** #185 has the two reproducible session-security defects below. #187 and #189 contain it in their branch ancestry, so merging them as submitted would bring the held security code into `main`. This is not a rejection of the category-policy fix itself.
+
+No production backup, SSH command, environment edit, migration, form submission, deletion or deployment was run by the reviewer. Read-only public GETs on 2026-10-26 returned 200 for `/api/health`, `/health/en` and `/beauty/en`, and 404 for `/health/en/catalog/operating-room-gown`. This confirms the already-deployed archived page, not any feature in the new PRs. Chatbot behaviour is outside this review; the comments in #190 do not change its implementation.
+
+**Do not use the historical all-PR deployment sequence in section 3 yet.** The selected code contains migration **33** only; migrations **30–32** belong to the held branches. The preferred next step is to fix the review items, review and merge the remaining code, and perform one coordinated production rollout after a fresh verified backup.
+
+### 7.2 Evidence and limits
+
+- Two isolated local candidates were built: the complete original queue with its integration conflicts resolved, and the selected queue without #185/#187/#189. Neither candidate used production credentials or data.
+- Complete original queue: production-mode standalone build succeeded; **82 existing browser flows passed**. An additional temporary browser reproduction confirmed that failed server revocation is nevertheless reported as successful logout. Passing the existing suite did not cover that failure mode.
+- Selected queue: production-mode standalone build, lint and **67 existing browser flows passed**, including the four-language PDF generation checks. Three additional temporary browser probes reproduced the stale Quotes list, unreachable single-delete confirmation and skipped fixed-element overflow. Those probes asserted the presence of defects; they are not regression tests proving a fix.
+- Selected queue unit tests: initial run **173 passed, 12 skipped, 1 failed**. The failure was `runuser: cannot set groups: Operation not permitted` in the working-directory test, a capability limitation of the review environment. With that one test explicitly excluded, 173 passed and 12 were skipped. The PostgreSQL-dependent tests were skipped because server binaries were unavailable here; this review did not independently repeat the author's real-PostgreSQL migration evidence.
+- Production dependency audit: **0 vulnerabilities** for the shared selected/complete-candidate lockfile. Added-source pattern scan found no token/private-key matches; this is a pattern check, not a guarantee about every possible secret.
+- GitHub checks were read on the actual PR heads. #187 originally had no `validate` check (only Vercel Preview Comments), so the original blanket statement that `validate` ran on every PR was too broad. PR-head checks are also not an Actions run on the final merge commit of `main`.
+- The complete candidate initially exposed a stale assertion in `tests/quote-management.test.mjs` after combining #189 and #192 (see item 8). That local reconciliation was not pushed to the held branches.
+- No claim is made here about current backup freshness, Docker package state, live price editing, real Telegram delivery of the new notices, real-phone rendering, 2FA configuration or production migration execution.
+
+### 7.3 Reproduced issues to fix
+
+1. **Session validation falls back on a database/cache outage (blocks #185).** In `lib/operator/security.js`, `isMissingTable()` matches the words `schema cache` regardless of error code. A `PGRST002` error such as `Could not query the database for the schema cache. Retrying.` therefore becomes `unavailable`; `getSession()` accepts that status instead of rejecting an unvalidated signed session. Direct reproduction returned `classifiedMissing: true` and `sessionStatus: unavailable`. Restrict the compatibility fallback to actual missing-table errors; database/cache outages must fail closed. Add coverage through both panels' authentication paths, including a signed unknown/revoked session and the login/audit/deletion paths that share this classifier. This finding does not mean an unsigned/random cookie is accepted.
+
+2. **Logout acknowledges a revocation that failed (blocks #185).** `lib/operator/loginFlow.js:handleLogout()` discards the `{ ok: false }` result from `revokeSession()`, clears the browser cookie, writes `auth.logout` and returns HTTP 200 `{ ok: true }`. Browser reproduction: inject HTTP 500 for `PATCH operator_sessions`, log out, remove the injected fault, then reuse the copied cookie: it still opens the panel. Distinguish local cookie clearing from confirmed server revocation, propagate a failure to the user, and test a successful retry. Check both panel shells' handling of a failed logout response too.
+
+3. **The RLS checker reports server errors as privacy success (previous review, still present).** `scripts/check-rls.mjs:selectProbe()` treats every non-2xx as unreadable and failed JSON parsing as an empty array. A local HTTP fixture returned 500 for every private-table and inactive-product probe: the checker printed PASS for them and exited 0. The optional insert probe also treats any failed insert as proof of access denial. Classify explicit permission denial, valid empty results, missing schema, invalid JSON, network failures and 5xx separately. Unknown/server-error responses must not prove privacy; an empty table alone cannot prove that its contents would be private.
+
+4. **Quotes ignores fresh server rows (previous review, still present).** `components/operator/QuotesPanel.jsx` initializes `useState(initial)` once and never reconciles new props. Browser reproduction: insert an additional fake request while Quotes is open, perform a successful bulk archive (which calls `router.refresh()`), and observe that the additional request remains absent. A full reload reveals it. Reconcile fresh server data with optimistic edits and selection; test additions, changes and removals from another session in both panels.
+
+5. **Single-delete controls are unreachable on a short phone (previous review, still present).** `components/operator/DeleteQuoteModal.jsx` has no height bound or vertical scrolling. At 320×568 with normal filled fields and a valid 160-character message excerpt, the confirmation button began at y=571.5 and ended at y=615.5. Scrolling the document did not reveal it. Constrain/scroll the dialog so confirmation, cancel and errors remain reachable; test both width and height with long content. The bulk dialog already has a height/scroll constraint.
+
+6. **Mobile guard has false-green paths (previous review, still present).** `scripts/check-mobile-width.mjs` ignores navigation failures and HTTP status and excludes all fixed-position elements and their descendants. A real local 404 page was reported as PASS with exit 0; a fixed 700px-wide control in a 320px viewport also returned zero offenders. Verify intended page content/status, explicitly account for expected 404 tests, and measure visible fixed headers/menus/dialogs. Check vertical reachability separately. Remove nonexistent default routes or assert their expected outcome instead of silently treating an error page as layout coverage.
+
+7. **Heartbeat confuses failure to inspect Docker with healthy containers.** `scripts/self-host/uptime-heartbeat.sh` suppresses `docker ps` failure with `|| true` and then interprets empty output as healthy. With a fake `docker` that exits 1, a successful site-health response and healthy disk usage, the script exited 0 without reporting a problem. Preserve/check the Docker command's exit status and send a failure/unknown signal when inspection fails. Add a negative test; fake successful alert delivery alone does not cover this case.
+
+8. **#189 needs an integration-test update when combined with #192.** `tests/quote-management.test.mjs` requires `.insert(row).select().single()` literally inside both quote action files. #192 correctly moves this operation into `lib/inquiry/save.js:insertRequest()`. Preserve the saved-row/tracking-code/notice-result behaviour, but test the actual shared insert path and its returned row. Reconcile both quote actions, the Telegram text and dashboard counters, then run tests on the complete combined result rather than only the separate branch heads.
+
+### 7.4 Next owner actions
+
+For now, keep the running application and database unchanged while the held PRs and the reproduced issues are repaired. A read-only server status check can establish the running commit, container health and Docker holds; do not paste environment files, session cookies or credentials.
+
+Before the eventual rollout: take and verify a **fresh** local + encrypted-R2 backup; preserve the current image as a new rollback tag; pull the reviewed `main` as `medoria`; apply only the migrations present in that reviewed release, stopping on any error; deploy deliberately; run the repaired RLS checker and verify forms, each panel and each Telegram destination. Test live price/archive behaviour with a disposable test product and restore it afterwards.
+
+The new backup/heartbeat/restore scripts are not installed into `/home/medoria/bin` by the app deploy script: install them deliberately. Alert setup needs **three** healthchecks-style checks (backup, backup freshness, server heartbeat) plus an outside HTTP monitor; test actual alert delivery and silence. Enable 2FA and reminders only after their reviewed code/schema is live. Cookie rotation and token revocation remain owner actions; inspect the real Compose service before changing its configuration.
