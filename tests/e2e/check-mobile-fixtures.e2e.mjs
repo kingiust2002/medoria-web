@@ -4,14 +4,15 @@
 //   * every position:fixed element (header, menus, dialogs) was skipped, so a 700px-wide fixed control
 //     in a 320px viewport reported zero offenders
 //   * a dialog whose button sits below the fold with no way to scroll to it was not looked at
-// Runs the real script (real Chromium) against a tiny local web server.
+// Runs the real script (real Chromium) against a tiny local web server. It lives with the browser tests because the
+// unit-test job has no Chromium (CI: `validate` runs `npm test`; `browser-flows` installs the browser).
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-const script = fileURLToPath(new URL("../scripts/check-mobile-width.mjs", import.meta.url));
+const script = fileURLToPath(new URL("../../scripts/check-mobile-width.mjs", import.meta.url));
 const LOREM = "Medoria catalog page with enough ordinary text to count as real content. ".repeat(4);
 const page = (body, title = "Medoria") => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>body{margin:0;font:16px sans-serif}</style></head><body>${body}</body></html>`;
 
