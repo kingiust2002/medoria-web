@@ -2,10 +2,12 @@
 import { notFound } from "next/navigation";
 import { getAdminBeautyProduct, getAdminBeautyCategories } from "@/lib/beauty/operator/data";
 import ProductForm from "@/components/beauty/operator/ProductForm";
+import { requireBeautySession } from "@/lib/operator/panelGuard";
 
 export const dynamic = "force-dynamic";
 
 export default async function EditProductPage(props) {
+  await requireBeautySession();
   const params = await props.params;
   const [product, categories] = await Promise.all([
     getAdminBeautyProduct(params.id),
