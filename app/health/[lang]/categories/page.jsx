@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCategories, getProducts } from "@/lib/supabase";
+import { getCategories, getAllProducts } from "@/lib/supabase";
 import { getTranslations } from "@/lib/i18n";
 import { buildAlternates, ogImage, robotsFor, safeJsonLd, SITE_URL } from "@/lib/seo";
 import {
@@ -35,7 +35,7 @@ export async function generateMetadata(props) {
 export default async function CategoriesPage(props) {
   const { lang } = await props.params;
   const t = getTranslations(lang);
-  const [categories, products] = await Promise.all([getCategories(), getProducts()]);
+  const [categories, products] = await Promise.all([getCategories(), getAllProducts()]);
   const tree = buildHealthCategoryTree(categories, { activeOnly: true });
   const counts = new Map();
 

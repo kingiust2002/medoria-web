@@ -22,6 +22,7 @@ dummy values and the operator passwords are generated per run.
 | --- | --- |
 | `tests/e2e/panel-flows.e2e.mjs` | Panels closed to anonymous visitors; wrong/right password; **price change in the panel appears on the public product page**; **archive → real 404 in four languages and out of the sitemap → reactivate → page back**; Quotes screen (tabs, tick selection, bulk archive/restore/delete, single delete); customer-request tables only reached with the service key; a Health session does not open the Beauty panel and the reverse |
 | `tests/e2e/mobile.e2e.mjs` | At 320 / 360 / 390 / 430 / 768 / 820 / 1024 / 1180 / 1280 / 1366 px: no sideways scroll on public pages (Health and Beauty, LTR and RTL), header menus / language menu / search open and stay on screen, both panels (pages, drawer, Quotes with bulk bar and dialogs) |
+| `tests/e2e/catalog-search.e2e.mjs` | Server-side catalog paging (docs/CATALOG_PAGING.md): the Health catalog fetches pages of 24 (never the whole table) and "load more" appends without repeats; search is answered by the database; the ⌘K palette asks for 6 matches; the Beauty catalog pages with plain links, works without JavaScript, sends a page past the end back to page 1; the pagers fit 320 px |
 | `tests/e2e/live-check.e2e.mjs` | The owner-run live script below works against the local stack |
 | `tests/e2e/fakeDb.mjs`, `seed.mjs` | The fake PostgREST (filters, order, single-object responses, insert/update/delete, rpc) and invented demo rows |
 
