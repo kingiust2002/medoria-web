@@ -3,6 +3,7 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
+import { isIncomplete, gapSummary } from "@/lib/operator/completeness";
 import { imageUrl } from "@/lib/supabase";
 import { setProductActive, duplicateProduct, quickUpdateProduct, bulkUpdateProducts } from "@/lib/operator/actions";
 import {
@@ -19,6 +20,7 @@ export default function ProductsTable({ products, categories }) {
   const [cat, setCat] = useState("");
   const [stock, setStock] = useState("");
   const [status, setStatus] = useState("");
+  const [complete, setComplete] = useState("");   // "" · "incomplete" · "complete"
   const [sort, setSort] = useState("updated");
 
   const [selected, setSelected] = useState(() => new Set());
@@ -41,6 +43,8 @@ export default function ProductsTable({ products, categories }) {
     else if (stock === "out") list = list.filter((p) => !p.in_stock);
     if (status === "active") list = list.filter((p) => p.is_active !== false);
     else if (status === "inactive") list = list.filter((p) => p.is_active === false);
+    if (complete === "incomplete") list = list.filter(isIncomplete);
+    else if (complete === "complete") list = list.filter((p) => !isIncomplete(p));
     list.sort((a, b) => {
       switch (sort) {
         case "newest": return new Date(b.created_at || 0) - new Date(a.created_at || 0);
@@ -50,7 +54,7 @@ export default function ProductsTable({ products, categories }) {
       }
     });
     return list;
-  }, [products, q, cat, stock, status, sort]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [products, q, cat, stock, status, complete, sort]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function flash(text, ok = false) { setMsg({ text, ok }); setTimeout(() => setMsg(null), 4000); }
 
@@ -131,6 +135,7 @@ export default function ProductsTable({ products, categories }) {
         </Select>
         <Select value={stock} onChange={(e) => setStock(e.target.value)} className="w-auto"><option value="">موجودی: همه</option><option value="in">موجود</option><option value="out">ناموجود</option></Select>
         <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-auto"><option value="">وضعیت: همه</option><option value="active">فعال</option><option value="inactive">غیرفعال</option></Select>
+        <Select value={complete} onChange={(e) => setComplete(e.target.value)} aria-label="تکمیل اطلاعات" className="w-auto"><option value="">اطلاعات: همه</option><option value="incomplete">ناقص</option><option value="complete">کامل</option></Select>
         <Select value={sort} onChange={(e) => setSort(e.target.value)} className="w-auto"><option value="updated">آخرین تغییر</option><option value="newest">جدیدترین</option><option value="name">نام</option><option value="category">دسته</option></Select>
       </div>
 
@@ -218,6 +223,7 @@ export default function ProductsTable({ products, categories }) {
                     <Icon name="star" size={16} fill={p.is_featured ? "currentColor" : "none"} />
                   </button>
 
+                  {isIncomplete(p) && <Badge tone="warn" className="hidden md:inline-flex" title={gapSummary(p)}>ناقص: {gapSummary(p).split(" مورد")[0]}</Badge>}
                   <Badge tone={active ? "ok" : "muted"} className="hidden md:inline-flex">{active ? "فعال" : "غیرفعال"}</Badge>
 
                   <div className="flex items-center gap-1 shrink-0">

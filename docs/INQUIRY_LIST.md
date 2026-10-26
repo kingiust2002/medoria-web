@@ -37,4 +37,4 @@
 
 - No prices are added up: most products are "price on request", and a total would need agreed currency and terms. The list is a request for a quotation, not an order.
 - One list per browser: it is not shared between devices.
-- A pro-forma invoice from this list is not built: it needs company, bank and tax details and agreed prices that only the owner can supply (listed in the stage-7 documents note).
+- A pro-forma invoice from this list is not built: it needs company, bank and tax details and agreed prices that only the owner can supply (listed in `docs/CATALOG_DOCUMENTS_NEEDS.md`).
