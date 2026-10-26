@@ -5,7 +5,7 @@
 // then Hugging Face, then Anthropic). With no key set the route returns
 // 503 / {available:false} so the widget silently falls back to
 // WhatsApp/Telegram and the site still works with no AI configured.
-//   - Gemini:       set GEMINI_API_KEY (+ optional GEMINI_MODEL). Free key from
+//   - Gemini:       set GEMINI_API_KEY (+ optional GEMINI_MODEL, see lib/chat/gemini.js). Free key from
 //     Google AI Studio (aistudio.google.com) — no billing. OpenAI-compatible.
 //   - Hugging Face: set HUGGING_FACE_API_KEY (+ optional HF_MODEL). Uses the
 //     OpenAI-compatible Inference Providers router (plain fetch, no SDK).
@@ -15,6 +15,7 @@ import { CATEGORIES, getCategoryName } from "@/lib/i18n";
 import { WA_NUMBER, TG_USER } from "@/lib/whatsapp";
 import { rateLimit, clientIpFromHeaders, isSameOriginRequest } from "@/lib/security/rateLimit";
 import { verifyChatPass } from "@/lib/security/chatPass";
+import { geminiChatEndpoint, geminiModels, streamWithModelFallback } from "@/lib/chat/gemini";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,9 +31,6 @@ const RATE = [
 const HF_ENDPOINT =
   process.env.HF_BASE_URL || "https://router.huggingface.co/v1/chat/completions";
 const HF_MODEL = process.env.HF_MODEL || "Qwen/Qwen2.5-72B-Instruct";
-const GEMINI_ENDPOINT =
-  "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
 
 const LANG_NAMES = {
@@ -122,7 +120,7 @@ function sanitize(raw) {
 }
 
 // ── OpenAI-compatible streaming (Gemini & Hugging Face) ─────────────────────
-async function* openaiStream({ endpoint, apiKey, model }, system, messages) {
+async function* openaiStream({ endpoint, apiKey, model, maxTokens = 1024 }, system, messages) {
   const res = await fetch(endpoint, {
     method: "POST",
     headers: {
@@ -132,14 +130,14 @@ async function* openaiStream({ endpoint, apiKey, model }, system, messages) {
     body: JSON.stringify({
       model,
       messages: [{ role: "system", content: system }, ...messages],
-      max_tokens: 1024,
+      max_tokens: maxTokens,
       temperature: 0.4,
       stream: true,
     }),
   });
   if (!res.ok || !res.body) {
     const detail = await res.text().catch(() => "");
-    throw new Error(`LLM ${res.status} ${detail.slice(0, 300)}`);
+    throw Object.assign(new Error(`LLM ${res.status} ${detail.slice(0, 300)}`), { status: res.status, detail: detail.slice(0, 600) });
   }
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -231,7 +229,7 @@ export async function POST(req) {
       try {
         const gen =
           which === "gemini"
-            ? openaiStream({ endpoint: GEMINI_ENDPOINT, apiKey: process.env.GEMINI_API_KEY, model: GEMINI_MODEL }, system, messages)
+            ? streamWithModelFallback(geminiModels(), (model) => openaiStream({ endpoint: geminiChatEndpoint(), apiKey: process.env.GEMINI_API_KEY, model, maxTokens: 2048 }, system, messages), { log: (m) => console.warn(m) })
             : which === "hf"
             ? openaiStream({ endpoint: HF_ENDPOINT, apiKey: process.env.HUGGING_FACE_API_KEY, model: HF_MODEL }, system, messages)
             : anthropicStream(system, messages);

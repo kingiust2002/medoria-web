@@ -156,6 +156,22 @@ for (const key of [
   }
 }
 
+// Optional AI assistant (docs/CHATBOT.md): the Google AI Studio key powers it. A key with a stray space, quote or
+// line break is the usual reason the widget stays on "WhatsApp/Telegram only", so the shape is checked (never printed).
+{
+  const key = values.get("GEMINI_API_KEY") || "";
+  if (key && !/^AIza[0-9A-Za-z_-]{30,}$/.test(key)) {
+    fail("GEMINI_API_KEY does not look like a Google AI Studio key (starts with AIza, no spaces or quotes); copy it again from aistudio.google.com/apikey");
+  }
+  if (values.get("GEMINI_BASE_URL")) {
+    warn("GEMINI_BASE_URL is set: the assistant will NOT talk to Google. It exists for tests only; remove it on a production server");
+  }
+  const models = (values.get("GEMINI_MODEL") || "").split(",").map((m) => m.trim()).filter(Boolean);
+  if (models.some((m) => /^gemini-(1\.|2\.0)/.test(m))) {
+    warn("GEMINI_MODEL names a retired Gemini model (1.x / 2.0); leave it empty to use the maintained defaults, or run `npm run check:chat -- --file=deploy/.env` to see which models work for your key");
+  }
+}
+
 // deploy/Caddyfile routes these hosts to the app service directly. Keep this
 // set in sync with the site block there -- NEXT_PUBLIC_SITE_URL pointing at
 // a host Caddy doesn't route is a real outage, not a style nit (see the

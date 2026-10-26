@@ -163,6 +163,8 @@ jobs:
           CAPTCHA_SECRET=ci-captcha-secret
           UPSTASH_REDIS_REST_URL=
           UPSTASH_REDIS_REST_TOKEN=
+          GEMINI_API_KEY=
+          GEMINI_MODEL=
           ANTHROPIC_API_KEY=
           HUGGING_FACE_API_KEY=
           GOOGLE_TRANSLATE_API_KEY=

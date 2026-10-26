@@ -3,7 +3,7 @@
 // streaming, same-origin guard and rate limits as /api/chat, but a
 // beauty-specific system prompt (professional beauty catalog for salons,
 // boutiques and specialists) built from the Beauty categories.
-//   - Gemini:       GEMINI_API_KEY (+ optional GEMINI_MODEL)
+//   - Gemini:       GEMINI_API_KEY (+ optional GEMINI_MODEL, see lib/chat/gemini.js)
 //   - Hugging Face: HUGGING_FACE_API_KEY (+ optional HF_MODEL)
 //   - Anthropic:    ANTHROPIC_API_KEY (+ optional ANTHROPIC_MODEL)
 import Anthropic from "@anthropic-ai/sdk";
@@ -12,6 +12,7 @@ import { nameOf } from "@/lib/beauty/worlds";
 import { WA_NUMBER, TG_USER } from "@/lib/whatsapp";
 import { rateLimit, clientIpFromHeaders, isSameOriginRequest } from "@/lib/security/rateLimit";
 import { verifyChatPass } from "@/lib/security/chatPass";
+import { geminiChatEndpoint, geminiModels, streamWithModelFallback } from "@/lib/chat/gemini";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,9 +26,6 @@ const RATE = [
 const HF_ENDPOINT =
   process.env.HF_BASE_URL || "https://router.huggingface.co/v1/chat/completions";
 const HF_MODEL = process.env.HF_MODEL || "Qwen/Qwen2.5-72B-Instruct";
-const GEMINI_ENDPOINT =
-  "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
 
 const LANG_NAMES = {
@@ -122,21 +120,21 @@ function sanitize(raw) {
   return out;
 }
 
-async function* openaiStream({ endpoint, apiKey, model }, system, messages) {
+async function* openaiStream({ endpoint, apiKey, model, maxTokens = 1024 }, system, messages) {
   const res = await fetch(endpoint, {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model,
       messages: [{ role: "system", content: system }, ...messages],
-      max_tokens: 1024,
+      max_tokens: maxTokens,
       temperature: 0.4,
       stream: true,
     }),
   });
   if (!res.ok || !res.body) {
     const detail = await res.text().catch(() => "");
-    throw new Error(`LLM ${res.status} ${detail.slice(0, 300)}`);
+    throw Object.assign(new Error(`LLM ${res.status} ${detail.slice(0, 300)}`), { status: res.status, detail: detail.slice(0, 600) });
   }
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -221,7 +219,7 @@ export async function POST(req) {
       try {
         const gen =
           which === "gemini"
-            ? openaiStream({ endpoint: GEMINI_ENDPOINT, apiKey: process.env.GEMINI_API_KEY, model: GEMINI_MODEL }, system, messages)
+            ? streamWithModelFallback(geminiModels(), (model) => openaiStream({ endpoint: geminiChatEndpoint(), apiKey: process.env.GEMINI_API_KEY, model, maxTokens: 2048 }, system, messages), { log: (m) => console.warn(m) })
             : which === "hf"
             ? openaiStream({ endpoint: HF_ENDPOINT, apiKey: process.env.HUGGING_FACE_API_KEY, model: HF_MODEL }, system, messages)
             : anthropicStream(system, messages);

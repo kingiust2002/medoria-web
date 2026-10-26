@@ -10,6 +10,7 @@
     "test": "node --test tests/*.test.mjs",
     "check:mobile": "node scripts/check-mobile-width.mjs",
     "test:e2e": "node scripts/e2e/run.mjs",
+    "check:chat": "node scripts/check-chat-provider.mjs",
     "check:rls": "node scripts/check-rls.mjs",
     "check:self-host-env": "node scripts/check-self-host-env.mjs",
     "audit:supabase": "node scripts/self-host/audit-supabase-services.mjs",

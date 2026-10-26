@@ -137,3 +137,18 @@ test("Telegram notice variables: half-finished or malformed setups fail without 
   assert.match(badChat.stderr, /TELEGRAM_CHAT_ID_HEALTH must be a numeric chat id/);
   assert.ok(!badChat.stderr.includes("my group"));
 });
+
+test("GEMINI_API_KEY must look like a Google AI Studio key; a retired GEMINI_MODEL is a warning; empty is fine", async () => {
+  const ok = await runChecker({ NEXT_PUBLIC_SITE_URL: "https://medoriaco.com",  GEMINI_API_KEY: "AIzaSyTESTKEYTESTKEYTESTKEYTESTKEY_12345", GEMINI_MODEL: "" });
+  assert.equal(ok.code, 0, ok.stderr);
+  for (const bad of ["AIzaSy TEST KEY", "sk-ant-not-a-gemini-key-000000000000", "AIza"]) {
+    const r = await runChecker({ NEXT_PUBLIC_SITE_URL: "https://medoriaco.com",  GEMINI_API_KEY: bad });
+    assert.notEqual(r.code, 0, `${bad} must be refused`);
+    assert.match(r.stderr + r.stdout, /GEMINI_API_KEY does not look like/);
+    assert.ok(!(r.stderr + r.stdout).includes(bad.replace(/"/g, "")) || bad.length < 6, "the value is not printed");
+  }
+  const old = await runChecker({ NEXT_PUBLIC_SITE_URL: "https://medoriaco.com",  GEMINI_API_KEY: "AIzaSyTESTKEYTESTKEYTESTKEYTESTKEY_12345", GEMINI_MODEL: "gemini-2.0-flash" });
+  assert.equal(old.code, 0);
+  assert.match(old.stderr + old.stdout, /retired Gemini model/);
+  assert.equal((await runChecker({ NEXT_PUBLIC_SITE_URL: "https://medoriaco.com" })).code, 0, "no AI key at all stays valid");
+});
