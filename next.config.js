@@ -35,20 +35,30 @@ if (supabaseOrigin) {
   if (!duplicate) supabaseRemotePatterns.push(pattern);
 }
 
+// Analytics hosts are allowed ONLY when the matching id is configured at build time (the ids reach the
+// build as Docker build args, so this and components/shared/AnalyticsScripts.jsx always agree). With no
+// id, nothing from Google or Yandex can load or be connected to.
+const gaOn = Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
+const ymOn = Boolean(process.env.NEXT_PUBLIC_YANDEX_METRICA_ID);
+const GA = { script: ["https://www.googletagmanager.com"], img: ["https://www.googletagmanager.com", "https://www.google-analytics.com"], connect: ["https://www.google-analytics.com", "https://analytics.google.com", "https://stats.g.doubleclick.net"] };
+const YM = { script: ["https://mc.yandex.ru"], img: ["https://mc.yandex.ru"], connect: ["https://mc.yandex.ru", "https://mc.yandex.com"], frame: ["https://mc.yandex.ru"] };
+const allow = (kind) => [...(gaOn ? GA[kind] || [] : []), ...(ymOn ? YM[kind] || [] : [])].join(" ");
+
 // Content-Security-Policy tuned to what the application loads:
 //   • Supabase REST/storage (cloud or the configured self-hosted origin)
-//   • GA4 • Yandex Metrica
+//   • GA4 / Yandex Metrica, only if configured (see above)
 // Fonts are emitted by next/font and served from this application origin.
 // 'unsafe-inline' remains required by the current Next.js runtime and analytics
-// bootstrap snippets. Nonces would force dynamic rendering and defeat ISR.
+// bootstrap snippets. Nonces would force dynamic rendering and defeat ISR
+// (decision recorded in docs/SECURITY_DECISIONS.md).
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://www.googletagmanager.com https://mc.yandex.ru`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} ${allow("script")}`.trim(),
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: ${supabaseCspSources.join(" ")} https://www.googletagmanager.com https://www.google-analytics.com https://mc.yandex.ru`,
+  `img-src 'self' data: blob: ${supabaseCspSources.join(" ")} ${allow("img")}`.trim(),
   "font-src 'self' data:",
-  `connect-src 'self'${isDev ? " ws: wss:" : ""} ${supabaseCspSources.join(" ")} https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://mc.yandex.ru https://mc.yandex.com`,
-  "frame-src 'self' https://mc.yandex.ru",
+  `connect-src 'self'${isDev ? " ws: wss:" : ""} ${supabaseCspSources.join(" ")} ${allow("connect")}`.trim(),
+  `frame-src 'self' ${allow("frame")}`.trim(),
   "worker-src 'self' blob:",
   `media-src 'self' blob: ${supabaseCspSources.join(" ")}`,
   "object-src 'none'",

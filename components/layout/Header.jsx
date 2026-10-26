@@ -14,6 +14,8 @@ import Icon from "@/components/shared/Icon";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 import SearchCommand from "@/components/shared/SearchCommand";
 import { useWishlist } from "@/lib/wishlist";
+import { useInquiryList } from "@/lib/inquiryList";
+import { copyFor } from "@/lib/inquiry/copy";
 
 const COLLECTION_COPY = {
   tg: { all: "Дидани ҳама", browseAll: "Дидани тамоми коллексия" },
@@ -28,6 +30,7 @@ export default function Header({ lang, categoryTree = [] }) {
   const t = getTranslations(lang);
   const pathname = usePathname();
   const { count: wishCount } = useWishlist();
+  const { count: inquiryCount } = useInquiryList("health");
   const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -88,7 +91,7 @@ export default function Header({ lang, categoryTree = [] }) {
         <div className={`absolute inset-x-0 top-0 h-[2px] bg-brand-gradient transition-opacity ${scrolled ? "opacity-100" : "opacity-0"}`} />
         <div className="container-x flex h-[4.5rem] items-center justify-between gap-2">
           <Link href={home} className="shrink-0 min-w-0" aria-label="Medoria home">
-            <Brand height={30} reserved={210} reservedMd={540} />
+            <Brand height={30} reserved={210} reservedMd={586} />
           </Link>
 
           {/* Desktop navigation. Collection is the same progressive tree pattern
@@ -119,6 +122,12 @@ export default function Header({ lang, categoryTree = [] }) {
               <Icon name="star" size={18} />
               {wishCount > 0 && (
                 <span className="absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-1 rounded-full bg-accent-gold text-white text-[10px] font-bold grid place-items-center tabular">{wishCount}</span>
+              )}
+            </Link>
+            <Link href={`${home}/inquiry`} aria-label={copyFor(lang).nav} title={copyFor(lang).nav} className="relative hidden md:grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:text-brand-violet hover:bg-brand-violet/10 transition-colors">
+              <Icon name="invoice" size={18} />
+              {inquiryCount > 0 && (
+                <span className="absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-1 rounded-full bg-brand-violet text-white text-[10px] font-bold grid place-items-center tabular">{inquiryCount}</span>
               )}
             </Link>
             <div className="hidden md:block"><ThemeToggle lang={lang} /></div>
@@ -245,6 +254,20 @@ export default function Header({ lang, categoryTree = [] }) {
               {nav.slice(1).map((item) => (
                 <MobileNavLink key={item.href} item={item} active={isActive(item.href)} onClick={closeMobile} />
               ))}
+
+              <Link
+                href={`${home}/inquiry`}
+                onClick={closeMobile}
+                className="py-3.5 text-base font-semibold border-b border-line flex items-center justify-between text-ink transition-colors"
+              >
+                <span className="flex items-center gap-3">
+                  <Icon name="invoice" size={20} className="text-brand-violet" />
+                  {copyFor(lang).nav}
+                </span>
+                {inquiryCount > 0 && (
+                  <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-brand-violet text-white text-[11px] font-bold grid place-items-center tabular">{inquiryCount}</span>
+                )}
+              </Link>
 
               <Link
                 href={`${home}/wishlist`}

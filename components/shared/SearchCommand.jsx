@@ -1,9 +1,10 @@
 // components/shared/SearchCommand.jsx — global instant-search (⌘K) overlay.
-// Categories match instantly (static); products are fetched once on first open.
+// Categories match instantly (static); products are searched by the database as you type (debounced),
+// 6 results at a time, so the whole catalog is never downloaded.
 "use client";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { getProducts, imageUrl } from "@/lib/supabase";
+import { getProductsPage, imageUrl } from "@/lib/supabase";
 import { CATEGORIES, getCategoryName } from "@/lib/i18n";
 import Icon from "./Icon";
 
@@ -19,28 +20,37 @@ export default function SearchCommand({ lang, open, onClose }) {
   const router = useRouter();
   const [q, setQ] = useState("");
   const [products, setProducts] = useState([]);
-  const [loaded, setLoaded] = useState(false);
+  const [searched, setSearched] = useState(true);   // false while the answer for the current text is on its way
   const inputRef = useRef(null);
+  const reqId = useRef(0);
 
   useEffect(() => {
     if (!open) return;
-    if (!loaded) getProducts().then((p) => { setProducts(p || []); setLoaded(true); }).catch(() => setLoaded(true));
     const id = setTimeout(() => inputRef.current?.focus(), 60);
     const onKey = (e) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => { clearTimeout(id); window.removeEventListener("keydown", onKey); };
-  }, [open, loaded, onClose]);
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const term = q.trim();
+    const mine = ++reqId.current;
+    if (!term) { setProducts([]); setSearched(true); return undefined; }
+    setSearched(false);
+    const id = setTimeout(() => {
+      getProductsPage({ search: term, pageSize: 6, lang })
+        .then((r) => { if (mine === reqId.current) { setProducts(r.rows || []); setSearched(true); } })
+        .catch(() => { if (mine === reqId.current) setSearched(true); });
+    }, 250);
+    return () => clearTimeout(id);
+  }, [q, open, lang]);
 
   const query = q.trim().toLowerCase();
   const cats = query
     ? CATEGORIES.filter((c) => getCategoryName(c.slug, lang).toLowerCase().includes(query)).slice(0, 4)
     : CATEGORIES.slice(0, 6);
-  const prods = useMemo(() => {
-    if (!query) return [];
-    return products
-      .filter((p) => [p.name_fa, p.name_en, p.name_ru, p.name_tg, p.sku, p.brand].filter(Boolean).some((v) => String(v).toLowerCase().includes(query)))
-      .slice(0, 6);
-  }, [products, query]); // eslint-disable-line react-hooks/exhaustive-deps
+  const prods = query ? products : [];
 
   if (!open) return null;
   const go = (href) => { onClose(); setQ(""); router.push(href); };
@@ -74,7 +84,7 @@ export default function SearchCommand({ lang, open, onClose }) {
           {query && (
             <>
               <div className="text-[10px] font-bold uppercase tracking-wide text-ink-faint px-3 pt-3 pb-1">{t.products}</div>
-              {prods.length === 0 && loaded && <div className="px-3 py-3 text-[13px] text-ink-muted">{t.none}</div>}
+              {prods.length === 0 && searched && query && <div className="px-3 py-3 text-[13px] text-ink-muted">{t.none}</div>}
               {prods.map((p) => (
                 <button key={p.id} onClick={() => go(`/health/${lang}/catalog/${p.slug || p.id}`)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand-violet/5 text-start transition-colors">
                   <span className="w-9 h-9 rounded-lg img-ph overflow-hidden grid place-items-center text-ink-faint shrink-0">

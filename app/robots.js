@@ -19,6 +19,8 @@ export default function robots() {
           "/api/",
           "/*/compare",
           "/*/wishlist",
+          "/*/inquiry",
+          "/*/print-catalog",
         ],
       },
     ],
