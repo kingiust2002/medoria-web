@@ -44,7 +44,7 @@ jobs:
         run: node -e "const r=require('./artifacts/spreadsheet-dependency-audit.json'); console.log(r.counts); for (const [name,items] of Object.entries(r.findings)) for (const item of items) console.log(name,item.file+':'+item.line,item.snippet)"
 
       - name: Upload spreadsheet dependency usage audit
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: spreadsheet-dependency-audit
           path: artifacts/spreadsheet-dependency-audit.json
@@ -55,7 +55,7 @@ jobs:
         run: node scripts/self-host/verify-xlsx-template.mjs
 
       - name: Upload verified XLSX template
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: verified-products-template
           path: artifacts/verified-products-template.xlsx
@@ -69,7 +69,7 @@ jobs:
           npm audit --omit=dev --json > artifacts/npm-audit.json || true
 
       - name: Upload production dependency audit
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: npm-production-audit
           path: artifacts/npm-audit.json
@@ -121,7 +121,7 @@ jobs:
         run: npm run audit:supabase -- artifacts/supabase-service-audit.json
 
       - name: Upload Supabase service inventory
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: supabase-service-audit
           path: artifacts/supabase-service-audit.json
