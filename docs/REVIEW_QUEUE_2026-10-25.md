@@ -1,6 +1,6 @@
 # Review queue, merge order and what is proven: 2026-10-25
 
-> **Review update, 2026-10-26:** the original queue below is historical. Read **section 7** for the subsequent independent review, merge disposition and deployment hold. No server deployment or migration was performed by this reviewer.
+> **Review update, 2026-10-26:** the original queue below is historical. Read **section 7**, especially the latest **section 7.6**, for the subsequent independent review and merge/deployment disposition. No server deployment or migration was performed by this reviewer.
 
 When this queue was written on 2026-10-25, twelve pull requests (#182–#193) were open; #194 adds this document. At that time none was merged or deployed. Sections 1–6 preserve that original plan and its evidence; they are not a claim about the current GitHub or production state.
 
@@ -149,7 +149,7 @@ The new backup/heartbeat/restore scripts are not installed into `/home/medoria/b
 
 ### 7.5 Status of the fixes (2026-10-26)
 
-Nothing below is merged or deployed. "Code ready" means: implemented on the PR branch, with a test that failed before the fix and passes after it. "Tested" is local, on the combined tip of #189 (which contains #185 and #187 and the current `main`, `aa5c64c`). "Confirmed on the live site": none of it.
+This subsection preserves the author's pre-merge report; see §7.6 for the subsequent review and merge status. At the time of this report nothing below was merged or deployed. "Code ready" means: implemented on the PR branch, with a test that failed before the fix and passes after it. "Tested" is local, on the combined tip of #189 (which contains #185 and #187 and the current `main`, `aa5c64c`). "Confirmed on the live site": none of it.
 
 | # | Issue | Fix lives in | Test that failed before the fix |
 | --- | --- | --- | --- |
@@ -168,3 +168,16 @@ Also changed while combining: the e2e runner now starts a fresh app for every te
 
 **Not done / still the owner's.** No merge, no deployment, no migration (30, 31, 32 are still unapplied; 33 is on `main`). Migrations 30–32 and the new scripts must be applied/installed deliberately as described in 7.4. The new `check:rls` exit code 3 must be treated as "not proven", never as a pass. Live behaviour of the new code (2FA with real authenticator, real Telegram delivery, real phone rendering) is unverified.
 
+
+
+### 7.6 Independent verification and release of the merge hold (2026-10-26)
+
+The security hold from §7.1 is released for the reviewed fixes. **#185 → #187 → #189 are merged to `main`**; their code is not yet recorded as deployed. Merge commits: #185 `c2f5cb6`, #187 `835fe05`, #189 `43dd4cb`. This supersedes the original queue's open/held status, not its historical findings.
+
+- The reviewer read the latest pinned PR heads and their GitHub `validate` / `browser-flows` results. The #189 logs confirmed **265 unit tests passed, zero skipped**, and **103 browser tests passed** on its combined source. The independent local run covered **26 relevant browser cases**, including schema-cache outages, logout retry, Quotes refresh, short-phone dialogs, mobile-check negative fixtures and the inquiry flow; all passed. The standalone production-mode build and lint succeeded; production npm audit reported 0 vulnerabilities.
+- Local unit evidence is narrower than GitHub's: 247 passed, 17 PostgreSQL-dependent tests skipped; one working-directory/runuser test failed because the sandbox cannot set groups. Explicitly excluding that capability-dependent test gave 247 pass and 17 skipped. This limitation was not rewritten as a fully passing local PostgreSQL run.
+- An additional probe-schema defect was fixed in #185 as **`876a124`**: `operator_sessions` has `sid`, and `operator_totp_state` / `operator_recovery_used` have `panel`, rather than `id`. The checker now requests real key columns. Enforcing the real column names in the fixture produced five failures before the code change; all 15 checker tests passed after it. The shared classifier still distinguishes PASS / FAIL / UNKNOWN.
+- The post-change GitHub `validate` and `browser-flows` run for #185 was checked before merging. The selected final source was compared with the reviewed combined candidate so subsequent merges could not drop this probe fix or the request-management features.
+- The intermittent `inquiry-list` race reported by the author remains open: a rerun passing is not a root-cause fix. Live 2FA, new Telegram messages, real-phone rendering, external alerts and production migrations remain unconfirmed.
+
+The owner's new terminal output establishes a clean server checkout at `7618771`, a healthy application container and **all six Docker package holds still present**. This supersedes the earlier claim that holds were lifted; it does not establish installed package versions. See runbook **§23.10** for the checkpoint and next steps. No production writes were performed by this review. **All four migrations 30–33 still need deliberate execution after a fresh verified backup.**

@@ -1,5 +1,7 @@
 # Medoria Production Migration & Operations Runbook
 
+> Latest review checkpoint: **§23.10 (2026-10-26)** — reviewed code merged, production rollout still pending.
+
 > **Authoritative operational record.**
 >
 > Last reconciled: **2026-10-01 UTC** after the emergency server replacement of 2026-09-23 (**§22 — read it first**: the production VPS IP changed to `91.107.182.97`). Before that: **2026-08-10 UTC** after the production cutover, off-site backup validation, controlled VPS reboot, and Git cleanup; then after PR #116/#117 were closed and their branches deleted; then after the deployment-branch documentation cleanup (`6920df0`) and the framework-divergence audit (§1.3).
@@ -2611,3 +2613,35 @@ A summary of the work that followed the 16-point review of 2026-10-20, in the sa
 
 - **Supavisor Erlang cookie rotation** (§23.7.4 item 7): nothing is listening on the Erlang distribution ports, so the cookie that appeared in a pasted listing cannot be used from the network.
 
+
+
+### 23.10 Review close-out and pre-deployment server checkpoint (2026-10-26)
+
+**This section supersedes the current-status interpretations of §23.9 and §23.7.4; their older dated records remain history.** Repository integration is complete, but no deployment or migration execution is recorded for this release. The review queue's §7.6 records the reviewed merge commits and test evidence.
+
+#### 23.10.1 Repository review
+
+- The previously held PRs **#185, #187 and #189** were reviewed again after their fixes and merged in that order. They provide migration 30 (sessions/audit/optional 2FA), 31 (active category/brand policies) and 32 (request management). Migration 33 (multi-product requests) was already merged earlier; a file being on `main` does not mean it was applied to production.
+- The eight review findings in `docs/REVIEW_QUEUE_2026-10-25.md` §7.3 have code fixes and regression coverage. The independent reviewer additionally corrected the RLS probe to select `sid` from `operator_sessions` and `panel` from the second-factor tables, which have no `id`; the stricter schema fixture failed five checks before this correction and all 15 checker tests passed afterwards (commit `876a124`). The permission-denial check must not be replaced with a blanket success on an error.
+- Authentication regressions were checked with signed sessions, injected database/cache failures, failed server revocation and successful retries, in both panels. This is local/browser evidence, not a production authentication test.
+- The remaining intermittent `inquiry-list` browser-test race is **open**. A successful rerun does not identify or fix its cause. The author reported it; the focused independent run passed it once.
+
+#### 23.10.2 Actual server checkpoint (owner's terminal output, 2026-10-26)
+
+- Checkout `/home/medoria/apps/medoria-staging`: clean, `main` at **`7618771`**; this is a checkout observation, not an independent image-to-commit attestation.
+- `medoria-app-app-1`: running, healthy. The listed Supabase containers reported healthy; Caddy reported running (no health status was shown).
+- **Docker holds are still active:** `containerd.io`, `docker-buildx-plugin`, `docker-ce`, `docker-ce-cli`, `docker-ce-rootless-extras`, `docker-compose-plugin`. The earlier statement in §23.7.4 that the hold was lifted is superseded by this actual output. Package versions were not included, so this checkpoint does not establish which upgrades were installed. Review/unhold/upgrade remains a separate operational step after a fresh backup.
+- No new backup, migration, environment edit, installed-script replacement or deployment has been reported for this release. **Migrations 30, 31, 32 and 33 remain pending at this checkpoint.** Migration 29 was previously owner-reported as applied.
+
+#### 23.10.3 Next rollout, not yet executed
+
+1. Take a **fresh** production backup and require local, encrypted R2 upload and read-back verification to pass. Keep the snapshot identifier.
+2. Preserve the currently running application image under a new unique rollback tag; record the old checkout commit.
+3. Pull the reviewed `main` as `medoria`, with a clean tree and fast-forward only. Confirm the resulting commit before changing the database.
+4. Apply **30 → 31 → 32 → 33**, individually, with `psql -v ON_ERROR_STOP=1`; stop on any failure. The SQL files are transaction-scoped and designed to preserve compatibility with the old app during this sequence. The migration-32 backfill assigns tracking codes to existing rows; this is an intended data addition.
+5. Install the reviewed scripts deliberately in `/home/medoria/bin` (backup, heartbeat and restore drill). The application deploy does not install these copies. Install/configure the reminder wrapper only if reminders are to be enabled.
+6. Run the environment preflight, deploy deliberately with `scripts/self-host/deploy.sh`, and verify container state and public routes. Expect operator sessions predating migration 30 to require a new login.
+7. Run the repaired `check:rls`: **exit 0 is pass; exit 1 is a demonstrated failure; exit 3 is inconclusive and is not a pass.** Check forms, both panels and each house's Telegram destination, then remove test requests through the panel. Verify price/archive/reactivate with a disposable test product.
+8. Configure and prove actual outside alerts, optional 2FA and optional reminders separately. Confirm with a real phone. Record the results as they happen; none is established by this pre-deployment note.
+
+**Still open:** current backup/restore proof, outside alert delivery, the data-recovery gap, old GitHub token revocation, Docker hold/package review, real 2FA/Telegram/mobile confirmation, and the intermittent browser-test race. The cookie-rotation closure in §23.9.4 is also superseded: the exposed Supavisor cookie remains a rotation task under `docs/SECRETS_AND_ACCESS_CLEANUP.md`; private ports alone are not evidence that an exposed secret was rotated.
