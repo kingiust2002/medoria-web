@@ -6,7 +6,7 @@
 #
 # It checks, from the server's own point of view:
 #   1. the public site answers   (SITE_HEALTH_URL, default https://medoriaco.com/api/health, HTTP 200)
-#   2. no container is unhealthy (docker ps --filter health=unhealthy)
+#   2. no container is unhealthy (docker ps --filter health=unhealthy; a docker that cannot be queried is a problem too)
 #   3. the disk is not nearly full (DISK_MAX_PERCENT, default 90)
 # and then pings an external heartbeat URL: "<url>" when all is well, "<url>/fail" with the names
 # of the failed checks otherwise. If the server is OFF, or cron / this script stops, no ping arrives
@@ -57,8 +57,19 @@ code="$(curl -sS -m 15 -o /dev/null -w '%{http_code}' "$SITE_HEALTH_URL" 2>/dev/
 [ "$code" = "200" ] || problems+=("site health answered http $code")
 
 if command -v docker >/dev/null 2>&1; then
-  unhealthy="$(docker ps --filter health=unhealthy --format '{{.Names}}' 2>/dev/null | tr '\n' ' ' || true)"
-  [ -z "${unhealthy// /}" ] || problems+=("unhealthy containers: ${unhealthy% }")
+  # The exit status of `docker ps` is checked on its own: an unreachable daemon, a missing permission or a
+  # hang is "could not inspect Docker", never "no container is unhealthy". (An earlier `| tr || true` turned
+  # every failure into an empty list and therefore into a healthy ping.) Docker's own error text is logged
+  # here but not sent to the alert service.
+  docker_timeout="${DOCKER_TIMEOUT:-20}"
+  tmo=(); command -v timeout >/dev/null 2>&1 && tmo=(timeout "$docker_timeout")
+  if listing="$("${tmo[@]}" docker ps --filter health=unhealthy --format '{{.Names}}' 2>&1)"; then
+    unhealthy="$(printf '%s' "$listing" | tr '\n' ' ')"
+    [ -z "${unhealthy// /}" ] || problems+=("unhealthy containers: ${unhealthy% }")
+  else
+    log "docker ps failed: $(printf '%s' "$listing" | head -c 300 | tr '\n' ' ')"
+    problems+=("could not inspect docker (docker ps failed or timed out)")
+  fi
 else
   problems+=("docker is not available")
 fi
