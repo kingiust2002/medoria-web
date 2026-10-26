@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
 import { QUOTE_STATUSES, QUOTE_ACTIVE_STATUSES, QUOTE_STATUS_FA, QUOTE_STATUS_TONE, CONTACT_FA, LANG_FA } from "@/lib/operator/constants";
 import { PageHeader, Input, Select, Badge, EmptyState, Spinner } from "@/components/operator/ui";
+import { isOverdue, notifyFailed, waitingHours } from "@/lib/operator/quoteOps";
 import { reconcileQuotes, pruneSelection } from "@/lib/operator/quotesSync";
 import DeleteQuoteModal from "@/components/operator/DeleteQuoteModal";
 import BulkDeleteQuotesModal from "@/components/operator/BulkDeleteQuotesModal";
@@ -22,14 +23,21 @@ const TABS = [
   { id: "all", label: "همه" },
 ];
 const inTab = (x, tab) => (tab === "all" ? true : tab === "active" ? x.status !== "archived" && x.status !== "spam" : x.status === tab);
+const faHours = (h) => (h >= 48 ? `${Math.floor(h / 24)} روز` : `${Math.floor(h)} ساعت`);
 const MOVED = { archived: "به آرشیو منتقل شد", spam: "به اسپم منتقل شد", new: "بازگردانی شد" };
 
-export default function QuotesPanel({ quotes: initial, actions }) {
+export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) {
   const router = useRouter();
   const [quotes, setQuotes] = useState(initial);
   const [tab, setTab] = useState("active");
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
+  const [who, setWho] = useState("");                 // "" = everyone · "__none" = unassigned · else a name
+  const [attention, setAttention] = useState(false);  // only requests that need follow-up
+  // The server page passes its clock, so SSR and hydration agree; every refresh brings a newer one, so "waiting for 24 h"
+  // keeps counting while the screen stays open.
+  const [now, setNow] = useState(() => nowProp ?? Date.now());
+  useEffect(() => { if (nowProp) setNow(nowProp); }, [nowProp]);
   const [openId, setOpenId] = useState(null);
   const [savingId, setSavingId] = useState(null);
   const [msg, setMsg] = useState(null);
@@ -67,10 +75,15 @@ export default function QuotesPanel({ quotes: initial, actions }) {
   const rows = useMemo(() => {
     let list = quotes.filter((x) => inTab(x, tab));
     const n = q.trim().toLowerCase();
-    if (n) list = list.filter((x) => [x.name, x.phone, x.product_name, x.organization].filter(Boolean).some((v) => String(v).toLowerCase().includes(n)));
+    if (n) list = list.filter((x) => [x.name, x.phone, x.product_name, x.organization, x.tracking_code, x.assigned_to].filter(Boolean).some((v) => String(v).toLowerCase().includes(n)));
     if (status) list = list.filter((x) => x.status === status);
+    if (who) list = list.filter((x) => (who === "__none" ? !x.assigned_to : x.assigned_to === who));
+    if (attention) list = list.filter((x) => isOverdue(x, { now }) || notifyFailed(x));
     return list;
-  }, [quotes, tab, q, status]);
+  }, [quotes, tab, q, status, who, attention, now]);
+
+  const assignees = useMemo(() => [...new Set(quotes.map((x) => x.assigned_to).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fa")), [quotes]);
+  const needAttention = useMemo(() => quotes.filter((x) => inTab(x, "active") && (isOverdue(x, { now }) || notifyFailed(x))).length, [quotes, now]);
 
   // Only rows that are on screen can be selected: a filter change can never leave
   // a hidden row inside a bulk action.
@@ -80,7 +93,7 @@ export default function QuotesPanel({ quotes: initial, actions }) {
 
   function flash(text, ok = false) { setMsg({ text, ok }); setTimeout(() => setMsg(null), 4500); }
   function patch(id, fields) { setQuotes((qs) => qs.map((x) => (x.id === id ? { ...x, ...fields } : x))); }
-  function goTab(id) { setTab(id); setStatus(""); setSelected(new Set()); setOpenId(null); }
+  function goTab(id) { setTab(id); setStatus(""); setWho(""); setAttention(false); setSelected(new Set()); setOpenId(null); }
   function toggle(id) { setSelected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
   function toggleAll() { setSelected(allChecked ? new Set() : new Set(rows.map((x) => x.id))); }
 
@@ -93,6 +106,15 @@ export default function QuotesPanel({ quotes: initial, actions }) {
       try { res = await actions.updateQuoteStatus(id, val); } finally { inflight.current.delete(id); }
       if (!res.ok) { patch(id, { status: prev }); flash(res.error); }
       else if (okText) flash(okText, true);
+    });
+  }
+  function saveAssignee(id, name) {
+    setSavingId(id);
+    startTransition(async () => {
+      const res = await actions.assignQuote(id, name);
+      setSavingId(null);
+      if (res.ok) { patch(id, { assigned_to: res.assignee }); flash(res.assignee ? "مسئول ذخیره شد." : "مسئول برداشته شد.", true); }
+      else { flash(res.error); if (res.notFound) router.refresh(); }
     });
   }
   function saveNotes(id, notes) {
@@ -151,7 +173,7 @@ export default function QuotesPanel({ quotes: initial, actions }) {
       <div className="card-flat p-3 mb-4 flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px]">
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"><Icon name="search" size={16} /></span>
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="جستجو: نام، تلفن، محصول…" className="pr-9" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="جستجو: نام، تلفن، محصول، کد پیگیری…" className="pr-9" />
         </div>
         {statusOptions.length > 0 && (
           <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-auto min-w-[150px]">
@@ -159,6 +181,17 @@ export default function QuotesPanel({ quotes: initial, actions }) {
             {statusOptions.map((s) => <option key={s} value={s}>{QUOTE_STATUS_FA[s]} ({counts[s] || 0})</option>)}
           </Select>
         )}
+        {(assignees.length > 0) && (
+          <Select value={who} onChange={(e) => setWho(e.target.value)} aria-label="فیلتر مسئول" className="w-auto min-w-[140px]">
+            <option value="">همه مسئول‌ها</option>
+            <option value="__none">بدون مسئول</option>
+            {assignees.map((n) => <option key={n} value={n}>{n}</option>)}
+          </Select>
+        )}
+        <button type="button" aria-pressed={attention} onClick={() => setAttention((v) => !v)}
+          className={`btn-ghost size-sm ${attention ? "!border-warn/60 !text-warn !bg-warn/5" : ""}`}>
+          <Icon name="alertTriangle" size={15} /> نیازمند پیگیری <span className="tabular">{needAttention}</span>
+        </button>
         {rows.length > 0 && (
           <label className="inline-flex items-center gap-2 text-sm text-ink-soft cursor-pointer select-none">
             <input ref={allRef} type="checkbox" checked={allChecked} onChange={toggleAll} className="w-4 h-4 accent-brand-violet" />
@@ -206,6 +239,13 @@ export default function QuotesPanel({ quotes: initial, actions }) {
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-ink truncate">{x.name || "بدون نام"}{x.organization ? <span className="text-ink-faint font-normal"> · {x.organization}</span> : null}</p>
                     <p className="text-xs text-ink-muted truncate mt-0.5">{x.product_name || "درخواست عمومی"} · {faDate(x.created_at)}</p>
+                    {(isOverdue(x, { now }) || notifyFailed(x) || x.assigned_to) && (
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1.5 min-w-0">
+                        {isOverdue(x, { now }) && <Badge tone="warn">بدون پاسخ {faHours(waitingHours(x, now))}</Badge>}
+                        {notifyFailed(x) && <Badge tone="warn">اعلان تلگرام نرسید</Badge>}
+                        {x.assigned_to && <Badge tone="neutral" className="max-w-full truncate">مسئول: {x.assigned_to}</Badge>}
+                      </div>
+                    )}
                   </div>
                   <Badge tone={QUOTE_STATUS_TONE[x.status] || "neutral"}>{QUOTE_STATUS_FA[x.status] || x.status}</Badge>
                   <Icon name="chevronDown" size={16} className={`text-ink-faint transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
@@ -216,6 +256,8 @@ export default function QuotesPanel({ quotes: initial, actions }) {
                 {open && (
                   <div className="px-4 pb-4 border-t border-line">
                     <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm py-3.5">
+                      <Detail label="کد پیگیری" value={x.tracking_code} ltr />
+                      <Detail label="مسئول" value={x.assigned_to} />
                       <Detail label="تلفن" value={x.phone} ltr />
                       <Detail label="کانال ترجیحی" value={CONTACT_FA[x.preferred_contact] || x.preferred_contact} />
                       <Detail label="کد محصول" value={x.product_sku} ltr />
@@ -250,6 +292,7 @@ export default function QuotesPanel({ quotes: initial, actions }) {
                       {x.phone && <a href={`tel:${x.phone}`} className="btn-ghost size-sm"><Icon name="phone" size={15} /> تماس</a>}
                     </div>
 
+                    <AssigneeBox quote={x} saving={savingId === x.id && pending} suggestions={assignees} onSave={(v) => saveAssignee(x.id, v)} />
                     <NotesBox quote={x} saving={savingId === x.id && pending} onSave={(v) => saveNotes(x.id, v)} />
                   </div>
                 )}
@@ -287,6 +330,31 @@ function Detail({ label, value, ltr }) {
     <div className="flex gap-2 min-w-0">
       <span className="text-ink-faint shrink-0">{label}:</span>
       <span className="text-ink-soft truncate" dir={ltr ? "ltr" : "rtl"}>{value}</span>
+    </div>
+  );
+}
+
+function AssigneeBox({ quote, saving, suggestions, onSave }) {
+  const server = quote.assigned_to || "";
+  const [v, setV] = useState(server);
+  const [base, setBase] = useState(server);   // the server value this box last followed
+  // Same rule as the notes box: a change made in another session is followed while the field is untouched; text the
+  // user is typing is never overwritten.
+  useEffect(() => {
+    if (server === base) return;
+    const dirty = v !== base;
+    if (!dirty) setV(server);
+    setBase(server);
+  }, [server]); // eslint-disable-line react-hooks/exhaustive-deps
+  const listId = `assignees-${quote.id}`;
+  return (
+    <div className="mb-4">
+      <span className="block text-[12px] font-medium text-ink-soft mb-1.5">مسئول پیگیری</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <input value={v} onChange={(e) => setV(e.target.value)} maxLength={60} list={listId} placeholder="نام مسئول (مثلاً سارا)" aria-label="مسئول پیگیری" className="input min-w-0 flex-1 basis-40 !h-9 text-sm" />
+        <datalist id={listId}>{suggestions.map((n) => <option key={n} value={n} />)}</datalist>
+        <button type="button" onClick={() => onSave(v)} disabled={saving || v.trim() === (quote.assigned_to || "")} className="btn-ghost size-sm disabled:opacity-60">{saving ? <Spinner /> : <Icon name="save" size={15} />} ذخیره مسئول</button>
+      </div>
     </div>
   );
 }

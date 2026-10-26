@@ -10,6 +10,8 @@ lead (the daily backup can be up to 24 h old).
 It is **off by default**. A house sends nothing until it has a chat id; merging the code
 changes nothing in production.
 
+> Since migration 32 the result of each notice is stored on the request (`notify_status`) and shown in the panel, and a reminder can be sent when requests wait or notices fail: see [QUOTE_MANAGEMENT.md](QUOTE_MANAGEMENT.md).
+
 ## Status
 
 | Date | State |

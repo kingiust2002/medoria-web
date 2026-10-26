@@ -6,5 +6,5 @@ export const dynamic = "force-dynamic";
 
 export default async function QuotesPage() {
   const quotes = await getBeautyQuotes();
-  return <QuotesManager quotes={quotes} />;
+  return <QuotesManager quotes={quotes} now={Date.now()} />;
 }

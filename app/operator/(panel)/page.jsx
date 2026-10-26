@@ -58,6 +58,8 @@ export default async function DashboardPage() {
         <StatCard icon="alertTriangle" tone="warn" label="محصولات با اطلاعات ناقص" value={stats?.incomplete ?? "—"} />
         <StatCard icon="quote"    tone="blue"   label="استعلام‌های جدید"     value={stats?.newQuotes ?? "—"} />
         <StatCard icon="chat"     tone="violet" label="کل استعلام‌ها"        value={stats?.totalQuotes ?? "—"} />
+        <StatCard icon="alertTriangle" tone="warn" label="بدون پاسخ بیش از ۲۴ ساعت" value={stats?.overdueQuotes ?? "—"} />
+        <StatCard icon="send"     tone="warn"   label="اعلان تلگرام نرسیده"   value={stats?.notifyFailures ?? "—"} />
       </div>
 
       {/* Quick actions */}

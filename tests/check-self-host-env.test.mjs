@@ -137,3 +137,16 @@ test("Telegram notice variables: half-finished or malformed setups fail without 
   assert.match(badChat.stderr, /TELEGRAM_CHAT_ID_HEALTH must be a numeric chat id/);
   assert.ok(!badChat.stderr.includes("my group"));
 });
+
+test("QUOTE_REMINDER_TOKEN: empty or a long safe token passes; a short or unsafe one fails without printing it", async () => {
+  const site = { NEXT_PUBLIC_SITE_URL: "https://medoriaco.com" };
+  assert.equal((await runChecker({ ...site, QUOTE_REMINDER_TOKEN: "" })).code, 0);
+  assert.equal((await runChecker({ ...site, QUOTE_REMINDER_TOKEN: "a".repeat(64) })).code, 0);
+  const short = await runChecker({ ...site, QUOTE_REMINDER_TOKEN: "shorttoken123" });
+  assert.equal(short.code, 1);
+  assert.match(short.stderr, /QUOTE_REMINDER_TOKEN is shorter than 24/);
+  assert.ok(!short.stderr.includes("shorttoken123"));
+  const unsafe = await runChecker({ ...site, QUOTE_REMINDER_TOKEN: "x".repeat(30) + " " + "y".repeat(5) });
+  assert.equal(unsafe.code, 1);
+  assert.match(unsafe.stderr, /may only contain letters/);
+});
