@@ -143,4 +143,5 @@ public route/API/payload/print path.
 | S5d image library: list + where used, upload, remove unused (approval-aware), both houses | branch `feat/panel-media` (`docs/MEDIA_LIBRARY.md`) | `tests/media-library.test.mjs`, `tests/e2e/media-library.e2e.mjs` |
 | S6a scheduled publishing of products (publish_at / unpublish_at, form fields, rights, cron route, history; migration 39) | branch `feat/panel-scheduling` (`docs/SCHEDULED_PUBLISHING.md`) | `tests/scheduled-publishing*.test.mjs`, `tests/e2e/scheduled-publishing.e2e.mjs` |
 | S6b quick search (/ or Ctrl+K) across products, requests, categories, brands, people — permission-aware, both panels | branch `feat/panel-search` (`docs/PANEL_SEARCH.md`) | `tests/panel-search.test.mjs`, `tests/e2e/panel-search.e2e.mjs` |
-| S4c, S5a, S5b, S5f, S6a (site content), S6b (appearance), S6c | not started | |
+| S5f translation status: automatic vs human texts, translate never overwrites a human text (migration 40) | branch `feat/panel-translation-status` (`docs/TRANSLATION_STATUS.md`) | `tests/translation-meta*.test.mjs`, `tests/e2e/translation-status.e2e.mjs` |
+| S4c, S5a, S5b, S6a (site content), S6b (appearance, shortcuts), S6c | not started | |

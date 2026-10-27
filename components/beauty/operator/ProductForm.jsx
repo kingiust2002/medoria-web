@@ -17,6 +17,7 @@ import { useCan, useMode } from "@/components/panel/Capabilities";
 import Trans from "@/components/panel/Trans";
 import { localName } from "@/lib/panel/i18n";
 import { isoToLocal, localToIso } from "@/lib/operator/schedule";
+import { planTranslationFill, cleanTranslationMeta } from "@/lib/operator/translationMeta";
 
 // Category options grouped by world (Sephora-style two-level taxonomy) so a
 // long category list stays scannable in the select.
@@ -55,6 +56,9 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
   const galleryRef = useRef(null);
   const expectedRef = useRef(product?.updated_at ?? null);   // which version of the product this screen shows (the optimistic lock)
   const [conflict, setConflict] = useState(null);
+  // texts that are still the automatic translator's (not read by a person); editing one makes it human
+  const [autoFields, setAutoFields] = useState(() => new Set(Object.keys(cleanTranslationMeta(product?.translation_meta))));
+  const [transNote, setTransNote] = useState("");
   const editKey = `${DRAFT_KEY}:edit:${product?.id ?? ""}`;     // what a person typed when a conflict stopped the save (edit mode)
   // what this person may offer on screen (the server asks again on every save)
   const canContent = useCan("products.content"), canPrice = useCan("products.price"), canStock = useCan("products.stock_flag");
@@ -107,7 +111,11 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
   const addAnotherRef = useRef(false);
   const skipDirtyRef = useRef(false);
 
-  const up = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const up = (k, v) => {
+    if (autoFields.has(k)) setAutoFields((s) => { const n = new Set(s); n.delete(k); return n; });
+    setF((s) => ({ ...s, [k]: v }));
+  };
+  const autoHint = (k) => (autoFields.has(k) ? t("ترجمهٔ خودکار، بازبینی‌نشده؛ با ویرایش، متن انسانی حساب می‌شود.") : undefined);
   const onNameEn = (v) => { up("name_en", v); if (!slugTouched) up("slug", slugify(v)); };
 
   // ── draft protection (new mode only) ─────────────────────────────────────────
@@ -174,6 +182,7 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
     }));
     setGallery([]);
     setSpecs([{ key: "", value: "" }]);
+    setAutoFields(new Set());
     setSlugTouched(false);
     setExpandLangs(false);
     setDirty(false);
@@ -204,14 +213,11 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
     const res = await translateProductFields({ source: transSource, name: srcName, description: srcDesc });
     setTranslating(false);
     if (!res.ok) { setErr(t(res.error) || t("ترجمه ناموفق بود.")); return; }
-    setF((s) => {
-      const next = { ...s };
-      for (const [lang, vals] of Object.entries(res.translations)) {
-        if (vals.name) next[`name_${lang}`] = vals.name;
-        if (vals.description) next[`description_${lang}`] = vals.description;
-      }
-      return next;
-    });
+    // a text a person wrote is never overwritten; empty and still-automatic texts are filled
+    const plan = planTranslationFill(f, res.translations, autoFields);
+    setF((s) => ({ ...s, ...plan.fill }));
+    setAutoFields(plan.autoNext);
+    setTransNote(plan.kept.length ? t("{filled} متن ترجمه شد؛ {kept} متنِ نوشته‌شده توسط شما دست‌نخورده ماند.", { filled: Object.keys(plan.fill).length, kept: plan.kept.length }) : t("{filled} متن ترجمه شد.", { filled: Object.keys(plan.fill).length }));
     setExpandLangs(true);
   }
 
@@ -227,6 +233,7 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
       category: selectedCat?.slug || null,
       priceOnRequest,
       price: priceOnRequest ? "" : f.price,
+      translation_meta: Object.fromEntries([...autoFields].map((k) => [k, "auto"])),
       ...(editing && expectedRef.current ? { __expectedUpdatedAt: expectedRef.current } : {}),
       tags: f.tags.split(/[،,]/),
       gallery_urls: gallery,
@@ -323,6 +330,7 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
           <Icon name="alertTriangle" size={16} /> {err}
         </div>
       )}
+      {transNote && <div role="status" className="mb-5 text-sm rounded-xl px-3 py-2.5 bg-primary/10 text-primary" data-testid="translate-note">{transNote}</div>}
       {conflict && (
         <div role="alert" className="mb-5 text-sm rounded-xl px-3 py-3 bg-warn/10 text-warn" data-testid="save-conflict">
           <p className="flex items-start gap-2 font-medium"><Icon name="alertTriangle" size={16} /> <span className="min-w-0 break-words">{t("این محصول در این فاصله توسط شخص دیگری تغییر کرده است؛ تغییر شما ذخیره نشد.")}</span></p>
@@ -368,8 +376,8 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
             <details open={expandLangs} onToggle={(e) => setExpandLangs(e.currentTarget.open)} className="mt-3 group">
               <summary className="cursor-pointer text-xs font-semibold text-brand-violet inline-flex items-center gap-1">{t("نام‌های روسی و تاجیکی (اختیاری)")} <Icon name="chevronDown" size={14} className="group-open:rotate-180 transition-transform" /></summary>
               <div className="grid sm:grid-cols-2 gap-4 mt-3">
-                <Field label={t("نام (روسی)")}><Input value={f.name_ru} onChange={(e) => up("name_ru", e.target.value)} dir="ltr" /></Field>
-                <Field label={t("نام (تاجیکی)")}><Input value={f.name_tg} onChange={(e) => up("name_tg", e.target.value)} dir="ltr" /></Field>
+                <Field label={t("نام (روسی)")} hint={autoHint("name_ru")}><Input value={f.name_ru} onChange={(e) => up("name_ru", e.target.value)} dir="ltr" /></Field>
+                <Field label={t("نام (تاجیکی)")} hint={autoHint("name_tg")}><Input value={f.name_tg} onChange={(e) => up("name_tg", e.target.value)} dir="ltr" /></Field>
               </div>
             </details>
             <div className="grid sm:grid-cols-3 gap-4 mt-4">
@@ -390,15 +398,15 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
                 <Icon name="plus" size={16} /> {t("دسته جدید")}</button>
             </div>
             <div className="mt-4">
-              <Field label={t("توضیحات (فارسی)")}><Textarea value={f.description_fa} onChange={(e) => up("description_fa", e.target.value)} rows={4} placeholder={t("توضیح کامل محصول…")} /></Field>
+              <Field label={t("توضیحات (فارسی)")} hint={autoHint("description_fa")}><Textarea value={f.description_fa} onChange={(e) => up("description_fa", e.target.value)} rows={4} placeholder={t("توضیح کامل محصول…")} /></Field>
             </div>
             <details open={expandLangs} onToggle={(e) => setExpandLangs(e.currentTarget.open)} className="mt-3 group">
               <summary className="cursor-pointer text-xs font-semibold text-brand-violet inline-flex items-center gap-1">{t("توضیحات به زبان‌های دیگر (اختیاری)")} <Icon name="chevronDown" size={14} className="group-open:rotate-180 transition-transform" /></summary>
               <div className="grid gap-4 mt-3">
-                <Field label={t("توضیحات (انگلیسی)")}><Textarea value={f.description_en} onChange={(e) => up("description_en", e.target.value)} dir="ltr" rows={3} /></Field>
+                <Field label={t("توضیحات (انگلیسی)")} hint={autoHint("description_en")}><Textarea value={f.description_en} onChange={(e) => up("description_en", e.target.value)} dir="ltr" rows={3} /></Field>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <Field label={t("توضیحات (روسی)")}><Textarea value={f.description_ru} onChange={(e) => up("description_ru", e.target.value)} dir="ltr" rows={3} /></Field>
-                  <Field label={t("توضیحات (تاجیکی)")}><Textarea value={f.description_tg} onChange={(e) => up("description_tg", e.target.value)} dir="ltr" rows={3} /></Field>
+                  <Field label={t("توضیحات (روسی)")} hint={autoHint("description_ru")}><Textarea value={f.description_ru} onChange={(e) => up("description_ru", e.target.value)} dir="ltr" rows={3} /></Field>
+                  <Field label={t("توضیحات (تاجیکی)")} hint={autoHint("description_tg")}><Textarea value={f.description_tg} onChange={(e) => up("description_tg", e.target.value)} dir="ltr" rows={3} /></Field>
                 </div>
               </div>
             </details>
