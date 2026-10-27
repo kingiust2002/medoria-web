@@ -155,10 +155,10 @@ test("Beauty has its own content; a stale save is refused; delete removes it", a
   await page.reload({ waitUntil: "networkidle" });
   await page.getByTestId("ct-open").first().click();
   await other.getByTestId("ct-open").first().click();
-  await other.getByTestId("ct-text").fill("E2E beauty edited by the other");
+  await fillLang(other, "en", { "ct-text": "E2E beauty edited by the other" });
   await other.getByTestId("ct-save").click();
   await other.getByTestId("ct-form").waitFor({ state: "detached" });
-  await page.getByTestId("ct-text").fill("E2E beauty edited late");
+  await fillLang(page, "en", { "ct-text": "E2E beauty edited late" });
   await page.getByTestId("ct-save").click();
   await page.getByTestId("ct-error").waitFor();
   assert.match(await page.getByTestId("ct-error").innerText(), /تغییر کرده/);

@@ -183,3 +183,43 @@ test("Beauty panel on a phone: Quotes screen, settings and activity fit", async 
   }
   await ctx.close();
 });
+
+test("Site content fits phones: the banner and FAQ on both houses' public pages, and the content screen with its dialog, with very long unbroken text", async () => {
+  const post = (table, rows) => fetch(`${process.env.E2E_DB_URL}/rest/v1/${table}`, { method: "POST", headers: { apikey: "service-test-key", "content-type": "application/json" }, body: JSON.stringify(rows) });
+  const long = "L".repeat(190), longAnswer = "A".repeat(600);
+  for (const house of ["health", "beauty"]) {
+    await post("site_content", [
+      { house, kind: "banner", data: { text: { en: long, tg: long }, link: "/", label: { en: "M".repeat(38), tg: "M".repeat(38) }, tone: "promo" }, is_published: true },
+      { house, kind: "faq", data: { q: { en: "Q".repeat(190), tg: "Q".repeat(190) }, a: { en: longAnswer, tg: longAnswer } }, is_published: true },
+    ]);
+  }
+  // a save in each panel purges the public pages of the house, so they are rendered with this content
+  const desk = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const dp = await desk.newPage();
+  await login(dp, "health");
+  await dp.goto(`${BASE}/operator/content`, { waitUntil: "networkidle" });
+  await dp.getByTestId("ct-open").first().click(); await dp.getByTestId("ct-save").click(); await dp.getByTestId("ct-form").waitFor({ state: "detached" });
+  await login(dp, "beauty");
+  await dp.goto(`${BASE}/beauty/operator/content`, { waitUntil: "networkidle" });
+  await dp.getByTestId("ct-open").first().click(); await dp.getByTestId("ct-save").click(); await dp.getByTestId("ct-form").waitFor({ state: "detached" });
+  await desk.close();
+  const poll = async (fn) => { for (let i = 0; i < 60; i++) { if (await fn()) return; await new Promise((r) => setTimeout(r, 500)); } throw new Error("public pages never showed the content"); };
+  await poll(async () => (await (await fetch(`${BASE}/health/en`)).text()).includes("site-banner") && (await (await fetch(`${BASE}/beauty/en`)).text()).includes("site-banner"));
+  await poll(async () => (await (await fetch(`${BASE}/health/en/contact`)).text()).includes("site-faq") && (await (await fetch(`${BASE}/beauty/en/contact`)).text()).includes("site-faq"));
+
+  for (const width of [320, 360, 390, 430, 768]) {
+    const { ctx, page } = await phone(width);
+    for (const route of ["/health/en", "/health/en/contact", "/beauty/en", "/beauty/en/contact", "/health/tg/contact"]) {
+      await page.goto(BASE + route, { waitUntil: "networkidle" });
+      await assertFits(page, `${route} with content @ ${width}`);
+      if (route.endsWith("/contact")) { await page.getByTestId("site-faq-item").first().locator("summary").click(); await assertFits(page, `${route} FAQ open @ ${width}`); }
+    }
+    await login(page, "health");
+    await page.goto(`${BASE}/operator/content`, { waitUntil: "networkidle" });
+    await assertFits(page, `content screen @ ${width}`);
+    await page.getByTestId("ct-open").first().click();
+    await assertInside(page, page.getByRole("dialog"), `content dialog @ ${width}`);
+    await assertFits(page, `content dialog open @ ${width}`);
+    await ctx.close();
+  }
+});
