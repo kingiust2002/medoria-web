@@ -8,6 +8,7 @@ import { revokeOtherSessions, revokeAllSessions } from "@/lib/operator/securityA
 import { isAdminConfigured } from "@/lib/operator/supabaseAdmin";
 import { PageHeader, SectionCard } from "@/components/operator/ui";
 import LogoutButton from "@/components/operator/LogoutButton";
+import { requireHealthSession } from "@/lib/operator/panelGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ function StatusRow({ ok, label, hint }) {
 }
 
 export default async function SettingsPage() {
+  await requireHealthSession();
   const secret = hasSessionSecret();
   const user = hasUsername();
   const pass = hasPasswordHash();

@@ -2,10 +2,12 @@
 // entry. Protected like every (panel) route: the layout verifies the session.
 import { getAdminBeautyCategories } from "@/lib/beauty/operator/data";
 import BulkAddGrid from "@/components/beauty/operator/BulkAddGrid";
+import { requireBeautySession } from "@/lib/operator/panelGuard";
 
 export const dynamic = "force-dynamic";
 
 export default async function BulkAddPage() {
+  await requireBeautySession();
   const categories = await getAdminBeautyCategories();
   return <BulkAddGrid categories={categories} />;
 }

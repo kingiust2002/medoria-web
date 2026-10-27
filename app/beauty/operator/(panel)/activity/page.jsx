@@ -3,10 +3,12 @@ import { getAdminClient } from "@/lib/operator/supabaseAdmin";
 import { listAudit } from "@/lib/operator/security";
 import { PageHeader } from "@/components/operator/ui";
 import ActivityList from "@/components/operator/ActivityList";
+import { requireBeautySession } from "@/lib/operator/panelGuard";
 
 export const dynamic = "force-dynamic";
 
 export default async function ActivityPage() {
+  await requireBeautySession();
   const rows = await listAudit(getAdminClient(), { panel: "beauty", limit: 200 });
   return (
     <>
