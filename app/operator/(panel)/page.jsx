@@ -12,6 +12,7 @@ import {
 import { getPanel } from "@/lib/panel/server";
 import { tr, formatDate } from "@/lib/panel/i18n";
 import Trans from "@/components/panel/Trans";
+import TruncatedNotice from "@/components/operator/TruncatedNotice";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export default async function DashboardPage() {
   const { t, lang } = await getPanel();
   await requireHealthSession();
   const configured = isAdminConfigured();
-  const { access, stats, recentProducts, recentQuotes } = await getDashboardData();
+  const { access, stats, recentProducts, recentQuotes, statsLimit } = await getDashboardData();
 
   return (
     <>
@@ -53,6 +54,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Stats */}
+      <TruncatedNotice limit={statsLimit} variant="stats" />
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
         {access.products && <StatCard icon="package"  tone="violet" label={t("کل محصولات")}        value={stats?.total ?? "—"} />}
         {access.products && <StatCard icon="badgeCheck" tone="ok"   label={t("محصولات فعال")}       value={stats?.active ?? "—"} />}
