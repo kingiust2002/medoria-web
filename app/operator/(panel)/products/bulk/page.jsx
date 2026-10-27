@@ -2,10 +2,12 @@
 // Protected like every (panel) route: the layout verifies the operator session.
 import { getAdminCategories } from "@/lib/operator/data";
 import BulkAddGrid from "@/components/operator/BulkAddGrid";
+import { requireHealthSession } from "@/lib/operator/panelGuard";
 
 export const dynamic = "force-dynamic";
 
 export default async function BulkAddPage() {
+  await requireHealthSession();
   const categories = await getAdminCategories();
   return <BulkAddGrid categories={categories} />;
 }
