@@ -38,7 +38,9 @@ function fakeAdmin({ rows = null, error = null } = {}) {
 }
 const deps = (admin, session = { role: "admin" }) => {
   const seen = { adminRequested: 0 };
-  return { seen, base: { getSession: async () => session, getAdminClient: () => { seen.adminRequested++; return admin ?? null; } } };
+  const entries = []; seen.entries = entries;
+  // every deletion needs its attempt on record (lib/operator/auditedDelete.js); a stub that accepts every entry
+  return { seen, base: { getSession: async () => session, getAdminClient: () => { seen.adminRequested++; return admin ?? null; }, audit: async (e) => { entries.push(e); return { ok: true }; } } };
 };
 
 test("parseQuoteIds accepts 1..200 valid ids, collapses duplicates, rejects anything else", () => {

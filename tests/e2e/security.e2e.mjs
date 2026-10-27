@@ -164,7 +164,7 @@ test("the activity log records what was done, by session, and never customer dat
   await ctx.close();
 });
 
-test("a deletion is refused while the log cannot be written, and allowed when the log table does not exist yet", async () => {
+test("a deletion is refused while the log cannot be written AND when the log table does not exist (a missing history is never a permission)", async () => {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const { cookie } = await apiLogin("health");
   const [name, value] = cookie.split("=");
@@ -184,6 +184,15 @@ test("a deletion is refused while the log cannot be written, and allowed when th
   await setFault("operator_audit_log", "POST", 404, "PGRST205");    // the table does not exist (migration 30 not applied)
   await page.getByRole("button", { name: "حذف درخواست E2E Customer 3" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "حذف درخواست" }).click();
-  await poll(async () => !(await state()).quote_requests.some((q) => q.id === 3), { label: "deletion without a log table" });
+  await page.getByRole("alert").getByText(/تاریخچهٔ فعالیت در دسترس نیست/).waitFor({ timeout: 10000 });
+  assert.ok((await state()).quote_requests.some((q) => q.id === 3), "the request was deleted although there is no log table");
+  await page.getByRole("dialog").getByRole("button", { name: "انصراف" }).click();
+
+  await clearFaults();                                                // the log works again: the deletion goes through, with attempt and outcome on record
+  await page.getByRole("button", { name: "حذف درخواست E2E Customer 3" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "حذف درخواست" }).click();
+  await poll(async () => !(await state()).quote_requests.some((q) => q.id === 3), { label: "deletion with a working log" });
+  const trail = (await state()).operator_audit_log.filter((r) => /^quote\.delete/.test(r.action)).sort((a, b) => a.id - b.id).map((r) => r.action);
+  assert.deepEqual(trail, ["quote.delete_attempt", "quote.delete"]);
   await ctx.close();
 });
