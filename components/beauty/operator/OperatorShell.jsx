@@ -22,6 +22,7 @@ const NAV = [
   { href: `${BASE}/products`, label: tr("محصولات"), icon: "package" },
   { href: `${BASE}/categories`, label: tr("دسته‌بندی‌ها"), icon: "layers" },
   { href: `${BASE}/brands`, label: tr("برندها"), icon: "award" },
+  { href: `${BASE}/media`, label: tr("تصاویر"), icon: "image" },
   { href: `${BASE}/quotes`, label: tr("استعلام‌ها"), icon: "quote" },
   { href: `${BASE}/warehouse`, label: tr("انبار"), icon: "package" },
   { href: `${BASE}/approvals`, label: tr("تأییدها"), icon: "check" },

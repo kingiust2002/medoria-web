@@ -154,6 +154,34 @@ export function createFakeDb(seedFactory) {
     const m = url.pathname.match(/^\/rest\/v1\/([\w]+)/);
     log.push({ method: req.method, path: url.pathname, query: url.search, kind });
 
+    // Storage (list / upload / remove) — just enough for the media library: objects live in tables.storage_objects
+    const st = url.pathname.match(/^\/storage\/v1\/object\/(list\/)?([\w-]+)(?:\/(.+))?$/);
+    if (st) {
+      if (kind !== "service") return respond(res, 401, { message: "unauthorized" });
+      const objs = (tables.storage_objects ||= []);
+      const bucket = st[2];
+      if (st[1] && req.method === "POST") {
+        const body = await readBody(req);
+        const prefix = String(body?.prefix || "");
+        const rows = objs.filter((o) => o.bucket === bucket && o.name.startsWith(prefix ? `${prefix}/` : "") && !o.name.slice(prefix ? prefix.length + 1 : 0).includes("/"))
+          .map((o) => ({ name: o.name.slice(prefix ? prefix.length + 1 : 0), id: o.id, created_at: o.created_at, metadata: { size: o.size } }));
+        rows.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+        return respond(res, 200, rows.slice(Number(body?.offset || 0), Number(body?.offset || 0) + Number(body?.limit || 100)));
+      }
+      if (!st[1] && req.method === "DELETE") {
+        const body = await readBody(req);
+        const gone = objs.filter((o) => o.bucket === bucket && (body?.prefixes || []).includes(o.name));
+        tables.storage_objects = objs.filter((o) => !gone.includes(o));
+        return respond(res, 200, gone.map((o) => ({ name: o.name, bucket_id: bucket })));
+      }
+      if (!st[1] && req.method === "POST" && st[3]) {
+        const chunks = []; for await (const c of req) chunks.push(c);
+        objs.push({ id: randomUUID(), bucket, name: decodeURIComponent(st[3]), size: Buffer.concat(chunks).length, created_at: new Date().toISOString() });
+        return respond(res, 200, { Key: `${bucket}/${st[3]}` });
+      }
+      return respond(res, 404, { message: "not found" });
+    }
+
     if (rpc) {
       const body = await readBody(req);
       if (kind !== "service" && /_stock_/.test(rpc[1])) return respond(res, 401, { code: "42501", message: "permission denied for function" });   // like the real grants
