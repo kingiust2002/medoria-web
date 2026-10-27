@@ -175,8 +175,8 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
 
       <div className="card-flat p-3 mb-4 flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px]">
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"><Icon name="search" size={16} /></span>
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("جستجو: نام، تلفن، محصول، کد پیگیری…")} className="pr-9" />
+          <span className="absolute start-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"><Icon name="search" size={16} /></span>
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("جستجو: نام، تلفن، محصول، کد پیگیری…")} className="ps-9" />
         </div>
         {statusOptions.length > 0 && (
           <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-auto min-w-[150px]">
@@ -232,10 +232,10 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
             return (
               <div key={x.id} className={`card overflow-hidden ${isSel ? "ring-2 ring-brand-violet/40" : ""}`}>
                 <div className="flex items-stretch">
-                <label className="grid place-items-center w-11 shrink-0 cursor-pointer border-l border-line hover:bg-line-soft/40 transition-colors" title={t("انتخاب")}>
+                <label className="grid place-items-center w-11 shrink-0 cursor-pointer border-e border-line hover:bg-line-soft/40 transition-colors" title={t("انتخاب")}>
                   <input type="checkbox" checked={isSel} onChange={() => toggle(x.id)} aria-label={x.name ? t("انتخاب {name}", { name: x.name }) : t("انتخاب درخواست")} className="w-4 h-4 accent-brand-violet" />
                 </label>
-                <button onClick={() => setOpenId(open ? null : x.id)} className="min-w-0 flex-1 px-4 py-3.5 flex items-center gap-3 text-right hover:bg-line-soft/40 transition-colors">
+                <button onClick={() => setOpenId(open ? null : x.id)} className="min-w-0 flex-1 px-4 py-3.5 flex items-center gap-3 text-start hover:bg-line-soft/40 transition-colors">
                   <span className="hidden sm:grid place-items-center w-10 h-10 rounded-xl bg-brand-violet/10 text-brand-violet shrink-0"><Icon name="user" size={18} /></span>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-ink truncate">{x.name || t("بدون نام")}{x.organization ? <span className="text-ink-faint font-normal"> · {x.organization}</span> : null}</p>
@@ -251,7 +251,7 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
                   <Badge tone={QUOTE_STATUS_TONE[x.status] || "neutral"}>{QUOTE_STATUS_FA[x.status] ? t(QUOTE_STATUS_FA[x.status]) : x.status}</Badge>
                   <Icon name="chevronDown" size={16} className={`text-ink-faint transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
                 </button>
-                <button type="button" onClick={() => setDeleting(x)} title={t("حذف درخواست")} aria-label={t("حذف درخواست {v}", { v: x.name || "" }).trim()} className="grid place-items-center w-12 shrink-0 border-r border-line text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors"><Icon name="trash" size={17} /></button>
+                <button type="button" onClick={() => setDeleting(x)} title={t("حذف درخواست")} aria-label={t("حذف درخواست {v}", { v: x.name || "" }).trim()} className="grid place-items-center w-12 shrink-0 border-s border-line text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors"><Icon name="trash" size={17} /></button>
                 </div>
 
                 {open && (

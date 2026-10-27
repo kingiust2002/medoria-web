@@ -150,7 +150,7 @@ export default function HealthCategoryTree({ tree }) {
                     <button type="button" role="switch" aria-checked={!inactive} title={inactive ? t("فعال‌کردن") : t("غیرفعال‌کردن")}
                       onClick={() => run(node.id, () => setHealthCategoryFlags(node.id, { is_active: inactive }), inactive ? t("دسته فعال شد.") : t("دسته غیرفعال شد."))}
                       className={`relative h-5 w-9 rounded-full shrink-0 transition-colors ${inactive ? "bg-line" : "bg-ok"}`}>
-                      <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${inactive ? "right-[1.125rem]" : "right-0.5"}`} />
+                      <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${inactive ? "start-[1.125rem]" : "start-0.5"}`} />
                     </button>
                   )}
 

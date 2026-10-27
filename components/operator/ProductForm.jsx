@@ -233,7 +233,7 @@ export default function ProductForm({ mode, product, categories }) {
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-3 min-w-0">
-          <Link href="/operator/products" className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-line-soft shrink-0"><Icon name="chevronRight" size={18} /></Link>
+          <Link href="/operator/products" className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-line-soft shrink-0"><Icon name="chevronRight" size={18} className="ltr:-scale-x-100" /></Link>
           <h1 className="text-xl sm:text-2xl font-bold font-display text-ink tracking-tight truncate">{editing ? t("ویرایش محصول") : t("افزودن محصول")}</h1>
         </div>
         <div className="hidden sm:flex items-center gap-2"><SaveAndNextButton /><SaveButton /></div>
@@ -241,7 +241,7 @@ export default function ProductForm({ mode, product, categories }) {
 
       {draftFound && (
         <div className="mb-5 text-sm rounded-xl px-3 py-2.5 flex flex-wrap items-center gap-2 bg-primary/10 text-primary">
-          <Icon name="archive" size={16} />{t("پیش‌نویس ذخیره‌نشده‌ای از قبل وجود دارد{v}.", { v: draftFound.f?.name_fa ? ` («${draftFound.f.name_fa}»)` : "" })}<button type="button" onClick={restoreDraft} className="font-semibold underline underline-offset-2">{t("بازیابی")}</button>
+          <Icon name="archive" size={16} />{draftFound.f?.name_fa ? t("پیش‌نویس ذخیره‌نشده‌ای از قبل وجود دارد («{name}»).", { name: draftFound.f.name_fa }) : t("پیش‌نویس ذخیره‌نشده‌ای از قبل وجود دارد.")}<button type="button" onClick={restoreDraft} className="font-semibold underline underline-offset-2">{t("بازیابی")}</button>
           <button type="button" onClick={discardDraft} className="text-ink-muted underline underline-offset-2">{t("حذف پیش‌نویس")}</button>
         </div>
       )}
@@ -251,7 +251,7 @@ export default function ProductForm({ mode, product, categories }) {
           <Icon name="check" size={16} />{t("«{name}» ذخیره شد.", { name: savedToast.name })}{savedToast.id && (
             <Link href={`/operator/products/${savedToast.id}/edit`} className="font-semibold underline underline-offset-2">{t("ویرایش")}</Link>
           )}
-          <button type="button" onClick={() => setSavedToast(null)} className="mr-auto text-ink-muted"><Icon name="close" size={14} /></button>
+          <button type="button" onClick={() => setSavedToast(null)} className="ms-auto text-ink-muted"><Icon name="close" size={14} /></button>
         </div>
       )}
 
@@ -352,7 +352,7 @@ export default function ProductForm({ mode, product, categories }) {
                 {gallery.map((g, i) => (
                   <span key={i} className="img-ph relative w-20 h-20 rounded-lg overflow-hidden border border-line group">
                     <img src={imageUrl(g)} alt="" className="w-full h-full object-cover" />
-                    <button type="button" onClick={() => setGallery(gallery.filter((_, idx) => idx !== i))} className="absolute top-1 left-1 grid place-items-center w-6 h-6 rounded-md bg-navy/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="close" size={13} /></button>
+                    <button type="button" onClick={() => setGallery(gallery.filter((_, idx) => idx !== i))} className="absolute top-1 end-1 grid place-items-center w-6 h-6 rounded-md bg-navy/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="close" size={13} /></button>
                   </span>
                 ))}
                 <button type="button" onClick={() => galleryRef.current?.click()} disabled={galleryBusy} className="w-20 h-20 rounded-lg border-2 border-dashed border-line grid place-items-center text-ink-faint hover:border-brand-violet/40 hover:text-brand-violet transition-colors">
@@ -399,8 +399,8 @@ export default function ProductForm({ mode, product, categories }) {
             <div className="card-flat overflow-hidden">
               <div className="img-ph aspect-[4/3] grid place-items-center text-ink-faint relative">
                 {previewImg ? <img src={previewImg} alt="" className="w-full h-full object-cover" /> : <Icon name="image" size={30} />}
-                {f.badge && <span className="tag absolute top-2.5 right-2.5 bg-primary text-white">{f.badge}</span>}
-                {!f.in_stock && <span className="pill absolute bottom-2.5 right-2.5 bg-navy/70 text-white !text-[10px]">{t("ناموجود")}</span>}
+                {f.badge && <span className="tag absolute top-2.5 start-2.5 bg-primary text-white">{f.badge}</span>}
+                {!f.in_stock && <span className="pill absolute bottom-2.5 start-2.5 bg-navy/70 text-white !text-[10px]">{t("ناموجود")}</span>}
               </div>
               <div className="p-3.5">
                 <p className="font-semibold text-ink truncate">{f.name_fa || f.name_en || t("نام محصول")}</p>

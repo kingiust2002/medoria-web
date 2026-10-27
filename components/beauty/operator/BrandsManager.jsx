@@ -13,6 +13,7 @@ import { slugify } from "@/lib/operator/validation";
 import { PageHeader, Field, Input, Toggle, Badge, EmptyState, Spinner } from "@/components/operator/ui";
 import BrandProductsModal from "./BrandProductsModal";
 import { useT } from "@/components/panel/PanelI18n";
+import Trans from "@/components/panel/Trans";
 
 export default function BrandsManager({ brands, products }) {
   const t = useT();
@@ -31,7 +32,7 @@ export default function BrandsManager({ brands, products }) {
 
       <div className="mb-4 text-[12px] rounded-xl px-3 py-2.5 bg-brand-violet/[0.06] text-ink-muted leading-relaxed flex items-start gap-2">
         <Icon name="shield" size={15} className="mt-0.5 shrink-0 text-brand-violet" />
-        <span>{t("فقط لوگوی")} <b>{t("رسمیِ")}</b> {t("برند را که خودتان از منبع مجاز دارید آپلود کنید. برندهای بدون لوگو با یک placeholder تمیز نمایش داده می‌شوند.")}</span>
+        <span><Trans t={t} k="فقط لوگوی {official} برند را که خودتان از منبع مجاز دارید آپلود کنید. برندهای بدون لوگو با یک placeholder تمیز نمایش داده می‌شوند." values={{ official: <b>{t("رسمیِ")}</b> }} /></span>
       </div>
 
       {msg && (
@@ -120,7 +121,7 @@ function DeleteBrandModal({ brand, onClose, onDone }) {
       <div className="absolute inset-0 bg-navy/40 backdrop-blur-sm" />
       <div onClick={(e) => e.stopPropagation()} dir="rtl" className="relative card p-6 w-full max-w-md animate-fade-in">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-lg text-ink">{t("حذف برند «")}<span dir="ltr">{brand.name || brand.slug}</span>»</h2>
+          <h2 className="font-bold text-lg text-ink"><Trans t={t} k="حذف برند «{name}»" values={{ name: <span dir="ltr">{brand.name || brand.slug}</span> }} /></h2>
           <button type="button" onClick={onClose} className="grid place-items-center w-9 h-9 rounded-lg hover:bg-line-soft text-ink-muted"><Icon name="close" size={18} /></button>
         </div>
         {err && <div className="mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn"><Icon name="alertTriangle" size={16} /> {err}</div>}

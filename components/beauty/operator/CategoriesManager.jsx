@@ -8,6 +8,7 @@ import { slugify } from "@/lib/operator/validation";
 import { BEAUTY_WORLDS, WORLD_FA } from "@/lib/beauty/operator/constants";
 import { PageHeader, Field, Input, Textarea, Select, Toggle, Badge, EmptyState, Spinner } from "@/components/operator/ui";
 import { useT } from "@/components/panel/PanelI18n";
+import Trans from "@/components/panel/Trans";
 
 const ICON_OPTIONS = ["sparkles", "star", "heart", "droplet", "sun", "eye", "wind", "flask", "edit", "settings", "award", "tag", "package", "layers"];
 
@@ -116,7 +117,7 @@ function DeleteCategoryModal({ category, categories, onClose, onDone }) {
         {err && <div className="mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn"><Icon name="alertTriangle" size={16} /> {err}</div>}
         {count > 0 ? (
           <>
-            <p className="text-sm text-ink-soft leading-relaxed mb-4">{t("این دسته")} <b>{t("{count} محصول", { count })}</b> {t("دارد. برای حذف، اول محصول‌ها به دسته دیگری منتقل می‌شوند — هیچ محصولی حذف نمی‌شود.")}</p>
+            <p className="text-sm text-ink-soft leading-relaxed mb-4"><Trans t={t} k="این دسته {count} محصول دارد. برای حذف، اول محصول‌ها به دسته دیگری منتقل می‌شوند — هیچ محصولی حذف نمی‌شود." values={{ count: <b>{t("{count} محصول", { count })}</b> }} /></p>
             <Field label={t("انتقال محصولات به")} required>
               <Select value={moveTo} onChange={(e) => setMoveTo(e.target.value)}>
                 <option value="">{t("— انتخاب دسته مقصد —")}</option>

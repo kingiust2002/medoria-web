@@ -72,10 +72,10 @@ export function Toggle({ checked, onChange, label, desc }) {
       role="switch"
       aria-checked={!!checked}
       onClick={() => onChange(!checked)}
-      className="flex items-center gap-3 text-right w-full group"
+      className="flex items-center gap-3 text-start w-full group"
     >
       <span className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? "bg-brand-violet" : "bg-line"}`}>
-        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? "right-0.5" : "right-[1.375rem]"}`} />
+        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? "start-0.5" : "start-[1.375rem]"}`} />
       </span>
       {(label || desc) && (
         <span className="min-w-0">

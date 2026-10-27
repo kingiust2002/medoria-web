@@ -131,8 +131,8 @@ export default function ProductsTable({ products, categories }) {
       {/* Filters */}
       <div className="card-flat p-3 mb-4 flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px]">
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"><Icon name="search" size={16} /></span>
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("جستجوی نام، SKU یا برند…")} className="pr-9" />
+          <span className="absolute start-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"><Icon name="search" size={16} /></span>
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("جستجوی نام، SKU یا برند…")} className="ps-9" />
         </div>
         <Select value={cat} onChange={(e) => setCat(e.target.value)} className="w-auto min-w-[130px]">
           <option value="">{t("همه دسته‌ها")}</option>

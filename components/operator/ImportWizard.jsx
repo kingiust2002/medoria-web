@@ -250,7 +250,7 @@ export default function ImportWizard({ recentLogs = [] }) {
   return (
     <>
       <PageHeader title={t("ورود از Excel/CSV")} subtitle={t("فایل را آپلود کنید، پیش‌نمایش را بررسی کنید، بعد تأیید کنید — قبل از تأیید چیزی ذخیره نمی‌شود.")}>
-        <Link href="/operator/products" className="btn-ghost size-md"><Icon name="chevronRight" size={16} /> {t("محصولات")}</Link>
+        <Link href="/operator/products" className="btn-ghost size-md"><Icon name="chevronRight" size={16} className="ltr:-scale-x-100" /> {t("محصولات")}</Link>
         <Link href="/operator/products/bulk" className="btn-ghost size-md"><Icon name="plusCircle" size={16} /> {t("افزودن گروهی دستی")}</Link>
       </PageHeader>
 
@@ -280,7 +280,7 @@ export default function ImportWizard({ recentLogs = [] }) {
                 {dupRows.size > 0 && <Badge tone="warn">{t("{size} ردیف SKU تکراری در فایل", { size: dupRows.size })}</Badge>}
                 {file.truncated && <Badge tone="warn">{t("بیش از {MAX_ROWS_PER_FILE} ردیف — فقط {MAX_ROWS_PER_FILE2} ردیف اول", { MAX_ROWS_PER_FILE, MAX_ROWS_PER_FILE2: MAX_ROWS_PER_FILE })}</Badge>}
                 {file.unknownHeaders.length > 0 && <Badge tone="info">{t("ستون‌های ناشناخته نادیده گرفته شد:")} {file.unknownHeaders.join(t("، "))}</Badge>}
-                <button type="button" onClick={reset} className="mr-auto text-ink-muted hover:text-warn" title={t("حذف فایل")}><Icon name="close" size={15} /></button>
+                <button type="button" onClick={reset} className="ms-auto text-ink-muted hover:text-warn" title={t("حذف فایل")}><Icon name="close" size={15} /></button>
               </div>
             )}
             <details className="mt-4 group">
@@ -308,7 +308,7 @@ export default function ImportWizard({ recentLogs = [] }) {
               <div className="grid sm:grid-cols-3 gap-2.5">
                 {MODES.map((m) => (
                   <button key={m.value} type="button" onClick={() => { setMode(m.value); setDry(null); setFinal(null); }}
-                    className={`text-right rounded-xl border p-3 transition-colors ${mode === m.value ? "border-brand-violet bg-brand-violet/5" : "border-line hover:border-brand-violet/40"}`}>
+                    className={`text-start rounded-xl border p-3 transition-colors ${mode === m.value ? "border-brand-violet bg-brand-violet/5" : "border-line hover:border-brand-violet/40"}`}>
                     <span className="block text-[13px] font-semibold text-ink">{t(m.label)}</span>
                     <span className="block text-[11px] text-ink-muted mt-1 leading-relaxed">{t(m.desc)}</span>
                   </button>
@@ -373,10 +373,10 @@ export default function ImportWizard({ recentLogs = [] }) {
                 <table className="w-full text-[12px]" dir="rtl">
                   <thead className="sticky top-0 bg-canvas-soft">
                     <tr className="text-ink-muted border-b border-line">
-                      <th className="px-2.5 py-2 font-medium text-right w-14">{t("ردیف")}</th>
-                      <th className="px-2.5 py-2 font-medium text-right">{t("محصول")}</th>
-                      <th className="px-2.5 py-2 font-medium text-right w-24">{t("وضعیت")}</th>
-                      <th className="px-2.5 py-2 font-medium text-right">{t("پیام‌ها")}</th>
+                      <th className="px-2.5 py-2 font-medium text-start w-14">{t("ردیف")}</th>
+                      <th className="px-2.5 py-2 font-medium text-start">{t("محصول")}</th>
+                      <th className="px-2.5 py-2 font-medium text-start w-24">{t("وضعیت")}</th>
+                      <th className="px-2.5 py-2 font-medium text-start">{t("پیام‌ها")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
@@ -439,7 +439,7 @@ export default function ImportWizard({ recentLogs = [] }) {
             )}
           </SectionCard>
           <SectionCard title={t("نکته‌ها")} icon="shield">
-            <ul className="text-[12px] text-ink-soft space-y-2 leading-relaxed list-disc pr-4">
+            <ul className="text-[12px] text-ink-soft space-y-2 leading-relaxed list-disc ps-4">
               <li>{t("کلید تطبیق: اول SKU (بدون حساسیت به بزرگی حروف)، بعد اسلاگ.")}</li>
               <li>{t("در حالت بروزرسانی، سلول خالی یعنی «بدون تغییر» — داده‌ای پاک نمی‌شود.")}</li>
               <li>{t("تصویر: آدرس اینترنتی یا مسیر Storage موجود. آپلود فایل تصویر از صفحهٔ خود محصول.")}</li>

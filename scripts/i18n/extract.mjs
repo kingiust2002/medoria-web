@@ -29,6 +29,11 @@ export function extractFile(file) {
       n.arguments.slice(1).forEach(visit);
       return;
     }
+    if (ts.isJsxAttribute(n) && n.name.getText(sf) === "k" && n.initializer && ts.isStringLiteral(n.initializer) && AR.test(n.initializer.text)
+        && (ts.isJsxSelfClosingElement(n.parent.parent) || ts.isJsxOpeningElement(n.parent.parent)) && n.parent.parent.tagName.getText(sf) === "Trans") {
+      keys.push({ text: n.initializer.text, line: sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1 });
+      return;
+    }
     if ((ts.isStringLiteralLike(n) || ts.isTemplateHead(n) || ts.isTemplateMiddle(n) || ts.isTemplateTail(n) || ts.isJsxText(n)) && AR.test(n.text)) {
       bare.push({ file, line: sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1, text: n.text.replace(/\s+/g, " ").trim() });
     }

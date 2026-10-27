@@ -16,6 +16,7 @@ import { beautyImageUrl as imageUrl } from "@/lib/beauty/catalog";
 import { quickUpdateProduct, bulkUpdateProducts } from "@/lib/beauty/operator/actions";
 import { Input, Spinner, productDisplayName } from "@/components/operator/ui";
 import { useT } from "@/components/panel/PanelI18n";
+import Trans from "@/components/panel/Trans";
 
 const norm = (s) => String(s || "").trim().toLowerCase();
 
@@ -83,7 +84,7 @@ export default function BrandProductsModal({ brand, products, onClose }) {
       <div onClick={(e) => e.stopPropagation()} dir="rtl" className="relative card w-full max-w-2xl max-h-[88vh] flex flex-col animate-fade-in">
         <div className="flex items-center justify-between gap-3 p-5 border-b border-line shrink-0">
           <div className="min-w-0">
-            <h2 className="font-bold text-lg text-ink truncate">{t("محصولات برند «")}<span dir="ltr">{brand.name}</span>»</h2>
+            <h2 className="font-bold text-lg text-ink truncate"><Trans t={t} k="محصولات برند «{name}»" values={{ name: <span dir="ltr">{brand.name}</span> }} /></h2>
             <p className="text-xs text-ink-muted mt-0.5">{t("{length} محصول در حال حاضر متصل است", { length: current.length })}</p>
           </div>
           <button type="button" onClick={onClose} className="grid place-items-center w-9 h-9 rounded-lg hover:bg-line-soft text-ink-muted shrink-0"><Icon name="close" size={18} /></button>
@@ -141,7 +142,7 @@ export default function BrandProductsModal({ brand, products, onClose }) {
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-[13px] text-ink truncate">{productDisplayName(p)}</span>
-                        <span className="block text-[11px] text-ink-faint truncate">{p.brand ? <>{t("فعلاً:")} <span dir="ltr">{p.brand}</span></> : t("بدون برند")}</span>
+                        <span className="block text-[11px] text-ink-faint truncate">{p.brand ? <Trans t={t} k="فعلاً: {brand}" values={{ brand: <span dir="ltr">{p.brand}</span> }} /> : t("بدون برند")}</span>
                       </span>
                     </label>
                   );
@@ -155,7 +156,7 @@ export default function BrandProductsModal({ brand, products, onClose }) {
           <Link href={`/beauty/operator/products/new?brand=${encodeURIComponent(brand.name)}`} className="text-[12px] font-semibold text-brand-violet hover:opacity-80">{t("+ محصول کاملاً تازه برای این برند بساز")}</Link>
           <button type="button" onClick={attachSelected} disabled={busy || !selected.size} className="btn-primary size-md disabled:opacity-60">
             {busy ? <Spinner /> : <Icon name="plus" size={16} />}
-            {busy ? t("در حال افزودن…") : t("افزودن {v} به برند", { v: selected.size || "" }).trim()}
+            {busy ? t("در حال افزودن…") : (selected.size ? t("افزودن {count} مورد به برند", { count: selected.size }) : t("افزودن به برند"))}
           </button>
         </div>
       </div>

@@ -11,6 +11,7 @@ import {
 } from "@/components/operator/ui";
 import { getPanel } from "@/lib/panel/server";
 import { tr, formatDate } from "@/lib/panel/i18n";
+import Trans from "@/components/panel/Trans";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,7 @@ export default async function DashboardPage() {
           <span className="text-warn shrink-0 mt-0.5"><Icon name="alertTriangle" size={18} /></span>
           <div className="text-sm text-ink-soft">
             <p className="font-semibold text-ink">{t("اتصال به پایگاه داده کامل نیست")}</p>
-            <p className="text-ink-muted mt-1 leading-relaxed">{t("متغیر")} <code className="text-xs bg-line-soft px-1.5 py-0.5 rounded">SUPABASE_SERVICE_ROLE_KEY</code> {t("تنظیم نشده است. بدون آن، پنل نمی‌تواند داده‌ها را بخواند یا ذخیره کند. راهنما در صفحه «تنظیمات».")}</p>
+            <p className="text-ink-muted mt-1 leading-relaxed"><Trans t={t} k="متغیر {name} تنظیم نشده است. بدون آن، پنل نمی‌تواند داده‌ها را بخواند یا ذخیره کند. راهنما در صفحه «تنظیمات»." values={{ name: <code className="text-xs bg-line-soft px-1.5 py-0.5 rounded">SUPABASE_SERVICE_ROLE_KEY</code> }} /></p>
           </div>
         </div>
       )}
@@ -89,7 +90,7 @@ export default async function DashboardPage() {
           ) : (
             <p className="text-sm text-ink-muted py-6 text-center">{t("هنوز استعلامی ثبت نشده است.")}</p>
           )}
-          <Link href="/operator/quotes" className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-violet mt-4 hover:gap-2.5 transition-all">{t("مشاهده همه")} <Icon name="chevronLeft" size={14} />
+          <Link href="/operator/quotes" className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-violet mt-4 hover:gap-2.5 transition-all">{t("مشاهده همه")} <Icon name="chevronLeft" size={14} className="ltr:-scale-x-100" />
           </Link>
         </SectionCard>
 

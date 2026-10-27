@@ -36,7 +36,7 @@ function Brandblock() {
       <span className="inline-flex items-center rounded-full bg-white/95 px-2.5 py-1 ring-1 ring-line">
         <BeautyWordLockup height={22} />
       </span>
-      <span className="block text-[10px] text-ink-faint tracking-wide pr-1">{t("پنل بیوتی · جدا از Health")}</span>
+      <span className="block text-[10px] text-ink-faint tracking-wide ps-1">{t("پنل بیوتی · جدا از Health")}</span>
     </Link>
   );
 }
@@ -102,8 +102,8 @@ export default function OperatorShell({ children }) {
     <div className="lg:grid lg:grid-cols-[264px_1fr] min-h-screen">
       <LogoutAlert message={logoutError} busy={loggingOut} onRetry={logout} onClose={() => setLogoutError("")} />
       {/* Desktop sidebar (right side in RTL) */}
-      <aside className="hidden lg:flex flex-col gap-6 border-l border-line bg-surface p-4 sticky top-0 h-screen relative">
-        <div className="absolute inset-y-0 left-0 w-[2px]"
+      <aside className="hidden lg:flex flex-col gap-6 border-e border-line bg-surface p-4 sticky top-0 h-screen relative">
+        <div className="absolute inset-y-0 end-0 w-[2px]"
           style={{ background: "linear-gradient(180deg,#0E1947,#B87D4E,#D9A276)" }} aria-hidden="true" />
         <div className="pt-2"><Brandblock /></div>
         <NavLinks />
@@ -145,7 +145,7 @@ export default function OperatorShell({ children }) {
           <div className="absolute inset-0 bg-navy/40 backdrop-blur-sm" />
           <aside
             dir="rtl"
-            className="absolute top-0 bottom-0 right-0 w-72 bg-surface p-4 flex flex-col gap-6 shadow-card animate-fade-in"
+            className="absolute top-0 bottom-0 start-0 w-72 bg-surface p-4 flex flex-col gap-6 shadow-card animate-fade-in"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pt-1">

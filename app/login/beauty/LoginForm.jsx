@@ -123,7 +123,7 @@ export default function LoginForm() {
           )}
 
           <button type="submit" disabled={loading || !username || !password || (needCode && !code)} className="btn-primary size-lg w-full disabled:opacity-60">
-            {loading ? <Spinner /> : <Icon name="arrowL" size={18} />}
+            {loading ? <Spinner /> : <Icon name="arrowL" size={18} className="ltr:-scale-x-100" />}
             {loading ? t("در حال ورود…") : t("ورود")}
           </button>
         </form>

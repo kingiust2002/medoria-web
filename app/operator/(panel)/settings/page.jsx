@@ -10,6 +10,7 @@ import { PageHeader, SectionCard } from "@/components/operator/ui";
 import LogoutButton from "@/components/operator/LogoutButton";
 import { requireHealthSession } from "@/lib/operator/panelGuard";
 import { getT } from "@/lib/panel/server";
+import Trans from "@/components/panel/Trans";
 
 export const dynamic = "force-dynamic";
 
@@ -68,24 +69,24 @@ export default async function SettingsPage() {
         </SectionCard>
 
         <SectionCard title={t("ساخت رمز عبور")} desc={t("رمز به‌صورت هش امن ذخیره می‌شود (نه متن ساده)")} icon="lock">
-          <ol className="text-sm text-ink-soft space-y-2 list-decimal pr-4 leading-relaxed">
+          <ol className="text-sm text-ink-soft space-y-2 list-decimal ps-4 leading-relaxed">
             <li>{t("در ترمینال پروژه اجرا کنید:")}</li>
           </ol>
           <pre dir="ltr" className="mt-2 bg-canvas-soft border border-line rounded-xl p-3 text-xs overflow-auto text-ink-soft">node scripts/hash-operator-password.mjs &apos;YourStrongPassword&apos;</pre>
-          <p className="text-xs text-ink-muted mt-2 leading-relaxed">{t("مقدار")} <code className="bg-line-soft px-1 rounded text-[11px]">scrypt:…:…</code> {t("چاپ‌شده را در")}<code className="bg-line-soft px-1 rounded text-[11px] mx-1">OPERATOR_PASSWORD_HASH</code> {t("قرار دهید و سرویس را ری‌استارت کنید.")}</p>
+          <p className="text-xs text-ink-muted mt-2 leading-relaxed"><Trans t={t} k="مقدار {hash} چاپ‌شده را در {env} قرار دهید و سرویس را ری‌استارت کنید." values={{ hash: <code className="bg-line-soft px-1 rounded text-[11px]">scrypt:…:…</code>, env: <code className="bg-line-soft px-1 rounded text-[11px] mx-1">OPERATOR_PASSWORD_HASH</code> }} /></p>
         </SectionCard>
 
         <SectionCard title={t("مایگریشن‌های پایگاه داده")} desc={t("در Supabase → SQL Editor به‌ترتیب اجرا کنید")} icon="layers">
           <ul className="text-sm text-ink-soft space-y-1.5 leading-relaxed">
-            <li className="flex items-center gap-2"><Icon name="chevronLeft" size={13} className="text-brand-violet" /> <code className="text-xs" dir="ltr">migrations/04_operator_fields.sql</code></li>
-            <li className="flex items-center gap-2"><Icon name="chevronLeft" size={13} className="text-brand-violet" /> <code className="text-xs" dir="ltr">migrations/05_quote_requests_ops.sql</code></li>
-            <li className="flex items-center gap-2"><Icon name="chevronLeft" size={13} className="text-brand-violet" /> <code className="text-xs" dir="ltr">migrations/06_storage_product_images.sql</code></li>
+            <li className="flex items-center gap-2"><Icon name="chevronLeft" size={13} className="ltr:-scale-x-100 text-brand-violet" /> <code className="text-xs" dir="ltr">migrations/04_operator_fields.sql</code></li>
+            <li className="flex items-center gap-2"><Icon name="chevronLeft" size={13} className="ltr:-scale-x-100 text-brand-violet" /> <code className="text-xs" dir="ltr">migrations/05_quote_requests_ops.sql</code></li>
+            <li className="flex items-center gap-2"><Icon name="chevronLeft" size={13} className="ltr:-scale-x-100 text-brand-violet" /> <code className="text-xs" dir="ltr">migrations/06_storage_product_images.sql</code></li>
           </ul>
           <p className="text-xs text-ink-muted mt-3 leading-relaxed">{t("بدون ۰۴/۰۵ امکان ذخیرهٔ برخی فیلدها نیست. سایت عمومی بدون این‌ها هم سالم می‌ماند.")}</p>
         </SectionCard>
 
         <SectionCard title={t("آپلود تصویر (Storage)")} desc={t("باکت Supabase برای تصاویر محصول")} icon="image">
-          <p className="text-sm text-ink-soft leading-relaxed">{t("باکت")} <code className="bg-line-soft px-1 rounded text-[11px]" dir="ltr">product-images</code> {t("باید عمومی (public read) باشد. با اجرای مایگریشن ۰۶ یا از مسیر Supabase → Storage → New bucket ساخته می‌شود.")}</p>
+          <p className="text-sm text-ink-soft leading-relaxed"><Trans t={t} k="باکت {name} باید عمومی (public read) باشد. با اجرای مایگریشن ۰۶ یا از مسیر Supabase → Storage → New bucket ساخته می‌شود." values={{ name: <code className="bg-line-soft px-1 rounded text-[11px]" dir="ltr">product-images</code> }} /></p>
           <p className="text-xs text-ink-muted mt-3 leading-relaxed">{t("آپلودها سمت سرور با کلید service-role انجام می‌شوند؛ هیچ کلیدی در مرورگر قرار نمی‌گیرد.")}</p>
         </SectionCard>
       </div>

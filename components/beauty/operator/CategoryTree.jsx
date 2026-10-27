@@ -162,7 +162,7 @@ export default function CategoryTree({ tree }) {
                   {busy ? <Spinner size={16} /> : (
                     <button type="button" role="switch" aria-checked={!off} onClick={() => toggleOne(node)} title={off ? t("روشن کن") : t("خاموش کن")}
                       className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${off ? "bg-line" : "bg-ok"}`}>
-                      <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${off ? "right-[1.125rem]" : "right-0.5"}`} />
+                      <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${off ? "start-[1.125rem]" : "start-0.5"}`} />
                     </button>
                   )}
 
@@ -175,14 +175,14 @@ export default function CategoryTree({ tree }) {
                         <div className="fixed inset-0 z-10" onClick={() => setMenuFor(null)} />
                         <div className="absolute z-20 end-0 mt-1 w-48 rounded-xl border border-line bg-surface shadow-lg py-1 text-[13px]">
                           {node.level < 3 && (
-                            <button type="button" onClick={() => { setMenuFor(null); setModal({ mode: "add", parent: node, rootSlug }); }} className="w-full text-right px-3 py-2 hover:bg-line-soft flex items-center gap-2"><Icon name="plusCircle" size={15} className="text-brand-violet" /> {t("افزودن زیرمجموعه")}</button>
+                            <button type="button" onClick={() => { setMenuFor(null); setModal({ mode: "add", parent: node, rootSlug }); }} className="w-full text-start px-3 py-2 hover:bg-line-soft flex items-center gap-2"><Icon name="plusCircle" size={15} className="text-brand-violet" /> {t("افزودن زیرمجموعه")}</button>
                           )}
-                          <button type="button" onClick={() => { setMenuFor(null); setModal({ mode: "edit", node, rootSlug }); }} className="w-full text-right px-3 py-2 hover:bg-line-soft flex items-center gap-2"><Icon name="edit" size={15} /> {t("ویرایش")}</button>
+                          <button type="button" onClick={() => { setMenuFor(null); setModal({ mode: "edit", node, rootSlug }); }} className="w-full text-start px-3 py-2 hover:bg-line-soft flex items-center gap-2"><Icon name="edit" size={15} /> {t("ویرایش")}</button>
                           {hasKids && (off
-                            ? <button type="button" onClick={() => toggleBranch(node, true)} className="w-full text-right px-3 py-2 hover:bg-line-soft flex items-center gap-2"><Icon name="eye" size={15} className="text-ok" /> {t("روشن‌کردن کل شاخه")}</button>
-                            : <button type="button" onClick={() => toggleBranch(node, false)} className="w-full text-right px-3 py-2 hover:bg-line-soft flex items-center gap-2"><Icon name="eyeOff" size={15} /> {t("خاموش‌کردن کل شاخه")}</button>
+                            ? <button type="button" onClick={() => toggleBranch(node, true)} className="w-full text-start px-3 py-2 hover:bg-line-soft flex items-center gap-2"><Icon name="eye" size={15} className="text-ok" /> {t("روشن‌کردن کل شاخه")}</button>
+                            : <button type="button" onClick={() => toggleBranch(node, false)} className="w-full text-start px-3 py-2 hover:bg-line-soft flex items-center gap-2"><Icon name="eyeOff" size={15} /> {t("خاموش‌کردن کل شاخه")}</button>
                           )}
-                          <button type="button" onClick={() => { setMenuFor(null); setDel(node); }} className="w-full text-right px-3 py-2 hover:bg-warn/10 text-warn flex items-center gap-2"><Icon name="trash" size={15} /> {t("حذف")}</button>
+                          <button type="button" onClick={() => { setMenuFor(null); setDel(node); }} className="w-full text-start px-3 py-2 hover:bg-warn/10 text-warn flex items-center gap-2"><Icon name="trash" size={15} /> {t("حذف")}</button>
                         </div>
                       </>
                     )}

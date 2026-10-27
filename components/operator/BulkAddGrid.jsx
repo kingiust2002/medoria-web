@@ -237,7 +237,7 @@ export default function BulkAddGrid({ categories }) {
   return (
     <>
       <PageHeader title={t("افزودن گروهی محصولات")} subtitle={t("چند محصول را پشت‌سرهم وارد کنید — جزئیات کامل (گالری/مشخصات/ترجمه) را بعداً از ویرایش محصول تکمیل کنید.")}>
-        <Link href="/operator/products" className="btn-ghost size-md"><Icon name="chevronRight" size={16} /> {t("محصولات")}</Link>
+        <Link href="/operator/products" className="btn-ghost size-md"><Icon name="chevronRight" size={16} className="ltr:-scale-x-100" /> {t("محصولات")}</Link>
         <Link href="/operator/products/import" className="btn-ghost size-md"><Icon name="upload" size={16} /> {t("ورود از Excel/CSV")}</Link>
       </PageHeader>
 
@@ -285,18 +285,18 @@ export default function BulkAddGrid({ categories }) {
           <table className="w-full text-[12.5px]" dir="rtl">
             <thead>
               <tr className="text-ink-muted bg-canvas-soft border-b border-line">
-                <th className="px-2 py-2.5 font-medium text-right w-8">#</th>
-                <th className="px-2 py-2.5 font-medium text-right min-w-[150px]">{t("نام فارسی")} <span className="text-brand-pink">*</span></th>
-                <th className="px-2 py-2.5 font-medium text-right min-w-[140px]">{t("نام انگلیسی")}</th>
-                <th className="px-2 py-2.5 font-medium text-right min-w-[100px]">SKU</th>
-                <th className="px-2 py-2.5 font-medium text-right min-w-[120px]">{t("دسته")}</th>
-                <th className="px-2 py-2.5 font-medium text-right min-w-[90px]">{t("برند")}</th>
-                <th className="px-2 py-2.5 font-medium text-right min-w-[110px]">{t("قیمت $")}</th>
-                <th className="px-2 py-2.5 font-medium text-right min-w-[90px]">{t("واحد")}</th>
+                <th className="px-2 py-2.5 font-medium text-start w-8">#</th>
+                <th className="px-2 py-2.5 font-medium text-start min-w-[150px]">{t("نام فارسی")} <span className="text-brand-pink">*</span></th>
+                <th className="px-2 py-2.5 font-medium text-start min-w-[140px]">{t("نام انگلیسی")}</th>
+                <th className="px-2 py-2.5 font-medium text-start min-w-[100px]">SKU</th>
+                <th className="px-2 py-2.5 font-medium text-start min-w-[120px]">{t("دسته")}</th>
+                <th className="px-2 py-2.5 font-medium text-start min-w-[90px]">{t("برند")}</th>
+                <th className="px-2 py-2.5 font-medium text-start min-w-[110px]">{t("قیمت $")}</th>
+                <th className="px-2 py-2.5 font-medium text-start min-w-[90px]">{t("واحد")}</th>
                 <th className="px-2 py-2.5 font-medium text-center w-14">{t("موجود")}</th>
                 <th className="px-2 py-2.5 font-medium text-center w-14">{t("فعال")}</th>
                 <th className="px-2 py-2.5 font-medium text-center w-14">{t("ویژه")}</th>
-                <th className="px-2 py-2.5 font-medium text-right w-20">{t("تصویر")}</th>
+                <th className="px-2 py-2.5 font-medium text-start w-20">{t("تصویر")}</th>
                 <th className="px-2 py-2.5 font-medium text-center w-28">{t("عملیات")}</th>
               </tr>
             </thead>
@@ -323,7 +323,7 @@ export default function BulkAddGrid({ categories }) {
           <button type="button" onClick={addRow} className="btn-ghost size-sm"><Icon name="plus" size={15} /> {t("ردیف جدید")}</button>
           <button type="button" onClick={clearSaved} className="btn-ghost size-sm"><Icon name="archive" size={15} /> {t("پاک‌کردن ذخیره‌شده‌ها")}</button>
           <button type="button" onClick={clearAll} className="btn-ghost size-sm !text-warn hover:!border-warn/40"><Icon name="trash" size={15} /> {t("پاک‌کردن همه")}</button>
-          <div className="mr-auto flex items-center gap-3">
+          <div className="ms-auto flex items-center gap-3">
             {progress && <span className="text-xs text-ink-muted tabular">{progress.done}/{progress.total}</span>}
             <button type="button" onClick={saveAll} disabled={saving || !unsaved.length} className="btn-primary size-md disabled:opacity-60">
               {saving ? <Spinner /> : <Icon name="save" size={18} />}
