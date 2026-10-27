@@ -117,7 +117,10 @@ test("an account that must use a second factor but has none gets a RESTRICTED se
   assert.ok(!dash.includes("E2E Customer") && !dash.includes("E2E Product"), "no data until it is done");
   for (const p of ["/operator/products", "/operator/quotes", "/operator/activity", "/operator/users"]) {
     const res = await withCookie(p, r.cookie);
-    assert.ok(res.status >= 300 && res.status < 400, `${p} must not open for a restricted account (${res.status})`);
+    const body = res.status === 200 ? await res.text() : "";
+    // either sent away, or answered with the setup screen alone (the page itself is never rendered) — never with data
+    assert.ok((res.status >= 300 && res.status < 400) || body.includes('data-testid="account-setup"'), `${p} must not open for a restricted account (${res.status})`);
+    assert.ok(!body.includes("E2E Customer") && !body.includes("E2E Product"), `${p} leaked data to a restricted account`);
   }
 });
 

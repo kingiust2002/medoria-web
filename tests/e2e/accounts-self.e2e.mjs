@@ -38,16 +38,17 @@ test("a temporary password blocks everything until it is changed; the change end
   const a = await login("temp.person");
   const other = await login("temp.person");
   assert.equal(a.body.mustChangePassword, true);
-  assert.equal(await opens("/operator/products", a.cookie), false, "restricted: the catalogue does not open");
+  const restrictedBody = await (await withCookie("/operator/products", a.cookie)).text();
+  assert.ok(restrictedBody.includes('data-testid="account-setup"') && !restrictedBody.includes("E2E Product"), "restricted: only the setup screen, no catalogue");
   const { ctx, page } = await pageAs(a.cookie);
   await page.goto(`${BASE}/operator`, { waitUntil: "networkidle" });
   await page.getByTestId("account-setup").waitFor();
   await page.getByLabel("رمز عبور فعلی").fill("not-the-password-1");
-  await page.getByLabel("رمز عبور تازه", { exact: true }).fill(NEW_PW);
-  await page.getByLabel("تکرار رمز عبور تازه").fill(NEW_PW);
+  await page.locator('input[autocomplete="new-password"]').nth(0).fill(NEW_PW);
+  await page.locator('input[autocomplete="new-password"]').nth(1).fill(NEW_PW);
   await page.getByRole("button", { name: "تغییر رمز عبور" }).click();
-  await page.getByRole("alert").first().waitFor();
-  assert.match(await page.getByRole("alert").first().innerText(), /رمز عبور فعلی درست نیست/);
+  await page.getByRole("alert").filter({ hasText: /\S/ }).first().waitFor();
+  assert.match(await page.getByRole("alert").filter({ hasText: /\S/ }).first().innerText(), /رمز عبور فعلی درست نیست/);
   assert.equal(verifyPasswordHash(PW, (await state()).operator_users.find((x) => x.id === u.id).password_hash), true, "a wrong current password changes nothing");
 
   await page.getByLabel("رمز عبور فعلی").fill(PW);
@@ -77,21 +78,22 @@ test("a required two-step login is set up from the restricted screen with a real
   await page.getByRole("button", { name: /راه‌اندازی ورود دومرحله‌ای/ }).click();
   await page.getByLabel("رمز عبور فعلی").fill("wrong-wrong-wrong-1");
   await page.getByRole("button", { name: "ادامه" }).click();
-  await page.getByRole("alert").first().waitFor();
-  assert.equal((await state()).operator_users.find((x) => x.id === u.id).totp_secret_enc, null);
+  await page.getByRole("alert").filter({ hasText: /\S/ }).first().waitFor();
+  assert.ok(!(await state()).operator_users.find((x) => x.id === u.id).totp_secret_enc);
 
   await page.getByLabel("رمز عبور فعلی").fill(PW);
   await page.getByRole("button", { name: "ادامه" }).click();
   const secret = (await page.getByTestId("totp-secret").innerText()).replace(/\s+/g, "");
   assert.match(secret, /^[A-Z2-7]{32}$/);
-  assert.equal((await state()).operator_users.find((x) => x.id === u.id).totp_secret_enc, null, "nothing stored before a code proves it");
+  assert.ok(!(await state()).operator_users.find((x) => x.id === u.id).totp_secret_enc, "nothing stored before a code proves it");
 
   const step = stepOf(Date.now());
   await page.getByLabel(/کد ۶ رقمی/).fill("000000");
   await page.getByRole("button", { name: "تأیید و روشن کردن" }).click();
-  await page.getByRole("alert").first().waitFor();
+  await page.getByRole("alert").filter({ hasText: /\S/ }).first().waitFor();
   await page.getByLabel(/کد ۶ رقمی/).fill(totpAt(secret, step));
   await page.getByRole("button", { name: "تأیید و روشن کردن" }).click();
+  await page.getByTestId("recovery-codes").waitFor();
   const codes = await page.getByTestId("recovery-codes").locator("li").allInnerTexts();
   assert.equal(codes.length, 10);
   const st = await state();

@@ -41,7 +41,7 @@ test("the owner creates a person through the screen: one-time password, hash onl
   await dialog.waitFor();
   await dialog.getByLabel(/نام کاربری/).fill("new.colleague");
   await dialog.getByLabel(/نام نمایشی/).fill("New Colleague");
-  await dialog.getByLabel(/نقش/).selectOption("product_manager");
+  await dialog.locator("select").first().selectOption("product_manager");
   await dialog.getByLabel("سلامت").check();
   await dialog.getByRole("switch").first().click();                 // two-step not required for this test person
   await dialog.getByRole("button", { name: "ساخت کاربر" }).click();
@@ -77,7 +77,7 @@ test("a manager sees and changes only people of his own house, and cannot make a
   await page.getByRole("button", { name: /کاربر تازه/ }).click();
   const dialog = page.getByRole("dialog");
   await dialog.waitFor();
-  const roles = await dialog.getByLabel(/نقش/).locator("option").allInnerTexts();
+  const roles = await dialog.locator("select").first().locator("option").allInnerTexts();
   assert.ok(!roles.includes("مدیر اصلی"), "a manager cannot even choose the owner role");
   assert.equal(await dialog.getByLabel("زیبایی").isDisabled(), true, "nor give a house he is not in");
   await ctx.close();
