@@ -112,7 +112,7 @@ test("writeAudit: an outage is a failure, not 'the log table does not exist yet'
   }
 });
 
-test("a DELETE is refused while the log is in an outage, and still allowed when the log table does not exist yet", async () => {
+test("a DELETE is refused while the log is in an outage AND when the log table does not exist (a missing table is not a permission)", async () => {
   for (const [name, err] of Object.entries(OUTAGES)) {
     const log = [];
     const admin = clientWith(null, [{ id: 7 }], log);
@@ -123,11 +123,14 @@ test("a DELETE is refused while the log is in an outage, and still allowed when 
     assert.equal(many.ok, false, name);
     assert.ok(!log.some(([, op]) => op === "delete"), `${name}: a delete reached the table although the log could not be written`);
   }
-  const log = [];
-  const admin = clientWith(null, [{ id: 7 }], log);
-  const audit = (entry) => writeAudit(clientWith(MISSING["undefined table"]), { panel: "health", ...entry });
-  const ok = await deleteQuoteGuarded({ getSession: async () => ({ role: "admin" }), getAdminClient: () => admin, table: "quote_requests", id: 7, audit });
-  assert.equal(ok.ok, true, "log table not created yet: previous behaviour");
+  for (const [name, err] of Object.entries(MISSING)) {
+    const log = [];
+    const admin = clientWith(null, [{ id: 7 }], log);
+    const audit = (entry) => writeAudit(clientWith(err), { panel: "health", ...entry });
+    const r = await deleteQuoteGuarded({ getSession: async () => ({ role: "admin" }), getAdminClient: () => admin, table: "quote_requests", id: 7, audit });
+    assert.equal(r.ok, false, `log table missing (${name}): the delete must be refused`);
+    assert.ok(!log.some(([, op]) => op === "delete"), `${name}: a delete reached the table although there is no log`);
+  }
 });
 
 test("second factor: an outage in the replay memory refuses the code (fail closed); a missing table does not", async () => {

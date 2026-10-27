@@ -34,13 +34,14 @@ function fakeAdmin({ rows = [{ id: 7 }], error = null } = {}) {
   return { admin, calls };
 }
 
-function run({ session = { role: "admin" }, admin, table = "quote_requests", id = 7 }) {
+function run({ session = { role: "admin" }, admin, table = "quote_requests", id = 7, audit = async () => ({ ok: true }) }) {
   let adminRequested = 0;
   const p = deleteQuoteGuarded({
     getSession: async () => session,
     getAdminClient: () => { adminRequested++; return admin ?? null; },
     table,
     id,
+    audit,   // a deletion needs its attempt on record
   });
   return p.then((res) => ({ res, adminRequested }));
 }

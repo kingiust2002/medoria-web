@@ -55,6 +55,9 @@ test("Health: only the archived product has the button; the SKU must be typed; t
   assert.deepEqual(log[0].entity_ids, [2]);
   assert.equal(log[0].entity, "products");
   assert.deepEqual(log[0].detail, { sku: "E2E-2" });
+  // the history holds the attempt first and the outcome after it, as two different entries
+  const trail = (await state()).operator_audit_log.filter((r) => /^product\.delete/.test(r.action)).sort((a, b) => a.id - b.id).map((r) => r.action);
+  assert.deepEqual(trail, ["product.delete_attempt", "product.delete"]);
   assert.equal((await get("/health/en/catalog/e2e-archived")).status, 404);
   const asked = (await state()).quote_requests.find((q) => q.name === "Asked About Archived");
   assert.ok(asked, "the customer's request is still there");
@@ -138,5 +141,23 @@ test("a deletion is refused while the activity log cannot be written", async () 
   await dialog.getByRole("alert").waitFor();
   await clearFaults();
   assert.deepEqual(await names("health"), [1, 2, 3], "no log, no delete");
+  await ctx.close();
+});
+
+test("a deletion is refused when the activity log TABLE does not exist (migration 30 not applied): a missing log is never a permission", async () => {
+  const { setFault, clearFaults } = await import("./helpers.mjs");
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  await openProducts(page, "health");
+  await page.getByTestId("product-delete").first().click();
+  const dialog = page.getByRole("dialog");
+  await dialog.waitFor();
+  await dialog.getByLabel(/برای تأیید/).fill("E2E-2");
+  await setFault("operator_audit_log", "POST", 404, "42P01", 'relation "public.operator_audit_log" does not exist');
+  await dialog.getByRole("button", { name: "حذف دائمی" }).click();
+  await dialog.getByRole("alert").waitFor();
+  assert.match(await dialog.getByRole("alert").innerText(), /تاریخچهٔ فعالیت در دسترس نیست/);
+  await clearFaults();
+  assert.deepEqual(await names("health"), [1, 2, 3], "no history, no delete");
   await ctx.close();
 });

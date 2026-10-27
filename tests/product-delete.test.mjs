@@ -100,41 +100,69 @@ test("the typed text must match the stored SKU; the server decides, not the brow
   assert.equal(seen.length, 0, "nothing is logged for a refused attempt");
 });
 
-test("the activity log is written FIRST; if it cannot be written nothing is deleted, a missing log table is allowed", async () => {
-  const a1 = fakeAdmin();
-  const failing = await run({ admin: a1.admin, audit: async () => ({ ok: false }) });
-  assert.deepEqual(failing.res, { ok: false, error: M.auditFailed });
-  assert.ok(!a1.calls.some((c) => c.op === "delete"));
-  const a2 = fakeAdmin();
-  const throwing = await run({ admin: a2.admin, audit: async () => { throw new Error("db down"); } }).catch((e) => e);
-  assert.ok(throwing instanceof Error || throwing.res?.ok === false, "a log failure never turns into a delete");
-  assert.ok(!a2.calls.some((c) => c.op === "delete"));
-  const a3 = fakeAdmin();
-  assert.equal((await run({ admin: a3.admin, audit: async () => ({ ok: false, unavailable: true }) })).res.ok, true);
+const actionsOf = (seen) => seen.map((e) => e.action);
+
+test("an ATTEMPT is on record before anything is deleted: a failing log, a throwing log, a missing log table and no log at all each refuse", async () => {
+  for (const [label, audit, error] of [
+    ["failing write", async () => ({ ok: false }), M.auditFailed],
+    ["throwing write", async () => { throw new Error("db down"); }, M.auditFailed],
+    ["missing log table (migration 30 not applied)", async () => ({ ok: false, unavailable: true }), M.auditUnavailable],
+    ["no audit function at all", undefined, M.auditUnavailable],
+  ]) {
+    const { admin, calls } = fakeAdmin();
+    const { res } = await run({ admin, audit });
+    assert.deepEqual(res, { ok: false, error }, label);
+    assert.ok(!calls.some((c) => c.op === "delete"), `${label}: nothing may be deleted`);
+  }
 });
 
-test("success: deletes exactly that archived row of that table, logs the id and SKU, returns the slug for cache refresh", async () => {
+test("success: attempt, then the delete of exactly that archived row, then the OUTCOME entry; the slug comes back for cache refresh", async () => {
   const { admin, calls } = fakeAdmin();
   const { seen, audit } = okAudit();
   const { res } = await run({ admin, audit });
-  assert.deepEqual(res, { ok: true, slug: "gloves" });
-  assert.deepEqual(seen, [{ action: "product.delete", entity: "products", ids: [7], detail: { sku: "G-100" } }]);
+  assert.deepEqual(res, { ok: true, slug: "gloves", historyComplete: true });
+  assert.deepEqual(seen, [
+    { action: "product.delete_attempt", entity: "products", ids: [7], detail: { sku: "G-100" } },
+    { action: "product.delete", entity: "products", ids: [7], detail: { sku: "G-100" } },
+  ]);
   const del = calls.find((c) => c.op === "delete");
   assert.equal(del.table, "products");
   assert.deepEqual(del.filters, [["id", 7], ["is_active", false]], "the delete repeats the 'archived' condition");
   const beauty = fakeAdmin({ row: { ...ARCHIVED, id: 3 }, deleted: [{ id: 3 }] });
-  await run({ admin: beauty.admin, table: "beauty_products", id: 3 });
+  await run({ admin: beauty.admin, table: "beauty_products", id: 3, audit: okAudit().audit });
   assert.equal(beauty.calls.find((c) => c.op === "delete").table, "beauty_products");
 });
 
-test("a product re-activated between the check and the delete is NOT deleted", async () => {
-  const { admin } = fakeAdmin({ deleted: [] });          // the database matched no archived row any more
-  assert.deepEqual((await run({ admin })).res, { ok: false, error: M.changed });
+test("the attempt is written BEFORE the delete call and the outcome AFTER it (order, not just presence)", async () => {
+  const order = [];
+  const admin = { from: () => { const c = { select: () => c, eq: () => c, maybeSingle: () => Promise.resolve({ data: ARCHIVED, error: null }), delete: () => { order.push("delete"); return { eq: () => ({ eq: () => ({ select: () => Promise.resolve({ data: [{ id: 7 }], error: null }) }) }) }; } }; return c; } };
+  await run({ admin, audit: async (e) => { order.push(e.action); return { ok: true }; } });
+  assert.deepEqual(order, ["product.delete_attempt", "delete", "product.delete"]);
 });
 
-test("database errors are reported without details", async () => {
-  assert.deepEqual((await run({ admin: fakeAdmin({ readError: { message: "secret detail" } }).admin })).res, { ok: false, error: M.failed });
-  assert.deepEqual((await run({ admin: fakeAdmin({ deleteError: { message: "secret detail" } }).admin })).res, { ok: false, error: M.failed });
+test("a product re-activated between the check and the delete is NOT deleted, and the history says FAILED, never deleted", async () => {
+  const { admin } = fakeAdmin({ deleted: [] });          // the database matched no archived row any more
+  const { seen, audit } = okAudit();
+  assert.deepEqual((await run({ admin, audit })).res, { ok: false, error: M.changed });
+  assert.deepEqual(actionsOf(seen), ["product.delete_attempt", "product.delete_failed"]);
+  assert.deepEqual(seen[1].detail, { sku: "G-100", reason: "state_changed" });
+  assert.ok(!actionsOf(seen).includes("product.delete"), "a failed delete must never be recorded as a successful one");
+});
+
+test("database errors are reported without details and recorded as FAILED", async () => {
+  assert.deepEqual((await run({ admin: fakeAdmin({ readError: { message: "secret detail" } }).admin, audit: okAudit().audit })).res, { ok: false, error: M.failed });
+  const { seen, audit } = okAudit();
+  assert.deepEqual((await run({ admin: fakeAdmin({ deleteError: { message: "secret detail" } }).admin, audit })).res, { ok: false, error: M.failed });
+  assert.deepEqual(actionsOf(seen), ["product.delete_attempt", "product.delete_failed"]);
+  assert.equal(seen[1].detail.reason, "db_error");
+  assert.ok(!JSON.stringify(seen).includes("secret detail"));
+});
+
+test("if only the OUTCOME entry cannot be written the deletion still stands, and the result says the history is incomplete", async () => {
+  const { admin } = fakeAdmin();
+  let n = 0;
+  const { res } = await run({ admin, audit: async () => ({ ok: ++n === 1 }) });   // the attempt works, the outcome does not
+  assert.deepEqual(res, { ok: true, slug: "gloves", historyComplete: false });
 });
 
 test("both panels wire their own session, table and audit; the buttons exist only for archived rows", () => {
@@ -146,5 +174,5 @@ test("both panels wire their own session, table and audit; the buttons exist onl
     assert.match(src, /\{!active && \(\s*<button onClick=\{\(\) => setDeleting\(p\)\}/, `${f}: delete only on archived rows`);
     assert.match(src, /<DeleteProductModal product=\{deleting\}/);
   }
-  assert.match(read("lib/operator/security.js"), /"product\.delete":/, "the activity page has a label for it");
+  for (const a of ["product.delete_attempt", "product.delete", "product.delete_failed"]) assert.match(read("lib/operator/security.js"), new RegExp(`"${a.replace(".", "\\.")}":`), `the activity page has no label for ${a}`);
 });
