@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
-const SECRET = /_stock_(locations|balances|movements|reservations|post|reverse|reserve|release)|stock_(locations|balances|movements|reservations)\b|lib\/warehouse|@\/lib\/warehouse/;
+const SECRET = /_stock_(locations|balances|movements|reservations|post|reverse|reserve|release|levels|counts|count_lines)|stock_(locations|balances|movements|reservations|levels|counts|count_lines)\b|lib\/warehouse|@\/lib\/warehouse/;
 const INTERNAL = [/\/operator\//, /^lib\/warehouse\//, /^lib\/operator\//, /^lib\/beauty\/operator\//, /^components\/panel\//, /^lib\/panel\//];
 
 function walk(dir, out = []) {
