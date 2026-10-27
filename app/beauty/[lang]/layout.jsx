@@ -10,6 +10,7 @@ import { LOCALES, LANG_META } from "@/lib/i18n";
 import { getBeautyNavTree } from "@/lib/beauty/catalog";
 import BeautyHeader from "@/components/beauty/BeautyHeader";
 import BeautyFooter from "@/components/beauty/BeautyFooter";
+import SiteBanner from "@/components/shared/SiteBanner";
 import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
 import { EMAIL_BEAUTY } from "@/lib/contact";
 import BeautyAiAssistant from "@/components/beauty/BeautyAiAssistant";
@@ -90,7 +91,10 @@ export default async function BeautyLayout(props) {
       <Suspense fallback={<BeautyHeader lang={lang} categoryTree={[]} />}>
         <BeautyNav lang={lang} />
       </Suspense>
-      <main>{children}</main>
+      <main>
+        <Suspense fallback={null}><SiteBanner house="beauty" lang={lang} /></Suspense>
+        {children}
+      </main>
       <BeautyFooter lang={lang} />
       <FloatingWhatsApp lang={lang} email={EMAIL_BEAUTY} emailSubject="Medoria Beauty" />
       <BeautyAiAssistant lang={lang} />

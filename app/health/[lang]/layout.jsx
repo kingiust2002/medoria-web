@@ -9,6 +9,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
 import AiAssistant from "@/components/shared/AiAssistant";
+import SiteBanner from "@/components/shared/SiteBanner";
 import ScrollProgress from "@/components/shared/ScrollProgress";
 import { EMAIL_GENERAL, EMAIL_HEALTH } from "@/lib/contact";
 
@@ -101,7 +102,10 @@ export default async function LangLayout(props) {
       <Suspense fallback={<Header lang={lang} categoryTree={[]} />}>
         <HealthNav lang={lang} />
       </Suspense>
-      <main>{children}</main>
+      <main>
+        <Suspense fallback={null}><SiteBanner house="health" lang={lang} /></Suspense>
+        {children}
+      </main>
       <Footer lang={lang} />
       <FloatingWhatsApp lang={lang} email={EMAIL_HEALTH} emailSubject="Medoria Health" />
       <AiAssistant lang={lang} />

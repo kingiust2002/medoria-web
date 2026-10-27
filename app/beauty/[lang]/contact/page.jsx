@@ -2,6 +2,7 @@
 import { LOCALES } from "@/lib/i18n";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
 import ContactInner from "./ContactInner";
+import SiteFaq from "@/components/shared/SiteFaq";
 import { CONTACT_COPY } from "./copy";
 import { beautyRobots } from "@/lib/beauty/seo";
 
@@ -20,5 +21,10 @@ export async function generateMetadata(props) {
 
 export default async function BeautyContactPage(props) {
   const params = await props.params;
-  return <ContactInner lang={params.lang} />;
+  return (
+    <>
+      <ContactInner lang={params.lang} />
+      <SiteFaq house="beauty" lang={params.lang} />
+    </>
+  );
 }
