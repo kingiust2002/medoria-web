@@ -123,6 +123,11 @@ for (const table of ["quote_requests", "beauty_quote_requests", "contact_inquiri
   expectDenied(`anon CANNOT read ${table}`, await select(table));
 }
 
+// 3b) site content (migration 42) is public ONLY for its live rows and public columns: the staff / draft columns and `*` are refused.
+// A project that has not applied the migration answers "missing", which is also fine.
+expectDenied("anon CANNOT read the staff columns of site_content", await call("/rest/v1/site_content?select=updated_label&limit=1"));
+expectDenied("anon CANNOT select * from site_content (only the public columns)", await call("/rest/v1/site_content?select=*&limit=1"));
+
 // 4) Supabase Auth signup must be closed
 {
   const p = await call("/auth/v1/settings");

@@ -48,8 +48,9 @@ Status: **built, switched off by default.** Until a person publishes something i
 1. Fresh production backup; local + R2 chain PASS.
 2. Apply migration 42 (one transaction, idempotent, self-checking; needs 34).
 3. Deploy; `docker compose ps` and a live curl. The public pages must look exactly as before (nothing published yet).
-4. Post-check: `npm run check:rls` (the public table is *meant* to be readable; the live-only policy and the column grants are proved by the
-   migration's self-check and its tests), create a test announcement in a house, see it on the public page, switch it off.
+4. Post-check: `npm run check:rls` — the public table is *meant* to be readable for its live rows, so it checks that the staff column (`updated_label`) and
+   `select *` are **refused** to the anon key (the live-only policy itself is proved by the migration's self-check and its tests); then create a test
+   announcement in a house, see it on the public page, switch it off.
 5. Rollback: deploy the previous release (it ignores the table); `DROP TABLE public.site_content` only after the code no longer uses it.
 
 ## Tests
