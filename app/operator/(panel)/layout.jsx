@@ -6,6 +6,8 @@ import { getSession } from "@/lib/operator/auth";
 import OperatorShell from "@/components/operator/OperatorShell";
 import AccountSecurity from "@/components/operator/AccountSecurity";
 import { mayView, mayGlobal, restrictedReason } from "@/lib/operator/access";
+import { countToReview } from "@/lib/operator/approvals";
+import { getAdminClient } from "@/lib/operator/supabaseAdmin";
 import { changeMyPassword, startMyTwoStep, confirmMyTwoStep, disableMyTwoStep, newMyRecoveryCodes } from "@/lib/operator/accountActions";
 
 export const dynamic = "force-dynamic";
@@ -29,5 +31,10 @@ export default async function PanelLayout({ children }) {
   if (may("quotes.view")) allowed.push("/operator/quotes");
   if (may("audit.view")) allowed.push("/operator/activity");
   if (mayGlobal(session, "health", "users.view")) allowed.push("/operator/users");
-  return <OperatorShell allowed={allowed}>{children}</OperatorShell>;
+  const badges = {};
+  if (session.user && may("approvals.view")) {
+    allowed.push("/operator/approvals");
+    badges["/operator/approvals"] = await countToReview(getAdminClient(), { actor: session.user, panel: "health" });     // what waits for THIS person
+  }
+  return <OperatorShell allowed={allowed} badges={badges}>{children}</OperatorShell>;
 }

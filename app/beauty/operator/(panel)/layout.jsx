@@ -6,6 +6,8 @@ import { getSession } from "@/lib/beauty/operator/auth";
 import OperatorShell from "@/components/beauty/operator/OperatorShell";
 import AccountSecurity from "@/components/operator/AccountSecurity";
 import { mayView, mayGlobal, restrictedReason } from "@/lib/operator/access";
+import { countToReview } from "@/lib/operator/approvals";
+import { getAdminClient } from "@/lib/operator/supabaseAdmin";
 import { changeMyPassword, startMyTwoStep, confirmMyTwoStep, disableMyTwoStep, newMyRecoveryCodes } from "@/lib/beauty/operator/accountActions";
 
 export const dynamic = "force-dynamic";
@@ -31,5 +33,10 @@ export default async function PanelLayout({ children }) {
   if (may("quotes.view")) allowed.push(`${base}/quotes`);
   if (may("audit.view")) allowed.push(`${base}/activity`);
   if (mayGlobal(session, "beauty", "users.view")) allowed.push(`${base}/users`);
-  return <OperatorShell allowed={allowed}>{children}</OperatorShell>;
+  const badges = {};
+  if (session.user && may("approvals.view")) {
+    allowed.push(`${base}/approvals`);
+    badges[`${base}/approvals`] = await countToReview(getAdminClient(), { actor: session.user, panel: "beauty" });      // what waits for THIS person
+  }
+  return <OperatorShell allowed={allowed} badges={badges}>{children}</OperatorShell>;
 }
