@@ -48,10 +48,13 @@ const DRAFT_KEY = "medoria_beauty_operator_product_draft_v1";
 
 export default function ProductForm({ mode, product, categories, initialBrand = "" }) {
   const t = useT();
-  const { lang } = usePanelLang();
+  const { lang, date: fmtDate } = usePanelLang();
   const router = useRouter();
   const editing = mode === "edit";
   const galleryRef = useRef(null);
+  const expectedRef = useRef(product?.updated_at ?? null);   // which version of the product this screen shows (the optimistic lock)
+  const [conflict, setConflict] = useState(null);
+  const editKey = `${DRAFT_KEY}:edit:${product?.id ?? ""}`;     // what a person typed when a conflict stopped the save (edit mode)
   // what this person may offer on screen (the server asks again on every save)
   const canContent = useCan("products.content"), canPrice = useCan("products.price"), canStock = useCan("products.stock_flag");
   const canPublish = useCan("products.publish"), canArchive = useCan("products.archive");
@@ -107,15 +110,14 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
 
   // ── draft protection (new mode only) ─────────────────────────────────────────
   useEffect(() => {
-    if (editing) return;
     try {
-      const raw = localStorage.getItem(DRAFT_KEY);
+      const raw = localStorage.getItem(editing ? editKey : DRAFT_KEY);
       if (raw) {
         const d = JSON.parse(raw);
         if (d && d.f && (d.f.name_fa || d.f.name_en || d.f.sku)) setDraftFound(d);
       }
     } catch { /* corrupted draft — ignore */ }
-  }, [editing]);
+  }, [editing, editKey]);
 
   const mountedRef = useRef(false);
   useEffect(() => {
@@ -150,11 +152,11 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
     setDraftFound(null);
   }
   function discardDraft() {
-    try { localStorage.removeItem(DRAFT_KEY); } catch { /* no-op */ }
+    try { localStorage.removeItem(editing ? editKey : DRAFT_KEY); } catch { /* no-op */ }
     setDraftFound(null);
   }
   function clearDraftStorage() {
-    try { localStorage.removeItem(DRAFT_KEY); } catch { /* no-op */ }
+    try { localStorage.removeItem(editing ? editKey : DRAFT_KEY); } catch { /* no-op */ }
   }
 
   // Identity fields reset for "save & add another"; sticky defaults (category,
@@ -222,6 +224,7 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
       category: selectedCat?.slug || null,
       priceOnRequest,
       price: priceOnRequest ? "" : f.price,
+      ...(editing && expectedRef.current ? { __expectedUpdatedAt: expectedRef.current } : {}),
       tags: f.tags.split(/[،,]/),
       gallery_urls: gallery,
       specs,
@@ -240,6 +243,10 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
         return;
       }
       router.push("/beauty/operator/products");
+    } else if (res.conflict) {
+      addAnotherRef.current = false;
+      try { localStorage.setItem(editKey, JSON.stringify({ f, gallery, specs, priceOnRequest, at: Date.now() })); } catch { /* storage full */ }   // "load the latest version" must not lose what was typed
+      setConflict({ currentUpdatedAt: res.currentUpdatedAt, lastChange: res.lastChange });
     } else {
       addAnotherRef.current = false;
       setErr(t(res.error) || t("ذخیره ناموفق بود."));
@@ -270,7 +277,7 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
   );
 
   return (
-    <form onSubmit={submit}>
+    <form id="pf-form" onSubmit={submit}>
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-3 min-w-0">
@@ -283,6 +290,13 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
       {!editing && initialBrand && (
         <div className="mb-5 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-brand-violet/[0.06] text-ink-soft">
           <Icon name="award" size={16} className="text-brand-violet shrink-0" /><Trans t={t} k="در حال افزودن محصول برای برند {brand} — فیلد برند از پیش پر شده است." values={{ brand: <b dir="ltr">«{initialBrand}»</b> }} /></div>
+      )}
+
+      {editing && product?.id && (
+        <div className="flex flex-wrap gap-2 mb-5" data-testid="form-links">
+          <Link href={`/beauty/operator/products/${product.id}/history`} className="btn-ghost size-sm" data-testid="link-history"><Icon name="clock" size={15} /> {t("تاریخچهٔ نسخه‌ها")}</Link>
+          {product.is_active !== false && product.slug && <a href={`/beauty/tg/catalog/${product.slug}`} target="_blank" rel="noopener noreferrer" className="btn-ghost size-sm" data-testid="link-site"><Icon name="eye" size={15} /> {t("مشاهده در سایت")}</a>}
+        </div>
       )}
 
       {draftFound && (
@@ -304,6 +318,17 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
       {err && (
         <div className="mb-5 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn">
           <Icon name="alertTriangle" size={16} /> {err}
+        </div>
+      )}
+      {conflict && (
+        <div role="alert" className="mb-5 text-sm rounded-xl px-3 py-3 bg-warn/10 text-warn" data-testid="save-conflict">
+          <p className="flex items-start gap-2 font-medium"><Icon name="alertTriangle" size={16} /> <span className="min-w-0 break-words">{t("این محصول در این فاصله توسط شخص دیگری تغییر کرده است؛ تغییر شما ذخیره نشد.")}</span></p>
+          {conflict.lastChange && <p className="mt-1 text-ink-soft break-words">{t("آخرین تغییر: {who} · {at}", { who: conflict.lastChange.who || "—", at: fmtDate(conflict.lastChange.at) })}</p>}
+          <div className="flex flex-wrap gap-2 mt-3">
+            <button type="button" className="btn-ghost size-sm" data-testid="conflict-reload" onClick={() => { window.location.reload(); }}>{t("بارگذاری آخرین نسخه (تغییرات شما به‌صورت پیش‌نویس می‌ماند)")}</button>
+            <button type="button" className="btn-ghost size-sm" data-testid="conflict-overwrite" onClick={() => { expectedRef.current = conflict.currentUpdatedAt; setConflict(null); document.getElementById("pf-form")?.requestSubmit(); }}>{t("ذخیره به‌هر‌حال (جایگزین تغییر دیگران)")}</button>
+            <Link href={`/beauty/operator/products/${product?.id}/history`} className="btn-ghost size-sm">{t("دیدن تاریخچه")}</Link>
+          </div>
         </div>
       )}
 

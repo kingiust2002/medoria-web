@@ -139,4 +139,5 @@ public route/API/payload/print path.
 | S4a warehouse core: migration 36 (generated, both houses), store, actions, approval of adjustments, check-rls, leak tests; **no screens yet** | same branch (`docs/WAREHOUSE.md`) | `tests/warehouse-migration.test.mjs` (PostgreSQL 16), `tests/warehouse-core.test.mjs`, `tests/warehouse-no-leak.test.mjs` |
 | S4b warehouse screens (stock, movements, reservations, warehouses; both panels), SKU lookup, e2e + mobile | branch `feat/panel-warehouse-ui` (stacked on S3+S4a) | `tests/e2e/warehouse.e2e.mjs`, `tests/e2e/mobile.e2e.mjs` |
 | S5e quote follow-up date, today/overdue, real assignee, customer file (by phone), Telegram retry, report + CSV (migration 37) | branch `feat/panel-quote-followup` (`docs/QUOTE_NOTIFICATIONS.md`) | `tests/quote-followup.test.mjs`, `tests/quote-followup-migration.test.mjs` (PostgreSQL 16), `tests/e2e/quote-followup.e2e.mjs` |
-| S4c, S5a–S5d, S5f, S6a–S6c | not started | |
+| S5c product optimistic lock + conflict banner (draft kept), change history, revert (migration 38), "view on site" | branch `feat/panel-product-versions` (`docs/PRODUCT_HISTORY.md`) | `tests/product-versions.test.mjs`, `tests/product-versions-migration.test.mjs` (PostgreSQL 16), `tests/e2e/product-history.e2e.mjs` |
+| S4c, S5a, S5b, S5d, S5f, S6a–S6c | not started | |

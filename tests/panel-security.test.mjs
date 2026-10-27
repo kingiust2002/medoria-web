@@ -289,6 +289,7 @@ test("every changing server action writes to the activity log; the few exception
     "commitProductRows",                                                                                  // chunks: finalizeProductBatch logs the import once
     "deleteQuote", "deleteQuotes", "updateQuotesStatus",                                                  // logged inside quoteDelete.js via `audit`
     "assignQuote",                                                                                        // logged inside quoteOps.js via `audit` (quote.assign, never the typed name)
+    "restoreProductVersion",                                                                             // logged inside productRestoreCore.js (product.restore, with before / after)
     "setQuoteFollowUp", "retryQuoteNotice", "exportQuotesCsv",                                            // logged inside quoteFollowUpCore.js via `audit` (quote.follow_up, quote.notice_retry, quotes.exported)
     "deleteProduct",                                                                                      // logged FIRST inside productDelete.js via `audit` (product.delete)
   ]);
@@ -310,6 +311,7 @@ test("every changing server action writes to the activity log; the few exception
   assert.match(helper, /logAfter\(audit, \{ action: "quote\.status"/);
   assert.match(read("lib/operator/quoteOps.js"), /action: "quote\.assign"/);
   const fu = read("lib/operator/quoteFollowUpCore.js");
+  assert.ok(read("lib/operator/productRestoreCore.js").includes('"product.restore"'), "reverting a product change is not logged");
   for (const a of ["quote.follow_up", "quote.notice_retry", "quotes.exported"]) assert.ok(fu.includes(`action: "${a}"`), `${a} is not logged`);
   assert.match(read("lib/operator/productDelete.js"), /action: "product\.delete_attempt"/);
   assert.match(read("lib/operator/importActions.js"), /action: "product\.import"/);
