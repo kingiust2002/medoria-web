@@ -39,7 +39,7 @@ const product = async (id) => (await state()).products.find((p) => p.id === id);
 async function changePriceViaForm(page, price) {
   await page.goto(`${BASE}/operator/products/1/edit`, { waitUntil: "networkidle" });
   await page.getByLabel(/قیمت \(دلار\)/).fill(String(price));
-  await page.getByRole("button", { name: "ذخیره تغییرات" }).click();
+  await page.getByRole("button", { name: "ذخیره تغییرات" }).first().click();
   await page.waitForURL(/\/operator\/approvals/);
 }
 
@@ -180,5 +180,40 @@ test("people without the right cannot reach the queue; the old shared login has 
   await addUser({ username: "plain.viewer", role: "viewer" });
   const s = await login("plain.viewer");
   const res = await fetch(`${BASE}/operator/approvals`, { redirect: "manual", headers: { cookie: s.cookie } });
+  assert.ok(res.status >= 300 && res.status < 400 && /no-access/.test(res.headers.get("location") || ""));
+});
+
+test("the activity log shows WHO did it, filters by person / result, pages, exports a CSV only with its own permission, and hides from product managers", async () => {
+  const r = await pageAs("rev.admin");
+  await r.page.goto(`${BASE}/operator/activity`, { waitUntil: "networkidle" });
+  const rows = r.page.getByTestId("audit-row");
+  assert.ok((await rows.count()) > 0);
+  assert.ok((await r.page.getByTestId("audit-who").first().innerText()).length > 0, "the person is named");
+  const approved = r.page.locator('[data-action="approval.approved"]').first();
+  assert.match(await approved.getByTestId("audit-who").innerText(), /rev\.admin/);
+  assert.match(await approved.getByTestId("audit-who").innerText(), /pm\.requester/, "…and to whom it concerned");
+  assert.ok(await approved.getByTestId("audit-change").count(), "before / after of the change");
+
+  // filter by person
+  await r.page.goto(`${BASE}/operator/activity?who=${reviewer.id}`, { waitUntil: "networkidle" });
+  const whos = await r.page.getByTestId("audit-who").allInnerTexts();
+  assert.ok(whos.length > 0 && whos.every((w) => w.includes("rev.admin")), "only that person's entries");
+  await r.page.goto(`${BASE}/operator/activity?result=rejected`, { waitUntil: "networkidle" });
+  for (const a of await r.page.getByTestId("audit-row").evaluateAll((els) => els.map((e) => e.getAttribute("data-action")))) assert.ok(a, "rejected entries listed");
+
+  // CSV export: its own permission; the file has the header and no password or code
+  await r.page.goto(`${BASE}/operator/activity`, { waitUntil: "networkidle" });
+  const [download] = await Promise.all([r.page.waitForEvent("download"), r.page.getByTestId("audit-export").click()]);
+  const text = await (await import("node:fs")).promises.readFile(await download.path(), "utf8");
+  assert.match(text, /^﻿time,action,result,person/);
+  assert.ok(text.includes("approval.approved"));
+  assert.ok(!text.includes(PW));
+  const exported = (await state()).operator_audit_log.find((x) => x.action === "audit.exported");
+  assert.deepEqual([exported.user_id, exported.result], [reviewer.id, "success"], "the export itself is logged with the person");
+  await r.ctx.close();
+
+  // a product manager has neither the log nor the export
+  const m = await login("pm.requester");
+  const res = await fetch(`${BASE}/operator/activity`, { redirect: "manual", headers: { cookie: m.cookie } });
   assert.ok(res.status >= 300 && res.status < 400 && /no-access/.test(res.headers.get("location") || ""));
 });

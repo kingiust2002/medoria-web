@@ -24,6 +24,7 @@ const ACTION_FILES = [
   "lib/operator/userActions.js", "lib/beauty/operator/userActions.js",
   "lib/operator/accountActions.js", "lib/beauty/operator/accountActions.js",
   "lib/operator/approvalActions.js", "lib/beauty/operator/approvalActions.js",
+  "lib/operator/auditActions.js", "lib/beauty/operator/auditActions.js",
 ];
 // Actions that only touch the caller's own session need no operation of the catalog.
 const SELF_SERVICE = new Set(["revokeOtherSessions", "revokeAllSessions"]);
@@ -43,6 +44,11 @@ test("every operator server action asks for a permission right after the session
   for (const f of ACTION_FILES) {
     for (const a of exportedActions(read(f))) {
       if (SELF_SERVICE.has(a.name)) continue;
+      if (/auditActions\.js$/.test(f)) {
+        // the CSV export of the log: its own permission (audit.export), checked right after the session, before the database
+        assert.ok(/mayView\(session, "(health|beauty)", "audit\.export"\)/.test(a.head), `${f}:${a.name} must check audit.export`);
+        continue;
+      }
       if (/(accountActions|approvalActions)\.js$/.test(f)) {
         // "my password / my two-step login" and the approval queue: a personal session is the first thing asked; the shared core then
         // asks the finer rules (reviewer allowed for that kind of change, not the requester, …)
