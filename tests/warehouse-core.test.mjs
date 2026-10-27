@@ -213,3 +213,17 @@ test("locations: created with the person's id, edited only at the version the sc
   assert.equal(db.tables.health_stock_locations[0].name, "Main hall");
   assert.equal((await actions.createLocation(ctx, { code: "!", name: "x" })).ok, false);
 });
+
+test("a product typed as a SKU is resolved only after the permission check; unknown SKUs are refused", async () => {
+  db.tables.products.push({ id: 8, sku: "Glove-8" });
+  const r = await actions.postMovement(ctxFor(manager), { key: KEY, kind: "receive", sku: "glove-8", locationId: 1, qty: 2 });
+  assert.equal(r.ok, true);
+  assert.equal(posted.at(-1).p_product, 8, "case-insensitive exact match");
+  const none = await actions.postMovement(ctxFor(manager), { key: KEY, kind: "receive", sku: "nope", locationId: 1, qty: 2 });
+  assert.equal(none.error, STOCK_MESSAGES.unknown_product);
+  const n = db.rpcLog.length;
+  const denied = await actions.postMovement(ctxFor(viewer), { key: KEY, kind: "receive", sku: "G-7", locationId: 1, qty: 2 });
+  assert.equal(denied.denied, true);
+  assert.equal(db.rpcLog.length, n);
+  assert.equal(cleanMovement({ key: KEY, kind: "receive", locationId: 1, qty: 2 }).ok, false, "neither id nor SKU");
+});
