@@ -34,13 +34,14 @@ function fakeAdmin({ rows = [{ id: 7 }], error = null } = {}) {
   return { admin, calls };
 }
 
-function run({ session = { role: "admin" }, admin, table = "quote_requests", id = 7 }) {
+function run({ session = { role: "admin" }, admin, table = "quote_requests", id = 7, audit = async () => ({ ok: true }) }) {
   let adminRequested = 0;
   const p = deleteQuoteGuarded({
     getSession: async () => session,
     getAdminClient: () => { adminRequested++; return admin ?? null; },
     table,
     id,
+    audit,   // a deletion needs its attempt on record
   });
   return p.then((res) => ({ res, adminRequested }));
 }
@@ -182,7 +183,7 @@ test("both panels show a delete button per request and confirm with the request'
     assert.match(s, /<QuotesPanel quotes=\{quotes\} actions=\{actions\}/, `${file}: does not render the shared screen`);
   }
   const panel = read("components/operator/QuotesPanel.jsx");
-  assert.match(panel, /onClick=\{\(\) => setDeleting\(x\)\}[^>]*title="حذف درخواست"/, "no per-row delete button");
+  assert.match(panel, /onClick=\{\(\) => setDeleting\(x\)\}[^>]*title=\{t\("حذف درخواست"\)\}/, "no per-row delete button");
   assert.match(panel, /<DeleteQuoteModal[\s\S]*?onDelete=\{actions\.deleteQuote\}/, "modal not wired to deleteQuote");
   assert.match(panel, /router\.refresh\(\)/, "list is not refreshed after deleting");
   // the row toggle is a <button>, so the delete button must follow its closing tag, never nest inside it

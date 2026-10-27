@@ -1,6 +1,7 @@
 // components/operator/ui.jsx — small presentational building blocks for the panel.
 // Pure components (no client hooks) — safe to use from server or client trees.
 import Icon from "@/components/shared/Icon";
+import { localName } from "@/lib/panel/i18n";
 
 export function PageHeader({ title, subtitle, children }) {
   return (
@@ -71,10 +72,10 @@ export function Toggle({ checked, onChange, label, desc }) {
       role="switch"
       aria-checked={!!checked}
       onClick={() => onChange(!checked)}
-      className="flex items-center gap-3 text-right w-full group"
+      className="flex items-center gap-3 text-start w-full group"
     >
       <span className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? "bg-brand-violet" : "bg-line"}`}>
-        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? "right-0.5" : "right-[1.375rem]"}`} />
+        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? "start-0.5" : "start-[1.375rem]"}`} />
       </span>
       {(label || desc) && (
         <span className="min-w-0">
@@ -145,12 +146,12 @@ export function Spinner({ size = 16 }) {
 }
 
 // ── plain helpers (Persian-first, no i18n dependency) ─────────────────────────
-export function productDisplayName(p) {
-  return p?.name_fa || p?.name_en || p?.name_ru || p?.name_tg || p?.sku || `#${p?.id ?? ""}`;
+export function productDisplayName(p, lang = "fa") {
+  return localName(p, lang, p?.sku || `#${p?.id ?? ""}`);
 }
 export function isOnRequest(p) {
   return p == null || p.price == null || p.price === "" || Number(p.price) === 0;
 }
-export function priceText(p) {
-  return isOnRequest(p) ? "استعلام قیمت" : `$${Number(p.price).toFixed(2)}`;
+export function priceText(p, t) {
+  return isOnRequest(p) ? t("استعلام قیمت") : `$${Number(p.price).toFixed(2)}`;
 }

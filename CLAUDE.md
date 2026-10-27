@@ -114,6 +114,9 @@ hasn't been retired yet:
 - Tajik-first (`tg` default), then Russian and English; short stylistic
   micro-labels may be Latin. Preserve the hidden Persian `fa` RTL routes
   (Vazirmatn fallbacks; brand lockups stay `dir="ltr"`).
+- The operator panels (`/operator`, `/beauty/operator`, `/login…`) are Persian (default), Tajik and English — not Russian.
+  Every panel text goes through `t()` / `tr()` with the Persian text as its key (`docs/PANEL_LANGUAGES.md`);
+  `tests/panel-i18n.test.mjs` fails on a missing translation or a bare Persian text.
 
 ## Gateway law
 

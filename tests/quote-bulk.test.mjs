@@ -38,7 +38,9 @@ function fakeAdmin({ rows = null, error = null } = {}) {
 }
 const deps = (admin, session = { role: "admin" }) => {
   const seen = { adminRequested: 0 };
-  return { seen, base: { getSession: async () => session, getAdminClient: () => { seen.adminRequested++; return admin ?? null; } } };
+  const entries = []; seen.entries = entries;
+  // every deletion needs its attempt on record (lib/operator/auditedDelete.js); a stub that accepts every entry
+  return { seen, base: { getSession: async () => session, getAdminClient: () => { seen.adminRequested++; return admin ?? null; }, audit: async (e) => { entries.push(e); return { ok: true }; } } };
 };
 
 test("parseQuoteIds accepts 1..200 valid ids, collapses duplicates, rejects anything else", () => {
@@ -179,7 +181,7 @@ test("migration 29 allows exactly the statuses the panel offers, in both tables"
 
 test("the shared Quotes screen offers tabs, select-all, tick selection and the four bulk actions", () => {
   const panel = read("components/operator/QuotesPanel.jsx");
-  for (const label of ["فعال", "آرشیو", "اسپم", "همه"]) assert.ok(panel.includes(`label: "${label}"`), `tab ${label} missing`);
+  for (const label of ["فعال", "آرشیو", "اسپم", "همه"]) assert.ok(panel.includes(`label: tr("${label}")`), `tab ${label} missing`);
   assert.match(panel, /role="tablist"/);
   assert.match(panel, /انتخاب همه/);
   assert.match(panel, /type="checkbox"[^>]*onChange=\{\(\) => toggle\(x\.id\)\}/, "no per-row checkbox");
@@ -193,7 +195,7 @@ test("the shared Quotes screen offers tabs, select-all, tick selection and the f
   // selection is cleared when the tab changes
   assert.match(panel, /function goTab\(id\) \{[^}]*setSelected\(new Set\(\)\)/);
   // phone width: the bulk bar and tabs wrap instead of overflowing
-  assert.match(panel, /role="region" aria-label="عملیات گروهی" className="[^"]*flex-wrap/);
+  assert.match(panel, /role="region" aria-label=\{t\("عملیات گروهی"\)\} className="[^"]*flex-wrap/);
   assert.match(panel, /role="tablist"[^>]*className="[^"]*flex-wrap/);
   // Beauty and Health use this one screen
   for (const f of ["components/operator/QuotesManager.jsx", "components/beauty/operator/QuotesManager.jsx"]) {

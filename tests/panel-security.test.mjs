@@ -289,6 +289,7 @@ test("every changing server action writes to the activity log; the few exception
     "commitProductRows",                                                                                  // chunks: finalizeProductBatch logs the import once
     "deleteQuote", "deleteQuotes", "updateQuotesStatus",                                                  // logged inside quoteDelete.js via `audit`
     "assignQuote",                                                                                        // logged inside quoteOps.js via `audit` (quote.assign, never the typed name)
+    "deleteProduct",                                                                                      // logged FIRST inside productDelete.js via `audit` (product.delete)
   ]);
   const missing = [];
   let checked = 0;
@@ -297,31 +298,42 @@ test("every changing server action writes to the activity log; the few exception
     for (const m of s.matchAll(/export async function (\w+)\([^)]*\) \{([\s\S]*?)\n\}\n/g)) {
       checked++;
       if (exempt.has(m[1])) continue;
-      if (!/(\.audit\(|\.auditFirst\(|auditEvent\()/.test(m[2])) missing.push(`${f}:${m[1]}`);
+      if (!/(\.audit\(|\.auditEntry\b|auditEvent\()/.test(m[2])) missing.push(`${f}:${m[1]}`);
     }
   }
   assert.ok(checked > 50, `expected the panel actions, found ${checked}`);
   assert.deepEqual(missing, [], "these actions change data without writing to the activity log");
   // the exempt quote helpers really do log
   const helper = read("lib/operator/quoteDelete.js");
-  assert.match(helper, /logFirst\(audit, \{ action: "quote\.delete"/);
+  assert.match(helper, /action: "quote\.delete_attempt"/);
   assert.match(helper, /logAfter\(audit, \{ action: "quote\.status"/);
   assert.match(read("lib/operator/quoteOps.js"), /action: "quote\.assign"/);
+  assert.match(read("lib/operator/productDelete.js"), /action: "product\.delete_attempt"/);
   assert.match(read("lib/operator/importActions.js"), /action: "product\.import"/);
 });
 
-test("a deletion is logged BEFORE it happens and refused when the log cannot be written", () => {
+test("every irreversible action writes an ATTEMPT before it and a separate OUTCOME after it; a missing log is a refusal", () => {
+  const order = (body, label) => {
+    const att = body.indexOf("delete_attempt"), del = body.search(/\.delete\(\)/), ok = body.lastIndexOf("succeeded(");
+    assert.ok(att > 0 && del > att, `${label}: the attempt must come before the delete`);
+    assert.ok(ok > del, `${label}: the outcome must come after the delete`);
+  };
   const helper = read("lib/operator/quoteDelete.js");
-  for (const fn of ["deleteQuoteGuarded", "deleteQuotesGuarded"]) {
-    const body = helper.match(new RegExp(`export async function ${fn}\\(([\\s\\S]*?)\\n\\}\\n`))[1];
-    assert.ok(body.indexOf("logFirst(") < body.indexOf(".delete()"), `${fn} deletes before it logs`);
+  for (const fn of ["deleteQuoteGuarded", "deleteQuotesGuarded"]) order(helper.match(new RegExp(`export async function ${fn}\\(([\\s\\S]*?)\\n\\}\\n`))[1], fn);
+  const productBody = read("lib/operator/productDelete.js").match(/export async function deleteProductGuarded\(([\s\S]*?)\n\}\n/)[1];
+  assert.ok(productBody.indexOf("product.delete_attempt") < productBody.indexOf(".delete()"), "deleteProductGuarded deletes before it logs the attempt");
+  assert.ok(productBody.indexOf(".delete()") < productBody.lastIndexOf('action: "product.delete"'), "the outcome is written after the delete");
+  for (const [f, fn] of [["lib/beauty/operator/actions.js", "deleteCategorySafe"], ["lib/beauty/operator/actions.js", "deleteBrand"], ["lib/operator/categoryTreeActions.js", "deleteHealthCategorySafe"], ["lib/operator/importActions.js", "deleteCategorySafe"]]) {
+    const body = read(f).match(new RegExp(`export async function ${fn}\\(([\\s\\S]*?)\\n\\}\\n`))[1];
+    order(body, `${f}:${fn}`);
+    assert.ok(body.includes("requireAttempt("), `${f}:${fn} must refuse when the attempt cannot be written`);
+    if (/category/i.test(fn)) assert.ok(body.indexOf("requireAttempt(") < body.search(/\.update\(/), `${f}:${fn} must write the attempt before it moves any product`);
   }
-  for (const [f, call] of [["lib/beauty/operator/actions.js", 'auditFirst("category.delete"'], ["lib/beauty/operator/actions.js", 'auditFirst("brand.delete"'], ["lib/operator/categoryTreeActions.js", 'auditFirst("category.delete"']]) {
-    const s = read(f);
-    assert.ok(s.indexOf(call) > 0 && s.indexOf(call) < s.indexOf(".delete()", s.indexOf(call)), `${f}: ${call} must come before the delete`);
+  // nothing may still treat a missing log table as permission
+  for (const f of ["lib/operator/quoteDelete.js", "lib/operator/productDelete.js", "lib/operator/categoryTreeActions.js", "lib/operator/importActions.js", "lib/beauty/operator/actions.js"]) {
+    const src = read(f);
+    assert.ok(!/logFirst|auditFirst|logged\.unavailable|r\.ok \|\| r\.unavailable/.test(src), `${f} still has the fail-open history helper`);
   }
-  const imp = read("lib/operator/importActions.js");
-  assert.ok(imp.indexOf('action: "category.delete"') < imp.indexOf('.from("categories").delete()'));
 });
 
 test("login: every session is registered before its cookie is issued, each panel has its own configuration", () => {

@@ -3,19 +3,25 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
-import { isIncomplete, gapSummary } from "@/lib/operator/completeness";
+import { isIncomplete, gapSummary, productGaps } from "@/lib/operator/completeness";
 import { beautyImageUrl as imageUrl } from "@/lib/beauty/catalog";
-import { setProductActive, duplicateProduct, quickUpdateProduct, bulkUpdateProducts } from "@/lib/beauty/operator/actions";
+import { setProductActive, duplicateProduct, quickUpdateProduct, bulkUpdateProducts, deleteProduct } from "@/lib/beauty/operator/actions";
+import DeleteProductModal from "@/components/operator/DeleteProductModal";
 import { BEAUTY_WORLDS } from "@/lib/beauty/operator/constants";
 import {
   PageHeader, Input, Select, Badge, EmptyState, Spinner, productDisplayName, priceText, isOnRequest,
 } from "@/components/operator/ui";
+import { useT, usePanelLang } from "@/components/panel/PanelI18n";
+import { localName } from "@/lib/panel/i18n";
 
 export default function ProductsTable({ products, categories, initialQuery = "" }) {
+  const t = useT();
+  const { lang } = usePanelLang();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState(null);
   const [msg, setMsg] = useState(null);
+  const [deleting, setDeleting] = useState(null);   // the archived product whose permanent deletion is being confirmed
 
   const [q, setQ] = useState(initialQuery);
   const [world, setWorld] = useState("");
@@ -31,9 +37,9 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
 
   const catName = useMemo(() => {
     const m = {};
-    for (const c of categories) { m[`id:${c.id}`] = c.name_fa || c.name_en || c.slug; m[`slug:${c.slug}`] = c.name_fa || c.name_en || c.slug; }
+    for (const c of categories) { m[`id:${c.id}`] = localName(c, lang); m[`slug:${c.slug}`] = localName(c, lang); }
     return m;
-  }, [categories]);
+  }, [categories, lang]);
   const nameOf = (p) => catName[`id:${p.category_id}`] || catName[`slug:${p.category}`] || "—";
 
   // World filter: a world = the set of its categories (two-level taxonomy).
@@ -60,8 +66,8 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
     list.sort((a, b) => {
       switch (sort) {
         case "newest": return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-        case "name": return productDisplayName(a).localeCompare(productDisplayName(b), "fa");
-        case "category": return nameOf(a).localeCompare(nameOf(b), "fa");
+        case "name": return productDisplayName(a, lang).localeCompare(productDisplayName(b, lang), lang);
+        case "category": return nameOf(a).localeCompare(nameOf(b), lang);
         default: return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
       }
     });
@@ -83,7 +89,7 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
       const res = await quickUpdateProduct(p.id, patch);
       setBusyId(null);
       if (res.ok) { if (okText) flash(okText, true); router.refresh(); }
-      else flash(res.error);
+      else flash(t(res.error));
     });
   }
   function toggleActive(p) {
@@ -91,8 +97,8 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
     startTransition(async () => {
       const res = await setProductActive(p.id, p.is_active === false);
       setBusyId(null);
-      if (res.ok) { flash(p.is_active === false ? "فعال شد." : "آرشیو شد.", true); router.refresh(); }
-      else flash(res.error);
+      if (res.ok) { flash(p.is_active === false ? t("فعال شد.") : t("آرشیو شد."), true); router.refresh(); }
+      else flash(t(res.error));
     });
   }
   function dup(p) {
@@ -101,12 +107,12 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
       const res = await duplicateProduct(p.id);
       setBusyId(null);
       if (res.ok) router.push(`/beauty/operator/products/${res.id}/edit`);
-      else flash(res.error);
+      else flash(t(res.error));
     });
   }
   function savePrice(p) {
     const val = editPrice?.val ?? "";
-    runQuick(p, { price: val.trim() === "" ? null : val }, "قیمت ذخیره شد.");
+    runQuick(p, { price: val.trim() === "" ? null : val }, t("قیمت ذخیره شد."));
     setEditPrice(null);
   }
 
@@ -116,43 +122,43 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
     if (!ids.length) return;
     startTransition(async () => {
       const res = await bulkUpdateProducts(ids, patch);
-      if (res.ok) { flash(`${okText} (${res.count} مورد)`, true); clearSel(); setBulkCat(""); router.refresh(); }
-      else flash(res.error);
+      if (res.ok) { flash(t("{okText} ({count} مورد)", { okText, count: res.count }), true); clearSel(); setBulkCat(""); router.refresh(); }
+      else flash(t(res.error));
     });
   }
   function bulkCategory(value) {
     setBulkCat(value);
     if (!value) return;
     const c = categories.find((x) => String(x.id) === value);
-    runBulk({ category_id: value, category: c?.slug || null }, "دسته تغییر کرد");
+    runBulk({ category_id: value, category: c?.slug || null }, t("دسته تغییر کرد"));
   }
 
   return (
     <>
-      <PageHeader title="محصولات" subtitle={`${products.length} محصول`}>
+      <PageHeader title={t("محصولات")} subtitle={t("{length} محصول", { length: products.length })}>
         <Link href="/beauty/operator/products/import" className="btn-ghost size-md"><Icon name="upload" size={17} /> Excel/CSV</Link>
-        <Link href="/beauty/operator/products/bulk" className="btn-ghost size-md"><Icon name="plusCircle" size={17} /> افزودن گروهی</Link>
-        <Link href="/beauty/operator/products/new" className="btn-primary size-md"><Icon name="plus" size={18} /> افزودن محصول</Link>
+        <Link href="/beauty/operator/products/bulk" className="btn-ghost size-md"><Icon name="plusCircle" size={17} /> {t("افزودن گروهی")}</Link>
+        <Link href="/beauty/operator/products/new" className="btn-primary size-md"><Icon name="plus" size={18} /> {t("افزودن محصول")}</Link>
       </PageHeader>
 
       {/* Filters */}
       <div className="card-flat p-3 mb-4 flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px]">
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"><Icon name="search" size={16} /></span>
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="جستجوی نام، SKU یا برند…" className="pr-9" />
+          <span className="absolute start-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"><Icon name="search" size={16} /></span>
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("جستجوی نام، SKU یا برند…")} className="ps-9" />
         </div>
         <Select value={world} onChange={(e) => { setWorld(e.target.value); setCat(""); }} className="w-auto min-w-[130px]">
-          <option value="">همه دنیاها</option>
-          {BEAUTY_WORLDS.map((w) => <option key={w.value} value={w.value}>{w.label}</option>)}
+          <option value="">{t("همه دنیاها")}</option>
+          {BEAUTY_WORLDS.map((w) => <option key={w.value} value={w.value}>{t(w.label)}</option>)}
         </Select>
         <Select value={cat} onChange={(e) => setCat(e.target.value)} className="w-auto min-w-[130px]">
-          <option value="">همه دسته‌ها</option>
-          {worldCats.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? c.slug)}>{c.name_fa || c.name_en || c.slug}</option>)}
+          <option value="">{t("همه دسته‌ها")}</option>
+          {worldCats.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? c.slug)}>{localName(c, lang)}</option>)}
         </Select>
-        <Select value={stock} onChange={(e) => setStock(e.target.value)} className="w-auto"><option value="">موجودی: همه</option><option value="in">موجود</option><option value="out">ناموجود</option></Select>
-        <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-auto"><option value="">وضعیت: همه</option><option value="active">فعال</option><option value="inactive">غیرفعال</option></Select>
-        <Select value={complete} onChange={(e) => setComplete(e.target.value)} aria-label="تکمیل اطلاعات" className="w-auto"><option value="">اطلاعات: همه</option><option value="incomplete">ناقص</option><option value="complete">کامل</option></Select>
-        <Select value={sort} onChange={(e) => setSort(e.target.value)} className="w-auto"><option value="updated">آخرین تغییر</option><option value="newest">جدیدترین</option><option value="name">نام</option><option value="category">دسته</option></Select>
+        <Select value={stock} onChange={(e) => setStock(e.target.value)} className="w-auto"><option value="">{t("موجودی: همه")}</option><option value="in">{t("موجود")}</option><option value="out">{t("ناموجود")}</option></Select>
+        <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-auto"><option value="">{t("وضعیت: همه")}</option><option value="active">{t("فعال")}</option><option value="inactive">{t("غیرفعال")}</option></Select>
+        <Select value={complete} onChange={(e) => setComplete(e.target.value)} aria-label={t("تکمیل اطلاعات")} className="w-auto"><option value="">{t("اطلاعات: همه")}</option><option value="incomplete">{t("ناقص")}</option><option value="complete">{t("کامل")}</option></Select>
+        <Select value={sort} onChange={(e) => setSort(e.target.value)} className="w-auto"><option value="updated">{t("آخرین تغییر")}</option><option value="newest">{t("جدیدترین")}</option><option value="name">{t("نام")}</option><option value="category">{t("دسته")}</option></Select>
       </div>
 
       {msg && (
@@ -164,28 +170,26 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
       {/* Bulk bar */}
       {selected.size > 0 && (
         <div className="card mb-4 p-3 flex flex-wrap items-center gap-2 border-brand-violet/30 bg-brand-violet/5 sticky top-2 z-20">
-          <span className="text-sm font-semibold text-brand-violet">{selected.size} مورد انتخاب شده</span>
+          <span className="text-sm font-semibold text-brand-violet">{t("{size} مورد انتخاب شده", { size: selected.size })}</span>
           <span className="flex-1" />
-          <button onClick={() => runBulk({ is_active: true }, "فعال شد")} disabled={pending} className="btn-ghost size-sm"><Icon name="eye" size={15} /> فعال‌سازی</button>
-          <button onClick={() => runBulk({ is_active: false }, "آرشیو شد")} disabled={pending} className="btn-ghost size-sm"><Icon name="archive" size={15} /> غیرفعال</button>
-          <button onClick={() => runBulk({ requestPrice: true }, "استعلام قیمت شد")} disabled={pending} className="btn-ghost size-sm"><Icon name="dollar" size={15} /> استعلام قیمت</button>
+          <button onClick={() => runBulk({ is_active: true }, t("فعال شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="eye" size={15} /> {t("فعال‌سازی")}</button>
+          <button onClick={() => runBulk({ is_active: false }, t("آرشیو شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="archive" size={15} /> {t("غیرفعال")}</button>
+          <button onClick={() => runBulk({ requestPrice: true }, t("استعلام قیمت شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="dollar" size={15} /> {t("استعلام قیمت")}</button>
           <Select value={bulkCat} onChange={(e) => bulkCategory(e.target.value)} disabled={pending} className="w-auto !h-9 text-xs">
-            <option value="">تغییر دسته…</option>
-            {categories.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{c.name_fa || c.name_en || c.slug}</option>)}
+            <option value="">{t("تغییر دسته…")}</option>
+            {categories.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{localName(c, lang)}</option>)}
           </Select>
-          <button onClick={clearSel} className="btn-ghost size-sm !text-ink-muted"><Icon name="close" size={15} /> لغو</button>
+          <button onClick={clearSel} className="btn-ghost size-sm !text-ink-muted"><Icon name="close" size={15} /> {t("لغو")}</button>
         </div>
       )}
 
       {rows.length === 0 ? (
-        <EmptyState icon="package" title="محصولی یافت نشد" desc="فیلترها را تغییر دهید یا محصول جدید اضافه کنید." />
+        <EmptyState icon="package" title={t("محصولی یافت نشد")} desc={t("فیلترها را تغییر دهید یا محصول جدید اضافه کنید.")} />
       ) : (
         <div className="card overflow-hidden">
           {/* select-all header */}
           <label className="flex items-center gap-3 px-3 sm:px-4 py-2.5 border-b border-line bg-canvas-soft/60 cursor-pointer text-xs text-ink-muted">
-            <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 accent-brand-violet" />
-            انتخاب همه ({rows.length})
-          </label>
+            <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 accent-brand-violet" />{t("انتخاب همه ({length})", { length: rows.length })}</label>
 
           <div className="divide-y divide-line">
             {rows.map((p) => {
@@ -203,7 +207,7 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-ink truncate">{productDisplayName(p)}</p>
+                      <p className="font-medium text-ink truncate">{productDisplayName(p, lang)}</p>
                       {p.badge && <span className="tag bg-line-soft text-ink-muted shrink-0">{p.badge}</span>}
                     </div>
                     <p className="text-xs text-ink-muted truncate mt-0.5"><span className="tabular">{p.sku || "—"}</span> · {nameOf(p)}</p>
@@ -215,45 +219,54 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
                       <input autoFocus type="number" step="0.01" min="0" value={editPrice.val} dir="ltr"
                         onChange={(e) => setEditPrice({ id: p.id, val: e.target.value })}
                         onKeyDown={(e) => { if (e.key === "Enter") savePrice(p); if (e.key === "Escape") setEditPrice(null); }}
-                        placeholder="خالی=استعلام" className="input !h-8 w-28 text-xs" />
+                        placeholder={t("خالی=استعلام")} className="input !h-8 w-28 text-xs" />
                       <button onClick={() => savePrice(p)} className="grid place-items-center w-8 h-8 rounded-lg text-ok hover:bg-ok/10"><Icon name="check" size={15} /></button>
                       <button onClick={() => setEditPrice(null)} className="grid place-items-center w-8 h-8 rounded-lg text-ink-faint hover:bg-line-soft"><Icon name="close" size={15} /></button>
                     </div>
                   ) : (
                     <button onClick={() => setEditPrice({ id: p.id, val: isOnRequest(p) ? "" : String(p.price) })}
                       className={`shrink-0 text-xs font-semibold px-2.5 h-8 rounded-lg border border-line hover:border-brand-violet/40 hover:text-brand-violet transition-colors tabular ${isOnRequest(p) ? "text-brand-violet" : "text-ink-soft"}`}
-                      title="ویرایش قیمت">
-                      {priceText(p)}
+                      title={t("ویرایش قیمت")}>
+                      {priceText(p, t)}
                     </button>
                   )}
 
                   {/* inline toggles */}
                   <button onClick={() => runQuick(p, { in_stock: !p.in_stock })} disabled={isBusy}
                     className={`hidden sm:grid place-items-center w-8 h-8 rounded-lg transition-colors disabled:opacity-50 ${p.in_stock ? "text-ok bg-ok/10" : "text-ink-faint hover:bg-line-soft"}`}
-                    title={p.in_stock ? "موجود (کلیک=ناموجود)" : "ناموجود (کلیک=موجود)"}>
+                    title={p.in_stock ? t("موجود (کلیک=ناموجود)") : t("ناموجود (کلیک=موجود)")}>
                     <Icon name={p.in_stock ? "badgeCheck" : "package"} size={16} />
                   </button>
                   <button onClick={() => runQuick(p, { is_featured: !p.is_featured })} disabled={isBusy}
                     className={`hidden sm:grid place-items-center w-8 h-8 rounded-lg transition-colors disabled:opacity-50 ${p.is_featured ? "text-accent-gold bg-accent-gold/10" : "text-ink-faint hover:bg-line-soft"}`}
-                    title={p.is_featured ? "ویژه — در صفحه‌ی اصلی نمایش داده می‌شود (کلیک=عادی)" : "عادی (کلیک=ویژه: نمایش در صفحه‌ی اصلی)"}>
+                    title={p.is_featured ? t("ویژه — در صفحه‌ی اصلی نمایش داده می‌شود (کلیک=عادی)") : t("عادی (کلیک=ویژه: نمایش در صفحه‌ی اصلی)")}>
                     <Icon name="star" size={16} fill={p.is_featured ? "currentColor" : "none"} />
                   </button>
 
-                  {isIncomplete(p) && <Badge tone="warn" className="hidden md:inline-flex" title={gapSummary(p)}>ناقص: {gapSummary(p).split(" مورد")[0]}</Badge>}
-                  <Badge tone={active ? "ok" : "muted"} className="hidden md:inline-flex">{active ? "فعال" : "غیرفعال"}</Badge>
+                  {isIncomplete(p) && <Badge tone="warn" className="hidden md:inline-flex" title={gapSummary(p, 6, t)}>{t("ناقص: {count}", { count: productGaps(p).length })}</Badge>}
+                  <Badge tone={active ? "ok" : "muted"} className="hidden md:inline-flex">{active ? t("فعال") : t("غیرفعال")}</Badge>
 
                   <div className="flex items-center gap-1 shrink-0">
-                    <Link href={`/beauty/operator/products/${p.id}/edit`} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-brand-violet/10 hover:text-brand-violet transition-colors" title="ویرایش"><Icon name="edit" size={16} /></Link>
-                    <button onClick={() => dup(p)} disabled={isBusy} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50" title="تکثیر"><Icon name="copy" size={16} /></button>
-                    <button onClick={() => toggleActive(p)} disabled={isBusy} className={`grid place-items-center w-9 h-9 rounded-lg transition-colors disabled:opacity-50 ${active ? "text-ink-muted hover:bg-warn/10 hover:text-warn" : "text-ink-muted hover:bg-ok/10 hover:text-ok"}`} title={active ? "آرشیو (غیرفعال)" : "فعال‌سازی"}>
+                    <Link href={`/beauty/operator/products/${p.id}/edit`} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-brand-violet/10 hover:text-brand-violet transition-colors" title={t("ویرایش")}><Icon name="edit" size={16} /></Link>
+                    <button onClick={() => dup(p)} disabled={isBusy} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50" title={t("تکثیر")}><Icon name="copy" size={16} /></button>
+                    <button onClick={() => toggleActive(p)} disabled={isBusy} className={`grid place-items-center w-9 h-9 rounded-lg transition-colors disabled:opacity-50 ${active ? "text-ink-muted hover:bg-warn/10 hover:text-warn" : "text-ink-muted hover:bg-ok/10 hover:text-ok"}`} title={active ? t("آرشیو (غیرفعال)") : t("فعال‌سازی")}>
                       {isBusy ? <Spinner /> : <Icon name={active ? "archive" : "eye"} size={16} />}
                     </button>
+                    {!active && (
+                      <button onClick={() => setDeleting(p)} disabled={isBusy} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors disabled:opacity-50" title={t("حذف دائمی")} aria-label={t("حذف دائمی: {productDisplayName}", { productDisplayName: productDisplayName(p, lang) })} data-testid="product-delete">
+                        <Icon name="trash" size={16} />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
+      )}
+      {deleting && (
+        <DeleteProductModal product={deleting} onClose={() => setDeleting(null)} onDelete={deleteProduct}
+          onDone={(res) => { setDeleting(null); flash(res?.ok ? t("محصول برای همیشه حذف شد.") : t("این محصول دیگر وجود ندارد؛ فهرست به‌روز شد."), Boolean(res?.ok)); router.refresh(); }} />
       )}
     </>
   );
