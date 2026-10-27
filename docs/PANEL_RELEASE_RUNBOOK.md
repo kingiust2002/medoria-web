@@ -78,7 +78,16 @@ runbook's §17 baseline. Known limit recorded in CLAUDE.md/§22: data written af
 much that is.
 
 ## 6. Not done / owner decisions
-* No native-speaker review of the Tajik/English panel texts.
-* Not built: lots/expiry/stock counts/reports of the warehouse (S4c), server-side paging of the product list (S5a), private preview of drafts and
-  publish quality rules (S5b), site-content management (banners, contacts, FAQ), appearance settings and keyboard shortcuts beyond the search.
-* The daily Telegram reminder does not yet count follow-ups; CSV import does not set history/translation marks.
+* No native-speaker review of the Tajik/English panel texts (all new screens' texts included).
+* **Warehouse**: lots, expiry dates, quarantine and e-mail / Telegram low-stock alerts are not built (counts, minimum levels with a badge and a filter,
+  and CSV reports are — `docs/WAREHOUSE.md`).
+* **Lists (S5a)**: the product and quote lists are bounded (2000 / 1500 newest) and say so; full server-side paging and filtering is not built —
+  decide when the catalogue approaches the bound.
+* **Product page quality (S5b)**: the form shows a per-language visitor preview and a checklist of gaps, never blocking. Rules that *block* publishing
+  (which gaps?) and a preview of a draft on the real public page are not built — decisions for the owner.
+* **Site content (S6a)**: banner and FAQ are built (`docs/SITE_CONTENT.md`). Contact details are still environment values inlined at build time
+  (`lib/contact.js`) — making them editable would touch every header, footer and floating button; content publishing has no approval executor yet
+  (a person without `content.publish` simply cannot publish).
+* **Personal settings / pinned shortcuts (S6b)**: not built (language and light / dark mode already exist per person).
+* **Variants** (S5c in the plan): not built; history, revert and the optimistic lock are.
+* CSV import does not set history / translation marks.
