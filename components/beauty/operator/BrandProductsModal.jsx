@@ -15,10 +15,12 @@ import Icon from "@/components/shared/Icon";
 import { beautyImageUrl as imageUrl } from "@/lib/beauty/catalog";
 import { quickUpdateProduct, bulkUpdateProducts } from "@/lib/beauty/operator/actions";
 import { Input, Spinner, productDisplayName } from "@/components/operator/ui";
+import { useT } from "@/components/panel/PanelI18n";
 
 const norm = (s) => String(s || "").trim().toLowerCase();
 
 export default function BrandProductsModal({ brand, products, onClose }) {
+  const t = useT();
   const router = useRouter();
   const brandKey = norm(brand.name);
 
@@ -59,11 +61,11 @@ export default function BrandProductsModal({ brand, products, onClose }) {
     const res = await bulkUpdateProducts([...selected], { brand: brand.name });
     setBusy(false);
     if (res.ok) {
-      setFlash(`${res.count} محصول به «${brand.name}» افزوده شد.`);
+      setFlash(t("{count} محصول به «{name}» افزوده شد.", { count: res.count, name: brand.name }));
       setSelected(new Set());
       router.refresh();
     } else {
-      setErr(res.error || "افزودن ناموفق بود.");
+      setErr(t(res.error) || t("افزودن ناموفق بود."));
     }
   }
 
@@ -71,8 +73,8 @@ export default function BrandProductsModal({ brand, products, onClose }) {
     setErr(""); setUnlinking(product.id);
     const res = await quickUpdateProduct(product.id, { brand: null });
     setUnlinking(null);
-    if (res.ok) { setFlash(`«${productDisplayName(product)}» از این برند جدا شد.`); router.refresh(); }
-    else setErr(res.error || "جداکردن ناموفق بود.");
+    if (res.ok) { setFlash(t("«{productDisplayName}» از این برند جدا شد.", { productDisplayName: productDisplayName(product) })); router.refresh(); }
+    else setErr(t(res.error) || t("جداکردن ناموفق بود."));
   }
 
   return (
@@ -81,8 +83,8 @@ export default function BrandProductsModal({ brand, products, onClose }) {
       <div onClick={(e) => e.stopPropagation()} dir="rtl" className="relative card w-full max-w-2xl max-h-[88vh] flex flex-col animate-fade-in">
         <div className="flex items-center justify-between gap-3 p-5 border-b border-line shrink-0">
           <div className="min-w-0">
-            <h2 className="font-bold text-lg text-ink truncate">محصولات برند «<span dir="ltr">{brand.name}</span>»</h2>
-            <p className="text-xs text-ink-muted mt-0.5">{current.length} محصول در حال حاضر متصل است</p>
+            <h2 className="font-bold text-lg text-ink truncate">{t("محصولات برند «")}<span dir="ltr">{brand.name}</span>»</h2>
+            <p className="text-xs text-ink-muted mt-0.5">{t("{length} محصول در حال حاضر متصل است", { length: current.length })}</p>
           </div>
           <button type="button" onClick={onClose} className="grid place-items-center w-9 h-9 rounded-lg hover:bg-line-soft text-ink-muted shrink-0"><Icon name="close" size={18} /></button>
         </div>
@@ -93,9 +95,9 @@ export default function BrandProductsModal({ brand, products, onClose }) {
 
           {/* Current roster */}
           <div className="mb-6">
-            <h3 className="text-[12px] font-semibold text-ink-muted mb-2">محصولات این برند</h3>
+            <h3 className="text-[12px] font-semibold text-ink-muted mb-2">{t("محصولات این برند")}</h3>
             {current.length === 0 ? (
-              <p className="text-[13px] text-ink-faint rounded-xl border border-dashed border-line p-4 text-center">هنوز محصولی به این برند وصل نیست. از پایین یکی اضافه کن.</p>
+              <p className="text-[13px] text-ink-faint rounded-xl border border-dashed border-line p-4 text-center">{t("هنوز محصولی به این برند وصل نیست. از پایین یکی اضافه کن.")}</p>
             ) : (
               <div className="rounded-xl border border-line divide-y divide-line overflow-hidden">
                 {current.map((p) => (
@@ -109,10 +111,9 @@ export default function BrandProductsModal({ brand, products, onClose }) {
                       onClick={() => unlink(p)}
                       disabled={unlinking === p.id}
                       className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold text-ink-muted hover:text-warn transition-colors disabled:opacity-50"
-                      title="جدا کردن از این برند"
+                      title={t("جدا کردن از این برند")}
                     >
-                      {unlinking === p.id ? <Spinner size={13} /> : <Icon name="close" size={13} />} جدا کردن
-                    </button>
+                      {unlinking === p.id ? <Spinner size={13} /> : <Icon name="close" size={13} />} {t("جدا کردن")}</button>
                   </div>
                 ))}
               </div>
@@ -121,13 +122,13 @@ export default function BrandProductsModal({ brand, products, onClose }) {
 
           {/* Attach existing products */}
           <div>
-            <h3 className="text-[12px] font-semibold text-ink-muted mb-2">افزودن محصول موجود به این برند</h3>
+            <h3 className="text-[12px] font-semibold text-ink-muted mb-2">{t("افزودن محصول موجود به این برند")}</h3>
             <div className="relative mb-3">
               <span className="absolute start-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"><Icon name="search" size={15} /></span>
-              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="جستجو در نام، SKU یا برند فعلی…" className="ps-9" />
+              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("جستجو در نام، SKU یا برند فعلی…")} className="ps-9" />
             </div>
             {candidates.length === 0 ? (
-              <p className="text-[13px] text-ink-faint rounded-xl border border-dashed border-line p-4 text-center">محصولی مطابق پیدا نشد.</p>
+              <p className="text-[13px] text-ink-faint rounded-xl border border-dashed border-line p-4 text-center">{t("محصولی مطابق پیدا نشد.")}</p>
             ) : (
               <div className="rounded-xl border border-line divide-y divide-line overflow-hidden max-h-64 overflow-y-auto">
                 {candidates.map((p) => {
@@ -140,7 +141,7 @@ export default function BrandProductsModal({ brand, products, onClose }) {
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-[13px] text-ink truncate">{productDisplayName(p)}</span>
-                        <span className="block text-[11px] text-ink-faint truncate">{p.brand ? <>فعلاً: <span dir="ltr">{p.brand}</span></> : "بدون برند"}</span>
+                        <span className="block text-[11px] text-ink-faint truncate">{p.brand ? <>{t("فعلاً:")} <span dir="ltr">{p.brand}</span></> : t("بدون برند")}</span>
                       </span>
                     </label>
                   );
@@ -151,12 +152,10 @@ export default function BrandProductsModal({ brand, products, onClose }) {
         </div>
 
         <div className="flex items-center justify-between gap-3 p-5 border-t border-line shrink-0">
-          <Link href={`/beauty/operator/products/new?brand=${encodeURIComponent(brand.name)}`} className="text-[12px] font-semibold text-brand-violet hover:opacity-80">
-            + محصول کاملاً تازه برای این برند بساز
-          </Link>
+          <Link href={`/beauty/operator/products/new?brand=${encodeURIComponent(brand.name)}`} className="text-[12px] font-semibold text-brand-violet hover:opacity-80">{t("+ محصول کاملاً تازه برای این برند بساز")}</Link>
           <button type="button" onClick={attachSelected} disabled={busy || !selected.size} className="btn-primary size-md disabled:opacity-60">
             {busy ? <Spinner /> : <Icon name="plus" size={16} />}
-            {busy ? "در حال افزودن…" : `افزودن ${selected.size || ""} به برند`.trim()}
+            {busy ? t("در حال افزودن…") : t("افزودن {v} به برند", { v: selected.size || "" }).trim()}
           </button>
         </div>
       </div>

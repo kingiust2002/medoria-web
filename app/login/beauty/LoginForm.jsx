@@ -4,8 +4,10 @@ import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
 import { BeautyWordLockup } from "@/components/beauty/BeautyBrand";
 import { Spinner } from "@/components/operator/ui";
+import { useT } from "@/components/panel/PanelI18n";
 
 export default function LoginForm() {
+  const t = useT();
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -32,9 +34,9 @@ export default function LoginForm() {
       }
       const data = await res.json().catch(() => ({}));
       if (data.needCode) setNeedCode(true);
-      setError(data.error || "ورود ناموفق بود.");
+      setError(t(data.error) || t("ورود ناموفق بود."));
     } catch {
-      setError("ارتباط برقرار نشد. دوباره تلاش کنید.");
+      setError(t("ارتباط برقرار نشد. دوباره تلاش کنید."));
     } finally {
       setLoading(false);
     }
@@ -54,14 +56,12 @@ export default function LoginForm() {
             <span className="grid place-items-center w-7 h-7 rounded-full text-white"
               style={{ background: "linear-gradient(135deg,#0E1947,#B87D4E)" }}>
               <Icon name="lock" size={14} />
-            </span>
-            ورود به پنل بیوتی
-          </div>
+            </span>{t("ورود به پنل بیوتی")}</div>
         </div>
 
         <form onSubmit={submit} className="card p-6 flex flex-col gap-4">
           <label className="block">
-            <span className="block text-[13px] font-medium text-ink-soft mb-1.5">نام کاربری</span>
+            <span className="block text-[13px] font-medium text-ink-soft mb-1.5">{t("نام کاربری")}</span>
             <input
               type="text"
               name="username"
@@ -78,7 +78,7 @@ export default function LoginForm() {
           </label>
 
           <label className="block">
-            <span className="block text-[13px] font-medium text-ink-soft mb-1.5">رمز عبور</span>
+            <span className="block text-[13px] font-medium text-ink-soft mb-1.5">{t("رمز عبور")}</span>
             <input
               type="password"
               name="password"
@@ -93,7 +93,7 @@ export default function LoginForm() {
 
           {needCode && (
             <label className="block">
-              <span className="block text-[13px] font-medium text-ink-soft mb-1.5">{useRecovery ? "کد بازیابی" : "کد ۶ رقمی برنامهٔ احراز هویت"}</span>
+              <span className="block text-[13px] font-medium text-ink-soft mb-1.5">{useRecovery ? t("کد بازیابی") : t("کد ۶ رقمی برنامهٔ احراز هویت")}</span>
               <input
                 type="text"
                 name="code"
@@ -108,7 +108,7 @@ export default function LoginForm() {
                 placeholder={useRecovery ? "XXXX-XXXX-XXXX" : "123456"}
               />
               <button type="button" onClick={() => { setUseRecovery((v) => !v); setCode(""); }} className="text-[12px] text-ink-muted underline underline-offset-2 mt-1.5">
-                {useRecovery ? "استفاده از کد برنامه" : "کد را ندارم — استفاده از کد بازیابی"}
+                {useRecovery ? t("استفاده از کد برنامه") : t("کد را ندارم — استفاده از کد بازیابی")}
               </button>
             </label>
           )}
@@ -122,13 +122,11 @@ export default function LoginForm() {
 
           <button type="submit" disabled={loading || !username || !password || (needCode && !code)} className="btn-primary size-lg w-full disabled:opacity-60">
             {loading ? <Spinner /> : <Icon name="arrowL" size={18} />}
-            {loading ? "در حال ورود…" : "ورود"}
+            {loading ? t("در حال ورود…") : t("ورود")}
           </button>
         </form>
 
-        <p className="text-center text-[11px] text-ink-faint mt-5 leading-relaxed">
-          این پنل کاملاً جدا از پنل Health است. دسترسی فقط برای کارکنان مجاز.
-        </p>
+        <p className="text-center text-[11px] text-ink-faint mt-5 leading-relaxed">{t("این پنل کاملاً جدا از پنل Health است. دسترسی فقط برای کارکنان مجاز.")}</p>
       </div>
     </div>
   );

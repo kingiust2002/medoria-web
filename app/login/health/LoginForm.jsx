@@ -3,8 +3,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
 import { Spinner } from "@/components/operator/ui";
+import { useT } from "@/components/panel/PanelI18n";
 
 export default function LoginForm() {
+  const t = useT();
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -31,9 +33,9 @@ export default function LoginForm() {
       }
       const data = await res.json().catch(() => ({}));
       if (data.needCode) setNeedCode(true);
-      setError(data.error || "ورود ناموفق بود.");
+      setError(t(data.error) || t("ورود ناموفق بود."));
     } catch {
-      setError("ارتباط برقرار نشد. دوباره تلاش کنید.");
+      setError(t("ارتباط برقرار نشد. دوباره تلاش کنید."));
     } finally {
       setLoading(false);
     }
@@ -48,13 +50,13 @@ export default function LoginForm() {
           </span>
           <div>
             <h1 className="text-2xl font-extrabold font-display gradient-text">Medoria</h1>
-            <p className="text-sm text-ink-muted mt-1">ورود به پنل اپراتور</p>
+            <p className="text-sm text-ink-muted mt-1">{t("ورود به پنل اپراتور")}</p>
           </div>
         </div>
 
         <form onSubmit={submit} className="card p-6 flex flex-col gap-4">
           <label className="block">
-            <span className="block text-[13px] font-medium text-ink-soft mb-1.5">نام کاربری</span>
+            <span className="block text-[13px] font-medium text-ink-soft mb-1.5">{t("نام کاربری")}</span>
             <input
               type="text"
               name="username"
@@ -71,7 +73,7 @@ export default function LoginForm() {
           </label>
 
           <label className="block">
-            <span className="block text-[13px] font-medium text-ink-soft mb-1.5">رمز عبور</span>
+            <span className="block text-[13px] font-medium text-ink-soft mb-1.5">{t("رمز عبور")}</span>
             <input
               type="password"
               name="password"
@@ -86,7 +88,7 @@ export default function LoginForm() {
 
           {needCode && (
             <label className="block">
-              <span className="block text-[13px] font-medium text-ink-soft mb-1.5">{useRecovery ? "کد بازیابی" : "کد ۶ رقمی برنامهٔ احراز هویت"}</span>
+              <span className="block text-[13px] font-medium text-ink-soft mb-1.5">{useRecovery ? t("کد بازیابی") : t("کد ۶ رقمی برنامهٔ احراز هویت")}</span>
               <input
                 type="text"
                 name="code"
@@ -101,7 +103,7 @@ export default function LoginForm() {
                 placeholder={useRecovery ? "XXXX-XXXX-XXXX" : "123456"}
               />
               <button type="button" onClick={() => { setUseRecovery((v) => !v); setCode(""); }} className="text-[12px] text-ink-muted underline underline-offset-2 mt-1.5">
-                {useRecovery ? "استفاده از کد برنامه" : "کد را ندارم — استفاده از کد بازیابی"}
+                {useRecovery ? t("استفاده از کد برنامه") : t("کد را ندارم — استفاده از کد بازیابی")}
               </button>
             </label>
           )}
@@ -115,13 +117,11 @@ export default function LoginForm() {
 
           <button type="submit" disabled={loading || !username || !password || (needCode && !code)} className="btn-primary size-lg w-full disabled:opacity-60">
             {loading ? <Spinner /> : <Icon name="arrowL" size={18} />}
-            {loading ? "در حال ورود…" : "ورود"}
+            {loading ? t("در حال ورود…") : t("ورود")}
           </button>
         </form>
 
-        <p className="text-center text-[11px] text-ink-faint mt-5 leading-relaxed">
-          دسترسی فقط برای کارکنان مجاز. تمام فعالیت‌ها ثبت می‌شود.
-        </p>
+        <p className="text-center text-[11px] text-ink-faint mt-5 leading-relaxed">{t("دسترسی فقط برای کارکنان مجاز. تمام فعالیت‌ها ثبت می‌شود.")}</p>
       </div>
     </div>
   );

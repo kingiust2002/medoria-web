@@ -4,11 +4,13 @@ import Icon from "@/components/shared/Icon";
 import { imageUrl } from "@/lib/supabase";
 import { uploadProductImage } from "@/lib/operator/actions";
 import { Spinner } from "@/components/operator/ui";
+import { useT } from "@/components/panel/PanelI18n";
 
 const MAX = 5 * 1024 * 1024;
 const TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
 
 export default function ImageUploader({ value, onChange }) {
+  const t = useT();
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -17,15 +19,15 @@ export default function ImageUploader({ value, onChange }) {
   async function handleFile(file) {
     setErr("");
     if (!file) return;
-    if (!TYPES.includes(file.type)) { setErr("فقط JPG / PNG / WEBP / AVIF مجاز است."); return; }
-    if (file.size > MAX) { setErr("حداکثر حجم ۵ مگابایت است."); return; }
+    if (!TYPES.includes(file.type)) { setErr(t("فقط JPG / PNG / WEBP / AVIF مجاز است.")); return; }
+    if (file.size > MAX) { setErr(t("حداکثر حجم ۵ مگابایت است.")); return; }
     setBusy(true);
     const fd = new FormData();
     fd.append("file", file);
     const res = await uploadProductImage(fd);
     setBusy(false);
     if (res.ok) onChange(res.path);
-    else setErr(res.error || "آپلود ناموفق بود.");
+    else setErr(t(res.error) || t("آپلود ناموفق بود."));
   }
 
   return (
@@ -38,15 +40,14 @@ export default function ImageUploader({ value, onChange }) {
         <input ref={inputRef} type="file" accept={TYPES.join(",")} className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => inputRef.current?.click()} disabled={busy} className="btn-ghost size-sm">
-            <Icon name="upload" size={16} /> {preview ? "تعویض تصویر" : "آپلود تصویر"}
+            <Icon name="upload" size={16} /> {preview ? t("تعویض تصویر") : t("آپلود تصویر")}
           </button>
           {value && (
             <button type="button" onClick={() => onChange("")} className="btn-ghost size-sm !text-warn hover:!border-warn/40">
-              <Icon name="trash" size={16} /> حذف
-            </button>
+              <Icon name="trash" size={16} /> {t("حذف")}</button>
           )}
         </div>
-        <p className="text-[11px] text-ink-faint mt-2.5">یا آدرس مستقیم تصویر را وارد کنید:</p>
+        <p className="text-[11px] text-ink-faint mt-2.5">{t("یا آدرس مستقیم تصویر را وارد کنید:")}</p>
         <input value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder="https://…" dir="ltr" className="input w-full mt-1.5 text-xs" />
         {err && <p className="text-[11px] text-warn mt-1.5">{err}</p>}
       </div>

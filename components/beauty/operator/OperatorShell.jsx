@@ -12,19 +12,22 @@ import { BeautyWordLockup } from "@/components/beauty/BeautyBrand";
 import { requestLogout } from "@/lib/operator/logoutClient";
 import LogoutAlert from "@/components/operator/LogoutAlert";
 import { useIdleLogout } from "@/lib/useIdleLogout";
+import { useT } from "@/components/panel/PanelI18n";
+import { tr } from "@/lib/panel/i18n";
 
 const BASE = "/beauty/operator";
 const NAV = [
-  { href: BASE, label: "داشبورد", icon: "dashboard" },
-  { href: `${BASE}/products`, label: "محصولات", icon: "package" },
-  { href: `${BASE}/categories`, label: "دسته‌بندی‌ها", icon: "layers" },
-  { href: `${BASE}/brands`, label: "برندها", icon: "award" },
-  { href: `${BASE}/quotes`, label: "استعلام‌ها", icon: "quote" },
-  { href: `${BASE}/activity`, label: "تاریخچه", icon: "clock" },
-  { href: `${BASE}/settings`, label: "تنظیمات", icon: "settings" },
+  { href: BASE, label: tr("داشبورد"), icon: "dashboard" },
+  { href: `${BASE}/products`, label: tr("محصولات"), icon: "package" },
+  { href: `${BASE}/categories`, label: tr("دسته‌بندی‌ها"), icon: "layers" },
+  { href: `${BASE}/brands`, label: tr("برندها"), icon: "award" },
+  { href: `${BASE}/quotes`, label: tr("استعلام‌ها"), icon: "quote" },
+  { href: `${BASE}/activity`, label: tr("تاریخچه"), icon: "clock" },
+  { href: `${BASE}/settings`, label: tr("تنظیمات"), icon: "settings" },
 ];
 
 function Brandblock() {
+  const t = useT();
   return (
     <Link href={BASE} className="flex flex-col items-start gap-1.5 px-1">
       {/* The official Beauty lockup is navy-toned; the light plate keeps it
@@ -32,12 +35,13 @@ function Brandblock() {
       <span className="inline-flex items-center rounded-full bg-white/95 px-2.5 py-1 ring-1 ring-line">
         <BeautyWordLockup height={22} />
       </span>
-      <span className="block text-[10px] text-ink-faint tracking-wide pr-1">پنل بیوتی · جدا از Health</span>
+      <span className="block text-[10px] text-ink-faint tracking-wide pr-1">{t("پنل بیوتی · جدا از Health")}</span>
     </Link>
   );
 }
 
 export default function OperatorShell({ children }) {
+  const t = useT();
   const pathname = usePathname();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
@@ -74,7 +78,7 @@ export default function OperatorShell({ children }) {
             }`}
           >
             <Icon name={item.icon} size={18} />
-            {item.label}
+            {t(item.label)}
           </Link>
         ))}
       </nav>
@@ -88,7 +92,7 @@ export default function OperatorShell({ children }) {
         className={`flex items-center gap-3 px-3.5 h-11 rounded-xl text-sm font-medium text-ink-muted hover:bg-line-soft hover:text-ink transition-colors ${full ? "" : ""}`}
       >
         <Icon name={theme === "dark" ? "sun" : "moon"} size={18} />
-        {theme === "dark" ? "حالت روشن" : "حالت تیره"}
+        {theme === "dark" ? t("حالت روشن") : t("حالت تیره")}
       </button>
     );
   }
@@ -108,16 +112,14 @@ export default function OperatorShell({ children }) {
             onClick={logout}
             className="flex items-center gap-3 px-3.5 h-11 rounded-xl text-sm font-medium text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors"
           >
-            <Icon name="logout" size={18} />
-            خروج
-          </button>
+            <Icon name="logout" size={18} />{t("خروج")}</button>
         </div>
       </aside>
 
       {/* Main column */}
       <div className="flex flex-col min-h-screen">
         <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between gap-3 h-14 px-4 border-b border-line bg-surface/90 backdrop-blur-xl">
-          <button onClick={() => setOpen(true)} className="grid place-items-center w-10 h-10 rounded-xl hover:bg-line-soft text-ink" aria-label="منو">
+          <button onClick={() => setOpen(true)} className="grid place-items-center w-10 h-10 rounded-xl hover:bg-line-soft text-ink" aria-label={t("منو")}>
             <Icon name="menu" size={20} />
           </button>
           <Link href={BASE} className="inline-flex items-center rounded-full bg-white/95 px-2.5 py-1 ring-1 ring-line">
@@ -126,7 +128,7 @@ export default function OperatorShell({ children }) {
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="grid place-items-center w-10 h-10 rounded-xl hover:bg-line-soft text-ink-muted"
-            aria-label="تغییر تم"
+            aria-label={t("تغییر تم")}
           >
             <Icon name={theme === "dark" ? "sun" : "moon"} size={18} />
           </button>
@@ -146,7 +148,7 @@ export default function OperatorShell({ children }) {
           >
             <div className="flex items-center justify-between pt-1">
               <Brandblock />
-              <button onClick={() => setOpen(false)} className="grid place-items-center w-9 h-9 rounded-lg hover:bg-line-soft text-ink-muted" aria-label="بستن">
+              <button onClick={() => setOpen(false)} className="grid place-items-center w-9 h-9 rounded-lg hover:bg-line-soft text-ink-muted" aria-label={t("بستن")}>
                 <Icon name="close" size={18} />
               </button>
             </div>
@@ -154,9 +156,7 @@ export default function OperatorShell({ children }) {
             <div className="mt-auto flex flex-col gap-1 border-t border-line pt-3">
               <ThemeButton full />
               <button onClick={logout} className="flex items-center gap-3 px-3.5 h-11 rounded-xl text-sm font-medium text-ink-muted hover:bg-warn/10 hover:text-warn">
-                <Icon name="logout" size={18} />
-                خروج
-              </button>
+                <Icon name="logout" size={18} />{t("خروج")}</button>
             </div>
           </aside>
         </div>

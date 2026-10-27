@@ -1,6 +1,7 @@
 // components/operator/ui.jsx — small presentational building blocks for the panel.
 // Pure components (no client hooks) — safe to use from server or client trees.
 import Icon from "@/components/shared/Icon";
+import { tr } from "@/lib/panel/i18n";
 
 export function PageHeader({ title, subtitle, children }) {
   return (
@@ -151,6 +152,6 @@ export function productDisplayName(p) {
 export function isOnRequest(p) {
   return p == null || p.price == null || p.price === "" || Number(p.price) === 0;
 }
-export function priceText(p) {
-  return isOnRequest(p) ? "استعلام قیمت" : `$${Number(p.price).toFixed(2)}`;
+export function priceText(p, t) {
+  return isOnRequest(p) ? t("استعلام قیمت") : `$${Number(p.price).toFixed(2)}`;
 }

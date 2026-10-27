@@ -14,6 +14,7 @@ import { COMMIT_CHUNK_SIZE } from "@/lib/operator/importCore";
 import { PRODUCT_BADGES } from "@/lib/operator/constants";
 import QuickCategoryModal from "@/components/operator/QuickCategoryModal";
 import { PageHeader, SectionCard, Field, Input, Select, Toggle, Badge, Spinner } from "@/components/operator/ui";
+import { useT } from "@/components/panel/PanelI18n";
 
 const DRAFT_KEY = "medoria_operator_bulk_draft_v1";
 let keySeq = 1;
@@ -39,6 +40,7 @@ function hasContent(r) {
 }
 
 export default function BulkAddGrid({ categories }) {
+  const t = useT();
   const router = useRouter();
   const [cats, setCats] = useState(categories);
   const [defaults, setDefaults] = useState(DEFAULTS);
@@ -124,7 +126,7 @@ export default function BulkAddGrid({ categories }) {
     return left.length ? left : [blankRow(defaults)];
   });
   function clearAll() {
-    if (!window.confirm("همه ردیف‌ها (و پیش‌نویس ذخیره‌شده) پاک شوند؟")) return;
+    if (!window.confirm(t("همه ردیف‌ها (و پیش‌نویس ذخیره‌شده) پاک شوند؟"))) return;
     try { localStorage.removeItem(DRAFT_KEY); } catch { /* no-op */ }
     setRows([blankRow(defaults), blankRow(defaults), blankRow(defaults)]);
     setSummary(null);
@@ -170,7 +172,7 @@ export default function BulkAddGrid({ categories }) {
     const fd = new FormData();
     fd.append("file", file);
     const res = await uploadProductImage(fd);
-    setRow(key, { _busy: false, ...(res.ok ? { image_url: res.path } : { _warns: [res.error || "آپلود ناموفق بود."] }) });
+    setRow(key, { _busy: false, ...(res.ok ? { image_url: res.path } : { _warns: [t(res.error) || t("آپلود ناموفق بود.")] }) });
   }
 
   // ── save all ────────────────────────────────────────────────────────────────
@@ -204,7 +206,7 @@ export default function BulkAddGrid({ categories }) {
         res = null;
       }
       if (!res?.ok) {
-        connectionError = res?.error || "ارتباط با سرور برقرار نشد. ردیف‌های باقی‌مانده ذخیره نشدند.";
+        connectionError = t(res?.error) || t("ارتباط با سرور برقرار نشد. ردیف‌های باقی‌مانده ذخیره نشدند.");
         break;
       }
       for (const out of res.results) {
@@ -234,48 +236,46 @@ export default function BulkAddGrid({ categories }) {
 
   return (
     <>
-      <PageHeader title="افزودن گروهی محصولات" subtitle="چند محصول را پشت‌سرهم وارد کنید — جزئیات کامل (گالری/مشخصات/ترجمه) را بعداً از ویرایش محصول تکمیل کنید.">
-        <Link href="/operator/products" className="btn-ghost size-md"><Icon name="chevronRight" size={16} /> محصولات</Link>
-        <Link href="/operator/products/import" className="btn-ghost size-md"><Icon name="upload" size={16} /> ورود از Excel/CSV</Link>
+      <PageHeader title={t("افزودن گروهی محصولات")} subtitle={t("چند محصول را پشت‌سرهم وارد کنید — جزئیات کامل (گالری/مشخصات/ترجمه) را بعداً از ویرایش محصول تکمیل کنید.")}>
+        <Link href="/operator/products" className="btn-ghost size-md"><Icon name="chevronRight" size={16} /> {t("محصولات")}</Link>
+        <Link href="/operator/products/import" className="btn-ghost size-md"><Icon name="upload" size={16} /> {t("ورود از Excel/CSV")}</Link>
       </PageHeader>
 
       {draftFound && (
         <div className="mb-4 text-sm rounded-xl px-3 py-2.5 flex flex-wrap items-center gap-2 bg-primary/10 text-primary">
-          <Icon name="archive" size={16} />
-          پیش‌نویس ذخیره‌نشده با {draftFound.rows.filter(hasContent).length} ردیف پیدا شد.
-          <button type="button" onClick={restoreDraft} className="font-semibold underline underline-offset-2">بازیابی</button>
-          <button type="button" onClick={discardDraft} className="text-ink-muted underline underline-offset-2">حذف پیش‌نویس</button>
+          <Icon name="archive" size={16} />{t("پیش‌نویس ذخیره‌نشده با {length} ردیف پیدا شد.", { length: draftFound.rows.filter(hasContent).length })}<button type="button" onClick={restoreDraft} className="font-semibold underline underline-offset-2">{t("بازیابی")}</button>
+          <button type="button" onClick={discardDraft} className="text-ink-muted underline underline-offset-2">{t("حذف پیش‌نویس")}</button>
         </div>
       )}
 
       {summary && (
         <div className={`mb-4 text-sm rounded-xl px-3 py-2.5 flex flex-wrap items-center gap-3 ${summary.error || summary.connectionError ? "bg-warn/10 text-warn" : "bg-ok/10 text-ok"}`}>
           <Icon name={summary.error || summary.connectionError ? "alertTriangle" : "check"} size={16} />
-          <span>{summary.create} ساخته شد · {summary.skip} رد شد · {summary.error} خطا</span>
+          <span>{t("{create} ساخته شد · {skip} رد شد · {error} خطا", { create: summary.create, skip: summary.skip, error: summary.error })}</span>
           {summary.connectionError && <span>{summary.connectionError}</span>}
-          {summary.create > 0 && <Link href="/operator/products" className="font-semibold underline underline-offset-2">دیدن محصولات</Link>}
+          {summary.create > 0 && <Link href="/operator/products" className="font-semibold underline underline-offset-2">{t("دیدن محصولات")}</Link>}
         </div>
       )}
 
       {/* defaults bar */}
-      <SectionCard title="پیش‌فرض ردیف‌های جدید" desc="این مقدارها روی ردیف‌های تازه اعمال می‌شوند (ردیف‌های موجود تغییر نمی‌کنند)" icon="settings" className="mb-5">
+      <SectionCard title={t("پیش‌فرض ردیف‌های جدید")} desc={t("این مقدارها روی ردیف‌های تازه اعمال می‌شوند (ردیف‌های موجود تغییر نمی‌کنند)")} icon="settings" className="mb-5">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
-          <Field label="دسته">
+          <Field label={t("دسته")}>
             <div className="flex gap-1.5">
               <Select className={inputCx} value={defaults.category_id} onChange={(e) => setDefaults((d) => ({ ...d, category_id: e.target.value }))}>
-                <option value="">— بدون دسته —</option>
+                <option value="">{t("— بدون دسته —")}</option>
                 {cats.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{c.name_fa || c.name_en || c.slug}</option>)}
               </Select>
-              <button type="button" onClick={() => setCatModal(true)} title="دسته جدید" className="btn-ghost size-sm !h-9 shrink-0"><Icon name="plus" size={15} /></button>
+              <button type="button" onClick={() => setCatModal(true)} title={t("دسته جدید")} className="btn-ghost size-sm !h-9 shrink-0"><Icon name="plus" size={15} /></button>
             </div>
           </Field>
-          <Field label="برند"><Input className={inputCx} value={defaults.brand} onChange={(e) => setDefaults((d) => ({ ...d, brand: e.target.value }))} /></Field>
-          <Field label="واحد"><Input className={inputCx} value={defaults.unit} onChange={(e) => setDefaults((d) => ({ ...d, unit: e.target.value }))} placeholder="بسته ۱۰۰ عددی" /></Field>
-          <Field label="حداقل سفارش"><Input className={inputCx} type="number" min="1" dir="ltr" value={defaults.min_order_qty} onChange={(e) => setDefaults((d) => ({ ...d, min_order_qty: e.target.value }))} /></Field>
-          <Field label="نشان"><Select className={inputCx} value={defaults.badge} onChange={(e) => setDefaults((d) => ({ ...d, badge: e.target.value }))}>{PRODUCT_BADGES.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}</Select></Field>
-          <div className="rounded-xl bg-canvas-soft border border-line px-3 py-2"><Toggle checked={defaults.price_on_request} onChange={(v) => setDefaults((d) => ({ ...d, price_on_request: v }))} label="استعلام قیمت" /></div>
-          <div className="rounded-xl bg-canvas-soft border border-line px-3 py-2"><Toggle checked={defaults.in_stock} onChange={(v) => setDefaults((d) => ({ ...d, in_stock: v }))} label="موجود" /></div>
-          <div className="rounded-xl bg-canvas-soft border border-line px-3 py-2"><Toggle checked={defaults.is_active} onChange={(v) => setDefaults((d) => ({ ...d, is_active: v }))} label="فعال در سایت" /></div>
+          <Field label={t("برند")}><Input className={inputCx} value={defaults.brand} onChange={(e) => setDefaults((d) => ({ ...d, brand: e.target.value }))} /></Field>
+          <Field label={t("واحد")}><Input className={inputCx} value={defaults.unit} onChange={(e) => setDefaults((d) => ({ ...d, unit: e.target.value }))} placeholder={t("بسته ۱۰۰ عددی")} /></Field>
+          <Field label={t("حداقل سفارش")}><Input className={inputCx} type="number" min="1" dir="ltr" value={defaults.min_order_qty} onChange={(e) => setDefaults((d) => ({ ...d, min_order_qty: e.target.value }))} /></Field>
+          <Field label={t("نشان")}><Select className={inputCx} value={defaults.badge} onChange={(e) => setDefaults((d) => ({ ...d, badge: e.target.value }))}>{PRODUCT_BADGES.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}</Select></Field>
+          <div className="rounded-xl bg-canvas-soft border border-line px-3 py-2"><Toggle checked={defaults.price_on_request} onChange={(v) => setDefaults((d) => ({ ...d, price_on_request: v }))} label={t("استعلام قیمت")} /></div>
+          <div className="rounded-xl bg-canvas-soft border border-line px-3 py-2"><Toggle checked={defaults.in_stock} onChange={(v) => setDefaults((d) => ({ ...d, in_stock: v }))} label={t("موجود")} /></div>
+          <div className="rounded-xl bg-canvas-soft border border-line px-3 py-2"><Toggle checked={defaults.is_active} onChange={(v) => setDefaults((d) => ({ ...d, is_active: v }))} label={t("فعال در سایت")} /></div>
         </div>
       </SectionCard>
 
@@ -286,18 +286,18 @@ export default function BulkAddGrid({ categories }) {
             <thead>
               <tr className="text-ink-muted bg-canvas-soft border-b border-line">
                 <th className="px-2 py-2.5 font-medium text-right w-8">#</th>
-                <th className="px-2 py-2.5 font-medium text-right min-w-[150px]">نام فارسی <span className="text-brand-pink">*</span></th>
-                <th className="px-2 py-2.5 font-medium text-right min-w-[140px]">نام انگلیسی</th>
+                <th className="px-2 py-2.5 font-medium text-right min-w-[150px]">{t("نام فارسی")} <span className="text-brand-pink">*</span></th>
+                <th className="px-2 py-2.5 font-medium text-right min-w-[140px]">{t("نام انگلیسی")}</th>
                 <th className="px-2 py-2.5 font-medium text-right min-w-[100px]">SKU</th>
-                <th className="px-2 py-2.5 font-medium text-right min-w-[120px]">دسته</th>
-                <th className="px-2 py-2.5 font-medium text-right min-w-[90px]">برند</th>
-                <th className="px-2 py-2.5 font-medium text-right min-w-[110px]">قیمت $</th>
-                <th className="px-2 py-2.5 font-medium text-right min-w-[90px]">واحد</th>
-                <th className="px-2 py-2.5 font-medium text-center w-14">موجود</th>
-                <th className="px-2 py-2.5 font-medium text-center w-14">فعال</th>
-                <th className="px-2 py-2.5 font-medium text-center w-14">ویژه</th>
-                <th className="px-2 py-2.5 font-medium text-right w-20">تصویر</th>
-                <th className="px-2 py-2.5 font-medium text-center w-28">عملیات</th>
+                <th className="px-2 py-2.5 font-medium text-right min-w-[120px]">{t("دسته")}</th>
+                <th className="px-2 py-2.5 font-medium text-right min-w-[90px]">{t("برند")}</th>
+                <th className="px-2 py-2.5 font-medium text-right min-w-[110px]">{t("قیمت $")}</th>
+                <th className="px-2 py-2.5 font-medium text-right min-w-[90px]">{t("واحد")}</th>
+                <th className="px-2 py-2.5 font-medium text-center w-14">{t("موجود")}</th>
+                <th className="px-2 py-2.5 font-medium text-center w-14">{t("فعال")}</th>
+                <th className="px-2 py-2.5 font-medium text-center w-14">{t("ویژه")}</th>
+                <th className="px-2 py-2.5 font-medium text-right w-20">{t("تصویر")}</th>
+                <th className="px-2 py-2.5 font-medium text-center w-28">{t("عملیات")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -320,22 +320,20 @@ export default function BulkAddGrid({ categories }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 px-3 py-3 border-t border-line bg-canvas-soft">
-          <button type="button" onClick={addRow} className="btn-ghost size-sm"><Icon name="plus" size={15} /> ردیف جدید</button>
-          <button type="button" onClick={clearSaved} className="btn-ghost size-sm"><Icon name="archive" size={15} /> پاک‌کردن ذخیره‌شده‌ها</button>
-          <button type="button" onClick={clearAll} className="btn-ghost size-sm !text-warn hover:!border-warn/40"><Icon name="trash" size={15} /> پاک‌کردن همه</button>
+          <button type="button" onClick={addRow} className="btn-ghost size-sm"><Icon name="plus" size={15} /> {t("ردیف جدید")}</button>
+          <button type="button" onClick={clearSaved} className="btn-ghost size-sm"><Icon name="archive" size={15} /> {t("پاک‌کردن ذخیره‌شده‌ها")}</button>
+          <button type="button" onClick={clearAll} className="btn-ghost size-sm !text-warn hover:!border-warn/40"><Icon name="trash" size={15} /> {t("پاک‌کردن همه")}</button>
           <div className="mr-auto flex items-center gap-3">
             {progress && <span className="text-xs text-ink-muted tabular">{progress.done}/{progress.total}</span>}
             <button type="button" onClick={saveAll} disabled={saving || !unsaved.length} className="btn-primary size-md disabled:opacity-60">
               {saving ? <Spinner /> : <Icon name="save" size={18} />}
-              {saving ? "در حال ذخیره…" : `ذخیره ${unsaved.length || ""} ردیف`}
+              {saving ? t("در حال ذخیره…") : t("ذخیره {v} ردیف", { v: unsaved.length || "" })}
             </button>
           </div>
         </div>
       </div>
 
-      <p className="text-[11px] text-ink-faint mt-3 leading-relaxed">
-        ردیف‌ها به‌صورت خودکار پیش‌نویس می‌شوند و بعد از رفرش برمی‌گردند. SKU تکراری فقط هشدار است؛ جلوی ذخیرهٔ ردیف‌های دیگر را نمی‌گیرد.
-      </p>
+      <p className="text-[11px] text-ink-faint mt-3 leading-relaxed">{t("ردیف‌ها به‌صورت خودکار پیش‌نویس می‌شوند و بعد از رفرش برمی‌گردند. SKU تکراری فقط هشدار است؛ جلوی ذخیرهٔ ردیف‌های دیگر را نمی‌گیرد.")}</p>
 
       <input ref={imgInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/avif" className="hidden" onChange={onImageFile} />
 
@@ -354,6 +352,7 @@ export default function BulkAddGrid({ categories }) {
 }
 
 function BulkRow({ r, idx, cats, saved, error, dupInGrid, nameMissing, inputCx, setRow, duplicateRow, copyFromPrev, removeRow, pickImage, scheduleSkuCheck }) {
+  const t = useT();
   const dis = saved;
   const cellCx = `${inputCx} ${dis ? "opacity-60 pointer-events-none" : ""}`;
   return (
@@ -362,22 +361,22 @@ function BulkRow({ r, idx, cats, saved, error, dupInGrid, nameMissing, inputCx, 
         <td className="px-2 py-1.5 text-ink-faint tabular">
           {saved ? <Icon name="check" size={15} className="text-ok" /> : error ? <Icon name="alertTriangle" size={15} className="text-warn" /> : idx + 1}
         </td>
-        <td className="px-1.5 py-1.5"><Input className={cellCx} value={r.name_fa} onChange={(e) => setRow(r._key, { name_fa: e.target.value, _status: saved ? "saved" : null })} placeholder="دستکش نیتریل" /></td>
+        <td className="px-1.5 py-1.5"><Input className={cellCx} value={r.name_fa} onChange={(e) => setRow(r._key, { name_fa: e.target.value, _status: saved ? "saved" : null })} placeholder={t("دستکش نیتریل")} /></td>
         <td className="px-1.5 py-1.5"><Input className={cellCx} dir="ltr" value={r.name_en} onChange={(e) => setRow(r._key, { name_en: e.target.value })} placeholder="Nitrile gloves" /></td>
         <td className="px-1.5 py-1.5">
           <Input className={`${cellCx} ${dupInGrid || r._skuExists ? "!border-warn" : ""}`} dir="ltr" value={r.sku} onChange={(e) => setRow(r._key, { sku: e.target.value })} onBlur={scheduleSkuCheck} placeholder="GLV-001" />
         </td>
         <td className="px-1.5 py-1.5">
           <Select className={cellCx} value={String(r.category_id || "")} onChange={(e) => setRow(r._key, { category_id: e.target.value })}>
-            <option value="">— بدون دسته —</option>
+            <option value="">{t("— بدون دسته —")}</option>
             {cats.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{c.name_fa || c.name_en || c.slug}</option>)}
           </Select>
         </td>
         <td className="px-1.5 py-1.5"><Input className={cellCx} value={r.brand} onChange={(e) => setRow(r._key, { brand: e.target.value })} /></td>
         <td className="px-1.5 py-1.5">
           <div className="flex items-center gap-1.5">
-            <Input className={`${cellCx} !w-20`} dir="ltr" type="number" step="0.01" min="0" disabled={r.price_on_request} value={r.price_on_request ? "" : r.price} onChange={(e) => setRow(r._key, { price: e.target.value })} placeholder={r.price_on_request ? "استعلام" : "8.50"} />
-            <button type="button" title="استعلام قیمت" onClick={() => !dis && setRow(r._key, { price_on_request: !r.price_on_request })} className={`pill !text-[10px] shrink-0 ${r.price_on_request ? "bg-brand-violet/15 text-brand-violet" : "bg-line-soft text-ink-faint"}`}>استعلام</button>
+            <Input className={`${cellCx} !w-20`} dir="ltr" type="number" step="0.01" min="0" disabled={r.price_on_request} value={r.price_on_request ? "" : r.price} onChange={(e) => setRow(r._key, { price: e.target.value })} placeholder={r.price_on_request ? t("استعلام") : "8.50"} />
+            <button type="button" title={t("استعلام قیمت")} onClick={() => !dis && setRow(r._key, { price_on_request: !r.price_on_request })} className={`pill !text-[10px] shrink-0 ${r.price_on_request ? "bg-brand-violet/15 text-brand-violet" : "bg-line-soft text-ink-faint"}`}>{t("استعلام")}</button>
           </div>
         </td>
         <td className="px-1.5 py-1.5"><Input className={cellCx} value={r.unit} onChange={(e) => setRow(r._key, { unit: e.target.value })} /></td>
@@ -390,7 +389,7 @@ function BulkRow({ r, idx, cats, saved, error, dupInGrid, nameMissing, inputCx, 
               {r._busy ? <Spinner size={14} /> : r.image_url ? <img src={imageUrl(r.image_url)} alt="" className="w-full h-full object-cover" /> : <Icon name="image" size={14} />}
             </span>
             {!dis && (
-              <button type="button" onClick={() => pickImage(r._key)} className="grid place-items-center w-7 h-7 rounded-md text-ink-muted hover:bg-line-soft" title="آپلود تصویر">
+              <button type="button" onClick={() => pickImage(r._key)} className="grid place-items-center w-7 h-7 rounded-md text-ink-muted hover:bg-line-soft" title={t("آپلود تصویر")}>
                 <Icon name="upload" size={14} />
               </button>
             )}
@@ -399,15 +398,15 @@ function BulkRow({ r, idx, cats, saved, error, dupInGrid, nameMissing, inputCx, 
         <td className="px-1.5 py-1.5">
           <div className="flex items-center justify-center gap-0.5">
             {saved && r._id ? (
-              <Link href={`/operator/products/${r._id}/edit`} className="grid place-items-center w-7 h-7 rounded-md text-ink-muted hover:bg-line-soft" title="ویرایش کامل"><Icon name="edit" size={14} /></Link>
+              <Link href={`/operator/products/${r._id}/edit`} className="grid place-items-center w-7 h-7 rounded-md text-ink-muted hover:bg-line-soft" title={t("ویرایش کامل")}><Icon name="edit" size={14} /></Link>
             ) : (
               <>
-                <button type="button" onClick={() => setRow(r._key, { _open: !r._open })} className="grid place-items-center w-7 h-7 rounded-md text-ink-muted hover:bg-line-soft" title="فیلدهای بیشتر"><Icon name="chevronDown" size={14} className={r._open ? "rotate-180 transition-transform" : "transition-transform"} /></button>
-                <button type="button" onClick={() => copyFromPrev(r._key)} disabled={idx === 0} className="grid place-items-center w-7 h-7 rounded-md text-ink-muted hover:bg-line-soft disabled:opacity-30" title="کپی از ردیف قبلی"><Icon name="copy" size={14} /></button>
-                <button type="button" onClick={() => duplicateRow(r._key)} className="grid place-items-center w-7 h-7 rounded-md text-ink-muted hover:bg-line-soft" title="تکثیر ردیف"><Icon name="plusCircle" size={14} /></button>
+                <button type="button" onClick={() => setRow(r._key, { _open: !r._open })} className="grid place-items-center w-7 h-7 rounded-md text-ink-muted hover:bg-line-soft" title={t("فیلدهای بیشتر")}><Icon name="chevronDown" size={14} className={r._open ? "rotate-180 transition-transform" : "transition-transform"} /></button>
+                <button type="button" onClick={() => copyFromPrev(r._key)} disabled={idx === 0} className="grid place-items-center w-7 h-7 rounded-md text-ink-muted hover:bg-line-soft disabled:opacity-30" title={t("کپی از ردیف قبلی")}><Icon name="copy" size={14} /></button>
+                <button type="button" onClick={() => duplicateRow(r._key)} className="grid place-items-center w-7 h-7 rounded-md text-ink-muted hover:bg-line-soft" title={t("تکثیر ردیف")}><Icon name="plusCircle" size={14} /></button>
               </>
             )}
-            <button type="button" onClick={() => removeRow(r._key)} className="grid place-items-center w-7 h-7 rounded-md text-ink-muted hover:bg-warn/10 hover:text-warn" title="حذف ردیف"><Icon name="trash" size={14} /></button>
+            <button type="button" onClick={() => removeRow(r._key)} className="grid place-items-center w-7 h-7 rounded-md text-ink-muted hover:bg-warn/10 hover:text-warn" title={t("حذف ردیف")}><Icon name="trash" size={14} /></button>
           </div>
         </td>
       </tr>
@@ -417,18 +416,18 @@ function BulkRow({ r, idx, cats, saved, error, dupInGrid, nameMissing, inputCx, 
           <td colSpan={12} className="px-2 pb-2.5">
             {r._open && (
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mb-2 pt-1">
-                <Field label="حداقل سفارش"><Input className={inputCx} type="number" min="1" dir="ltr" value={r.min_order_qty} onChange={(e) => setRow(r._key, { min_order_qty: e.target.value })} /></Field>
-                <Field label="نشان"><Select className={inputCx} value={r.badge} onChange={(e) => setRow(r._key, { badge: e.target.value })}>{PRODUCT_BADGES.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}</Select></Field>
-                <Field label="اسلاگ (خالی = خودکار)"><Input className={inputCx} dir="ltr" value={r.slug} onChange={(e) => setRow(r._key, { slug: e.target.value })} /></Field>
-                <Field label="برچسب‌ها (با | جدا کنید)"><Input className={inputCx} value={r.tags} onChange={(e) => setRow(r._key, { tags: e.target.value })} /></Field>
-                <div className="sm:col-span-2 lg:col-span-3"><Field label="آدرس تصویر (یا از دکمه آپلود)"><Input className={inputCx} dir="ltr" value={r.image_url} onChange={(e) => setRow(r._key, { image_url: e.target.value })} placeholder="https://…" /></Field></div>
-                <div className="sm:col-span-2 lg:col-span-4"><Field label="توضیح کوتاه (فارسی)"><Input className={inputCx} value={r.description_fa} onChange={(e) => setRow(r._key, { description_fa: e.target.value })} /></Field></div>
+                <Field label={t("حداقل سفارش")}><Input className={inputCx} type="number" min="1" dir="ltr" value={r.min_order_qty} onChange={(e) => setRow(r._key, { min_order_qty: e.target.value })} /></Field>
+                <Field label={t("نشان")}><Select className={inputCx} value={r.badge} onChange={(e) => setRow(r._key, { badge: e.target.value })}>{PRODUCT_BADGES.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}</Select></Field>
+                <Field label={t("اسلاگ (خالی = خودکار)")}><Input className={inputCx} dir="ltr" value={r.slug} onChange={(e) => setRow(r._key, { slug: e.target.value })} /></Field>
+                <Field label={t("برچسب‌ها (با | جدا کنید)")}><Input className={inputCx} value={r.tags} onChange={(e) => setRow(r._key, { tags: e.target.value })} /></Field>
+                <div className="sm:col-span-2 lg:col-span-3"><Field label={t("آدرس تصویر (یا از دکمه آپلود)")}><Input className={inputCx} dir="ltr" value={r.image_url} onChange={(e) => setRow(r._key, { image_url: e.target.value })} placeholder="https://…" /></Field></div>
+                <div className="sm:col-span-2 lg:col-span-4"><Field label={t("توضیح کوتاه (فارسی)")}><Input className={inputCx} value={r.description_fa} onChange={(e) => setRow(r._key, { description_fa: e.target.value })} /></Field></div>
               </div>
             )}
             <div className="flex flex-wrap gap-1.5">
-              {nameMissing && <Badge tone="warn">نام فارسی یا انگلیسی لازم است</Badge>}
-              {dupInGrid && <Badge tone="warn">SKU در همین جدول تکراری است</Badge>}
-              {r._skuExists && <Badge tone="warn">این SKU قبلاً در کاتالوگ ثبت شده</Badge>}
+              {nameMissing && <Badge tone="warn">{t("نام فارسی یا انگلیسی لازم است")}</Badge>}
+              {dupInGrid && <Badge tone="warn">{t("SKU در همین جدول تکراری است")}</Badge>}
+              {r._skuExists && <Badge tone="warn">{t("این SKU قبلاً در کاتالوگ ثبت شده")}</Badge>}
               {r._msgs.map((m, i) => <Badge key={`m${i}`} tone={error ? "warn" : "info"}>{m}</Badge>)}
               {r._warns.map((m, i) => <Badge key={`w${i}`} tone="info">{m}</Badge>)}
             </div>
