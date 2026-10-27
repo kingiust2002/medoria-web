@@ -1,7 +1,7 @@
 # The internal warehouse (stage 4)
 
-Status: **S4a — database + application layer built and tested; no screens yet (S4b), nothing active on any server.**
-Migration 36 is additive and inert until the screens are deployed. The plan is `docs/PANEL_PLATFORM_PLAN.md` (decision D7).
+Status: **S4a (database + application layer) and S4b (the screens) built and tested; nothing active on any server.**
+Migration 36 is additive; the menu entry "انبار" appears only for people with `inventory.view`. The plan is `docs/PANEL_PLATFORM_PLAN.md` (decision D7).
 
 ## Rules that cannot be broken from the application
 
@@ -55,9 +55,21 @@ If the stock no longer allows it at approval time the request fails safely as *s
 Every action writes an activity-log line (`stock.receive`, `stock.issue`, `stock.transfer`, `stock.adjust`, `stock.reverse`,
 `stock.reserve`, `stock.release`, `stock.location_create`, `stock.location_update`); the ledger itself is the durable record.
 
-## Not built yet (S4b and later)
+## The screens (S4b) — "انبار" in both panels
 
-* The screens (overview, per-product stock, movement history with "reverse", locations, reservations, forms).
+`/operator/warehouse` and `/beauty/operator/warehouse` (permission `inventory.view`; each house its own session and data). Four tabs:
+**stock** (one row per product, per-warehouse quantities and reserved, search, warehouse filter, buttons per row), **movements** (the
+ledger, 50 per page, SKU/warehouse filter, "reverse" where allowed), **reservations** (active ones, release), **warehouses** (create /
+edit, activate / deactivate). Forms open as dialogs: receive, issue, transfer, adjust (signed, reason required; for a person whose policy
+says "approve", the button reads "send for approval" and a note says so), reserve. The product is typed as its **SKU** (any case) or taken
+from the row's button. Every form creates its idempotency key when it opens, so a double click or retry cannot post twice. Buttons exist
+only for the operations the person has (`useCan`); the server decides again on each action. Layout is fluid (card rows, wrapped text; the
+mobile e2e runs it at 320–1366 px with long unbroken SKUs and names). Tested end to end: `tests/e2e/warehouse.e2e.mjs` (both houses,
+refusal changes nothing, reservations, no leak into public responses, anon cannot call the functions) and
+`tests/e2e/accounts-permissions.e2e.mjs`.
+
+## Not built yet (S4c and later)
+
 * Lots, expiry dates, quarantine, low-stock alerts, stock counts and discrepancies, reports and CSV.
 * Blocking the permanent deletion of a product that still has stock (today a ledger row simply outlives the product).
 * Reversal through the approval queue; reservations linked to customer requests.

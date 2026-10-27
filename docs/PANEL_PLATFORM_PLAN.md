@@ -137,4 +137,5 @@ public route/API/payload/print path.
 | S2f approval queue (migration 35, products create/edit/publish/archive/delete) + S2g activity log v2 (people, results, before/after, filters, CSV, append-only) | branch `feat/panel-approvals` (stacked on #210) | `tests/approvals.test.mjs`, `tests/audit-view.test.mjs`, `tests/operator-change-requests-migration.test.mjs`, `tests/e2e/accounts-approvals.e2e.mjs` |
 | S3 buttons hidden per permission (capabilities provider; products, requests, categories, brands) | branch `feat/panel-ui-permissions` (stacked on S2f/S2g) | `tests/capabilities-wiring.test.mjs`, `tests/access.test.mjs`, `tests/e2e/accounts-permissions.e2e.mjs` |
 | S4a warehouse core: migration 36 (generated, both houses), store, actions, approval of adjustments, check-rls, leak tests; **no screens yet** | same branch (`docs/WAREHOUSE.md`) | `tests/warehouse-migration.test.mjs` (PostgreSQL 16), `tests/warehouse-core.test.mjs`, `tests/warehouse-no-leak.test.mjs` |
-| S4b … S6c | not started | |
+| S4b warehouse screens (stock, movements, reservations, warehouses; both panels), SKU lookup, e2e + mobile | branch `feat/panel-warehouse-ui` (stacked on S3+S4a) | `tests/e2e/warehouse.e2e.mjs`, `tests/e2e/mobile.e2e.mjs` |
+| S4c … S6c | not started | |

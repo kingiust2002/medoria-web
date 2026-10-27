@@ -155,3 +155,19 @@ test("the screens only offer what the person may do (buttons are not rendered), 
 
   // hiding is only a convenience: a forged call from the viewer is still refused by the server (covered by the stale-screen test above)
 });
+
+test("the warehouse: closed to people without inventory.view, open with only the buttons the role has, never in another house", async () => {
+  await addUser({ username: "wh.viewer", role: "viewer" });
+  await addUser({ username: "wh.quotes", role: "quote_manager" });
+  await addUser({ username: "wh.manager", role: "warehouse_manager" });
+  const viewer = (await login("wh.viewer")).cookie, quotes = (await login("wh.quotes")).cookie, mgr = (await login("wh.manager")).cookie;
+  assert.equal(await noAccess("/operator/warehouse", viewer), true);
+  assert.equal(await noAccess("/operator/warehouse", quotes), true);
+  assert.equal(await opens("/operator/warehouse", mgr), true);
+  await rest("health_stock_locations", { method: "POST", body: JSON.stringify({ id: 1, code: "MAIN", name: "Main", is_active: true, sort_order: 0, version: 1 }) });
+  const html = await (await withCookie("/operator/warehouse", mgr)).text();
+  assert.ok(html.includes('href="/operator/warehouse"'), "the menu has the warehouse");
+  assert.ok(html.includes('data-testid="wh-open-receive"') && html.includes('data-testid="wh-open-adjust"'));
+  assert.ok(!(await (await withCookie("/operator", viewer)).text()).includes('href="/operator/warehouse"'), "no menu entry for a viewer");
+  assert.equal(await opens("/beauty/operator/warehouse", mgr), false, "a Health-only person never reaches the Beauty warehouse");
+});

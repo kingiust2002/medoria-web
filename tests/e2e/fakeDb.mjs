@@ -10,6 +10,7 @@
 // Every request is recorded with the kind of key it carried ("anon" | "service"), and
 // GET /__state, POST /__reset expose and restore the data for assertions.
 import http from "node:http";
+import { warehouseRpc, Refusal } from "./fakeWarehouse.mjs";
 import { randomUUID } from "node:crypto";
 
 export const ANON_KEY = "anon-test-key";
@@ -153,7 +154,17 @@ export function createFakeDb(seedFactory) {
     const m = url.pathname.match(/^\/rest\/v1\/([\w]+)/);
     log.push({ method: req.method, path: url.pathname, query: url.search, kind });
 
-    if (rpc) { await readBody(req); return respond(res, 200, null); }
+    if (rpc) {
+      const body = await readBody(req);
+      if (kind !== "service" && /_stock_/.test(rpc[1])) return respond(res, 401, { code: "42501", message: "permission denied for function" });   // like the real grants
+      try {
+        const out = warehouseRpc(tables, rpc[1], body || {});
+        return respond(res, 200, out);
+      } catch (e) {
+        if (e instanceof Refusal) return respond(res, 400, { code: "P0001", message: e.message, details: e.details || null });
+        throw e;
+      }
+    }
     if (!m) return respond(res, 404, { message: "not found" });
 
     const t = m[1];

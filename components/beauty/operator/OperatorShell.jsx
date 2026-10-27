@@ -23,6 +23,7 @@ const NAV = [
   { href: `${BASE}/categories`, label: tr("دسته‌بندی‌ها"), icon: "layers" },
   { href: `${BASE}/brands`, label: tr("برندها"), icon: "award" },
   { href: `${BASE}/quotes`, label: tr("استعلام‌ها"), icon: "quote" },
+  { href: `${BASE}/warehouse`, label: tr("انبار"), icon: "package" },
   { href: `${BASE}/approvals`, label: tr("تأییدها"), icon: "check" },
   { href: `${BASE}/activity`, label: tr("تاریخچه"), icon: "clock" },
   { href: `${BASE}/users`, label: tr("کاربران"), icon: "user" },
@@ -122,7 +123,7 @@ export default function OperatorShell({ children, allowed = null, badges = {} })
       </aside>
 
       {/* Main column */}
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen min-w-0">
         <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between gap-3 h-14 px-4 border-b border-line bg-surface/90 backdrop-blur-xl">
           <button onClick={() => setOpen(true)} className="grid place-items-center w-10 h-10 rounded-xl hover:bg-line-soft text-ink" aria-label={t("منو")}>
             <Icon name="menu" size={20} />
@@ -139,7 +140,7 @@ export default function OperatorShell({ children, allowed = null, badges = {} })
           </button>
         </header>
 
-        <main className="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="flex-1 min-w-0 w-full max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
 
       {/* Mobile drawer */}
