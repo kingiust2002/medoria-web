@@ -14,7 +14,7 @@ export default function AuditExportButton({ filters, exportAction }) {
     const res = await exportAction(filters).catch(() => null);
     setBusy(false);
     if (!res?.ok) { setErr(t(res?.error) || t("ذخیره نشد. دوباره تلاش کنید.")); return; }
-    const url = URL.createObjectURL(new Blob([res.csv], { type: "text/csv;charset=utf-8" }));
+    const url = URL.createObjectURL(new Blob(["\uFEFF", res.csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
     a.href = url; a.download = res.filename; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);

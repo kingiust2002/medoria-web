@@ -61,8 +61,9 @@ test("a price change by a product manager becomes a request: the live product is
   assert.equal((await r.page.getByTestId("nav-badge").first().innerText()).trim(), "1");
   await r.page.goto(`${BASE}/operator/approvals`, { waitUntil: "networkidle" });
   const card = r.page.getByTestId("to-review").getByTestId("request").first();
-  assert.equal((await card.getByTestId("diff-old").first().innerText()).trim(), "10");
-  assert.equal((await card.getByTestId("diff-new").first().innerText()).trim(), "15");
+  const priceRow = card.locator("tr", { has: r.page.getByText("قیمت", { exact: true }) });
+  assert.equal((await priceRow.getByTestId("diff-old").innerText()).trim(), "10");
+  assert.equal((await priceRow.getByTestId("diff-new").innerText()).trim(), "15");
   await r.ctx.close();
 });
 
