@@ -21,7 +21,12 @@ const RESERVED = new Set(["select", "order", "limit", "offset", "on_conflict", "
 const UNIQUE = {
   products: [["slug"]], beauty_products: [["slug"]], categories: [["slug"]], beauty_categories: [["slug"]],
   operator_users: [["username"]], operator_sessions: [["sid"]], operator_totp_state: [["panel"]], operator_recovery_used: [["panel", "code_hash"]],
+  health_stock_levels: [["product_id"]], beauty_stock_levels: [["product_id"]],
+  health_stock_count_lines: [["count_id", "product_id"]], beauty_stock_count_lines: [["count_id", "product_id"]],
 };
+// migration 41's guards on stock counts: a count that is not open, and its lines, no longer change; one open count per warehouse
+const COUNTS = /^(health|beauty)_stock_counts$/, COUNT_LINES = /^(health|beauty)_stock_count_lines$/;
+const countClosed = { code: "P0001", message: "stock:count_closed" };
 
 const clone = (x) => JSON.parse(JSON.stringify(x));
 const now = () => new Date().toISOString();
@@ -235,11 +240,21 @@ export function createFakeDb(seedFactory) {
       const created = [];
       for (const raw of input) {
         const row = { ...raw };
-        for (const cols of UNIQUE[t] || []) {
-          if (cols.every((c) => row[c] != null) && tables[t].some((r) => cols.every((c) => r[c] === row[c]))) {
-            return respond(res, 409, { code: "23505", message: `duplicate key value violates unique constraint on ${cols.join(",")}` });
+        if (COUNTS.test(t)) {
+          row.status ??= "open"; row.closed_at ??= null;
+          if (row.status === "open" && tables[t].some((r) => r.status === "open" && r.location_id === row.location_id)) {
+            return respond(res, 409, { code: "23505", message: `duplicate key value violates unique constraint "${t}_one_open"` });
           }
         }
+        if (COUNT_LINES.test(t) && tables[t.replace("_lines", "s")]?.find((c) => c.id === row.count_id)?.status !== "open") return respond(res, 400, countClosed);
+        let merged = false;
+        for (const cols of UNIQUE[t] || []) {
+          const clash = cols.every((c) => row[c] != null) && tables[t].find((r) => cols.every((c) => r[c] === row[c]));
+          if (!clash) continue;
+          if (/merge-duplicates/.test(prefer)) { Object.assign(clash, row); created.push(clash); merged = true; break; }
+          return respond(res, 409, { code: "23505", message: `duplicate key value violates unique constraint on ${cols.join(",")}` });
+        }
+        if (merged) continue;
         if (TRACKING_PREFIX[t] && row.status == null) row.status = "new";   // the column default
         if (TRACKING_PREFIX[t] && row.tracking_code == null) row.tracking_code = `${TRACKING_PREFIX[t]}-${hex4()}-${hex4()}-${hex4()}`;   // migration 32's insert trigger
         if (t === "operator_users") {   // migration 34's column defaults
@@ -260,6 +275,8 @@ export function createFakeDb(seedFactory) {
     if (req.method === "PATCH") {
       const patch = await readBody(req);
       const hit = tables[t].filter(pred);
+      if (COUNTS.test(t) && hit.some((r) => r.status !== "open")) return respond(res, 400, countClosed);
+      if (COUNT_LINES.test(t) && hit.some((r) => tables[t.replace("_lines", "s")]?.find((c) => c.id === r.count_id)?.status !== "open")) return respond(res, 400, countClosed);
       if (t === "operator_users") {   // migration 34's guard trigger: the last active owner stays; `version` follows administered fields
         for (const row of hit) {
           const next = { ...row, ...patch };
@@ -284,6 +301,7 @@ export function createFakeDb(seedFactory) {
     }
 
     if (req.method === "DELETE") {
+      if (COUNTS.test(t) || COUNT_LINES.test(t)) return respond(res, 400, { code: "P0001", message: "stock:never_deleted" });
       const hit = tables[t].filter(pred);
       tables[t] = tables[t].filter((r) => !hit.includes(r));
       if (!wantRep) return respond(res, 204);

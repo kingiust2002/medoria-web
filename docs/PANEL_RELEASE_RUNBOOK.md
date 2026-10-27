@@ -1,6 +1,6 @@
 # Panel platform — release runbook (stage S6c)
 
-The one place that says **what to do, in which order, and how to go back** for the multi-user panel work (migrations 30–40). It does not
+The one place that says **what to do, in which order, and how to go back** for the multi-user panel work (migrations 30–41). It does not
 replace `docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md` (the infrastructure truth: VPS, Caddy, Supabase, backups, DNS — read it before touching
 production) — it points into it. Nothing here is automatic: **a merge deploys nothing**, and every step below is done by a person.
 
@@ -29,6 +29,7 @@ first error.
 | 38 product history | 34 | no history; saves never blocked | header |
 | 39 scheduled publishing | product tables | dates cannot be stored; cron skips the house | header |
 | 40 translation status | product tables | marks are not remembered; saving works | header |
+| 41 warehouse counts and minimum levels | 36 | the count tab says "unavailable"; stock tab works without minimums | header |
 
 Before applying any of them on production: **fresh production backup and the local + R2 chain must PASS** (`scripts/self-host/production-backup.sh`;
 runbook §7). A migration is applied by the person doing the release, never by the application.
@@ -51,7 +52,7 @@ runbook §7). A migration is applied by the person doing the release, never by t
 4. Add the new environment values (section 2); run the env checker.
 5. Deploy deliberately (runbook §9): then **`docker compose ps` and a live curl** — "Started" is not proof the container stayed up.
 6. Post-checks:
-   * `npm run check:rls` (now also proves anonymous callers cannot read the eight warehouse tables) — must be all PASS;
+   * `npm run check:rls` (now also proves anonymous callers cannot read the warehouse tables, including the stock counts and levels) — must be all PASS;
    * the public pages answer and look as before; no warehouse/schedule data in a public response;
    * the owner logs in; one permission-denied probe (a viewer account cannot open `/operator/users`);
    * after `OPERATOR_USERS=on`: the activity log shows `auth.bootstrap_owner` once.

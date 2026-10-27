@@ -144,5 +144,6 @@ public route/API/payload/print path.
 | S6a scheduled publishing of products (publish_at / unpublish_at, form fields, rights, cron route, history; migration 39) | branch `feat/panel-scheduling` (`docs/SCHEDULED_PUBLISHING.md`) | `tests/scheduled-publishing*.test.mjs`, `tests/e2e/scheduled-publishing.e2e.mjs` |
 | S6b quick search (/ or Ctrl+K) across products, requests, categories, brands, people — permission-aware, both panels | branch `feat/panel-search` (`docs/PANEL_SEARCH.md`) | `tests/panel-search.test.mjs`, `tests/e2e/panel-search.e2e.mjs` |
 | S5f translation status: automatic vs human texts, translate never overwrites a human text (migration 40) | branch `feat/panel-translation-status` (`docs/TRANSLATION_STATUS.md`) | `tests/translation-meta*.test.mjs`, `tests/e2e/translation-status.e2e.mjs` |
-| S6c release runbook for the whole panel platform (migrations 30–40, env, cron, post-checks, rollback, monitoring, restore drill) | `docs/PANEL_RELEASE_RUNBOOK.md` | – (documentation) |
-| S4c, S5a, S5b, S6a (site content), S6b (appearance, shortcuts) | not started | |
+| S6c release runbook for the whole panel platform (migrations 30–41, env, cron, post-checks, rollback, monitoring, restore drill) | `docs/PANEL_RELEASE_RUNBOOK.md` | – (documentation) |
+| S4c warehouse stock counts (snapshot, type, close → idempotent adjustments, approval), minimum levels + low-stock filter, CSV reports (migration 41) | branch `feat/warehouse-counts` (`docs/WAREHOUSE.md`) | `tests/warehouse-counts*.test.mjs` (PostgreSQL 16 for the migration), `tests/e2e/warehouse-counts.e2e.mjs` |
+| S5a, S5b, S6a (site content), S6b (appearance, shortcuts) | not started | |

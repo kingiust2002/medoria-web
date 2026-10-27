@@ -18,7 +18,7 @@ const fmt = (n) => (Number.isFinite(n) ? String(Math.round(n * 1000) / 1000) : "
 const sign = (n) => (n > 0 ? "+" : "") + fmt(n);
 
 function Msg({ msg }) {
-  return msg ? <div role={msg.ok ? "status" : "alert"} className={`mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 ${msg.ok ? "bg-ok/10 text-ok" : "bg-warn/10 text-warn"}`}><Icon name={msg.ok ? "check" : "alertTriangle"} size={16} /> <span className="min-w-0 break-words">{msg.text}</span></div> : null;
+  return msg ? <div role={msg.ok ? "status" : "alert"} data-testid="wh-count-msg" className={`mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 ${msg.ok ? "bg-ok/10 text-ok" : "bg-warn/10 text-warn"}`}><Icon name={msg.ok ? "check" : "alertTriangle"} size={16} /> <span className="min-w-0 break-words">{msg.text}</span></div> : null;
 }
 
 function StartForm({ locations, actions, onStarted, onCancel }) {
