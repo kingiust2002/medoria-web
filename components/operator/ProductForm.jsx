@@ -12,6 +12,7 @@ import SpecsEditor from "@/components/operator/SpecsEditor";
 import QuickCategoryModal from "@/components/operator/QuickCategoryModal";
 import { SectionCard, Field, Input, Textarea, Select, Toggle, Spinner } from "@/components/operator/ui";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
+import { useCan, useMode } from "@/components/panel/Capabilities";
 import { localName } from "@/lib/panel/i18n";
 
 // Unsaved NEW-product draft (never edit pages, never secrets) survives reloads.
@@ -23,6 +24,13 @@ export default function ProductForm({ mode, product, categories }) {
   const router = useRouter();
   const editing = mode === "edit";
   const galleryRef = useRef(null);
+  // what this person may offer on screen (the server asks again on every save)
+  const canContent = useCan("products.content"), canPrice = useCan("products.price"), canStock = useCan("products.stock_flag");
+  const canPublish = useCan("products.publish"), canArchive = useCan("products.archive");
+  const readOnly = editing && !(canContent || canPrice || canStock || canPublish || canArchive);
+  const modeCreate = useMode("products.create"), modeContent = useMode("products.content"), modePrice = useMode("products.price"), modePublish = useMode("products.publish");
+  const needsApproval = editing ? modeContent === "approval" : modeCreate === "approval";                       // the whole save is a request
+  const partlyApproval = editing && !needsApproval && [modePrice, modePublish].includes("approval");           // only price / visibility changes are
 
   const [f, setF] = useState({
     name_fa: product?.name_fa || "", name_en: product?.name_en || "",
@@ -36,7 +44,7 @@ export default function ProductForm({ mode, product, categories }) {
     in_stock: product ? !!product.in_stock : true,
     badge: product?.badge || "",
     is_featured: !!product?.is_featured,
-    is_active: product ? product.is_active !== false : true,
+    is_active: product ? product.is_active !== false : canPublish,
     image_url: product?.image_url || "", brochure_url: product?.brochure_url || "",
     tags: Array.isArray(product?.tags) ? product.tags.join(t("، ")) : "",
     seo_title: product?.seo_title || "", seo_description: product?.seo_description || "",
@@ -211,16 +219,18 @@ export default function ProductForm({ mode, product, categories }) {
   }
 
   const SaveButton = ({ full }) => (
-    <button type="submit" disabled={saving} className={`btn-primary size-md ${full ? "w-full" : ""} disabled:opacity-60`}>
-      {saving ? <Spinner /> : <Icon name="save" size={18} />}
-      {saving ? t("در حال ذخیره…") : editing ? t("ذخیره تغییرات") : t("افزودن محصول")}
-    </button>
+    readOnly ? null : (
+      <button type="submit" disabled={saving} className={`btn-primary size-md ${full ? "w-full" : ""} disabled:opacity-60`}>
+        {saving ? <Spinner /> : <Icon name="save" size={18} />}
+        {saving ? t("در حال ذخیره…") : needsApproval ? t("ارسال برای تأیید") : editing ? t("ذخیره تغییرات") : t("افزودن محصول")}
+      </button>
+    )
   );
 
   // "Save & add another" — create mode only; resets identity fields, keeps
   // sticky defaults, and keeps the operator on this page for the next product.
   const SaveAndNextButton = ({ full }) => (
-    editing ? null : (
+    editing || needsApproval ? null : (
       <button
         type="submit"
         disabled={saving}
@@ -264,6 +274,11 @@ export default function ProductForm({ mode, product, categories }) {
         </div>
       )}
 
+      {readOnly && <p className="mb-5 text-sm rounded-xl px-3 py-2.5 bg-line-soft text-ink-muted" data-testid="form-readonly">{t("فقط می‌توانید این محصول را ببینید؛ اجازهٔ ویرایش ندارید.")}</p>}
+      {!readOnly && needsApproval && <p className="mb-5 text-sm rounded-xl px-3 py-2.5 bg-primary/10 text-primary" data-testid="form-approval">{t("تغییرات شما پس از تأیید مسئول اعمال می‌شود.")}</p>}
+      {!readOnly && partlyApproval && <p className="mb-5 text-sm rounded-xl px-3 py-2.5 bg-primary/10 text-primary" data-testid="form-approval-part">{t("تغییر قیمت و انتشار پس از تأیید مسئول اعمال می‌شود.")}</p>}
+
+      <fieldset disabled={readOnly} className="min-w-0 border-0 p-0 m-0">
       <div className="grid lg:grid-cols-[1fr_330px] gap-6 items-start">
         {/* ── Left: form sections ─────────────────────────────────────────── */}
         <div className="flex flex-col gap-5 min-w-0">
@@ -331,18 +346,18 @@ export default function ProductForm({ mode, product, categories }) {
           {/* Pricing */}
           <SectionCard title={t("قیمت و موجودی")} desc={t("قیمت ثابت یا استعلام قیمت")} icon="dollar">
             <div className="rounded-xl bg-canvas-soft border border-line p-3.5 mb-4">
-              <Toggle checked={priceOnRequest} onChange={setPriceOnRequest} label={t("استعلام قیمت")} desc={t("قیمت نمایش داده نمی‌شود؛ مشتری درخواست قیمت می‌دهد.")} />
+              <Toggle checked={priceOnRequest} onChange={setPriceOnRequest} disabled={editing && !canPrice} label={t("استعلام قیمت")} desc={t("قیمت نمایش داده نمی‌شود؛ مشتری درخواست قیمت می‌دهد.")} />
             </div>
             <div className="grid sm:grid-cols-3 gap-4">
               <Field label={t("قیمت (دلار)")} hint={priceOnRequest ? t("غیرفعال (حالت استعلام)") : t("خالی = استعلام قیمت")}>
-                <Input type="number" step="0.01" min="0" value={priceOnRequest ? "" : f.price} disabled={priceOnRequest} onChange={(e) => up("price", e.target.value)} dir="ltr" placeholder="8.50" />
+                <Input type="number" step="0.01" min="0" value={priceOnRequest ? "" : f.price} disabled={priceOnRequest || (editing && !canPrice)} onChange={(e) => up("price", e.target.value)} dir="ltr" placeholder="8.50" />
               </Field>
               <Field label={t("واحد")}><Input value={f.unit} onChange={(e) => up("unit", e.target.value)} placeholder={t("× ۱۰۰ عدد")} /></Field>
               <Field label={t("حداقل سفارش")}><Input type="number" min="1" value={f.min_order_qty} onChange={(e) => up("min_order_qty", e.target.value)} dir="ltr" /></Field>
             </div>
             <div className="grid sm:grid-cols-2 gap-4 mt-4 items-center">
               <Field label={t("نشان محصول")}><Select value={f.badge} onChange={(e) => up("badge", e.target.value)}>{PRODUCT_BADGES.map((b) => <option key={b.value} value={b.value}>{t(b.label)}</option>)}</Select></Field>
-              <div className="rounded-xl bg-canvas-soft border border-line p-3.5 mt-6 sm:mt-5"><Toggle checked={f.in_stock} onChange={(v) => up("in_stock", v)} label={t("موجود است")} /></div>
+              <div className="rounded-xl bg-canvas-soft border border-line p-3.5 mt-6 sm:mt-5"><Toggle checked={f.in_stock} onChange={(v) => up("in_stock", v)} disabled={editing && !canStock} label={t("موجود است")} /></div>
             </div>
           </SectionCard>
 
@@ -388,7 +403,7 @@ export default function ProductForm({ mode, product, categories }) {
         <div className="flex flex-col gap-5 lg:sticky lg:top-6">
           <SectionCard title={t("انتشار")} icon="badgeCheck">
             <div className="flex flex-col gap-3">
-              <div className="rounded-xl bg-canvas-soft border border-line p-3.5"><Toggle checked={f.is_active} onChange={(v) => up("is_active", v)} label={t("فعال (نمایش در سایت)")} desc={t("غیرفعال = آرشیو، در سایت دیده نمی‌شود.")} /></div>
+              <div className="rounded-xl bg-canvas-soft border border-line p-3.5"><Toggle checked={f.is_active} onChange={(v) => up("is_active", v)} disabled={f.is_active ? !canArchive : !canPublish} label={t("فعال (نمایش در سایت)")} desc={t("غیرفعال = آرشیو، در سایت دیده نمی‌شود.")} /></div>
               <div className="rounded-xl bg-canvas-soft border border-line p-3.5"><Toggle checked={f.is_featured} onChange={(v) => up("is_featured", v)} label={t("ویژه (Featured)")} desc={t("نمایش در بخش محصولات منتخب.")} /></div>
             </div>
             <div className="mt-4 flex flex-col gap-2">
@@ -417,6 +432,7 @@ export default function ProductForm({ mode, product, categories }) {
           </SectionCard>
         </div>
       </div>
+      </fieldset>
 
       {catModal && (
         <QuickCategoryModal

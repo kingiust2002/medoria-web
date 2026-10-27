@@ -120,3 +120,38 @@ test("the same click works for a person who is allowed, and the log names who di
   assert.deepEqual(log.map((r) => r.action), ["product.delete_attempt", "product.delete"], "both entries carry the person");
   await ctx.close();
 });
+
+test("the screens only offer what the person may do (buttons are not rendered), while the server still decides", async () => {
+  await addUser({ username: "view.only", role: "viewer" });
+  await addUser({ username: "prod.mgr2", role: "product_manager" });
+  await addUser({ username: "quote.mgr2", role: "quote_manager" });
+  const html = async (path, cookie) => (await withCookie(path, cookie)).text();
+  const viewer = (await login("view.only")).cookie, pm = (await login("prod.mgr2")).cookie, qm = (await login("quote.mgr2")).cookie;
+
+  // products list: a viewer sees the products but no create / import / bulk / select / duplicate / archive / delete controls
+  const vProducts = await html("/operator/products", viewer);
+  assert.ok(vProducts.includes("E2E Product"), "the viewer still reads the catalogue");
+  for (const gone of ['href="/operator/products/new"', 'href="/operator/products/import"', 'href="/operator/products/bulk"', "انتخاب همه", 'title="تکثیر"', 'data-testid="product-delete"']) {
+    assert.ok(!vProducts.includes(gone), `viewer must not be offered: ${gone}`);
+  }
+  const pmProducts = await html("/operator/products", pm);
+  assert.ok(pmProducts.includes('href="/operator/products/new"'), "a product manager creates products");
+  assert.ok(pmProducts.includes("انتخاب همه"), "a product manager selects rows for bulk edits");
+
+  // the edit form: read-only for a viewer, editable for a product manager
+  const vForm = await html("/operator/products/1/edit", viewer);
+  assert.ok(vForm.includes('data-testid="form-readonly"'));
+  assert.ok(!vForm.includes("ذخیره تغییرات"), "no save button for a viewer");
+  const pmForm = await html("/operator/products/1/edit", pm);
+  assert.ok(!pmForm.includes('data-testid="form-readonly"'));
+  assert.ok(pmForm.includes("ذخیره تغییرات"));
+
+  // requests: a viewer reads, a request manager changes and deletes; a product manager may not even open them
+  const vQuotes = await html("/operator/quotes", viewer);
+  assert.ok(vQuotes.includes("E2E Customer"));
+  assert.ok(!vQuotes.includes('title="حذف درخواست"'), "a viewer is not offered 'delete request'");
+  const qmQuotes = await html("/operator/quotes", qm);
+  assert.ok(qmQuotes.includes('title="حذف درخواست"'), "a request manager deletes requests");
+
+  // hiding is only a convenience: a forged call from the viewer is still refused by the server (covered by the stale-screen test above)
+});

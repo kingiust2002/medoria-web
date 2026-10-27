@@ -75,7 +75,9 @@ async function call(path, init = {}) {
 // `extra` is an optional PostgREST filter such as "&is_active=eq.false".
 // Migration 30's session and second-factor tables have no `id` column. Probe their real keys so a
 // hardened database can return a permission denial instead of an unrelated undefined-column error.
-const PROBE_KEY = { operator_sessions: "sid", operator_totp_state: "panel", operator_recovery_used: "panel" };
+const PROBE_KEY = { operator_sessions: "sid", operator_totp_state: "panel", operator_recovery_used: "panel", health_stock_balances: "location_id", beauty_stock_balances: "location_id" };
+// The internal warehouse (migration 36): never readable by a stranger. A project that has not applied the migration answers "missing", which is also private.
+const WAREHOUSE_TABLES = ["health", "beauty"].flatMap((h) => ["locations", "balances", "movements", "reservations"].map((t) => `${h}_stock_${t}`));
 const select = (table, extra = "") => call(`/rest/v1/${table}?select=${PROBE_KEY[table] || "id"}&limit=1${extra}`);
 
 const INCONCLUSIVE = { server_error: 1, invalid: 1, network: 1, other: 1 };
@@ -117,7 +119,7 @@ for (const [table, label] of [["categories", "Health categories"], ["beauty_cate
 }
 
 // 3) customer data and operator logs are private
-for (const table of ["quote_requests", "beauty_quote_requests", "contact_inquiries", "import_logs", "beauty_import_logs", "operator_audit_log", "operator_sessions", "operator_totp_state", "operator_recovery_used"]) {
+for (const table of ["quote_requests", "beauty_quote_requests", "contact_inquiries", "import_logs", "beauty_import_logs", "operator_audit_log", "operator_sessions", "operator_totp_state", "operator_recovery_used", ...WAREHOUSE_TABLES]) {
   expectDenied(`anon CANNOT read ${table}`, await select(table));
 }
 

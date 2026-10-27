@@ -13,6 +13,7 @@ import {
   updateHealthCategory,
 } from "@/lib/operator/categoryTreeActions";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
+import { useCan } from "@/components/panel/Capabilities";
 import { tr } from "@/lib/panel/i18n";
 import { localName } from "@/lib/panel/i18n";
 
@@ -37,6 +38,8 @@ export default function HealthCategoryTree({ tree }) {
   const t = useT();
   const { lang } = usePanelLang();
   const router = useRouter();
+  // what this person may offer on screen (the server asks again on every action)
+  const canCreate = useCan("categories.create"), canEdit = useCan("categories.edit"), canArchive = useCan("categories.archive"), canDelete = useCan("categories.delete");
   const [expanded, setExpanded] = useState(() => new Set());
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState(null);
@@ -93,8 +96,8 @@ export default function HealthCategoryTree({ tree }) {
   return (
     <div dir="rtl">
       <PageHeader title={t("دسته‌بندی‌ها")} subtitle={t("{length} مورد در حداکثر ۳ سطح · {activeCount} فعال", { length: flat.length, activeCount })}>
-        <button type="button" onClick={() => setModal({ mode: "create", parent: null })} className="btn-primary size-md">
-          <Icon name="plus" size={17} /> {t("دسته اصلی جدید")}</button>
+        {canCreate && <button type="button" onClick={() => setModal({ mode: "create", parent: null })} className="btn-primary size-md">
+          <Icon name="plus" size={17} /> {t("دسته اصلی جدید")}</button>}
       </PageHeader>
 
       {message && (
@@ -149,18 +152,18 @@ export default function HealthCategoryTree({ tree }) {
                   </div>
 
                   {busyId === node.id ? <Spinner size={16} /> : (
-                    <button type="button" role="switch" aria-checked={!inactive} title={inactive ? t("فعال‌کردن") : t("غیرفعال‌کردن")}
+                    <button type="button" role="switch" aria-checked={!inactive} disabled={!canArchive} title={inactive ? t("فعال‌کردن") : t("غیرفعال‌کردن")}
                       onClick={() => run(node.id, () => setHealthCategoryFlags(node.id, { is_active: inactive }), inactive ? t("دسته فعال شد.") : t("دسته غیرفعال شد."))}
-                      className={`relative h-5 w-9 rounded-full shrink-0 transition-colors ${inactive ? "bg-line" : "bg-ok"}`}>
+                      className={`relative h-5 w-9 rounded-full shrink-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${inactive ? "bg-line" : "bg-ok"}`}>
                       <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${inactive ? "start-[1.125rem]" : "start-0.5"}`} />
                     </button>
                   )}
 
-                  {node.level < 3 && <button type="button" className="w-8 h-8 rounded-lg grid place-items-center text-brand-violet hover:bg-brand-violet/10" title={t("افزودن زیرمجموعه")} onClick={() => setModal({ mode: "create", parent: node })}><Icon name="plus" size={16} /></button>}
-                  {hasChildren && <button type="button" className="w-8 h-8 rounded-lg grid place-items-center text-ink-muted hover:bg-line" title={inactive ? t("فعال‌کردن کل شاخه") : t("غیرفعال‌کردن کل شاخه")}
+                  {canCreate && node.level < 3 && <button type="button" className="w-8 h-8 rounded-lg grid place-items-center text-brand-violet hover:bg-brand-violet/10" title={t("افزودن زیرمجموعه")} onClick={() => setModal({ mode: "create", parent: node })}><Icon name="plus" size={16} /></button>}
+                  {canArchive && hasChildren && <button type="button" className="w-8 h-8 rounded-lg grid place-items-center text-ink-muted hover:bg-line" title={inactive ? t("فعال‌کردن کل شاخه") : t("غیرفعال‌کردن کل شاخه")}
                     onClick={() => run(node.id, () => setHealthCategorySubtreeActive(node.id, inactive), inactive ? t("کل شاخه فعال شد.") : t("کل شاخه غیرفعال شد."))}><Icon name={inactive ? "eye" : "eyeOff"} size={16} /></button>}
-                  <button type="button" className="w-8 h-8 rounded-lg grid place-items-center text-ink-muted hover:bg-line" title={t("ویرایش")} onClick={() => setModal({ mode: "edit", node })}><Icon name="edit" size={16} /></button>
-                  <button type="button" className="w-8 h-8 rounded-lg grid place-items-center text-ink-muted hover:bg-warn/10 hover:text-warn" title={t("حذف")} onClick={() => setDeleting(node)}><Icon name="trash" size={16} /></button>
+                  {canEdit && <button type="button" className="w-8 h-8 rounded-lg grid place-items-center text-ink-muted hover:bg-line" title={t("ویرایش")} onClick={() => setModal({ mode: "edit", node })}><Icon name="edit" size={16} /></button>}
+                  {canDelete && <button type="button" className="w-8 h-8 rounded-lg grid place-items-center text-ink-muted hover:bg-warn/10 hover:text-warn" title={t("حذف")} onClick={() => setDeleting(node)}><Icon name="trash" size={16} /></button>}
                 </li>
               );
             })}

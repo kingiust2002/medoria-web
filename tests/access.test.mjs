@@ -112,3 +112,26 @@ test("viewing: permissions of reading are separate from changing", () => {
   assert.equal(mayView(qm, "health", "products.view"), false);
   assert.equal(mayView(qm, "health", "quotes.view"), true);
 });
+
+test("capabilitiesOf: what a screen may offer is exactly what the server would decide", async () => {
+  const { capabilitiesOf } = await import("../lib/operator/access.js");
+  const { decide, OPERATION_IDS } = await import("../lib/operator/authz.js");
+  // the old env account: everything, directly
+  const legacy = capabilitiesOf({ user: null, username: "x" }, "health");
+  assert.ok(OPERATION_IDS.filter((o) => !o.startsWith("brands.")).every((o) => legacy[o] === "direct"));   // brands exist in Beauty only
+  assert.ok(OPERATION_IDS.every((o) => capabilitiesOf({ user: null, username: "x" }, "beauty")[o] === "direct"));
+  // nobody / unresolved person / restricted session: nothing
+  for (const s of [null, { uid: "u1", user: null }, { user: { id: "u1", status: "active", role: "owner", houses: ["health"], mustChangePassword: true } }]) {
+    const caps = capabilitiesOf(s, "health");
+    assert.ok(OPERATION_IDS.every((o) => caps[o] === "denied"), JSON.stringify(s));
+  }
+  // a viewer: nothing to change; a product manager: the same answers as decide()
+  const viewer = { user: { id: "v", status: "active", role: "viewer", houses: ["health"], allow: [], deny: [] } };
+  assert.ok(Object.values(capabilitiesOf(viewer, "health")).every((m) => m === "denied"));
+  const pmUser = { id: "p", status: "active", role: "product_manager", houses: ["health"], allow: [], deny: [] };
+  const caps = capabilitiesOf({ user: pmUser }, "health");
+  for (const op of OPERATION_IDS) assert.equal(caps[op], decide(pmUser, "health", op).mode, op);
+  assert.notEqual(caps["products.content"], "denied");
+  // the other house is closed
+  assert.ok(Object.values(capabilitiesOf({ user: pmUser }, "beauty")).every((m) => m === "denied"));
+});

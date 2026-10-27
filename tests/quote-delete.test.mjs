@@ -187,7 +187,7 @@ test("both panels show a delete button per request and confirm with the request'
   assert.match(panel, /<DeleteQuoteModal[\s\S]*?onDelete=\{actions\.deleteQuote\}/, "modal not wired to deleteQuote");
   assert.match(panel, /router\.refresh\(\)/, "list is not refreshed after deleting");
   // the row toggle is a <button>, so the delete button must follow its closing tag, never nest inside it
-  assert.match(panel, /setOpenId\(open \? null : x\.id\)\}[\s\S]*?<\/button>\s*<button type="button" onClick=\{\(\) => setDeleting\(x\)\}/, "delete button is nested in the row toggle");
+  assert.match(panel, /setOpenId\(open \? null : x\.id\)\}[\s\S]*?<\/button>\s*(?:\{canDelete && )?<button type="button" onClick=\{\(\) => setDeleting\(x\)\}/, "delete button is nested in the row toggle");
   assert.ok(!/lib\/(beauty\/)?operator\/actions/.test(panel), "the shared screen must not import a panel's actions");
 
   const modal = read("components/operator/DeleteQuoteModal.jsx");

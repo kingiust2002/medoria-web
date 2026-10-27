@@ -13,6 +13,7 @@ import { reconcileQuotes, pruneSelection } from "@/lib/operator/quotesSync";
 import DeleteQuoteModal from "@/components/operator/DeleteQuoteModal";
 import BulkDeleteQuotesModal from "@/components/operator/BulkDeleteQuotesModal";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
+import { useCan } from "@/components/panel/Capabilities";
 import { tr } from "@/lib/panel/i18n";
 
 const digits = (s) => String(s || "").replace(/[^\d]/g, "");
@@ -45,6 +46,8 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
   const [savingId, setSavingId] = useState(null);
   const [msg, setMsg] = useState(null);
   const [deleting, setDeleting] = useState(null);       // one quote
+  // what this person may offer on screen (the server asks again on every action)
+  const canStatus = useCan("quotes.status"), canAssign = useCan("quotes.assign"), canDelete = useCan("quotes.delete");
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [selected, setSelected] = useState(() => new Set());
   const [pending, startTransition] = useTransition();
@@ -195,7 +198,7 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
           className={`btn-ghost size-sm ${attention ? "!border-warn/60 !text-warn !bg-warn/5" : ""}`}>
           <Icon name="alertTriangle" size={15} /> {t("نیازمند پیگیری")} <span className="tabular">{needAttention}</span>
         </button>
-        {rows.length > 0 && (
+        {rows.length > 0 && (canStatus || canDelete) && (
           <label className="inline-flex items-center gap-2 text-sm text-ink-soft cursor-pointer select-none">
             <input ref={allRef} type="checkbox" checked={allChecked} onChange={toggleAll} className="w-4 h-4 accent-brand-violet" />{t("انتخاب همه ({length})", { length: rows.length })}</label>
         )}
@@ -205,10 +208,10 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
         <div role="region" aria-label={t("عملیات گروهی")} className="card-flat p-3 mb-4 flex flex-wrap items-center gap-2 border border-brand-violet/30">
           <span className="text-sm font-medium text-ink">{t("{length} مورد انتخاب شده", { length: selectedRows.length })}</span>
           <div className="flex flex-wrap items-center gap-2 ms-auto">
-            {tab !== "archived" && <button type="button" disabled={pending} onClick={() => bulkStatus("archived")} className="btn-ghost size-sm disabled:opacity-60"><Icon name="archive" size={15} /> {t("آرشیو")}</button>}
-            {tab !== "spam" && <button type="button" disabled={pending} onClick={() => bulkStatus("spam")} className="btn-ghost size-sm disabled:opacity-60"><Icon name="alertTriangle" size={15} /> {t("اسپم")}</button>}
-            {(tab === "archived" || tab === "spam" || tab === "all") && <button type="button" disabled={pending} onClick={() => bulkStatus("new")} className="btn-ghost size-sm disabled:opacity-60"><Icon name="refresh" size={15} /> {t("بازگردانی به «جدید»")}</button>}
-            <button type="button" disabled={pending} onClick={() => setBulkDeleting(true)} className="btn-ghost size-sm !text-warn hover:!border-warn/40 disabled:opacity-60"><Icon name="trash" size={15} /> {t("حذف")}</button>
+            {canStatus && tab !== "archived" && <button type="button" disabled={pending} onClick={() => bulkStatus("archived")} className="btn-ghost size-sm disabled:opacity-60"><Icon name="archive" size={15} /> {t("آرشیو")}</button>}
+            {canStatus && tab !== "spam" && <button type="button" disabled={pending} onClick={() => bulkStatus("spam")} className="btn-ghost size-sm disabled:opacity-60"><Icon name="alertTriangle" size={15} /> {t("اسپم")}</button>}
+            {canStatus && (tab === "archived" || tab === "spam" || tab === "all") && <button type="button" disabled={pending} onClick={() => bulkStatus("new")} className="btn-ghost size-sm disabled:opacity-60"><Icon name="refresh" size={15} /> {t("بازگردانی به «جدید»")}</button>}
+            {canDelete && <button type="button" disabled={pending} onClick={() => setBulkDeleting(true)} className="btn-ghost size-sm !text-warn hover:!border-warn/40 disabled:opacity-60"><Icon name="trash" size={15} /> {t("حذف")}</button>}
             <button type="button" onClick={() => setSelected(new Set())} className="btn-ghost size-sm">{t("لغو انتخاب")}</button>
           </div>
         </div>
@@ -232,9 +235,11 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
             return (
               <div key={x.id} className={`card overflow-hidden ${isSel ? "ring-2 ring-brand-violet/40" : ""}`}>
                 <div className="flex items-stretch">
-                <label className="grid place-items-center w-11 shrink-0 cursor-pointer border-e border-line hover:bg-line-soft/40 transition-colors" title={t("انتخاب")}>
-                  <input type="checkbox" checked={isSel} onChange={() => toggle(x.id)} aria-label={x.name ? t("انتخاب {name}", { name: x.name }) : t("انتخاب درخواست")} className="w-4 h-4 accent-brand-violet" />
-                </label>
+                {(canStatus || canDelete) && (
+                  <label className="grid place-items-center w-11 shrink-0 cursor-pointer border-e border-line hover:bg-line-soft/40 transition-colors" title={t("انتخاب")}>
+                    <input type="checkbox" checked={isSel} onChange={() => toggle(x.id)} aria-label={x.name ? t("انتخاب {name}", { name: x.name }) : t("انتخاب درخواست")} className="w-4 h-4 accent-brand-violet" />
+                  </label>
+                )}
                 <button onClick={() => setOpenId(open ? null : x.id)} className="min-w-0 flex-1 px-4 py-3.5 flex items-center gap-3 text-start hover:bg-line-soft/40 transition-colors">
                   <span className="hidden sm:grid place-items-center w-10 h-10 rounded-xl bg-brand-violet/10 text-brand-violet shrink-0"><Icon name="user" size={18} /></span>
                   <div className="min-w-0 flex-1">
@@ -251,7 +256,7 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
                   <Badge tone={QUOTE_STATUS_TONE[x.status] || "neutral"}>{QUOTE_STATUS_FA[x.status] ? t(QUOTE_STATUS_FA[x.status]) : x.status}</Badge>
                   <Icon name="chevronDown" size={16} className={`text-ink-faint transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
                 </button>
-                <button type="button" onClick={() => setDeleting(x)} title={t("حذف درخواست")} aria-label={t("حذف درخواست {v}", { v: x.name || "" }).trim()} className="grid place-items-center w-12 shrink-0 border-s border-line text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors"><Icon name="trash" size={17} /></button>
+                {canDelete && <button type="button" onClick={() => setDeleting(x)} title={t("حذف درخواست")} aria-label={t("حذف درخواست {v}", { v: x.name || "" }).trim()} className="grid place-items-center w-12 shrink-0 border-s border-line text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors"><Icon name="trash" size={17} /></button>}
                 </div>
 
                 {open && (
@@ -282,19 +287,21 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
                     {x.message && <div className="rounded-xl bg-canvas-soft border border-line p-3 text-sm text-ink-soft leading-relaxed mb-3 whitespace-pre-wrap">{x.message}</div>}
 
                     <div className="flex flex-wrap items-center gap-2 mb-4">
-                      <Select value={x.status} onChange={(e) => changeStatus(x.id, e.target.value)} className="w-auto !h-9 text-xs">
+                      {canStatus && <Select value={x.status} onChange={(e) => changeStatus(x.id, e.target.value)} className="w-auto !h-9 text-xs">
                         {QUOTE_STATUSES.map((s) => <option key={s} value={s}>{t(QUOTE_STATUS_FA[s])}</option>)}
-                      </Select>
-                      {x.status !== "archived" && <button type="button" disabled={pending} onClick={() => changeStatus(x.id, "archived", t(MOVED.archived))} className="btn-ghost size-sm disabled:opacity-60"><Icon name="archive" size={15} /> {t("آرشیو")}</button>}
-                      {x.status !== "spam" && <button type="button" disabled={pending} onClick={() => changeStatus(x.id, "spam", t(MOVED.spam))} className="btn-ghost size-sm disabled:opacity-60"><Icon name="alertTriangle" size={15} /> {t("اسپم")}</button>}
-                      {parked && <button type="button" disabled={pending} onClick={() => changeStatus(x.id, "new", t(MOVED.new))} className="btn-ghost size-sm disabled:opacity-60"><Icon name="refresh" size={15} /> {t("بازگردانی")}</button>}
+                      </Select>}
+                      {canStatus && x.status !== "archived" && <button type="button" disabled={pending} onClick={() => changeStatus(x.id, "archived", t(MOVED.archived))} className="btn-ghost size-sm disabled:opacity-60"><Icon name="archive" size={15} /> {t("آرشیو")}</button>}
+                      {canStatus && x.status !== "spam" && <button type="button" disabled={pending} onClick={() => changeStatus(x.id, "spam", t(MOVED.spam))} className="btn-ghost size-sm disabled:opacity-60"><Icon name="alertTriangle" size={15} /> {t("اسپم")}</button>}
+                      {canStatus && parked && <button type="button" disabled={pending} onClick={() => changeStatus(x.id, "new", t(MOVED.new))} className="btn-ghost size-sm disabled:opacity-60"><Icon name="refresh" size={15} /> {t("بازگردانی")}</button>}
                       {wa && <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener noreferrer" className="btn-wa size-sm"><Icon name="chat" size={15} /> {t("واتساپ")}</a>}
                       {wa && <a href={`https://t.me/${wa}`} target="_blank" rel="noopener noreferrer" className="btn-tg size-sm"><Icon name="send" size={15} /> {t("تلگرام")}</a>}
                       {x.phone && <a href={`tel:${x.phone}`} className="btn-ghost size-sm"><Icon name="phone" size={15} /> {t("تماس")}</a>}
                     </div>
 
-                    <AssigneeBox quote={x} saving={savingId === x.id && pending} suggestions={assignees} onSave={(v) => saveAssignee(x.id, v)} />
-                    <NotesBox quote={x} saving={savingId === x.id && pending} onSave={(v) => saveNotes(x.id, v)} />
+                    {canAssign && <AssigneeBox quote={x} saving={savingId === x.id && pending} suggestions={assignees} onSave={(v) => saveAssignee(x.id, v)} />}
+                    {canStatus
+                      ? <NotesBox quote={x} saving={savingId === x.id && pending} onSave={(v) => saveNotes(x.id, v)} />
+                      : x.internal_notes && <div className="rounded-xl bg-canvas-soft border border-line p-3 text-sm text-ink-soft whitespace-pre-wrap">{x.internal_notes}</div>}
                   </div>
                 )}
               </div>

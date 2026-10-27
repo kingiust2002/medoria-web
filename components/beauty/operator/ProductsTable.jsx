@@ -12,6 +12,7 @@ import {
   PageHeader, Input, Select, Badge, EmptyState, Spinner, productDisplayName, priceText, isOnRequest,
 } from "@/components/operator/ui";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
+import { useCan } from "@/components/panel/Capabilities";
 import { localName } from "@/lib/panel/i18n";
 
 export default function ProductsTable({ products, categories, initialQuery = "" }) {
@@ -22,6 +23,10 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
   const [busyId, setBusyId] = useState(null);
   const [msg, setMsg] = useState(null);
   const [deleting, setDeleting] = useState(null);   // the archived product whose permanent deletion is being confirmed
+  // what this person may offer on screen (the server asks again on every action)
+  const canCreate = useCan("products.create"), canImport = useCan("products.import"), canBulk = useCan("products.bulk");
+  const canContent = useCan("products.content"), canPrice = useCan("products.price"), canStock = useCan("products.stock_flag");
+  const canPublish = useCan("products.publish"), canArchive = useCan("products.archive"), canDelete = useCan("products.delete");
 
   const [q, setQ] = useState(initialQuery);
   const [world, setWorld] = useState("");
@@ -137,9 +142,9 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
   return (
     <>
       <PageHeader title={t("محصولات")} subtitle={t("{length} محصول", { length: products.length })}>
-        <Link href="/beauty/operator/products/import" className="btn-ghost size-md"><Icon name="upload" size={17} /> Excel/CSV</Link>
-        <Link href="/beauty/operator/products/bulk" className="btn-ghost size-md"><Icon name="plusCircle" size={17} /> {t("افزودن گروهی")}</Link>
-        <Link href="/beauty/operator/products/new" className="btn-primary size-md"><Icon name="plus" size={18} /> {t("افزودن محصول")}</Link>
+        {canImport && <Link href="/beauty/operator/products/import" className="btn-ghost size-md"><Icon name="upload" size={17} /> Excel/CSV</Link>}
+        {canBulk && <Link href="/beauty/operator/products/bulk" className="btn-ghost size-md"><Icon name="plusCircle" size={17} /> {t("افزودن گروهی")}</Link>}
+        {canCreate && <Link href="/beauty/operator/products/new" className="btn-primary size-md"><Icon name="plus" size={18} /> {t("افزودن محصول")}</Link>}
       </PageHeader>
 
       {/* Filters */}
@@ -173,13 +178,15 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
         <div className="card mb-4 p-3 flex flex-wrap items-center gap-2 border-brand-violet/30 bg-brand-violet/5 sticky top-2 z-20">
           <span className="text-sm font-semibold text-brand-violet">{t("{size} مورد انتخاب شده", { size: selected.size })}</span>
           <span className="flex-1" />
-          <button onClick={() => runBulk({ is_active: true }, t("فعال شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="eye" size={15} /> {t("فعال‌سازی")}</button>
-          <button onClick={() => runBulk({ is_active: false }, t("آرشیو شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="archive" size={15} /> {t("غیرفعال")}</button>
-          <button onClick={() => runBulk({ requestPrice: true }, t("استعلام قیمت شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="dollar" size={15} /> {t("استعلام قیمت")}</button>
-          <Select value={bulkCat} onChange={(e) => bulkCategory(e.target.value)} disabled={pending} className="w-auto !h-9 text-xs">
-            <option value="">{t("تغییر دسته…")}</option>
-            {categories.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{localName(c, lang)}</option>)}
-          </Select>
+          {canPublish && <button onClick={() => runBulk({ is_active: true }, t("فعال شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="eye" size={15} /> {t("فعال‌سازی")}</button>}
+          {canArchive && <button onClick={() => runBulk({ is_active: false }, t("آرشیو شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="archive" size={15} /> {t("غیرفعال")}</button>}
+          {canPrice && <button onClick={() => runBulk({ requestPrice: true }, t("استعلام قیمت شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="dollar" size={15} /> {t("استعلام قیمت")}</button>}
+          {canContent && (
+            <Select value={bulkCat} onChange={(e) => bulkCategory(e.target.value)} disabled={pending} className="w-auto !h-9 text-xs">
+              <option value="">{t("تغییر دسته…")}</option>
+              {categories.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{localName(c, lang)}</option>)}
+            </Select>
+          )}
           <button onClick={clearSel} className="btn-ghost size-sm !text-ink-muted"><Icon name="close" size={15} /> {t("لغو")}</button>
         </div>
       )}
@@ -189,8 +196,10 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
       ) : (
         <div className="card overflow-hidden">
           {/* select-all header */}
-          <label className="flex items-center gap-3 px-3 sm:px-4 py-2.5 border-b border-line bg-canvas-soft/60 cursor-pointer text-xs text-ink-muted">
-            <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 accent-brand-violet" />{t("انتخاب همه ({length})", { length: rows.length })}</label>
+          {canBulk && (
+            <label className="flex items-center gap-3 px-3 sm:px-4 py-2.5 border-b border-line bg-canvas-soft/60 cursor-pointer text-xs text-ink-muted">
+              <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 accent-brand-violet" />{t("انتخاب همه ({length})", { length: rows.length })}</label>
+          )}
 
           <div className="divide-y divide-line">
             {rows.map((p) => {
@@ -201,7 +210,7 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
               const checked = selected.has(p.id);
               return (
                 <div key={p.id} className={`px-3 sm:px-4 py-3 flex items-center gap-3 transition-colors ${checked ? "bg-brand-violet/[0.06]" : "hover:bg-line-soft/50"}`}>
-                  <input type="checkbox" checked={checked} onChange={() => toggleSel(p.id)} className="w-4 h-4 accent-brand-violet shrink-0" />
+                  {canBulk && <input type="checkbox" checked={checked} onChange={() => toggleSel(p.id)} className="w-4 h-4 accent-brand-violet shrink-0" />}
                   <span className="img-ph w-12 h-12 rounded-xl overflow-hidden shrink-0 grid place-items-center text-ink-faint">
                     {img ? <img src={img} alt="" className="w-full h-full object-cover" /> : <Icon name="image" size={18} />}
                   </span>
@@ -224,6 +233,8 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
                       <button onClick={() => savePrice(p)} className="grid place-items-center w-8 h-8 rounded-lg text-ok hover:bg-ok/10"><Icon name="check" size={15} /></button>
                       <button onClick={() => setEditPrice(null)} className="grid place-items-center w-8 h-8 rounded-lg text-ink-faint hover:bg-line-soft"><Icon name="close" size={15} /></button>
                     </div>
+                  ) : !canPrice ? (
+                    <span className={`shrink-0 text-xs font-semibold px-2.5 h-8 inline-flex items-center rounded-lg tabular ${isOnRequest(p) ? "text-brand-violet" : "text-ink-soft"}`}>{priceText(p, t)}</span>
                   ) : (
                     <button onClick={() => setEditPrice({ id: p.id, val: isOnRequest(p) ? "" : String(p.price) })}
                       className={`shrink-0 text-xs font-semibold px-2.5 h-8 rounded-lg border border-line hover:border-brand-violet/40 hover:text-brand-violet transition-colors tabular ${isOnRequest(p) ? "text-brand-violet" : "text-ink-soft"}`}
@@ -233,27 +244,27 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
                   )}
 
                   {/* inline toggles */}
-                  <button onClick={() => runQuick(p, { in_stock: !p.in_stock })} disabled={isBusy}
+                  {canStock && <button onClick={() => runQuick(p, { in_stock: !p.in_stock })} disabled={isBusy}
                     className={`hidden sm:grid place-items-center w-8 h-8 rounded-lg transition-colors disabled:opacity-50 ${p.in_stock ? "text-ok bg-ok/10" : "text-ink-faint hover:bg-line-soft"}`}
                     title={p.in_stock ? t("موجود (کلیک=ناموجود)") : t("ناموجود (کلیک=موجود)")}>
                     <Icon name={p.in_stock ? "badgeCheck" : "package"} size={16} />
-                  </button>
-                  <button onClick={() => runQuick(p, { is_featured: !p.is_featured })} disabled={isBusy}
+                  </button>}
+                  {canContent && <button onClick={() => runQuick(p, { is_featured: !p.is_featured })} disabled={isBusy}
                     className={`hidden sm:grid place-items-center w-8 h-8 rounded-lg transition-colors disabled:opacity-50 ${p.is_featured ? "text-accent-gold bg-accent-gold/10" : "text-ink-faint hover:bg-line-soft"}`}
                     title={p.is_featured ? t("ویژه — در صفحه‌ی اصلی نمایش داده می‌شود (کلیک=عادی)") : t("عادی (کلیک=ویژه: نمایش در صفحه‌ی اصلی)")}>
                     <Icon name="star" size={16} fill={p.is_featured ? "currentColor" : "none"} />
-                  </button>
+                  </button>}
 
                   {isIncomplete(p) && <Badge tone="warn" className="hidden md:inline-flex" title={gapSummary(p, 6, t)}>{t("ناقص: {count}", { count: productGaps(p).length })}</Badge>}
                   <Badge tone={active ? "ok" : "muted"} className="hidden md:inline-flex">{active ? t("فعال") : t("غیرفعال")}</Badge>
 
                   <div className="flex items-center gap-1 shrink-0">
-                    <Link href={`/beauty/operator/products/${p.id}/edit`} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-brand-violet/10 hover:text-brand-violet transition-colors" title={t("ویرایش")}><Icon name="edit" size={16} /></Link>
-                    <button onClick={() => dup(p)} disabled={isBusy} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50" title={t("تکثیر")}><Icon name="copy" size={16} /></button>
-                    <button onClick={() => toggleActive(p)} disabled={isBusy} className={`grid place-items-center w-9 h-9 rounded-lg transition-colors disabled:opacity-50 ${active ? "text-ink-muted hover:bg-warn/10 hover:text-warn" : "text-ink-muted hover:bg-ok/10 hover:text-ok"}`} title={active ? t("آرشیو (غیرفعال)") : t("فعال‌سازی")}>
+                    <Link href={`/beauty/operator/products/${p.id}/edit`} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-brand-violet/10 hover:text-brand-violet transition-colors" title={t("ویرایش")}><Icon name={canContent || canPrice ? "edit" : "eye"} size={16} /></Link>
+                    {canCreate && <button onClick={() => dup(p)} disabled={isBusy} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50" title={t("تکثیر")}><Icon name="copy" size={16} /></button>}
+                    {(active ? canArchive : canPublish) && <button onClick={() => toggleActive(p)} disabled={isBusy} className={`grid place-items-center w-9 h-9 rounded-lg transition-colors disabled:opacity-50 ${active ? "text-ink-muted hover:bg-warn/10 hover:text-warn" : "text-ink-muted hover:bg-ok/10 hover:text-ok"}`} title={active ? t("آرشیو (غیرفعال)") : t("فعال‌سازی")}>
                       {isBusy ? <Spinner /> : <Icon name={active ? "archive" : "eye"} size={16} />}
-                    </button>
-                    {!active && (
+                    </button>}
+                    {!active && canDelete && (
                       <button onClick={() => setDeleting(p)} disabled={isBusy} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors disabled:opacity-50" title={t("حذف دائمی")} aria-label={t("حذف دائمی: {productDisplayName}", { productDisplayName: productDisplayName(p, lang) })} data-testid="product-delete">
                         <Icon name="trash" size={16} />
                       </button>
