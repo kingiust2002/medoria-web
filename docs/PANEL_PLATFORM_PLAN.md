@@ -105,6 +105,32 @@ public route/API/payload/print path.
 | 6 | S6b | Appearance, personal settings, global search, shortcuts, real-screenshot QA in 3 languages | S2e | 30 |
 | 6 | S6c | Backup/monitoring/restore-drill status and documentation | – | 31 |
 
+## 3a. The stack — merge order (as of 2026-10-27)
+
+Every branch below is stacked on the one before it; merge **in this order** (each PR's base is the previous branch; GitHub retargets the next PR when its base is merged). **A merge deploys nothing.** The migrations that come with the stack are 34 (accounts), 35 (approvals, append-only log), 36 (warehouse), 37 (quote follow-up), 38 (product history), 39 (scheduled publishing), 40 (translation status), 41 (warehouse counts), 42 (site content); the order in which to apply them and the rollback of each are in `docs/PANEL_RELEASE_RUNBOOK.md`.
+
+| # | PR | Branch | What |
+| --- | --- | --- | --- |
+| 1 | #204 / #207 | `feat/product-delete`, `fix/destructive-audit-fail-closed` | permanent delete of archived products; attempt-then-outcome audit |
+| 2 | #206 | `feat/panel-i18n` | the panels in Persian, Tajik, English |
+| 3 | #208 | `feat/panel-authz` | the permission model (S2a) |
+| 4 | #209 | `feat/panel-accounts` | personal accounts + enforced permissions (migration 34) |
+| 5 | #210 | `feat/panel-users-ui` | people screen, own password / two-step (S2c, S2d) |
+| 6 | #211 | `feat/panel-approvals` | approval queue + activity log v2 (migration 35) |
+| 7 | #212 | `feat/panel-ui-permissions` | buttons follow permissions; warehouse core (migration 36) |
+| 8 | #213 | `feat/panel-warehouse-ui` | warehouse screens |
+| 9 | #214 | `feat/panel-quote-followup` | quote follow-up, report, CSV (migration 37) |
+| 10 | #215 | `feat/panel-product-versions` | optimistic lock, history, revert (migration 38) |
+| 11 | #216 | `feat/panel-media` | media library |
+| 12 | #217 | `feat/panel-scheduling` | scheduled publishing (migration 39) |
+| 13 | #218 | `feat/panel-search` | quick search |
+| 14 | #219 | `feat/panel-translation-status` | translation status (migration 40) |
+| 15 | #220 | `feat/warehouse-counts` | stock counts, minimum levels, reports (migration 41) |
+| 16 | #221 | `feat/site-content` | banner + FAQ (migration 42) |
+| 17 | #222 | `feat/followup-reminder` | follow-ups in the daily Telegram reminder |
+| 18 | #223 | `feat/list-bounds` | bounded product / quote lists |
+| 19 | #224 | `feat/product-preview` | per-language preview + gap checklist |
+
 ## 4. Release template (every release that has a migration)
 
 1. Merge the reviewed PRs (a merge deploys nothing).
@@ -149,4 +175,4 @@ public route/API/payload/print path.
 | S6a site content: announcement banner and FAQ per house, edited in the panel (rights per field, schedule, optimistic lock), shown on the public pages (migration 42) | branch `feat/site-content` (`docs/SITE_CONTENT.md`) | `tests/site-content*.test.mjs` (PostgreSQL 16 for the migration), `tests/e2e/site-content.e2e.mjs` |
 | S5a (bounded version): the product and quote lists of both panels load at most 2000 / 1500 rows (newest first) instead of everything, and say so when they reach the bound (the quick search at the top searches the whole catalogue on the server). **Full server-side paging / filtering is not built** — the lists still filter and sort in the browser | branch `feat/list-bounds` (`lib/operator/listLimits.js`) | `tests/list-limits.test.mjs` |
 | S5b (as built): inside the live preview of both product forms, a per-language view of what a visitor sees (the public product page's own fallback to English is shown as a badge; Tajik first) and a checklist of what the product page still lacks (image, SKU, category, names, descriptions, specs). It only points at gaps and **never blocks a save**; no public route was touched (a preview of a draft on the real public page, and blocking publish rules, are **not built** — they need a decision on which gaps may block) | branch `feat/product-preview` (`lib/operator/previewView.js`, `components/operator/PreviewLanguages.jsx`) | `tests/preview-view.test.mjs`, `tests/e2e/product-preview.e2e.mjs` |
-| S6b (appearance, personal shortcuts) | not built: language and light/dark mode already exist per person; pinned shortcuts / start page need a per-person preferences column and are deferred | |
+| S6b: the quick search is built (branch `feat/panel-search`); **personal settings and pinned shortcuts are not built** — language and light/dark mode already exist per person, pinned shortcuts / a start page need a per-person preferences column and are deferred | | |
