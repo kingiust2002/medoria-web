@@ -183,3 +183,8 @@ test("accounts are never erased; session policy ends sessions when power changes
   assert.equal(sessionPolicy(before, { ...before }, { twoFactorChanged: true }), "end_all");
   assert.equal(sessionPolicy(before, { ...before, approval: { health: [] } }), "refresh");
 });
+
+test("an owner always has both houses", () => {
+  const r = checkUserChange({ actor: owner(), target: null, change: { role: "owner", houses: ["health"] }, users: [owner()] });
+  assert.ok(r.errors.includes("owner_needs_both_houses"));
+});
