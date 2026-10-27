@@ -60,7 +60,7 @@ test("Beauty searches its own data and the phone menu has the search button", as
   const ctx = await browser.newContext({ viewport: { width: 390, height: 800 } });
   const page = await ctx.newPage();
   await open(page, "beauty");
-  await page.getByTestId("search-open").first().click();
+  await page.locator('[data-testid="search-open"]:visible').first().click();
   await page.getByTestId("search-input").fill("E2E Beauty");
   await page.getByTestId("search-group-quotes").waitFor();
   assert.ok(!(await page.getByTestId("search-results").innerText()).includes("E2E Customer 1"), "Health requests are not in Beauty's results");
