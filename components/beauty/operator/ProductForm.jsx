@@ -111,10 +111,10 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
 
   useEffect(() => {
     if (editing || !dirty) return;
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ f, gallery, specs, priceOnRequest, at: Date.now() })); } catch { /* storage full */ }
     }, 600);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [f, gallery, specs, priceOnRequest, dirty, editing]);
 
   useEffect(() => {

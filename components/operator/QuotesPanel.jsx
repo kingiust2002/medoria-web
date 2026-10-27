@@ -69,7 +69,7 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
   }, [router]);
 
   const counts = useMemo(() => { const c = {}; for (const x of quotes) c[x.status] = (c[x.status] || 0) + 1; return c; }, [quotes]);
-  const tabCounts = useMemo(() => Object.fromEntries(TABS.map((t) => [t.id, quotes.filter((x) => inTab(x, t.id)).length])), [quotes]);
+  const tabCounts = useMemo(() => Object.fromEntries(TABS.map((tb) => [tb.id, quotes.filter((x) => inTab(x, tb.id)).length])), [quotes]);
   const statusOptions = tab === "active" ? QUOTE_ACTIVE_STATUSES : tab === "all" ? QUOTE_STATUSES : [];
 
   const rows = useMemo(() => {
@@ -159,12 +159,12 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
       <PageHeader title="استعلام‌ها" subtitle={`${nActive} فعال · ${nArch} آرشیو · ${nSpam} اسپم`} />
 
       <div role="tablist" aria-label="دسته‌بندی استعلام‌ها" className="flex flex-wrap gap-2 mb-3">
-        {TABS.map((t) => {
-          const on = tab === t.id;
+        {TABS.map((tb) => {
+          const on = tab === tb.id;
           return (
-            <button key={t.id} type="button" role="tab" aria-selected={on} onClick={() => goTab(t.id)}
+            <button key={tb.id} type="button" role="tab" aria-selected={on} onClick={() => goTab(tb.id)}
               className={`btn-ghost size-sm ${on ? "!border-brand-violet/60 !text-brand-violet !bg-brand-violet/5" : ""}`}>
-              {t.label} <span className="text-ink-faint tabular">{tabCounts[t.id]}</span>
+              {tb.label} <span className="text-ink-faint tabular">{tabCounts[tb.id]}</span>
             </button>
           );
         })}

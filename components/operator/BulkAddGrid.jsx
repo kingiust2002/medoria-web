@@ -72,14 +72,14 @@ export default function BulkAddGrid({ categories }) {
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       try {
         const keep = rows.filter((r) => r._status !== "saved");
         if (keep.some(hasContent)) localStorage.setItem(DRAFT_KEY, JSON.stringify({ defaults, rows: keep }));
         else localStorage.removeItem(DRAFT_KEY);
       } catch { /* storage full */ }
     }, 700);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [rows, defaults]);
 
   useEffect(() => {
