@@ -30,13 +30,13 @@ const inTab = (x, tab) => (tab === "all" ? true : tab === "active" ? x.status !=
 const MOVED = { archived: tr("درخواست به آرشیو منتقل شد."), spam: tr("درخواست به اسپم منتقل شد."), new: tr("درخواست بازگردانی شد.") };
 const BULK_MOVED = { archived: tr("{count} درخواست به آرشیو منتقل شد."), spam: tr("{count} درخواست به اسپم منتقل شد."), new: tr("{count} درخواست بازگردانی شد.") };
 
-export default function QuotesPanel({ quotes: initial, actions, now: nowProp, reportHref = null, people = [] }) {
+export default function QuotesPanel({ quotes: initial, actions, now: nowProp, reportHref = null, people = [], initialQuery = "" }) {
   const t = useT();
   const { date: fmtDate, lang } = usePanelLang();
   const router = useRouter();
   const [quotes, setQuotes] = useState(initial);
   const [tab, setTab] = useState("active");
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(initialQuery);
   const [status, setStatus] = useState("");
   const [who, setWho] = useState("");                 // "" = everyone · "__none" = unassigned · else a name
   const [attention, setAttention] = useState(false);  // only requests that need follow-up

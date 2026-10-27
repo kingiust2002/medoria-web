@@ -27,6 +27,21 @@ export function createMemoryAdmin(seed = {}, { unique = {}, defaults = {}, befor
     q.is = (c, v) => add((r) => (v === null ? r[c] === null || r[c] === undefined : r[c] === v));
     q.ilike = (c, pat) => add((r) => typeof r[c] === "string" && new RegExp(`^${String(pat).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/%/g, ".*").replace(/_/g, ".")}$`, "i").test(r[c]));
     q.not = (c, op, v) => add((r) => !(op === "is" ? (v === null ? r[c] === null || r[c] === undefined : r[c] === v) : op === "eq" ? r[c] === v : op === "in" ? v.includes(r[c]) : false));
+    // .or("col.ilike.%x%,col2.eq.y") — the two operators the panel uses; a backslash makes the next % or _ literal
+    q.or = (expr) => {
+      const alts = String(expr).split(",").map((a) => { const m = /^(\w+)\.(ilike|eq)\.(.*)$/.exec(a); return m ? { col: m[1], op: m[2], val: m[3] } : null; }).filter(Boolean);
+      const likeRegex = (pat) => {
+        let out = "";
+        for (let i = 0; i < pat.length; i++) {
+          const ch = pat[i];
+          if (ch === "\\" && (pat[i + 1] === "%" || pat[i + 1] === "_")) { out += pat[++i].replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); continue; }
+          out += ch === "%" ? ".*" : ch === "_" ? "." : ch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        }
+        return new RegExp(`^${out}$`, "i");
+      };
+      const test = ({ col, op, val }, r) => { const v = r[col]; return op === "eq" ? v !== undefined && String(v) === val : typeof v === "string" && likeRegex(val).test(v); };
+      return add((r) => alts.some((a) => test(a, r)));
+    };
     q.in = (c, vs) => add((r) => vs.includes(r[c]));
     q.lt = (c, v) => add((r) => r[c] < v);
     q.lte = (c, v) => add((r) => r[c] <= v);
