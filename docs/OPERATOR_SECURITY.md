@@ -91,12 +91,22 @@ Use the second one when a password, a phone or a computer may have fallen into t
 
 A product is removed for good only after it was **archived** (the eye/archive button): the delete button exists only on archived
 rows, the person types the product's SKU (its English name when it has none) and the **server** repeats every check
-(`lib/operator/productDelete.js`): valid session, archived, matching text, the deletion written to the activity log first (no log,
-no delete), and the delete itself repeats "archived" so a product re-activated a moment earlier survives. Customer requests keep
-the product's name and SKU (their `product_id` link becomes empty); uploaded image files are **not** removed from storage (a
-duplicated product shares its file). The log shows "حذف دائمی محصول" with the SKU. Tests: `tests/product-delete.test.mjs`,
-`tests/e2e/product-delete.e2e.mjs`. Every product action also validates its id (positive integer, at most 500 ids in bulk), and
-`tests/panel-actions-guard.test.mjs` fails if any operator server action stops opening with a session check.
+(`lib/operator/productDelete.js`): valid session, archived, matching text, and the history:
+
+1. an **attempt** entry (`product.delete_attempt`) is written first. If it cannot be written — the table does not exist
+   (migration 30 not applied), the database fails, or no audit function is wired — **nothing is deleted**: a missing log is a
+   refusal, never a permission;
+2. the delete repeats "archived" in its own condition, so a product re-activated a moment earlier survives;
+3. the **outcome** is a different entry: `product.delete` only when a row was really removed, `product.delete_failed` (reason
+   `state_changed` or `db_error`) otherwise. A failed delete can therefore never read as a successful one. If only the outcome
+   entry cannot be written, the history shows an attempt without an outcome and the panel result says so.
+
+Customer requests keep the product's name and SKU (their `product_id` link becomes empty); uploaded image files are **not**
+removed from storage (a duplicated product shares its file). Tests: `tests/product-delete.test.mjs` (red against the first
+version, green now), `tests/e2e/product-delete.e2e.mjs`. Every product action also validates its id (positive integer, at most
+500 ids in bulk), and `tests/panel-actions-guard.test.mjs` fails if any operator server action stops opening with a session
+check.
+
 ## Pages and data readers check the session themselves (found 2026-10-27)
 
 A panel layout redirects visitors who have no session, but **a layout is not a security boundary**: Next.js renders a layout

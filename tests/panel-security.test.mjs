@@ -308,7 +308,7 @@ test("every changing server action writes to the activity log; the few exception
   assert.match(helper, /logFirst\(audit, \{ action: "quote\.delete"/);
   assert.match(helper, /logAfter\(audit, \{ action: "quote\.status"/);
   assert.match(read("lib/operator/quoteOps.js"), /action: "quote\.assign"/);
-  assert.match(read("lib/operator/productDelete.js"), /logFirst\(audit, \{ action: "product\.delete"/);
+  assert.match(read("lib/operator/productDelete.js"), /action: "product\.delete_attempt"/);
   assert.match(read("lib/operator/importActions.js"), /action: "product\.import"/);
 });
 
@@ -319,7 +319,8 @@ test("a deletion is logged BEFORE it happens and refused when the log cannot be 
     assert.ok(body.indexOf("logFirst(") < body.indexOf(".delete()"), `${fn} deletes before it logs`);
   }
   const productBody = read("lib/operator/productDelete.js").match(/export async function deleteProductGuarded\(([\s\S]*?)\n\}\n/)[1];
-  assert.ok(productBody.indexOf("logFirst(") < productBody.indexOf(".delete()"), "deleteProductGuarded deletes before it logs");
+  assert.ok(productBody.indexOf("product.delete_attempt") < productBody.indexOf(".delete()"), "deleteProductGuarded deletes before it logs the attempt");
+  assert.ok(productBody.indexOf(".delete()") < productBody.lastIndexOf('action: "product.delete"'), "the outcome is written after the delete");
   for (const [f, call] of [["lib/beauty/operator/actions.js", 'auditFirst("category.delete"'], ["lib/beauty/operator/actions.js", 'auditFirst("brand.delete"'], ["lib/operator/categoryTreeActions.js", 'auditFirst("category.delete"']]) {
     const s = read(f);
     assert.ok(s.indexOf(call) > 0 && s.indexOf(call) < s.indexOf(".delete()", s.indexOf(call)), `${f}: ${call} must come before the delete`);
