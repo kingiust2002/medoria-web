@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
 import { Spinner } from "@/components/operator/ui";
 import { useT } from "@/components/panel/PanelI18n";
+import PanelLangSwitch from "@/components/panel/PanelLangSwitch";
 
 export default function LoginForm() {
   const t = useT();
@@ -42,7 +43,8 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen grid place-items-center p-4 bg-brand-gradient-soft dark:bg-canvas">
+    <div className="relative min-h-screen grid place-items-center p-4 bg-brand-gradient-soft dark:bg-canvas">
+      <div className="absolute top-4 end-4 z-10"><PanelLangSwitch /></div>
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center gap-3 mb-7 text-center">
           <span className="grid place-items-center w-14 h-14 rounded-2xl bg-brand-gradient text-white shadow-brand">

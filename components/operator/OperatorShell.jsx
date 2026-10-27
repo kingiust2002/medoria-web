@@ -7,6 +7,7 @@ import { useTheme } from "next-themes";
 import Icon from "@/components/shared/Icon";
 import { requestLogout } from "@/lib/operator/logoutClient";
 import LogoutAlert from "@/components/operator/LogoutAlert";
+import PanelLangSwitch from "@/components/panel/PanelLangSwitch";
 import { useIdleLogout } from "@/lib/useIdleLogout";
 import { useT } from "@/components/panel/PanelI18n";
 import { tr } from "@/lib/panel/i18n";
@@ -86,6 +87,7 @@ export default function OperatorShell({ children }) {
         <div className="pt-2"><Brandblock /></div>
         <NavLinks />
         <div className="mt-auto flex flex-col gap-1 border-t border-line pt-3">
+          <div className="px-3.5 pb-2"><PanelLangSwitch /></div>
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="flex items-center gap-3 px-3.5 h-11 rounded-xl text-sm font-medium text-ink-muted hover:bg-line-soft hover:text-ink transition-colors"
@@ -137,6 +139,7 @@ export default function OperatorShell({ children }) {
             </div>
             <NavLinks onNavigate={() => setOpen(false)} />
             <div className="mt-auto flex flex-col gap-1 border-t border-line pt-3">
+          <div className="px-3.5 pb-2"><PanelLangSwitch /></div>
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 className="flex items-center gap-3 px-3.5 h-11 rounded-xl text-sm font-medium text-ink-muted hover:bg-line-soft hover:text-ink"

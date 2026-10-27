@@ -150,7 +150,7 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
     setOpenId((cur) => (ids.has(cur) ? null : cur));
     setSelected((s) => { const n = new Set(s); for (const id of ids) n.delete(id); return n; });
     setDeleting(null); setBulkDeleting(false);
-    if (res?.ok) flash(res.count > 1 ? t("{count} درخواست حذف شد.{v}", { count: res.count, v: res.missing ? ` (${res.missing} مورد دیگر پیدا نشد.)` : "" }) : t("درخواست حذف شد."), true);
+    if (res?.ok) flash(res.count > 1 ? t("{count} درخواست حذف شد.", { count: res.count }) + (res.missing ? " " + t("({missing} مورد دیگر پیدا نشد.)", { missing: res.missing }) : "") : t("درخواست حذف شد."), true);
     else flash(t(res?.error));
     router.refresh();
   }
@@ -233,7 +233,7 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
               <div key={x.id} className={`card overflow-hidden ${isSel ? "ring-2 ring-brand-violet/40" : ""}`}>
                 <div className="flex items-stretch">
                 <label className="grid place-items-center w-11 shrink-0 cursor-pointer border-l border-line hover:bg-line-soft/40 transition-colors" title={t("انتخاب")}>
-                  <input type="checkbox" checked={isSel} onChange={() => toggle(x.id)} aria-label={t("انتخاب {v}", { v: x.name || "درخواست" })} className="w-4 h-4 accent-brand-violet" />
+                  <input type="checkbox" checked={isSel} onChange={() => toggle(x.id)} aria-label={x.name ? t("انتخاب {name}", { name: x.name }) : t("انتخاب درخواست")} className="w-4 h-4 accent-brand-violet" />
                 </label>
                 <button onClick={() => setOpenId(open ? null : x.id)} className="min-w-0 flex-1 px-4 py-3.5 flex items-center gap-3 text-right hover:bg-line-soft/40 transition-colors">
                   <span className="hidden sm:grid place-items-center w-10 h-10 rounded-xl bg-brand-violet/10 text-brand-violet shrink-0"><Icon name="user" size={18} /></span>

@@ -181,9 +181,9 @@ for (const file of files) {
   const lastImport = [...sf.statements].filter(ts.isImportDeclaration).pop();
   const at = lastImport ? lastImport.end : 0;
   const imps = [];
-  const rel = isServerActions || file.startsWith("lib/") ? null : "@/lib/panel/i18n";
+  const relImport = file.startsWith("lib/") ? path.relative(path.dirname(file), "lib/panel/i18n.js").replace(/\\/g, "/") : "@/lib/panel/i18n";
   if (usedBy.size) imps.push(isClient ? 'import { useT } from "@/components/panel/PanelI18n";' : 'import { getT } from "@/lib/panel/server";');
-  if (usesTr) imps.push('import { tr } from "@/lib/panel/i18n";');
+  if (usesTr) imps.push(`import { tr } from "${relImport.startsWith(".") ? relImport : "./" + relImport}";`.replace('"@/lib/panel/i18n"', '"@/lib/panel/i18n"'));
   hookEdits.push({ start: at, end: at, text: (lastImport ? "\n" : "\n") + imps.join("\n") + (lastImport ? "" : "\n") });
 
   const all = [...edits, ...hookEdits].sort((a, b) => b.start - a.start || b.end - a.end);

@@ -5,6 +5,7 @@ import Icon from "@/components/shared/Icon";
 import { BeautyWordLockup } from "@/components/beauty/BeautyBrand";
 import { Spinner } from "@/components/operator/ui";
 import { useT } from "@/components/panel/PanelI18n";
+import PanelLangSwitch from "@/components/panel/PanelLangSwitch";
 
 export default function LoginForm() {
   const t = useT();
@@ -44,9 +45,10 @@ export default function LoginForm() {
 
   return (
     <div
-      className="min-h-screen grid place-items-center p-4 dark:bg-canvas"
+      className="relative min-h-screen grid place-items-center p-4 dark:bg-canvas"
       style={{ background: "linear-gradient(160deg,#FBF6EE 0%,#F6E9DB 55%,#EFD9C4 100%)" }}
     >
+      <div className="absolute top-4 end-4 z-10"><PanelLangSwitch /></div>
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center gap-4 mb-7 text-center">
           <span className="inline-flex items-center rounded-full bg-white/95 px-4 py-2 shadow-soft ring-1 ring-black/5">

@@ -11,6 +11,7 @@ import Icon from "@/components/shared/Icon";
 import { BeautyWordLockup } from "@/components/beauty/BeautyBrand";
 import { requestLogout } from "@/lib/operator/logoutClient";
 import LogoutAlert from "@/components/operator/LogoutAlert";
+import PanelLangSwitch from "@/components/panel/PanelLangSwitch";
 import { useIdleLogout } from "@/lib/useIdleLogout";
 import { useT } from "@/components/panel/PanelI18n";
 import { tr } from "@/lib/panel/i18n";
@@ -107,6 +108,7 @@ export default function OperatorShell({ children }) {
         <div className="pt-2"><Brandblock /></div>
         <NavLinks />
         <div className="mt-auto flex flex-col gap-1 border-t border-line pt-3">
+          <div className="px-3.5 pb-2"><PanelLangSwitch /></div>
           <ThemeButton />
           <button
             onClick={logout}
@@ -154,6 +156,7 @@ export default function OperatorShell({ children }) {
             </div>
             <NavLinks onNavigate={() => setOpen(false)} />
             <div className="mt-auto flex flex-col gap-1 border-t border-line pt-3">
+          <div className="px-3.5 pb-2"><PanelLangSwitch /></div>
               <ThemeButton full />
               <button onClick={logout} className="flex items-center gap-3 px-3.5 h-11 rounded-xl text-sm font-medium text-ink-muted hover:bg-warn/10 hover:text-warn">
                 <Icon name="logout" size={18} />{t("خروج")}</button>
