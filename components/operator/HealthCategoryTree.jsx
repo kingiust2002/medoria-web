@@ -12,12 +12,13 @@ import {
   setHealthCategorySubtreeActive,
   updateHealthCategory,
 } from "@/lib/operator/categoryTreeActions";
-import { useT } from "@/components/panel/PanelI18n";
+import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { tr } from "@/lib/panel/i18n";
+import { localName } from "@/lib/panel/i18n";
 
 const LEVEL_LABELS = { 1: tr("دسته اصلی"), 2: tr("زیردسته"), 3: tr("زیرزیردسته") };
 const ICON_OPTIONS = ["gloves", "mask", "stethoscope", "bandage", "thermometer", "flask", "syringe", "shieldPlus", "package", "hospital", "building", "layers", "pill"];
-const nameOf = (node) => node.name_fa || node.name_en || node.name_tg || node.name_ru || node.slug;
+const nameOf = (node, lang = "fa") => localName(node, lang);
 const norm = (value) => String(value || "").trim().toLowerCase();
 
 function flatten(tree) {
@@ -34,6 +35,7 @@ function flatten(tree) {
 
 export default function HealthCategoryTree({ tree }) {
   const t = useT();
+  const { lang } = usePanelLang();
   const router = useRouter();
   const [expanded, setExpanded] = useState(() => new Set());
   const [query, setQuery] = useState("");
@@ -139,7 +141,7 @@ export default function HealthCategoryTree({ tree }) {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className={`${depth === 0 ? "font-bold" : "font-medium"} text-[13.5px] text-ink truncate`}>{nameOf(node)}</span>
+                      <span className={`${depth === 0 ? "font-bold" : "font-medium"} text-[13.5px] text-ink truncate`}>{nameOf(node, lang)}</span>
                       <span className="text-[10px] text-ink-faint shrink-0">{LEVEL_LABELS[node.level] ? t(LEVEL_LABELS[node.level]) : t("دسته")}</span>
                       {Number(count || 0) > 0 && <span className="text-[10px] rounded-full bg-line-soft text-ink-muted px-1.5 py-0.5 shrink-0">{t("{count} محصول", { count })}</span>}
                     </div>
@@ -174,6 +176,7 @@ export default function HealthCategoryTree({ tree }) {
 
 function CategoryModal({ modal, onClose, onDone }) {
   const t = useT();
+  const { lang } = usePanelLang();
   const editing = modal.mode === "edit";
   const source = editing ? modal.node : null;
   const parent = modal.parent || null;
@@ -208,7 +211,7 @@ function CategoryModal({ modal, onClose, onDone }) {
       <div className="absolute inset-0 bg-navy/45 backdrop-blur-sm" />
       <form onSubmit={submit} onClick={(event) => event.stopPropagation()} className="relative card p-6 w-full max-w-2xl max-h-[92vh] overflow-auto" dir="rtl">
         <div className="flex items-center justify-between mb-5">
-          <div><h2 className="text-lg font-bold text-ink">{editing ? t("ویرایش دسته") : parent ? t("افزودن زیرمجموعه به «{nameOf}»", { nameOf: nameOf(parent) }) : t("دسته اصلی جدید")}</h2><p className="text-xs text-ink-muted mt-1">{t("سطح {level}: {v}", { level, v: LEVEL_LABELS[level] })}</p></div>
+          <div><h2 className="text-lg font-bold text-ink">{editing ? t("ویرایش دسته") : parent ? t("افزودن زیرمجموعه به «{nameOf}»", { nameOf: nameOf(parent, lang) }) : t("دسته اصلی جدید")}</h2><p className="text-xs text-ink-muted mt-1">{t("سطح {level}: {v}", { level, v: LEVEL_LABELS[level] })}</p></div>
           <button type="button" onClick={onClose} className="w-9 h-9 rounded-lg grid place-items-center text-ink-muted hover:bg-line-soft"><Icon name="close" size={18} /></button>
         </div>
         {error && <div className="mb-4 rounded-xl px-3 py-2.5 text-sm bg-warn/10 text-warn">{error}</div>}
@@ -238,6 +241,7 @@ function CategoryModal({ modal, onClose, onDone }) {
 
 function DeleteModal({ node, leaves, onClose, onDone }) {
   const t = useT();
+  const { lang } = usePanelLang();
   const hasChildren = Boolean(node.children?.length);
   const count = Number(node.product_count || 0);
   const targets = leaves.filter((item) => item.id !== node.id);
@@ -259,9 +263,9 @@ function DeleteModal({ node, leaves, onClose, onDone }) {
     <div className="fixed inset-0 z-50 grid place-items-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-navy/45 backdrop-blur-sm" />
       <div onClick={(event) => event.stopPropagation()} className="relative card p-6 w-full max-w-md" dir="rtl">
-        <div className="flex items-center justify-between mb-4"><h2 className="text-lg font-bold text-ink">{t("حذف «{nameOf}»", { nameOf: nameOf(node) })}</h2><button type="button" onClick={onClose} className="w-9 h-9 rounded-lg grid place-items-center text-ink-muted hover:bg-line-soft"><Icon name="close" size={18} /></button></div>
+        <div className="flex items-center justify-between mb-4"><h2 className="text-lg font-bold text-ink">{t("حذف «{nameOf}»", { nameOf: nameOf(node, lang) })}</h2><button type="button" onClick={onClose} className="w-9 h-9 rounded-lg grid place-items-center text-ink-muted hover:bg-line-soft"><Icon name="close" size={18} /></button></div>
         {error && <div className="mb-4 rounded-xl px-3 py-2.5 text-sm bg-warn/10 text-warn">{error}</div>}
-        {hasChildren ? <p className="text-sm leading-7 text-ink-soft">{t("این دسته زیرمجموعه دارد. ابتدا زیرمجموعه‌ها را جابه‌جا یا حذف کنید.")}</p> : count > 0 ? <><p className="text-sm leading-7 text-ink-soft mb-4">{t("این دسته {count} محصول دارد. محصولات قبل از حذف منتقل می‌شوند.", { count })}</p><Field label={t("دسته مقصد")} required><Select value={targetId} onChange={(event) => setTargetId(event.target.value)}><option value="">{t("— انتخاب دسته مقصد —")}</option>{targets.map((target) => <option value={target.id} key={target.id}>{nameOf(target)}</option>)}</Select></Field></> : <p className="text-sm leading-7 text-ink-soft">{t("این دسته محصول و زیرمجموعه‌ای ندارد و می‌تواند حذف شود.")}</p>}
+        {hasChildren ? <p className="text-sm leading-7 text-ink-soft">{t("این دسته زیرمجموعه دارد. ابتدا زیرمجموعه‌ها را جابه‌جا یا حذف کنید.")}</p> : count > 0 ? <><p className="text-sm leading-7 text-ink-soft mb-4">{t("این دسته {count} محصول دارد. محصولات قبل از حذف منتقل می‌شوند.", { count })}</p><Field label={t("دسته مقصد")} required><Select value={targetId} onChange={(event) => setTargetId(event.target.value)}><option value="">{t("— انتخاب دسته مقصد —")}</option>{targets.map((target) => <option value={target.id} key={target.id}>{nameOf(target, lang)}</option>)}</Select></Field></> : <p className="text-sm leading-7 text-ink-soft">{t("این دسته محصول و زیرمجموعه‌ای ندارد و می‌تواند حذف شود.")}</p>}
         <div className="flex gap-2 mt-6"><button type="button" onClick={remove} disabled={busy || hasChildren || (count > 0 && !targetId)} className="btn-primary size-md flex-1 !bg-warn hover:!bg-warn/90 disabled:opacity-50">{busy ? <Spinner size={17} /> : <Icon name="trash" size={17} />}{busy ? t("در حال حذف…") : t("حذف")}</button><button type="button" onClick={onClose} className="btn-ghost size-md">{t("انصراف")}</button></div>
       </div>
     </div>

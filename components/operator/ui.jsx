@@ -1,7 +1,7 @@
 // components/operator/ui.jsx — small presentational building blocks for the panel.
 // Pure components (no client hooks) — safe to use from server or client trees.
 import Icon from "@/components/shared/Icon";
-import { tr } from "@/lib/panel/i18n";
+import { localName } from "@/lib/panel/i18n";
 
 export function PageHeader({ title, subtitle, children }) {
   return (
@@ -146,8 +146,8 @@ export function Spinner({ size = 16 }) {
 }
 
 // ── plain helpers (Persian-first, no i18n dependency) ─────────────────────────
-export function productDisplayName(p) {
-  return p?.name_fa || p?.name_en || p?.name_ru || p?.name_tg || p?.sku || `#${p?.id ?? ""}`;
+export function productDisplayName(p, lang = "fa") {
+  return localName(p, lang, p?.sku || `#${p?.id ?? ""}`);
 }
 export function isOnRequest(p) {
   return p == null || p.price == null || p.price === "" || Number(p.price) === 0;

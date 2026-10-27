@@ -106,7 +106,7 @@ export default async function DashboardPage() {
                       {img ? <img src={img} alt="" className="w-full h-full object-cover" /> : <Icon name="image" size={16} />}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-ink truncate">{productDisplayName(p)}</p>
+                      <p className="font-medium text-ink truncate">{productDisplayName(p, lang)}</p>
                       <p className="text-xs text-ink-muted truncate">{p.sku || "—"} · {priceText(p, t)}</p>
                     </div>
                     <Link href={`/operator/products/${p.id}/edit`} className="btn-ghost size-xs shrink-0">

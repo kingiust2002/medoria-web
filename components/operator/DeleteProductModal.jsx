@@ -6,10 +6,11 @@ import { useState } from "react";
 import Icon from "@/components/shared/Icon";
 import { Spinner, productDisplayName } from "@/components/operator/ui";
 import { expectedConfirmation, confirmationMatches } from "@/lib/operator/productDelete";
-import { useT } from "@/components/panel/PanelI18n";
+import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 
 export default function DeleteProductModal({ product, onClose, onDelete, onDone }) {
   const t = useT();
+  const { lang } = usePanelLang();
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -40,7 +41,7 @@ export default function DeleteProductModal({ product, onClose, onDelete, onDone 
         {err && <div role="alert" className="mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn"><Icon name="alertTriangle" size={16} /> {err}</div>}
 
         <div className="rounded-xl bg-canvas-soft border border-line p-3 text-sm mb-3 min-w-0">
-          <p className="font-medium text-ink break-words">{productDisplayName(product)}</p>
+          <p className="font-medium text-ink break-words">{productDisplayName(product, lang)}</p>
           {product.sku && <p className="text-xs text-ink-muted mt-0.5 break-all" dir="ltr">{product.sku}</p>}
         </div>
 

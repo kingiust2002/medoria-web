@@ -12,13 +12,15 @@ import SpecsEditor from "@/components/operator/SpecsEditor";
 import QuickCategoryModal from "@/components/beauty/operator/QuickCategoryModal";
 import { BEAUTY_WORLDS } from "@/lib/beauty/operator/constants";
 import { SectionCard, Field, Input, Textarea, Select, Toggle, Spinner } from "@/components/operator/ui";
-import { useT } from "@/components/panel/PanelI18n";
+import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import Trans from "@/components/panel/Trans";
+import { localName } from "@/lib/panel/i18n";
 
 // Category options grouped by world (Sephora-style two-level taxonomy) so a
 // long category list stays scannable in the select.
 function CategoryOptions({ cats }) {
   const t = useT();
+  const { lang } = usePanelLang();
   const worldless = cats.filter((c) => !c.world);
   return (
     <>
@@ -26,14 +28,14 @@ function CategoryOptions({ cats }) {
         const inWorld = cats.filter((c) => c.world === w.value);
         if (!inWorld.length) return null;
         return (
-          <optgroup key={w.value} label={w.label}>
-            {inWorld.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{c.name_fa || c.name_en || c.slug}</option>)}
+          <optgroup key={w.value} label={t(w.label)}>
+            {inWorld.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{localName(c, lang)}</option>)}
           </optgroup>
         );
       })}
       {worldless.length > 0 && (
         <optgroup label={t("بدون دنیا")}>
-          {worldless.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{c.name_fa || c.name_en || c.slug}</option>)}
+          {worldless.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{localName(c, lang)}</option>)}
         </optgroup>
       )}
     </>
@@ -45,6 +47,7 @@ const DRAFT_KEY = "medoria_beauty_operator_product_draft_v1";
 
 export default function ProductForm({ mode, product, categories, initialBrand = "" }) {
   const t = useT();
+  const { lang } = usePanelLang();
   const router = useRouter();
   const editing = mode === "edit";
   const galleryRef = useRef(null);
@@ -166,7 +169,7 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
   }
 
   const selectedCat = cats.find((c) => String(c.id) === String(f.category_id));
-  const catLabel = selectedCat ? (selectedCat.name_fa || selectedCat.name_en || selectedCat.slug) : t("بدون دسته");
+  const catLabel = selectedCat ? (localName(selectedCat, lang)) : t("بدون دسته");
   const previewImg = f.image_url ? imageUrl(f.image_url) : null;
   const priceLabel = priceOnRequest || !f.price ? t("استعلام قیمت") : `$${Number(f.price).toFixed(2)}`;
 
@@ -370,7 +373,7 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
               <Field label={t("حداقل سفارش")}><Input type="number" min="1" value={f.min_order_qty} onChange={(e) => up("min_order_qty", e.target.value)} dir="ltr" /></Field>
             </div>
             <div className="grid sm:grid-cols-2 gap-4 mt-4 items-center">
-              <Field label={t("نشان محصول")}><Select value={f.badge} onChange={(e) => up("badge", e.target.value)}>{PRODUCT_BADGES.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}</Select></Field>
+              <Field label={t("نشان محصول")}><Select value={f.badge} onChange={(e) => up("badge", e.target.value)}>{PRODUCT_BADGES.map((b) => <option key={b.value} value={b.value}>{t(b.label)}</option>)}</Select></Field>
               <div className="rounded-xl bg-canvas-soft border border-line p-3.5 mt-6 sm:mt-5"><Toggle checked={f.in_stock} onChange={(v) => up("in_stock", v)} label={t("موجود است")} /></div>
             </div>
           </SectionCard>

@@ -14,7 +14,8 @@ import { COMMIT_CHUNK_SIZE } from "@/lib/operator/importCore";
 import { PRODUCT_BADGES } from "@/lib/operator/constants";
 import QuickCategoryModal from "@/components/operator/QuickCategoryModal";
 import { PageHeader, SectionCard, Field, Input, Select, Toggle, Badge, Spinner } from "@/components/operator/ui";
-import { useT } from "@/components/panel/PanelI18n";
+import { useT, usePanelLang } from "@/components/panel/PanelI18n";
+import { localName } from "@/lib/panel/i18n";
 
 const DRAFT_KEY = "medoria_operator_bulk_draft_v1";
 let keySeq = 1;
@@ -41,6 +42,7 @@ function hasContent(r) {
 
 export default function BulkAddGrid({ categories }) {
   const t = useT();
+  const { lang } = usePanelLang();
   const router = useRouter();
   const [cats, setCats] = useState(categories);
   const [defaults, setDefaults] = useState(DEFAULTS);
@@ -264,7 +266,7 @@ export default function BulkAddGrid({ categories }) {
             <div className="flex gap-1.5">
               <Select className={inputCx} value={defaults.category_id} onChange={(e) => setDefaults((d) => ({ ...d, category_id: e.target.value }))}>
                 <option value="">{t("— بدون دسته —")}</option>
-                {cats.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{c.name_fa || c.name_en || c.slug}</option>)}
+                {cats.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{localName(c, lang)}</option>)}
               </Select>
               <button type="button" onClick={() => setCatModal(true)} title={t("دسته جدید")} className="btn-ghost size-sm !h-9 shrink-0"><Icon name="plus" size={15} /></button>
             </div>
@@ -272,7 +274,7 @@ export default function BulkAddGrid({ categories }) {
           <Field label={t("برند")}><Input className={inputCx} value={defaults.brand} onChange={(e) => setDefaults((d) => ({ ...d, brand: e.target.value }))} /></Field>
           <Field label={t("واحد")}><Input className={inputCx} value={defaults.unit} onChange={(e) => setDefaults((d) => ({ ...d, unit: e.target.value }))} placeholder={t("بسته ۱۰۰ عددی")} /></Field>
           <Field label={t("حداقل سفارش")}><Input className={inputCx} type="number" min="1" dir="ltr" value={defaults.min_order_qty} onChange={(e) => setDefaults((d) => ({ ...d, min_order_qty: e.target.value }))} /></Field>
-          <Field label={t("نشان")}><Select className={inputCx} value={defaults.badge} onChange={(e) => setDefaults((d) => ({ ...d, badge: e.target.value }))}>{PRODUCT_BADGES.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}</Select></Field>
+          <Field label={t("نشان")}><Select className={inputCx} value={defaults.badge} onChange={(e) => setDefaults((d) => ({ ...d, badge: e.target.value }))}>{PRODUCT_BADGES.map((b) => <option key={b.value} value={b.value}>{t(b.label)}</option>)}</Select></Field>
           <div className="rounded-xl bg-canvas-soft border border-line px-3 py-2"><Toggle checked={defaults.price_on_request} onChange={(v) => setDefaults((d) => ({ ...d, price_on_request: v }))} label={t("استعلام قیمت")} /></div>
           <div className="rounded-xl bg-canvas-soft border border-line px-3 py-2"><Toggle checked={defaults.in_stock} onChange={(v) => setDefaults((d) => ({ ...d, in_stock: v }))} label={t("موجود")} /></div>
           <div className="rounded-xl bg-canvas-soft border border-line px-3 py-2"><Toggle checked={defaults.is_active} onChange={(v) => setDefaults((d) => ({ ...d, is_active: v }))} label={t("فعال در سایت")} /></div>
@@ -353,6 +355,7 @@ export default function BulkAddGrid({ categories }) {
 
 function BulkRow({ r, idx, cats, saved, error, dupInGrid, nameMissing, inputCx, setRow, duplicateRow, copyFromPrev, removeRow, pickImage, scheduleSkuCheck }) {
   const t = useT();
+  const { lang } = usePanelLang();
   const dis = saved;
   const cellCx = `${inputCx} ${dis ? "opacity-60 pointer-events-none" : ""}`;
   return (
@@ -369,7 +372,7 @@ function BulkRow({ r, idx, cats, saved, error, dupInGrid, nameMissing, inputCx, 
         <td className="px-1.5 py-1.5">
           <Select className={cellCx} value={String(r.category_id || "")} onChange={(e) => setRow(r._key, { category_id: e.target.value })}>
             <option value="">{t("— بدون دسته —")}</option>
-            {cats.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{c.name_fa || c.name_en || c.slug}</option>)}
+            {cats.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{localName(c, lang)}</option>)}
           </Select>
         </td>
         <td className="px-1.5 py-1.5"><Input className={cellCx} value={r.brand} onChange={(e) => setRow(r._key, { brand: e.target.value })} /></td>
@@ -417,7 +420,7 @@ function BulkRow({ r, idx, cats, saved, error, dupInGrid, nameMissing, inputCx, 
             {r._open && (
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mb-2 pt-1">
                 <Field label={t("حداقل سفارش")}><Input className={inputCx} type="number" min="1" dir="ltr" value={r.min_order_qty} onChange={(e) => setRow(r._key, { min_order_qty: e.target.value })} /></Field>
-                <Field label={t("نشان")}><Select className={inputCx} value={r.badge} onChange={(e) => setRow(r._key, { badge: e.target.value })}>{PRODUCT_BADGES.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}</Select></Field>
+                <Field label={t("نشان")}><Select className={inputCx} value={r.badge} onChange={(e) => setRow(r._key, { badge: e.target.value })}>{PRODUCT_BADGES.map((b) => <option key={b.value} value={b.value}>{t(b.label)}</option>)}</Select></Field>
                 <Field label={t("اسلاگ (خالی = خودکار)")}><Input className={inputCx} dir="ltr" value={r.slug} onChange={(e) => setRow(r._key, { slug: e.target.value })} /></Field>
                 <Field label={t("برچسب‌ها (با | جدا کنید)")}><Input className={inputCx} value={r.tags} onChange={(e) => setRow(r._key, { tags: e.target.value })} /></Field>
                 <div className="sm:col-span-2 lg:col-span-3"><Field label={t("آدرس تصویر (یا از دکمه آپلود)")}><Input className={inputCx} dir="ltr" value={r.image_url} onChange={(e) => setRow(r._key, { image_url: e.target.value })} placeholder="https://…" /></Field></div>

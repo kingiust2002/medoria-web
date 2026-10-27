@@ -15,13 +15,14 @@ import Icon from "@/components/shared/Icon";
 import { beautyImageUrl as imageUrl } from "@/lib/beauty/catalog";
 import { quickUpdateProduct, bulkUpdateProducts } from "@/lib/beauty/operator/actions";
 import { Input, Spinner, productDisplayName } from "@/components/operator/ui";
-import { useT } from "@/components/panel/PanelI18n";
+import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import Trans from "@/components/panel/Trans";
 
 const norm = (s) => String(s || "").trim().toLowerCase();
 
 export default function BrandProductsModal({ brand, products, onClose }) {
   const t = useT();
+  const { lang } = usePanelLang();
   const router = useRouter();
   const brandKey = norm(brand.name);
 
@@ -74,7 +75,7 @@ export default function BrandProductsModal({ brand, products, onClose }) {
     setErr(""); setUnlinking(product.id);
     const res = await quickUpdateProduct(product.id, { brand: null });
     setUnlinking(null);
-    if (res.ok) { setFlash(t("«{productDisplayName}» از این برند جدا شد.", { productDisplayName: productDisplayName(product) })); router.refresh(); }
+    if (res.ok) { setFlash(t("«{productDisplayName}» از این برند جدا شد.", { productDisplayName: productDisplayName(product, lang) })); router.refresh(); }
     else setErr(t(res.error) || t("جداکردن ناموفق بود."));
   }
 
@@ -106,7 +107,7 @@ export default function BrandProductsModal({ brand, products, onClose }) {
                     <span className="w-9 h-9 rounded-lg overflow-hidden bg-line-soft shrink-0 grid place-items-center">
                       {p.image_url ? <img src={imageUrl(p.image_url)} alt="" className="w-full h-full object-cover" /> : <Icon name="package" size={14} className="text-ink-faint" />}
                     </span>
-                    <span className="min-w-0 flex-1 text-[13px] text-ink truncate">{productDisplayName(p)}</span>
+                    <span className="min-w-0 flex-1 text-[13px] text-ink truncate">{productDisplayName(p, lang)}</span>
                     <button
                       type="button"
                       onClick={() => unlink(p)}
@@ -141,7 +142,7 @@ export default function BrandProductsModal({ brand, products, onClose }) {
                         {p.image_url ? <img src={imageUrl(p.image_url)} alt="" className="w-full h-full object-cover" /> : <Icon name="package" size={14} className="text-ink-faint" />}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[13px] text-ink truncate">{productDisplayName(p)}</span>
+                        <span className="block text-[13px] text-ink truncate">{productDisplayName(p, lang)}</span>
                         <span className="block text-[11px] text-ink-faint truncate">{p.brand ? <Trans t={t} k="فعلاً: {brand}" values={{ brand: <span dir="ltr">{p.brand}</span> }} /> : t("بدون برند")}</span>
                       </span>
                     </label>

@@ -3,13 +3,16 @@
 // matching over the locale tree and inherits none of the public chrome.
 // Direction, language and font follow the panel language (Persian / Tajik / English, a cookie). Never indexed.
 import PanelFrame from "@/components/panel/PanelFrame";
-import { tr } from "@/lib/panel/i18n";
+import { getT } from "@/lib/panel/server";
 
-export const metadata = {
-  title: tr("پنل بیوتی | Medoria Beauty"),
-  robots: { index: false, follow: false },
-  icons: { icon: { url: "/brand/beauty-mark-icon.webp", type: "image/webp" }, apple: { url: "/brand/beauty-mark-icon.webp", type: "image/webp" } },
-};
+export async function generateMetadata() {
+  const t = await getT();
+  return {
+    title: t("پنل بیوتی | Medoria Beauty"),
+    robots: { index: false, follow: false },
+    icons: { icon: { url: "/brand/beauty-mark-icon.webp", type: "image/webp" }, apple: { url: "/brand/beauty-mark-icon.webp", type: "image/webp" } },
+  };
+}
 
 export default function BeautyOperatorLayout({ children }) {
   // data-vertical="beauty" puts the whole panel inside the Beauty token scope, so btn-primary / gradient-text render

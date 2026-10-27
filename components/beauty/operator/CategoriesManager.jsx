@@ -7,13 +7,15 @@ import { createCategory, updateCategory, deleteCategorySafe } from "@/lib/beauty
 import { slugify } from "@/lib/operator/validation";
 import { BEAUTY_WORLDS, WORLD_FA } from "@/lib/beauty/operator/constants";
 import { PageHeader, Field, Input, Textarea, Select, Toggle, Badge, EmptyState, Spinner } from "@/components/operator/ui";
-import { useT } from "@/components/panel/PanelI18n";
+import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import Trans from "@/components/panel/Trans";
+import { localName } from "@/lib/panel/i18n";
 
 const ICON_OPTIONS = ["sparkles", "star", "heart", "droplet", "sun", "eye", "wind", "flask", "edit", "settings", "award", "tag", "package", "layers"];
 
 export default function CategoriesManager({ categories }) {
   const t = useT();
+  const { lang } = usePanelLang();
   const router = useRouter();
   const [editing, setEditing] = useState(null);   // null | {} (new) | category
   const [deleting, setDeleting] = useState(null); // null | category
@@ -47,7 +49,7 @@ export default function CategoriesManager({ categories }) {
                   {c.image_url ? <img src={imageUrl(c.image_url)} alt="" className="w-full h-full object-cover" /> : <Icon name={c.icon || "layers"} size={18} />}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-ink truncate">{c.name_fa || c.name_en || c.slug}</p>
+                  <p className="font-medium text-ink truncate">{localName(c, lang)}</p>
                   <p className="text-xs text-ink-muted truncate mt-0.5"><span dir="ltr">{c.slug}</span> {t("· {v} محصول · ترتیب {v2}", { v: c.product_count ?? 0, v2: c.sort_order ?? 0 })}</p>
                 </div>
                 <Badge tone={c.world ? "info" : "neutral"} className="hidden md:inline-flex">{c.world ? WORLD_FA[c.world] || c.world : t("بدون دنیا")}</Badge>
@@ -90,6 +92,7 @@ export default function CategoriesManager({ categories }) {
 // are updated server-side). Products are never deleted.
 function DeleteCategoryModal({ category, categories, onClose, onDone }) {
   const t = useT();
+  const { lang } = usePanelLang();
   const count = category.product_count ?? 0;
   const others = categories.filter((c) => c.id !== category.id);
   const [moveTo, setMoveTo] = useState("");
@@ -111,7 +114,7 @@ function DeleteCategoryModal({ category, categories, onClose, onDone }) {
       <div className="absolute inset-0 bg-navy/40 backdrop-blur-sm" />
       <div onClick={(e) => e.stopPropagation()} dir="rtl" className="relative card p-6 w-full max-w-md animate-fade-in">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-lg text-ink">{t("حذف دسته «{v}»", { v: category.name_fa || category.name_en || category.slug })}</h2>
+          <h2 className="font-bold text-lg text-ink">{t("حذف دسته «{v}»", { v: localName(category, lang) })}</h2>
           <button type="button" onClick={onClose} className="grid place-items-center w-9 h-9 rounded-lg hover:bg-line-soft text-ink-muted"><Icon name="close" size={18} /></button>
         </div>
         {err && <div className="mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn"><Icon name="alertTriangle" size={16} /> {err}</div>}
@@ -121,7 +124,7 @@ function DeleteCategoryModal({ category, categories, onClose, onDone }) {
             <Field label={t("انتقال محصولات به")} required>
               <Select value={moveTo} onChange={(e) => setMoveTo(e.target.value)}>
                 <option value="">{t("— انتخاب دسته مقصد —")}</option>
-                {others.map((c) => <option key={c.id} value={String(c.id)}>{c.name_fa || c.name_en || c.slug}</option>)}
+                {others.map((c) => <option key={c.id} value={String(c.id)}>{localName(c, lang)}</option>)}
               </Select>
             </Field>
             <p className="text-[11px] text-ink-faint mt-2 leading-relaxed">{t("اگر فقط می‌خواهید دسته از سایت پنهان شود، به‌جای حذف از «ویرایش → فعال» استفاده کنید.")}</p>
@@ -190,7 +193,7 @@ function CategoryModal({ category, onClose, onSaved }) {
           <Field label={t("دنیا")} hint={t("دسته زیر کدام دنیای Beauty نمایش داده شود (فیلتر کاتالوگ و صفحه دنیاها)")}>
             <Select value={f.world} onChange={(e) => up("world", e.target.value)}>
               <option value="">{t("— بدون دنیا —")}</option>
-              {BEAUTY_WORLDS.map((w) => <option key={w.value} value={w.value}>{w.label}</option>)}
+              {BEAUTY_WORLDS.map((w) => <option key={w.value} value={w.value}>{t(w.label)}</option>)}
             </Select>
           </Field>
         </div>

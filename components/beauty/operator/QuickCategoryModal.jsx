@@ -50,7 +50,7 @@ export default function QuickCategoryModal({ onClose, onCreated }) {
           <Field label={t("دنیا")} hint={t("دسته زیر کدام دنیای Beauty نمایش داده شود")}>
             <Select value={f.world} onChange={(e) => up("world", e.target.value)}>
               <option value="">{t("— بدون دنیا —")}</option>
-              {BEAUTY_WORLDS.map((w) => <option key={w.value} value={w.value}>{w.label}</option>)}
+              {BEAUTY_WORLDS.map((w) => <option key={w.value} value={w.value}>{t(w.label)}</option>)}
             </Select>
           </Field>
         </div>

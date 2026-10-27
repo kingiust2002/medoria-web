@@ -260,10 +260,10 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
                       <Detail label={t("کد پیگیری")} value={x.tracking_code} ltr />
                       <Detail label={t("مسئول")} value={x.assigned_to} />
                       <Detail label={t("تلفن")} value={x.phone} ltr />
-                      <Detail label={t("کانال ترجیحی")} value={CONTACT_FA[x.preferred_contact] || x.preferred_contact} />
+                      <Detail label={t("کانال ترجیحی")} value={CONTACT_FA[x.preferred_contact] ? t(CONTACT_FA[x.preferred_contact]) : x.preferred_contact} />
                       <Detail label={t("کد محصول")} value={x.product_sku} ltr />
                       <Detail label={t("تعداد")} value={x.quantity} />
-                      <Detail label={t("زبان")} value={LANG_FA[x.language] || x.language} />
+                      <Detail label={t("زبان")} value={LANG_FA[x.language] ? t(LANG_FA[x.language]) : x.language} />
                       <Detail label={t("صفحه مبدأ")} value={x.source_url} ltr />
                     </div>
                     {Array.isArray(x.items) && x.items.length > 0 && (

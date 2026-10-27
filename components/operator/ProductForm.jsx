@@ -11,13 +11,15 @@ import ImageUploader from "@/components/operator/ImageUploader";
 import SpecsEditor from "@/components/operator/SpecsEditor";
 import QuickCategoryModal from "@/components/operator/QuickCategoryModal";
 import { SectionCard, Field, Input, Textarea, Select, Toggle, Spinner } from "@/components/operator/ui";
-import { useT } from "@/components/panel/PanelI18n";
+import { useT, usePanelLang } from "@/components/panel/PanelI18n";
+import { localName } from "@/lib/panel/i18n";
 
 // Unsaved NEW-product draft (never edit pages, never secrets) survives reloads.
 const DRAFT_KEY = "medoria_operator_product_draft_v1";
 
 export default function ProductForm({ mode, product, categories }) {
   const t = useT();
+  const { lang } = usePanelLang();
   const router = useRouter();
   const editing = mode === "edit";
   const galleryRef = useRef(null);
@@ -139,7 +141,7 @@ export default function ProductForm({ mode, product, categories }) {
   }
 
   const selectedCat = cats.find((c) => String(c.id) === String(f.category_id));
-  const catLabel = selectedCat ? (selectedCat.name_fa || selectedCat.name_en || selectedCat.slug) : t("بدون دسته");
+  const catLabel = selectedCat ? (localName(selectedCat, lang)) : t("بدون دسته");
   const previewImg = f.image_url ? imageUrl(f.image_url) : null;
   const priceLabel = priceOnRequest || !f.price ? t("استعلام قیمت") : `$${Number(f.price).toFixed(2)}`;
 
@@ -303,7 +305,7 @@ export default function ProductForm({ mode, product, categories }) {
                 <Field label={t("دسته‌بندی")}>
                   <Select value={f.category_id} onChange={(e) => up("category_id", e.target.value)}>
                     <option value="">{t("— انتخاب دسته —")}</option>
-                    {cats.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{c.name_fa || c.name_en || c.slug}</option>)}
+                    {cats.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{localName(c, lang)}</option>)}
                   </Select>
                 </Field>
               </div>
@@ -338,7 +340,7 @@ export default function ProductForm({ mode, product, categories }) {
               <Field label={t("حداقل سفارش")}><Input type="number" min="1" value={f.min_order_qty} onChange={(e) => up("min_order_qty", e.target.value)} dir="ltr" /></Field>
             </div>
             <div className="grid sm:grid-cols-2 gap-4 mt-4 items-center">
-              <Field label={t("نشان محصول")}><Select value={f.badge} onChange={(e) => up("badge", e.target.value)}>{PRODUCT_BADGES.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}</Select></Field>
+              <Field label={t("نشان محصول")}><Select value={f.badge} onChange={(e) => up("badge", e.target.value)}>{PRODUCT_BADGES.map((b) => <option key={b.value} value={b.value}>{t(b.label)}</option>)}</Select></Field>
               <div className="rounded-xl bg-canvas-soft border border-line p-3.5 mt-6 sm:mt-5"><Toggle checked={f.in_stock} onChange={(v) => up("in_stock", v)} label={t("موجود است")} /></div>
             </div>
           </SectionCard>

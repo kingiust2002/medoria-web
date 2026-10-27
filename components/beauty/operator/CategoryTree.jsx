@@ -13,11 +13,12 @@ import {
   createCategory, updateCategory, deleteCategorySafe, uploadCategoryImage,
 } from "@/lib/beauty/operator/actions";
 import { beautyImageUrl } from "@/lib/beauty/catalog";
-import { useT } from "@/components/panel/PanelI18n";
+import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { tr } from "@/lib/panel/i18n";
+import { localName } from "@/lib/panel/i18n";
 
 const LEVEL_LABEL = { 1: tr("دپارتمان"), 2: tr("گروه"), 3: tr("زیرگروه") };
-const nameOf = (c) => c.name_fa || c.name_en || c.name_tg || c.name_ru || c.slug;
+const nameOf = (c, lang = "fa") => localName(c, lang);
 const norm = (s) => String(s || "").trim().toLowerCase();
 
 // flatten to [{node, depth, rootSlug}] respecting expansion + search
@@ -35,6 +36,7 @@ function flatten(roots) {
 
 export default function CategoryTree({ tree }) {
   const t = useT();
+  const { lang } = usePanelLang();
   const router = useRouter();
   const [expanded, setExpanded] = useState(() => new Set());
   const [q, setQ] = useState("");
@@ -152,7 +154,7 @@ export default function CategoryTree({ tree }) {
 
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
-                      <span className={`text-[13.5px] truncate ${depth === 0 ? "font-bold text-ink" : "font-medium text-ink-soft"}`}>{nameOf(node)}</span>
+                      <span className={`text-[13.5px] truncate ${depth === 0 ? "font-bold text-ink" : "font-medium text-ink-soft"}`}>{nameOf(node, lang)}</span>
                       <span className="text-[10px] text-ink-faint shrink-0">{LEVEL_LABEL[node.level] ? t(LEVEL_LABEL[node.level]) : ""}</span>
                       {count > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-line-soft text-ink-muted shrink-0">{t("{count} کالا", { count })}</span>}
                     </span>
@@ -213,6 +215,7 @@ export default function CategoryTree({ tree }) {
 // ── add / edit modal ─────────────────────────────────────────────────────────
 function CategoryModal({ modal, onClose, onDone, onError }) {
   const t = useT();
+  const { lang } = usePanelLang();
   const editing = modal.mode === "edit";
   const src = editing ? modal.node : null;
   const parent = modal.parent || null;
@@ -259,7 +262,7 @@ function CategoryModal({ modal, onClose, onDone, onError }) {
       <div dir="rtl" onClick={(e) => e.stopPropagation()} className="relative card w-full max-w-lg max-h-[88vh] overflow-auto animate-fade-in">
         <div className="flex items-center justify-between p-5 border-b border-line">
           <h2 className="font-bold text-lg text-ink">
-            {editing ? t("ویرایش دسته") : parent ? t("زیرمجموعهٔ «{nameOf}»", { nameOf: nameOf(parent) }) : t("دپارتمان جدید")}
+            {editing ? t("ویرایش دسته") : parent ? t("زیرمجموعهٔ «{nameOf}»", { nameOf: nameOf(parent, lang) }) : t("دپارتمان جدید")}
             <span className="text-[11px] text-ink-faint font-normal ms-2">{t(LEVEL_LABEL[level])}</span>
           </h2>
           <button type="button" onClick={onClose} className="grid place-items-center w-9 h-9 rounded-lg hover:bg-line-soft text-ink-muted"><Icon name="close" size={18} /></button>
@@ -300,6 +303,7 @@ function CategoryModal({ modal, onClose, onDone, onError }) {
 // ── delete modal (with product move) ─────────────────────────────────────────
 function DeleteModal({ node, leaves, onClose, onDone, onError }) {
   const t = useT();
+  const { lang } = usePanelLang();
   const [moveTo, setMoveTo] = useState("");
   const [needsMove, setNeedsMove] = useState(false);
   const [count, setCount] = useState(0);
@@ -319,7 +323,7 @@ function DeleteModal({ node, leaves, onClose, onDone, onError }) {
     <div className="fixed inset-0 z-50 grid place-items-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-navy/40 backdrop-blur-sm" />
       <div dir="rtl" onClick={(e) => e.stopPropagation()} className="relative card w-full max-w-md animate-fade-in">
-        <div className="p-5 border-b border-line"><h2 className="font-bold text-lg text-ink">{t("حذف «{nameOf}»؟", { nameOf: nameOf(node) })}</h2></div>
+        <div className="p-5 border-b border-line"><h2 className="font-bold text-lg text-ink">{t("حذف «{nameOf}»؟", { nameOf: nameOf(node, lang) })}</h2></div>
         <div className="p-5 space-y-3 text-[13px] text-ink-soft">
           {node.children?.length > 0 && (
             <p className="rounded-xl px-3 py-2.5 bg-warn/10 text-warn flex items-center gap-2"><Icon name="alertTriangle" size={16} /> {t("این دسته زیرمجموعه دارد؛ همه‌ی زیرمجموعه‌ها هم حذف می‌شوند.")}</p>
@@ -328,7 +332,7 @@ function DeleteModal({ node, leaves, onClose, onDone, onError }) {
             <Field label={t("این دسته {count} محصول دارد — محصول‌ها به کجا منتقل شوند؟", { count })}>
               <select value={moveTo} onChange={(e) => setMoveTo(e.target.value)} className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-[13px]">
                 <option value="">{t("— انتخاب دستهٔ مقصد —")}</option>
-                {options.map((o) => <option key={o.id} value={o.id}>{nameOf(o)}</option>)}
+                {options.map((o) => <option key={o.id} value={o.id}>{nameOf(o, lang)}</option>)}
               </select>
             </Field>
           ) : <p>{t("محصولات حذف نمی‌شوند؛ فقط از این دسته جدا/منتقل می‌شوند.")}</p>}

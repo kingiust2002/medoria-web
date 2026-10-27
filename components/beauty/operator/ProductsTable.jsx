@@ -12,6 +12,7 @@ import {
   PageHeader, Input, Select, Badge, EmptyState, Spinner, productDisplayName, priceText, isOnRequest,
 } from "@/components/operator/ui";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
+import { localName } from "@/lib/panel/i18n";
 
 export default function ProductsTable({ products, categories, initialQuery = "" }) {
   const t = useT();
@@ -36,9 +37,9 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
 
   const catName = useMemo(() => {
     const m = {};
-    for (const c of categories) { m[`id:${c.id}`] = c.name_fa || c.name_en || c.slug; m[`slug:${c.slug}`] = c.name_fa || c.name_en || c.slug; }
+    for (const c of categories) { m[`id:${c.id}`] = localName(c, lang); m[`slug:${c.slug}`] = localName(c, lang); }
     return m;
-  }, [categories]);
+  }, [categories, lang]);
   const nameOf = (p) => catName[`id:${p.category_id}`] || catName[`slug:${p.category}`] || "—";
 
   // World filter: a world = the set of its categories (two-level taxonomy).
@@ -65,7 +66,7 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
     list.sort((a, b) => {
       switch (sort) {
         case "newest": return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-        case "name": return productDisplayName(a).localeCompare(productDisplayName(b), lang);
+        case "name": return productDisplayName(a, lang).localeCompare(productDisplayName(b, lang), lang);
         case "category": return nameOf(a).localeCompare(nameOf(b), lang);
         default: return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
       }
@@ -148,11 +149,11 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
         </div>
         <Select value={world} onChange={(e) => { setWorld(e.target.value); setCat(""); }} className="w-auto min-w-[130px]">
           <option value="">{t("همه دنیاها")}</option>
-          {BEAUTY_WORLDS.map((w) => <option key={w.value} value={w.value}>{w.label}</option>)}
+          {BEAUTY_WORLDS.map((w) => <option key={w.value} value={w.value}>{t(w.label)}</option>)}
         </Select>
         <Select value={cat} onChange={(e) => setCat(e.target.value)} className="w-auto min-w-[130px]">
           <option value="">{t("همه دسته‌ها")}</option>
-          {worldCats.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? c.slug)}>{c.name_fa || c.name_en || c.slug}</option>)}
+          {worldCats.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? c.slug)}>{localName(c, lang)}</option>)}
         </Select>
         <Select value={stock} onChange={(e) => setStock(e.target.value)} className="w-auto"><option value="">{t("موجودی: همه")}</option><option value="in">{t("موجود")}</option><option value="out">{t("ناموجود")}</option></Select>
         <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-auto"><option value="">{t("وضعیت: همه")}</option><option value="active">{t("فعال")}</option><option value="inactive">{t("غیرفعال")}</option></Select>
@@ -176,7 +177,7 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
           <button onClick={() => runBulk({ requestPrice: true }, t("استعلام قیمت شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="dollar" size={15} /> {t("استعلام قیمت")}</button>
           <Select value={bulkCat} onChange={(e) => bulkCategory(e.target.value)} disabled={pending} className="w-auto !h-9 text-xs">
             <option value="">{t("تغییر دسته…")}</option>
-            {categories.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{c.name_fa || c.name_en || c.slug}</option>)}
+            {categories.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{localName(c, lang)}</option>)}
           </Select>
           <button onClick={clearSel} className="btn-ghost size-sm !text-ink-muted"><Icon name="close" size={15} /> {t("لغو")}</button>
         </div>
@@ -206,7 +207,7 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-ink truncate">{productDisplayName(p)}</p>
+                      <p className="font-medium text-ink truncate">{productDisplayName(p, lang)}</p>
                       {p.badge && <span className="tag bg-line-soft text-ink-muted shrink-0">{p.badge}</span>}
                     </div>
                     <p className="text-xs text-ink-muted truncate mt-0.5"><span className="tabular">{p.sku || "—"}</span> · {nameOf(p)}</p>
@@ -252,7 +253,7 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
                       {isBusy ? <Spinner /> : <Icon name={active ? "archive" : "eye"} size={16} />}
                     </button>
                     {!active && (
-                      <button onClick={() => setDeleting(p)} disabled={isBusy} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors disabled:opacity-50" title={t("حذف دائمی")} aria-label={t("حذف دائمی: {productDisplayName}", { productDisplayName: productDisplayName(p) })} data-testid="product-delete">
+                      <button onClick={() => setDeleting(p)} disabled={isBusy} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors disabled:opacity-50" title={t("حذف دائمی")} aria-label={t("حذف دائمی: {productDisplayName}", { productDisplayName: productDisplayName(p, lang) })} data-testid="product-delete">
                         <Icon name="trash" size={16} />
                       </button>
                     )}

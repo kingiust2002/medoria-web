@@ -39,11 +39,11 @@ export default function ImageUploader({ value, onChange }) {
       <div className="flex-1 min-w-0">
         <input ref={inputRef} type="file" accept={TYPES.join(",")} className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => inputRef.current?.click()} disabled={busy} className="btn-ghost size-sm">
+          <button type="button" onClick={() => inputRef.current?.click()} disabled={busy} className="btn-ghost size-sm !h-auto min-h-9 py-1.5 whitespace-normal text-start">
             <Icon name="upload" size={16} /> {preview ? t("تعویض تصویر") : t("آپلود تصویر")}
           </button>
           {value && (
-            <button type="button" onClick={() => onChange("")} className="btn-ghost size-sm !text-warn hover:!border-warn/40">
+            <button type="button" onClick={() => onChange("")} className="btn-ghost size-sm !h-auto min-h-9 py-1.5 whitespace-normal text-start !text-warn hover:!border-warn/40">
               <Icon name="trash" size={16} /> {t("حذف")}</button>
           )}
         </div>

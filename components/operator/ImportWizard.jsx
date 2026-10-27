@@ -294,7 +294,7 @@ export default function ImportWizard({ recentLogs = [] }) {
                 {IMPORT_COLUMNS.map((c) => (
                   <div key={c.key} className="flex gap-2 items-baseline">
                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 translate-y-1 ${c.tier === "required" ? "bg-warn" : c.tier === "auto" ? "bg-ok" : "bg-brand-violet"}`} />
-                    <code className="text-brand-violet shrink-0" dir="ltr">{c.key}</code><span className="text-ink-muted">{c.label}</span>
+                    <code className="text-brand-violet shrink-0" dir="ltr">{c.key}</code><span className="text-ink-muted">{t(c.label)}</span>
                   </div>
                 ))}
               </div>

@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import tg from "../lib/panel/dict/tg.js";
 import en from "../lib/panel/dict/en.js";
 import { PANEL_LANGS, PANEL_LANG_META, DEFAULT_PANEL_LANG, normalizePanelLang, isPanelLang, makeT, translate, tr, formatDate, formatNumber } from "../lib/panel/i18n.js";
+import { execFileSync } from "node:child_process";
 import { extractAll } from "../scripts/i18n/extract.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -118,4 +119,14 @@ test("each panel area and login page is wrapped in the frame that sets language,
   const act = read("lib/panel/actions.js");
   assert.match(act, /isPanelLang\(lang\)/, "the language cookie only accepts the three languages");
   assert.match(act, /sameSite: "lax"/);
+});
+
+test("no undefined variable in the panel code (`next lint` does not check this, and a missing t or lang is a crash in the browser)", () => {
+  const dirs = ["components/operator", "components/beauty/operator", "components/panel", "app/operator", "app/beauty/operator", "app/login", "lib/operator", "lib/beauty/operator", "lib/panel"];
+  let out = "";
+  try {
+    out = execFileSync(process.execPath, [path.join(root, "node_modules/eslint/bin/eslint.js"), "--no-eslintrc", "--parser-options", JSON.stringify({ ecmaVersion: "latest", sourceType: "module", ecmaFeatures: { jsx: true } }), "--env", "browser,node,es2022", "--rule", JSON.stringify({ "no-undef": "error" }), "--ext", ".js,.jsx", "--no-inline-config", ...dirs], { cwd: root, encoding: "utf8" });
+  } catch (e) { out = String(e.stdout || e.message); }
+  const bad = out.split("\n").filter((l) => /no-undef/.test(l));
+  assert.deepEqual(bad, []);
 });
