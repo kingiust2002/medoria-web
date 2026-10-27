@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { PRODUCT_LIST_LIMIT, QUOTE_LIST_LIMIT, mayBeTruncated } from "../lib/operator/listLimits.js";
+import { DASHBOARD_ROW_LIMIT, PRODUCT_LIST_LIMIT, QUOTE_LIST_LIMIT, mayBeTruncated } from "../lib/operator/listLimits.js";
 
 const read = (f) => fs.readFileSync(path.join(import.meta.dirname, "..", f), "utf8");
 
@@ -30,4 +30,16 @@ test("every list reader is bounded and every list page tells its screen when the
   for (const f of ["components/operator/ProductsTable.jsx", "components/beauty/operator/ProductsTable.jsx", "components/operator/QuotesPanel.jsx"]) {
     assert.match(read(f), /<TruncatedNotice limit=\{truncatedAt\} \/>/, `${f} does not show the notice`);
   }
+});
+
+test("the dashboards read a bounded number of rows too, and say when their numbers come from the newest ones only", () => {
+  assert.ok(DASHBOARD_ROW_LIMIT >= PRODUCT_LIST_LIMIT);
+  for (const [file, fn] of [["lib/operator/data.js", "getDashboardData"], ["lib/beauty/operator/data.js", "getBeautyDashboardData"]]) {
+    const src = read(file);
+    const body = src.slice(src.indexOf(`export async function ${fn}`));
+    const end = body.slice(0, body.indexOf("\n}\n"));
+    assert.equal((end.match(/\.limit\(DASHBOARD_ROW_LIMIT\)/g) || []).length, 2, `${file}: both reads of ${fn} must be bounded`);
+    assert.match(end, /statsLimit:/);
+  }
+  for (const f of ["app/operator/(panel)/page.jsx", "app/beauty/operator/(panel)/page.jsx"]) assert.match(read(f), /<TruncatedNotice limit=\{statsLimit\} variant="stats" \/>/);
 });
