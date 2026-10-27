@@ -151,6 +151,19 @@ test("QUOTE_REMINDER_TOKEN: empty or a long safe token passes; a short or unsafe
   assert.match(unsafe.stderr, /may only contain letters/);
 });
 
+test("SCHEDULE_TOKEN: empty or a long safe token passes; a short or unsafe one fails without printing it", async () => {
+  const site = { NEXT_PUBLIC_SITE_URL: "https://medoriaco.com" };
+  assert.equal((await runChecker({ ...site, SCHEDULE_TOKEN: "" })).code, 0);
+  assert.equal((await runChecker({ ...site, SCHEDULE_TOKEN: "a".repeat(64) })).code, 0);
+  const short = await runChecker({ ...site, SCHEDULE_TOKEN: "shorttoken123" });
+  assert.equal(short.code, 1);
+  assert.match(short.stderr, /SCHEDULE_TOKEN is shorter than 24/);
+  assert.ok(!short.stderr.includes("shorttoken123"));
+  const unsafe = await runChecker({ ...site, SCHEDULE_TOKEN: "x".repeat(30) + " " + "y".repeat(5) });
+  assert.equal(unsafe.code, 1);
+  assert.match(unsafe.stderr, /may only contain letters/);
+});
+
 test("personal accounts: OPERATOR_USERS needs a valid OPERATOR_DATA_KEY; garbage is refused; empty is fine", async () => {
   const key = Buffer.alloc(32, 7).toString("base64");
   assert.equal((await runChecker({ NEXT_PUBLIC_SITE_URL: "https://medoriaco.com", OPERATOR_USERS: "on", OPERATOR_DATA_KEY: key })).code, 0);

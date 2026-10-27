@@ -26,6 +26,7 @@ export function createMemoryAdmin(seed = {}, { unique = {}, defaults = {}, befor
     q.neq = (c, v) => add((r) => r[c] !== v);
     q.is = (c, v) => add((r) => (v === null ? r[c] === null || r[c] === undefined : r[c] === v));
     q.ilike = (c, pat) => add((r) => typeof r[c] === "string" && new RegExp(`^${String(pat).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/%/g, ".*").replace(/_/g, ".")}$`, "i").test(r[c]));
+    q.not = (c, op, v) => add((r) => !(op === "is" ? (v === null ? r[c] === null || r[c] === undefined : r[c] === v) : op === "eq" ? r[c] === v : op === "in" ? v.includes(r[c]) : false));
     q.in = (c, vs) => add((r) => vs.includes(r[c]));
     q.lt = (c, v) => add((r) => r[c] < v);
     q.lte = (c, v) => add((r) => r[c] <= v);

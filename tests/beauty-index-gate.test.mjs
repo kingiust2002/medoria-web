@@ -67,7 +67,10 @@ test("the product count that drives the gate is cached under a tag the panel bus
   // Beauty page's generateMetadata.
   assert.match(catalog, /count:\s*"exact",\s*head:\s*true/);
 
-  const actions = await readFile("lib/beauty/operator/actions.js", "utf8");
-  assert.match(actions, /revalidateTag\("beauty-products"\)/,
+  // the purge lives in lib/beauty/revalidate.js (shared with the scheduled-publishing run); the operator actions use it
+  const purge = await readFile("lib/beauty/revalidate.js", "utf8");
+  assert.match(purge, /revalidateTag\("beauty-products"\)/,
     "operator saves must bust the count, or the gate lags behind the catalog");
+  const actions = await readFile("lib/beauty/operator/actions.js", "utf8");
+  assert.match(actions, /revalidateBeautyPublic as revalidatePublic/, "the operator actions must call the shared purge");
 });

@@ -159,13 +159,14 @@ for (const key of [
 // Optional request reminders (docs/QUOTE_MANAGEMENT.md): a long random token lets the host cron call
 // POST /api/internal/quote-reminders. Unset = the endpoint answers 404 (feature off). A short token
 // is refused (the endpoint itself ignores tokens under 24 characters). The value is never printed.
-{
-  const token = values.get("QUOTE_REMINDER_TOKEN") || "";
+// SCHEDULE_TOKEN (docs/SCHEDULED_PUBLISHING.md) is the same kind of token for POST /api/internal/scheduled-publishing.
+for (const name of ["QUOTE_REMINDER_TOKEN", "SCHEDULE_TOKEN"]) {
+  const token = values.get(name) || "";
   if (token && token.length < 24) {
-    fail("QUOTE_REMINDER_TOKEN is shorter than 24 characters: generate one with `openssl rand -hex 32`");
+    fail(`${name} is shorter than 24 characters: generate one with \`openssl rand -hex 32\``);
   }
   if (token && !/^[A-Za-z0-9._~+-]+$/.test(token)) {
-    fail("QUOTE_REMINDER_TOKEN may only contain letters, digits and . _ ~ + - (it travels in an HTTP header)");
+    fail(`${name} may only contain letters, digits and . _ ~ + - (it travels in an HTTP header)`);
   }
 }
 

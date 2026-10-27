@@ -16,6 +16,7 @@ import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { useCan, useMode } from "@/components/panel/Capabilities";
 import Trans from "@/components/panel/Trans";
 import { localName } from "@/lib/panel/i18n";
+import { isoToLocal, localToIso } from "@/lib/operator/schedule";
 
 // Category options grouped by world (Sephora-style two-level taxonomy) so a
 // long category list stays scannable in the select.
@@ -76,6 +77,7 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
     badge: product?.badge || "",
     is_featured: !!product?.is_featured,
     is_active: product ? product.is_active !== false : canPublish,
+    publish_at: isoToLocal(product?.publish_at), unpublish_at: isoToLocal(product?.unpublish_at),      // typed in the team's time, stored as UTC
     image_url: product?.image_url || "", brochure_url: product?.brochure_url || "",
     tags: Array.isArray(product?.tags) ? product.tags.join(t("، ")) : "",
     seo_title: product?.seo_title || "", seo_description: product?.seo_description || "",
@@ -220,6 +222,7 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
     setSaving(true);
     const payload = {
       ...f,
+      publish_at: localToIso(f.publish_at), unpublish_at: localToIso(f.unpublish_at),
       category_id: f.category_id || null,
       category: selectedCat?.slug || null,
       priceOnRequest,
@@ -463,6 +466,14 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
             <div className="flex flex-col gap-3">
               <div className="rounded-xl bg-canvas-soft border border-line p-3.5"><Toggle checked={f.is_active} onChange={(v) => up("is_active", v)} disabled={f.is_active ? !canArchive : !canPublish} label={t("فعال (نمایش در سایت)")} desc={t("غیرفعال = آرشیو، در سایت دیده نمی‌شود.")} /></div>
               <div className="rounded-xl bg-canvas-soft border border-line p-3.5"><Toggle checked={f.is_featured} onChange={(v) => up("is_featured", v)} label={t("ویژه (Featured)")} desc={t("در بخش «منتخب» صفحه‌ی اصلی و در کارت شناور بالای صفحه (۴ محصول اول) نمایش داده می‌شود.")} /></div>
+            </div>
+            <div className="mt-4 rounded-xl bg-canvas-soft border border-line p-3.5 flex flex-col gap-3" data-testid="schedule-box">
+              <Field label={t("انتشار خودکار در")} hint={t("به وقت تاجیکستان؛ محصول در آن زمان فعال می‌شود.")}>
+                <Input type="datetime-local" dir="ltr" value={f.publish_at} onChange={(e) => up("publish_at", e.target.value)} disabled={!canPublish} aria-label={t("انتشار خودکار در")} />
+              </Field>
+              <Field label={t("آرشیو خودکار در")} hint={t("در آن زمان محصول از سایت برداشته می‌شود.")}>
+                <Input type="datetime-local" dir="ltr" value={f.unpublish_at} onChange={(e) => up("unpublish_at", e.target.value)} disabled={!canArchive} aria-label={t("آرشیو خودکار در")} />
+              </Field>
             </div>
             <div className="mt-4 flex flex-col gap-2">
               <SaveButton full />
