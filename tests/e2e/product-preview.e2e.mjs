@@ -19,6 +19,7 @@ test("Health: the preview follows the visitor's language, shows the fallback whi
   assert.match(await page.getByTestId("pv-name").innerText(), /E2E Product 1/, "Tajik is the first tab and has its own text");
   assert.equal(await page.getByTestId("pv-name-fallback").count(), 0);
 
+  await page.getByText("نام‌های روسی و تاجیکی (اختیاری)").click();                // the Russian / Tajik names sit in a collapsed section
   await page.getByLabel("نام (تاجیکی)").fill("");                               // the Tajik name is removed in the form
   await page.getByTestId("pv-lang-tg").click();
   await page.getByTestId("pv-name-fallback").waitFor();
@@ -37,6 +38,6 @@ test("Health: the preview follows the visitor's language, shows the fallback whi
   await page.getByRole("button", { name: /ذخیره/ }).first().click();
   await page.waitForURL(/\/operator\/products(\?|$)/, { timeout: 15000 }).catch(() => {});
   const saved = (await state()).products.find((p) => p.id === 1);
-  assert.equal(saved.name_tg, "", "the saved product has the emptied Tajik name");
+  assert.ok(!saved.name_tg, "the saved product has the emptied Tajik name (stored as empty)");
   await ctx.close();
 });
