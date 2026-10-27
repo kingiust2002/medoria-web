@@ -14,8 +14,9 @@ import {
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { useCan } from "@/components/panel/Capabilities";
 import { localName } from "@/lib/panel/i18n";
+import TruncatedNotice from "@/components/operator/TruncatedNotice";
 
-export default function ProductsTable({ products, categories, initialQuery = "" }) {
+export default function ProductsTable({ products, categories, initialQuery = "", truncatedAt = 0 }) {
   const t = useT();
   const { lang, date: fmtDate } = usePanelLang();
   const router = useRouter();
@@ -146,6 +147,7 @@ export default function ProductsTable({ products, categories, initialQuery = "" 
         {canBulk && <Link href="/beauty/operator/products/bulk" className="btn-ghost size-md"><Icon name="plusCircle" size={17} /> {t("افزودن گروهی")}</Link>}
         {canCreate && <Link href="/beauty/operator/products/new" className="btn-primary size-md"><Icon name="plus" size={18} /> {t("افزودن محصول")}</Link>}
       </PageHeader>
+      <TruncatedNotice limit={truncatedAt} />
 
       {/* Filters */}
       <div className="card-flat p-3 mb-4 flex flex-wrap items-center gap-2">

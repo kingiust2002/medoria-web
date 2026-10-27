@@ -6,6 +6,6 @@ import QuotesPanel from "@/components/operator/QuotesPanel";
 
 const actions = { updateQuoteStatus, updateQuoteNotes, assignQuote, deleteQuote, updateQuotesStatus, deleteQuotes, setQuoteFollowUp, retryQuoteNotice };
 
-export default function QuotesManager({ quotes, now, reportHref, people, initialQuery }) {
-  return <QuotesPanel quotes={quotes} actions={actions} now={now} reportHref={reportHref} people={people} initialQuery={initialQuery} />;
+export default function QuotesManager({ quotes, now, reportHref, people, initialQuery, truncatedAt = 0 }) {
+  return <QuotesPanel quotes={quotes} actions={actions} now={now} reportHref={reportHref} people={people} initialQuery={initialQuery} truncatedAt={truncatedAt} />;
 }

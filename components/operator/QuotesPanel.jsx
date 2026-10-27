@@ -16,6 +16,7 @@ import BulkDeleteQuotesModal from "@/components/operator/BulkDeleteQuotesModal";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { useCan } from "@/components/panel/Capabilities";
 import { tr } from "@/lib/panel/i18n";
+import TruncatedNotice from "@/components/operator/TruncatedNotice";
 
 const digits = (s) => String(s || "").replace(/[^\d]/g, "");
 const isDue = (x, now) => { const f = followUpState(x, now); return f === "overdue" || f === "today"; };
@@ -30,7 +31,7 @@ const inTab = (x, tab) => (tab === "all" ? true : tab === "active" ? x.status !=
 const MOVED = { archived: tr("درخواست به آرشیو منتقل شد."), spam: tr("درخواست به اسپم منتقل شد."), new: tr("درخواست بازگردانی شد.") };
 const BULK_MOVED = { archived: tr("{count} درخواست به آرشیو منتقل شد."), spam: tr("{count} درخواست به اسپم منتقل شد."), new: tr("{count} درخواست بازگردانی شد.") };
 
-export default function QuotesPanel({ quotes: initial, actions, now: nowProp, reportHref = null, people = [], initialQuery = "" }) {
+export default function QuotesPanel({ quotes: initial, actions, now: nowProp, reportHref = null, people = [], initialQuery = "", truncatedAt = 0 }) {
   const t = useT();
   const { date: fmtDate, lang } = usePanelLang();
   const router = useRouter();
@@ -185,6 +186,7 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp, re
       <PageHeader title={t("استعلام‌ها")} subtitle={t("{nActive} فعال · {nArch} آرشیو · {nSpam} اسپم", { nActive, nArch, nSpam })}>
         {reportHref && <Link href={reportHref} className="btn-ghost size-md" data-testid="quotes-report-link"><Icon name="clock" size={17} /> {t("گزارش")}</Link>}
       </PageHeader>
+      <TruncatedNotice limit={truncatedAt} />
 
       <div role="tablist" aria-label={t("دسته‌بندی استعلام‌ها")} className="flex flex-wrap gap-2 mb-3">
         {TABS.map((tb) => {
