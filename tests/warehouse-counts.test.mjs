@@ -11,6 +11,7 @@ import { requireAll, evaluateAll } from "../lib/operator/access.js";
 import { fileForApproval } from "../lib/operator/approvalFlow.js";
 import { approveRequest } from "../lib/operator/approvals.js";
 import { rowToUser, invalidateSessionUser } from "../lib/operator/accounts.js";
+import { AUDIT_LABELS, sanitizeDetail } from "../lib/operator/security.js";
 
 const id = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const urow = (n, o = {}) => ({
@@ -233,4 +234,9 @@ test("reports need the export right (a manager has none by default), include the
   const cid = await start();
   assert.match((await counts.exportCountCsv(ctxFor(boss), { countId: cid })).csv, /^﻿sku,expected,counted,difference/);
   assert.ok(audits.filter((a) => a.action === "stock.export").length >= 2);
+});
+
+test("the activity log keeps what these actions say (count, lines, differences, minimum) and labels every action", () => {
+  assert.deepEqual(sanitizeDetail({ count: 3, lines: 40, differences: 2, min: 5, added: true, kind: "stock", secret: "x", sku: "A-1" }), { count: 3, lines: 40, differences: 2, min: 5, added: true, kind: "stock", sku: "A-1" });
+  for (const a of ["stock.count_start", "stock.count_save", "stock.count_cancel", "stock.count_close", "stock.level", "stock.export"]) assert.ok(AUDIT_LABELS[a], a);
 });
