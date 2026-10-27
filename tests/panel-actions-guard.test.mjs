@@ -27,7 +27,7 @@ const PUBLIC = new Set(["lib/actions/captcha.js", "lib/actions/chatPass.js", "li
 const operatorFiles = actionFiles.filter((f) => !PUBLIC.has(f));
 
 // The session checks an operator action may open with. `authed()` and the Guarded helpers call the panel's getSession.
-const GUARD = /await authed\(|await getSession\(\)|Guarded\(\{/;
+const GUARD = /await authed\(|await authedManager\(\)|await ctxFor\(\)|await getSession\(\)|Guarded\(\{/;
 
 function exportedActions(src) {
   const out = [];
@@ -41,8 +41,8 @@ function exportedActions(src) {
 
 test("the operator server-action files are the ones we expect (a new file must be added to this review)", () => {
   assert.deepEqual(operatorFiles.sort(), [
-    "lib/beauty/operator/actions.js", "lib/beauty/operator/importActions.js", "lib/beauty/operator/securityActions.js",
-    "lib/operator/actions.js", "lib/operator/categoryTreeActions.js", "lib/operator/importActions.js", "lib/operator/securityActions.js",
+    "lib/beauty/operator/accountActions.js", "lib/beauty/operator/actions.js", "lib/beauty/operator/importActions.js", "lib/beauty/operator/securityActions.js", "lib/beauty/operator/userActions.js",
+    "lib/operator/accountActions.js", "lib/operator/actions.js", "lib/operator/categoryTreeActions.js", "lib/operator/importActions.js", "lib/operator/securityActions.js", "lib/operator/userActions.js",
   ]);
 });
 

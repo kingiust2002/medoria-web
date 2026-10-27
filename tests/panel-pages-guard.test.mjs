@@ -30,7 +30,7 @@ test("every panel page awaits the session guard before anything else", () => {
       const m = src.match(/export default async function \w+\([^)]*\)\s*\{\n([\s\S]*)/);
       assert.ok(m, `${f}: the page must be an async function`);
       // the language helper (a cookie read) may come first; nothing else may
-      assert.ok(new RegExp(`^\\s*(?:const [\\w{}, ]+ = await (?:getT|getPanel)\\(\\);\\s*)?await ${p.guard}\\([^)]*\\);`).test(m[1]), `${f} must start with await ${p.guard}(…)`);
+      assert.ok(new RegExp(`^\\s*(?:const [\\w{}, ]+ = await (?:getT|getPanel)\\(\\);\\s*)?(?:const session = )?await ${p.guard}\\([^)]*\\);`).test(m[1]), `${f} must start with await ${p.guard}(…)`);
       assert.match(src, new RegExp(`import \\{ ${p.guard} \\} from "@/lib/operator/panelGuard"`));
     }
   }

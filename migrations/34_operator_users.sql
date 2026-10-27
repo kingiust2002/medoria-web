@@ -8,7 +8,7 @@
 --                               authz_version (bumped on every change of power), version
 --                               (optimistic lock)
 --   operator_sessions.user_id   which person a session belongs to
---   operator_audit_log          user_id, result, request_id (who, with what outcome, which request)
+--   operator_audit_log          user_id, target_user_id, result, request_id (who, to whom, with what outcome, which request)
 --
 -- Needs migration 30 (operator_sessions, operator_audit_log). Aborts with a clear message when it
 -- is missing. Purely additive: no existing row is changed. operator_users is PRIVATE like the other
@@ -25,7 +25,7 @@
 --
 -- Rollback (only after the deployed code no longer uses them, i.e. the previous release):
 --   ALTER TABLE operator_sessions DROP COLUMN user_id;
---   ALTER TABLE operator_audit_log DROP COLUMN user_id, DROP COLUMN result, DROP COLUMN request_id;
+--   ALTER TABLE operator_audit_log DROP COLUMN user_id, DROP COLUMN target_user_id, DROP COLUMN result, DROP COLUMN request_id;
 --   DROP TABLE operator_users;
 -- ════════════════════════════════════════════════════════════════════════════
 
@@ -67,6 +67,7 @@ CREATE INDEX IF NOT EXISTS operator_users_status_role ON public.operator_users (
 
 ALTER TABLE public.operator_sessions  ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES public.operator_users (id);
 ALTER TABLE public.operator_audit_log ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.operator_audit_log ADD COLUMN IF NOT EXISTS target_user_id UUID;      -- the person an account action was done TO
 ALTER TABLE public.operator_audit_log ADD COLUMN IF NOT EXISTS result TEXT;
 ALTER TABLE public.operator_audit_log ADD COLUMN IF NOT EXISTS request_id TEXT;
 DO $$
@@ -149,7 +150,7 @@ BEGIN
   IF (SELECT count(*) FROM pg_trigger WHERE tgrelid = 'public.operator_users'::regclass AND tgname IN ('operator_users_guard_upd', 'operator_users_guard_del')) <> 2 THEN
     RAISE EXCEPTION 'migration 34 self-check failed: guard triggers missing';
   END IF;
-  IF (SELECT count(*) FROM information_schema.columns WHERE table_name = 'operator_audit_log' AND column_name IN ('user_id', 'result', 'request_id')) <> 3
+  IF (SELECT count(*) FROM information_schema.columns WHERE table_name = 'operator_audit_log' AND column_name IN ('user_id', 'target_user_id', 'result', 'request_id')) <> 4
      OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'operator_sessions' AND column_name = 'user_id') THEN
     RAISE EXCEPTION 'migration 34 self-check failed: new columns missing';
   END IF;

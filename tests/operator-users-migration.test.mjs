@@ -146,11 +146,11 @@ test("a sessions row can point at a user; the audit columns accept only known re
 });
 
 test("a migration that fails half-way leaves nothing half-applied", { skip: SKIP }, () => {
-  must(psql("ALTER TABLE operator_sessions DROP COLUMN user_id; ALTER TABLE operator_audit_log DROP COLUMN user_id, DROP COLUMN result, DROP COLUMN request_id"));
+  must(psql("ALTER TABLE operator_sessions DROP COLUMN user_id; ALTER TABLE operator_audit_log DROP COLUMN user_id, DROP COLUMN target_user_id, DROP COLUMN result, DROP COLUMN request_id"));
   must(psql("DROP TABLE operator_users CASCADE"));
   must(psql("CREATE TABLE operator_users (id integer)"));            // an incompatible leftover: the index on username must fail
   const r = psql(M34(), { file: true });
   assert.equal(r.ok, false);
-  assert.equal(must(psql("SELECT count(*) FROM information_schema.columns WHERE table_name IN ('operator_sessions','operator_audit_log') AND column_name IN ('user_id','result','request_id')")), "0", "no column may stay behind");
+  assert.equal(must(psql("SELECT count(*) FROM information_schema.columns WHERE table_name IN ('operator_sessions','operator_audit_log') AND column_name IN ('user_id','target_user_id','result','request_id')")), "0", "no column may stay behind");
   assert.equal(must(psql("SELECT count(*) FROM pg_trigger WHERE tgname LIKE 'operator_users_guard%'")), "0");
 });
