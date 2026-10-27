@@ -5,7 +5,7 @@ import Icon from "@/components/shared/Icon";
 import { Spinner } from "@/components/operator/ui";
 import { useT } from "@/components/panel/PanelI18n";
 
-export default function AuditExportButton({ filters, exportAction }) {
+export default function AuditExportButton({ filters, exportAction, testId = "audit-export" }) {
   const t = useT();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -21,7 +21,7 @@ export default function AuditExportButton({ filters, exportAction }) {
   }
   return (
     <div className="flex items-center gap-3 flex-wrap">
-      <button type="button" className="btn-ghost size-sm" onClick={run} disabled={busy} data-testid="audit-export">{busy ? <Spinner /> : <Icon name="download" size={16} />} {t("دانلود CSV")}</button>
+      <button type="button" className="btn-ghost size-sm" onClick={run} disabled={busy} data-testid={testId}>{busy ? <Spinner /> : <Icon name="download" size={16} />} {t("دانلود CSV")}</button>
       {err && <span role="alert" className="text-xs text-warn">{err}</span>}
     </div>
   );

@@ -4,11 +4,12 @@
 // knows which table it touches. Tabs (active / archive / spam / all), tick
 // selection and bulk actions (archive, spam, restore, delete) live here once.
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
 import { QUOTE_STATUSES, QUOTE_ACTIVE_STATUSES, QUOTE_STATUS_FA, QUOTE_STATUS_TONE, CONTACT_FA, LANG_FA } from "@/lib/operator/constants";
 import { PageHeader, Input, Select, Badge, EmptyState, Spinner } from "@/components/operator/ui";
-import { isOverdue, notifyFailed, waitingHours } from "@/lib/operator/quoteOps";
+import { isOverdue, notifyFailed, waitingHours, followUpState, customerHistory, retryState } from "@/lib/operator/quoteOps";
 import { reconcileQuotes, pruneSelection } from "@/lib/operator/quotesSync";
 import DeleteQuoteModal from "@/components/operator/DeleteQuoteModal";
 import BulkDeleteQuotesModal from "@/components/operator/BulkDeleteQuotesModal";
@@ -17,6 +18,7 @@ import { useCan } from "@/components/panel/Capabilities";
 import { tr } from "@/lib/panel/i18n";
 
 const digits = (s) => String(s || "").replace(/[^\d]/g, "");
+const isDue = (x, now) => { const f = followUpState(x, now); return f === "overdue" || f === "today"; };
 
 const TABS = [
   { id: "active", label: tr("فعال") },
@@ -28,7 +30,7 @@ const inTab = (x, tab) => (tab === "all" ? true : tab === "active" ? x.status !=
 const MOVED = { archived: tr("درخواست به آرشیو منتقل شد."), spam: tr("درخواست به اسپم منتقل شد."), new: tr("درخواست بازگردانی شد.") };
 const BULK_MOVED = { archived: tr("{count} درخواست به آرشیو منتقل شد."), spam: tr("{count} درخواست به اسپم منتقل شد."), new: tr("{count} درخواست بازگردانی شد.") };
 
-export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) {
+export default function QuotesPanel({ quotes: initial, actions, now: nowProp, reportHref = null, people = [] }) {
   const t = useT();
   const { date: fmtDate, lang } = usePanelLang();
   const router = useRouter();
@@ -84,12 +86,12 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
     if (n) list = list.filter((x) => [x.name, x.phone, x.product_name, x.organization, x.tracking_code, x.assigned_to].filter(Boolean).some((v) => String(v).toLowerCase().includes(n)));
     if (status) list = list.filter((x) => x.status === status);
     if (who) list = list.filter((x) => (who === "__none" ? !x.assigned_to : x.assigned_to === who));
-    if (attention) list = list.filter((x) => isOverdue(x, { now }) || notifyFailed(x));
+    if (attention) list = list.filter((x) => isOverdue(x, { now }) || notifyFailed(x) || isDue(x, now));
     return list;
   }, [quotes, tab, q, status, who, attention, now]);
 
-  const assignees = useMemo(() => [...new Set(quotes.map((x) => x.assigned_to).filter(Boolean))].sort((a, b) => a.localeCompare(b, lang)), [quotes, lang]);
-  const needAttention = useMemo(() => quotes.filter((x) => inTab(x, "active") && (isOverdue(x, { now }) || notifyFailed(x))).length, [quotes, now]);
+  const assignees = useMemo(() => [...new Set([...people, ...quotes.map((x) => x.assigned_to).filter(Boolean)])].sort((a, b) => a.localeCompare(b, lang)), [quotes, people, lang]);
+  const needAttention = useMemo(() => quotes.filter((x) => inTab(x, "active") && (isOverdue(x, { now }) || notifyFailed(x) || isDue(x, now))).length, [quotes, now]);
 
   // Only rows that are on screen can be selected: a filter change can never leave
   // a hidden row inside a bulk action.
@@ -121,6 +123,24 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
       setSavingId(null);
       if (res.ok) { patch(id, { assigned_to: res.assignee }); flash(res.assignee ? t("مسئول ذخیره شد.") : t("مسئول برداشته شد."), true); }
       else { flash(t(res.error)); if (res.notFound) router.refresh(); }
+    });
+  }
+  function saveFollowUp(id, date) {
+    setSavingId(id);
+    startTransition(async () => {
+      const res = await actions.setQuoteFollowUp(id, date);
+      setSavingId(null);
+      if (res.ok) { patch(id, { follow_up_at: res.followUpAt }); flash(res.followUpAt ? t("تاریخ پیگیری ذخیره شد.") : t("تاریخ پیگیری برداشته شد."), true); }
+      else { flash(t(res.error)); if (res.notFound) router.refresh(); }
+    });
+  }
+  function retryNotice(id) {
+    setSavingId(id);
+    startTransition(async () => {
+      const res = await actions.retryQuoteNotice(id);
+      setSavingId(null);
+      if (res.ok) { patch(id, { notify_status: "sent", notify_detail: null }); flash(t(res.message), true); }
+      else { flash(t(res.error)); router.refresh(); }
     });
   }
   function saveNotes(id, notes) {
@@ -162,7 +182,9 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
 
   return (
     <>
-      <PageHeader title={t("استعلام‌ها")} subtitle={t("{nActive} فعال · {nArch} آرشیو · {nSpam} اسپم", { nActive, nArch, nSpam })} />
+      <PageHeader title={t("استعلام‌ها")} subtitle={t("{nActive} فعال · {nArch} آرشیو · {nSpam} اسپم", { nActive, nArch, nSpam })}>
+        {reportHref && <Link href={reportHref} className="btn-ghost size-md" data-testid="quotes-report-link"><Icon name="clock" size={17} /> {t("گزارش")}</Link>}
+      </PageHeader>
 
       <div role="tablist" aria-label={t("دسته‌بندی استعلام‌ها")} className="flex flex-wrap gap-2 mb-3">
         {TABS.map((tb) => {
@@ -245,10 +267,12 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-ink truncate">{x.name || t("بدون نام")}{x.organization ? <span className="text-ink-faint font-normal"> · {x.organization}</span> : null}</p>
                     <p className="text-xs text-ink-muted truncate mt-0.5">{x.product_name || t("درخواست عمومی")} · {fmtDate(x.created_at)}</p>
-                    {(isOverdue(x, { now }) || notifyFailed(x) || x.assigned_to) && (
+                    {(isOverdue(x, { now }) || notifyFailed(x) || x.assigned_to || followUpState(x, now)) && (
                       <div className="flex flex-wrap items-center gap-1.5 mt-1.5 min-w-0">
                         {isOverdue(x, { now }) && <Badge tone="warn">{(() => { const h = waitingHours(x, now); return h >= 48 ? t("بدون پاسخ {days} روز", { days: Math.floor(h / 24) }) : t("بدون پاسخ {hours} ساعت", { hours: Math.floor(h) }); })()}</Badge>}
                         {notifyFailed(x) && <Badge tone="warn">{t("اعلان تلگرام نرسید")}</Badge>}
+                        {followUpState(x, now) === "overdue" && <Badge tone="warn" data-testid="badge-followup-overdue">{t("پیگیری عقب‌افتاده")}</Badge>}
+                        {followUpState(x, now) === "today" && <Badge tone="violet" data-testid="badge-followup-today">{t("پیگیری امروز")}</Badge>}
                         {x.assigned_to && <Badge tone="neutral" className="max-w-full truncate">{t("مسئول: {assigned_to}", { assigned_to: x.assigned_to })}</Badge>}
                       </div>
                     )}
@@ -264,6 +288,7 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
                     <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm py-3.5">
                       <Detail label={t("کد پیگیری")} value={x.tracking_code} ltr />
                       <Detail label={t("مسئول")} value={x.assigned_to} />
+                      <Detail label={t("پیگیری")} value={x.follow_up_at ? String(x.follow_up_at).slice(0, 10) : ""} ltr />
                       <Detail label={t("تلفن")} value={x.phone} ltr />
                       <Detail label={t("کانال ترجیحی")} value={CONTACT_FA[x.preferred_contact] ? t(CONTACT_FA[x.preferred_contact]) : x.preferred_contact} />
                       <Detail label={t("کد محصول")} value={x.product_sku} ltr />
@@ -298,6 +323,9 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp }) 
                       {x.phone && <a href={`tel:${x.phone}`} className="btn-ghost size-sm"><Icon name="phone" size={15} /> {t("تماس")}</a>}
                     </div>
 
+                    <CustomerFile history={customerHistory(quotes, x)} fmtDate={fmtDate} />
+                    {notifyFailed(x) && canStatus && <RetryNotice quote={x} now={now} saving={savingId === x.id && pending} onRetry={() => retryNotice(x.id)} />}
+                    {canStatus && <FollowUpBox quote={x} saving={savingId === x.id && pending} onSave={(d) => saveFollowUp(x.id, d)} />}
                     {canAssign && <AssigneeBox quote={x} saving={savingId === x.id && pending} suggestions={assignees} onSave={(v) => saveAssignee(x.id, v)} />}
                     {canStatus
                       ? <NotesBox quote={x} saving={savingId === x.id && pending} onSave={(v) => saveNotes(x.id, v)} />
@@ -388,6 +416,57 @@ function NotesBox({ quote, saving, onSave }) {
       <span className="block text-[12px] font-medium text-ink-soft mb-1.5">{t("یادداشت داخلی (فقط برای تیم)")}</span>
       <textarea value={v} onChange={(e) => setV(e.target.value)} rows={2} className="input w-full !h-auto py-2 text-sm" placeholder={t("یادداشت پیگیری…")} />
       <button type="button" onClick={() => onSave(v)} disabled={saving} className="btn-ghost size-sm mt-2">{saving ? <Spinner /> : <Icon name="save" size={15} />} {t("ذخیره یادداشت")}</button>
+    </div>
+  );
+}
+
+function FollowUpBox({ quote, saving, onSave }) {
+  const t = useT();
+  const server = quote.follow_up_at ? String(quote.follow_up_at).slice(0, 10) : "";
+  const [v, setV] = useState(server);
+  const [base, setBase] = useState(server);
+  useEffect(() => {
+    if (server === base) return;
+    if (v === base) setV(server);
+    setBase(server);
+  }, [server]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <div className="mb-4" data-testid="followup-box">
+      <span className="block text-[12px] font-medium text-ink-soft mb-1.5">{t("تاریخ پیگیری")}</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <input type="date" value={v} onChange={(e) => setV(e.target.value)} dir="ltr" aria-label={t("تاریخ پیگیری")} className="input min-w-0 !h-9 text-sm w-auto" />
+        <button type="button" onClick={() => onSave(v)} disabled={saving || v === server} className="btn-ghost size-sm disabled:opacity-60">{saving ? <Spinner /> : <Icon name="save" size={15} />} {t("ذخیره پیگیری")}</button>
+        {server && <button type="button" onClick={() => { setV(""); onSave(""); }} disabled={saving} className="btn-ghost size-sm disabled:opacity-60">{t("برداشتن")}</button>}
+      </div>
+    </div>
+  );
+}
+
+function RetryNotice({ quote, now, saving, onRetry }) {
+  const t = useT();
+  const st = retryState(quote, now);
+  return (
+    <div className="mb-4 rounded-xl border border-warn/30 bg-warn/5 p-3 flex flex-wrap items-center gap-2" data-testid="retry-notice">
+      <span className="text-sm text-ink-soft min-w-0 flex-1 basis-48">{t("اعلان تلگرام این درخواست نرسیده است.")}</span>
+      <button type="button" onClick={onRetry} disabled={saving || !st.allowed} className="btn-ghost size-sm disabled:opacity-60">{saving ? <Spinner /> : <Icon name="refresh" size={15} />} {t("ارسال دوباره اعلان")}</button>
+    </div>
+  );
+}
+
+// the customer file: other requests with the same phone number (the requests are the file; nothing else is stored)
+function CustomerFile({ history, fmtDate }) {
+  const t = useT();
+  if (!history.length) return null;
+  return (
+    <div className="mb-4 rounded-xl border border-line p-3" data-testid="customer-file">
+      <p className="text-[12px] font-medium text-ink-soft mb-2">{t("سابقهٔ این مشتری ({count} درخواست دیگر)", { count: history.length })}</p>
+      <ul className="text-xs text-ink-muted flex flex-col gap-1">
+        {history.map((h) => (
+          <li key={h.id} className="flex flex-wrap gap-x-3 min-w-0 break-words">
+            <span dir="ltr">{h.tracking_code || `#${h.id}`}</span><span>{fmtDate(h.created_at)}</span><span>{QUOTE_STATUS_FA[h.status] ? t(QUOTE_STATUS_FA[h.status]) : h.status}</span><span className="min-w-0 break-words">{h.product_name}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
