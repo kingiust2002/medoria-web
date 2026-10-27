@@ -145,12 +145,16 @@ test("second factor: an outage in the replay memory refuses the code (fail close
   assert.equal(legacy.ok, true, "no replay table yet: accepted like before");
 });
 
-test("both panels' getSession reject 'invalid' and nothing else lets an unchecked session through", () => {
+test("both panels' getSession go through sessionGate, and nothing else lets an unchecked session through", () => {
   for (const [f, panel] of [["lib/operator/auth.js", "health"], ["lib/beauty/operator/auth.js", "beauty"]]) {
     const s = read(f);
-    assert.match(s, new RegExp(`sessionStatus\\(getAdminClient\\(\\), \\{ panel: "${panel}", sid: payload\\.sid \\}\\)`), f);
-    assert.match(s, /if \(status === "invalid"\) return null;/, f);
+    assert.match(s, new RegExp(`sessionStatus\\(admin, \\{ panel: "${panel}", sid: payload\\.sid \\}\\)`), f);
+    assert.match(s, /return sessionGate\(\{/, f);
+    assert.ok(!/return payload;/.test(s.slice(s.indexOf("export async function getSession"), s.indexOf("export function isTwoStepEnabled"))), `${f}: getSession must not return the bare payload`);
   }
+  const gate = read("lib/operator/sessionGate.js");
+  assert.match(gate, /\(await status\(\)\) === "invalid"\) return null;/);
+  assert.match(gate, /\(await status\(\)\) !== "valid"\) return null;/, "personal sessions need a valid registry row");
   const sec = read("lib/operator/security.js");
   assert.ok(!/schema cache\|/.test(sec) && !/\|schema cache/.test(sec), "the classifier must not match the bare words 'schema cache'");
 });

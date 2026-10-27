@@ -192,6 +192,17 @@ for (const key of [
   }
 }
 
+// Personal operator accounts (docs/OPERATOR_ACCOUNTS.md): OPERATOR_USERS=on switches the panels from the single env account to
+// personal accounts (migration 34 must be applied, and the release that enforces permissions must be live). It needs
+// OPERATOR_DATA_KEY: 32 random bytes in base64, which encrypts each person's two-step secret. Values are never printed.
+{
+  const users = values.get("OPERATOR_USERS") || "";
+  const key = values.get("OPERATOR_DATA_KEY") || "";
+  if (users && !["on", "off"].includes(users)) fail("OPERATOR_USERS must be `on` or `off` (or left empty)");
+  if (key && Buffer.from(key, "base64").length !== 32) fail("OPERATOR_DATA_KEY must be 32 random bytes in base64 (`openssl rand -base64 32`)");
+  if (users === "on" && !key) fail("OPERATOR_USERS=on needs OPERATOR_DATA_KEY: without it nobody's two-step secret can be kept or read");
+}
+
 // deploy/Caddyfile routes these hosts to the app service directly. Keep this
 // set in sync with the site block there -- NEXT_PUBLIC_SITE_URL pointing at
 // a host Caddy doesn't route is a real outage, not a style nit (see the

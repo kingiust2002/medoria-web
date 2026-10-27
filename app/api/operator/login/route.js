@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 
 const config = {
   panel: "health", cookieName: OP_COOKIE, role: "admin", limiterPrefix: "oplogin",
-  env: { totp: "OPERATOR_TOTP_SECRET", recovery: "OPERATOR_RECOVERY_CODE_HASHES" },
+  env: { totp: "OPERATOR_TOTP_SECRET", recovery: "OPERATOR_RECOVERY_CODE_HASHES", username: "OPERATOR_USERNAME", passwordHash: "OPERATOR_PASSWORD_HASH" },
   auth: { verifyCredentials, isConfigured: isOperatorConfigured, sessionCookieOptions, credentialsVersion, isSameOrigin },
   session: { signSession, verifySession, sessionTtlMs },
 };

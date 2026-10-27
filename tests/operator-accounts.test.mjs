@@ -5,7 +5,7 @@ import test, { beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { createMemoryAdmin } from "./helpers/memoryAdmin.mjs";
 import {
-  usersMode, clearModeCache, verifyLogin, createUser, updateUser, setPassword, bootstrapOwner, acceptTotpStep, useRecoveryCode,
+  usersMode, clearModeCache, verifyLogin, createUser, updateUser, setPassword, bootstrapOwner, acceptTotpStep, consumeRecoveryCode,
   resolveSessionUser, invalidateSessionUser, listUsers, rowToUser,
 } from "../lib/operator/accounts.js";
 import { hashPassword } from "../lib/operator/passwords.js";
@@ -191,9 +191,9 @@ test("two-step: a time step is accepted once per person; a recovery code works o
   assert.equal((await acceptTotpStep(d, { userId: "00000000-0000-4000-8000-000000000004", step: 101 })).ok, true);
   const hashes = ["h1", "h2"];
   d.tables.operator_users[0].recovery_hashes = [...hashes];
-  assert.equal((await useRecoveryCode(d, { userId: "00000000-0000-4000-8000-000000000004", hash: "h1", hashes })).ok, true);
-  assert.equal((await useRecoveryCode(d, { userId: "00000000-0000-4000-8000-000000000004", hash: "h1", hashes })).reason, "recovery_used", "same code twice, even from a stale list");
-  assert.equal((await useRecoveryCode(d, { userId: "00000000-0000-4000-8000-000000000004", hash: "zz", hashes })).reason, "bad_code");
+  assert.equal((await consumeRecoveryCode(d, { userId: "00000000-0000-4000-8000-000000000004", hash: "h1", hashes })).ok, true);
+  assert.equal((await consumeRecoveryCode(d, { userId: "00000000-0000-4000-8000-000000000004", hash: "h1", hashes })).reason, "recovery_used", "same code twice, even from a stale list");
+  assert.equal((await consumeRecoveryCode(d, { userId: "00000000-0000-4000-8000-000000000004", hash: "zz", hashes })).reason, "bad_code");
   assert.deepEqual(d.tables.operator_users[0].recovery_hashes, ["h2"]);
 });
 

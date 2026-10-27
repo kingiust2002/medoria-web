@@ -10,6 +10,7 @@
 // Every request is recorded with the kind of key it carried ("anon" | "service"), and
 // GET /__state, POST /__reset expose and restore the data for assertions.
 import http from "node:http";
+import { randomUUID } from "node:crypto";
 
 export const ANON_KEY = "anon-test-key";
 export const SERVICE_KEY = "service-test-key";
@@ -18,7 +19,7 @@ const RESERVED = new Set(["select", "order", "limit", "offset", "on_conflict", "
 // unique constraints, as lists of column sets
 const UNIQUE = {
   products: [["slug"]], beauty_products: [["slug"]], categories: [["slug"]], beauty_categories: [["slug"]],
-  operator_sessions: [["sid"]], operator_totp_state: [["panel"]], operator_recovery_used: [["panel", "code_hash"]],
+  operator_users: [["username"]], operator_sessions: [["sid"]], operator_totp_state: [["panel"]], operator_recovery_used: [["panel", "code_hash"]],
 };
 
 const clone = (x) => JSON.parse(JSON.stringify(x));
@@ -65,6 +66,7 @@ function test(row, col, expr) {
     case "ilike": r = v != null && likeToRegex(val, "i").test(String(v)); break;
     case "in": r = v != null && splitTop(val.replace(/^\(|\)$/g, "")).map((x) => x.replace(/^"|"$/g, "")).includes(String(v)); break;
     case "is": r = val === "null" ? v == null : String(v) === val; break;
+    case "cs": r = Array.isArray(v) && splitTop(val.replace(/^\{|\}$/g, "")).map((x) => x.replace(/^"|"$/g, "")).every((x) => v.includes(x)); break;   // array contains
     default: r = true;   // operators the app does not use (cs, ov, fts ...)
   }
   return neg ? !r : r;
@@ -201,6 +203,10 @@ export function createFakeDb(seedFactory) {
         }
         if (TRACKING_PREFIX[t] && row.status == null) row.status = "new";   // the column default
         if (TRACKING_PREFIX[t] && row.tracking_code == null) row.tracking_code = `${TRACKING_PREFIX[t]}-${hex4()}-${hex4()}-${hex4()}`;   // migration 32's insert trigger
+        if (t === "operator_users") {   // migration 34's column defaults
+          row.id ??= randomUUID(); row.version ??= 1; row.authz_version ??= 1; row.status ??= "active"; row.require_2fa ??= true;
+          row.allow_perms ??= []; row.deny_perms ??= []; row.approval ??= {}; row.recovery_hashes ??= []; row.totp_last_step ??= 0; row.must_change_password ??= false;
+        }
         if (row.id == null) row.id = nextId(t);
         if (row.created_at == null) row.created_at = now();
         if (row.updated_at == null) row.updated_at = now();
@@ -214,6 +220,20 @@ export function createFakeDb(seedFactory) {
     if (req.method === "PATCH") {
       const patch = await readBody(req);
       const hit = tables[t].filter(pred);
+      if (t === "operator_users") {   // migration 34's guard trigger: the last active owner stays; `version` follows administered fields
+        for (const row of hit) {
+          const next = { ...row, ...patch };
+          const wasOwner = row.role === "owner" && row.status === "active";
+          const stays = next.role === "owner" && next.status === "active" && next.houses.length === 2;
+          if (wasOwner && !stays && !tables[t].some((r) => r !== row && r.role === "owner" && r.status === "active" && r.houses.length === 2)) {
+            return respond(res, 400, { code: "P0001", message: "the last active owner cannot be disabled, blocked, demoted or lose a house" });
+          }
+        }
+        for (const row of hit) {
+          const ADMIN = ["username", "display_name", "status", "role", "houses", "allow_perms", "deny_perms", "approval", "require_2fa", "password_hash", "totp_secret_enc"];
+          if (ADMIN.some((c) => c in patch && JSON.stringify(patch[c]) !== JSON.stringify(row[c]))) patch.version = row.version + 1;
+        }
+      }
       for (const row of hit) {
         Object.assign(row, patch, { updated_at: now() });
         // migration 32's trigger: the first time a request is answered

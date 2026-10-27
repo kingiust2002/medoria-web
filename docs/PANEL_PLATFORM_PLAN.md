@@ -131,4 +131,5 @@ public route/API/payload/print path.
 | #207 S1b: same rule for quote / category / brand deletes | open, stacked on #204; **needs migration 30 applied before deploy** | 294 unit, full browser suite green |
 | #206 three-language panel | open | 297 unit, 120 browser tests |
 | S2a `lib/operator/authz.js` (pure; nothing calls it yet, so no behaviour change) | in this PR | 21 unit tests: default closed, deny>allow, house separation, grant ceiling, last owner, no self-escalation, per-operation approval, "publish directly" ≠ "may approve" |
-| S2b … S6c | not started | |
+| S2b migration 34 + account store + personal login + owner bootstrap + session gate (switched off by default) | in PR (stacked on #206/#207/#208) | see docs/OPERATOR_ACCOUNTS.md |
+| S2c … S6c | not started | |

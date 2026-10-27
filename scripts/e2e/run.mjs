@@ -67,8 +67,11 @@ const db = createFakeDb(seed);
 await db.start(DB_PORT);
 let app = null;
 let appLog = "";
-const startApp = () => {
-  app = spawn("npx", ["next", "start", "-p", String(APP_PORT), "-H", "127.0.0.1"], { cwd: root, env: serverEnv, stdio: ["ignore", "pipe", "pipe"] });
+// Test files that need the app in a different configuration: personal accounts switched on (OPERATOR_USERS) with a data key.
+const dataKey = randomBytes(32).toString("base64");
+const FILE_ENV = { "accounts.e2e.mjs": { OPERATOR_USERS: "on", OPERATOR_DATA_KEY: dataKey } };
+const startApp = (extra = {}) => {
+  app = spawn("npx", ["next", "start", "-p", String(APP_PORT), "-H", "127.0.0.1"], { cwd: root, env: { ...serverEnv, ...extra }, stdio: ["ignore", "pipe", "pipe"] });
   app.stdout.on("data", (d) => { appLog += d; });
   app.stderr.on("data", (d) => { appLog += d; });
 };
@@ -116,6 +119,7 @@ try {
         E2E_REMINDER_TOKEN: reminderToken,
         E2E_BEAUTY_USER: creds.beauty.user, E2E_BEAUTY_PASSWORD: creds.beauty.password,
         E2E_BEAUTY_SESSION_SECRET: serverEnv.BEAUTY_OPERATOR_SESSION_SECRET, E2E_BEAUTY_PASSWORD_HASH: serverEnv.BEAUTY_OPERATOR_PASSWORD_HASH,
+        E2E_DATA_KEY: dataKey,
         E2E_BEAUTY_TOTP_SECRET: beautyTotp.secret, E2E_BEAUTY_RECOVERY_CODES: beautyTotp.recovery.map((c) => c.code).join(","),
       },
     });
@@ -123,9 +127,11 @@ try {
   });
   let code = 0;
   for (const [i, file] of files.entries()) {
-    if (i > 0) {
+    const fileEnv = FILE_ENV[path.basename(file)] || {};
+    const needsRestart = i > 0 || Object.keys(fileEnv).length > 0;
+    if (needsRestart) {
       await killApp();
-      startApp();
+      startApp(fileEnv);
       if (!(await waitUp(base))) { console.error("✗ the app did not restart\n" + appLog.slice(-2000)); await stop(1); }
     }
     if ((await runFile(file)) !== 0) code = 1;                     // keep going: report every failing file in one run
