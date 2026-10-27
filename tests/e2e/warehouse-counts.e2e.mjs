@@ -152,7 +152,7 @@ test("Health: minimum levels flag low stock, the filter shows only those, the st
   assert.equal(await page.getByTestId("wh-low").count(), 1, "4 is below the minimum of 10");
 
   await page.getByTestId("wh-low-only").check();
-  await page.getByRole("button", { name: "جستجو" }).click();
+  await page.getByRole("main").getByRole("button", { name: "جستجو" }).click();
   await page.waitForURL(/low=1/);
   assert.equal(await page.getByTestId("wh-stock-row").count(), 1);
 

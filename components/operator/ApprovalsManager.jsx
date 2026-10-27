@@ -26,7 +26,7 @@ function show(v) {
 
 function Diff({ before, proposed }) {
   const t = useT();
-  const keys = Object.keys(proposed || {});
+  const keys = Object.keys(proposed || {}).filter((k) => !k.startsWith("_"));       // _-prefixed keys are the executor's arguments, not for a reviewer
   if (!keys.length) return null;
   return (
     <div className="overflow-x-auto -mx-1">
