@@ -111,10 +111,10 @@ Every branch below is stacked on the one before it; merge **in this order** (eac
 
 | # | PR | Branch | What |
 | --- | --- | --- | --- |
-| 1 | #204 / #207 | `feat/product-delete`, `fix/destructive-audit-fail-closed` | permanent delete of archived products; attempt-then-outcome audit |
-| 2 | #206 | `feat/panel-i18n` | the panels in Persian, Tajik, English |
-| 3 | #208 | `feat/panel-authz` | the permission model (S2a) |
-| 4 | #209 | `feat/panel-accounts` | personal accounts + enforced permissions (migration 34) |
+| 1 | #204, then #207 | `feat/product-delete`, `fix/destructive-audit-fail-closed` | permanent delete of archived products; attempt-then-outcome audit (#207 is stacked on #204) |
+| 2 | #206 | `feat/panel-i18n` | the panels in Persian, Tajik, English (contains #204) |
+| 3 | #208 | `feat/panel-authz` | the permission model (S2a); independent root |
+| 4 | #209 | `feat/panel-accounts` | personal accounts + enforced permissions (migration 34); **contains #204, #206, #207 and #208**, so after merging 1–3 it is the next one (its base is `feat/panel-i18n`) |
 | 5 | #210 | `feat/panel-users-ui` | people screen, own password / two-step (S2c, S2d) |
 | 6 | #211 | `feat/panel-approvals` | approval queue + activity log v2 (migration 35) |
 | 7 | #212 | `feat/panel-ui-permissions` | buttons follow permissions; warehouse core (migration 36) |
