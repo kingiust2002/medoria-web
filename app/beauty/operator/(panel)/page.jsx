@@ -1,5 +1,6 @@
 // app/beauty/operator/(panel)/page.jsx — Beauty dashboard.
 import Link from "next/link";
+import { requireBeautySession } from "@/lib/operator/panelGuard";
 import Icon from "@/components/shared/Icon";
 import { beautyImageUrl as imageUrl } from "@/lib/beauty/catalog";
 import { getBeautyDashboardData } from "@/lib/beauty/operator/data";
@@ -26,6 +27,7 @@ const QUICK = [
 ];
 
 export default async function BeautyDashboardPage() {
+  await requireBeautySession();
   const configured = isAdminConfigured();
   const { stats, recentProducts, recentQuotes } = await getBeautyDashboardData();
 

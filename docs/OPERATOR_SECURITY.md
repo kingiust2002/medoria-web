@@ -97,6 +97,25 @@ the product's name and SKU (their `product_id` link becomes empty); uploaded ima
 duplicated product shares its file). The log shows "حذف دائمی محصول" with the SKU. Tests: `tests/product-delete.test.mjs`,
 `tests/e2e/product-delete.e2e.mjs`. Every product action also validates its id (positive integer, at most 500 ids in bulk), and
 `tests/panel-actions-guard.test.mjs` fails if any operator server action stops opening with a session check.
+## Pages and data readers check the session themselves (found 2026-10-27)
+
+A panel layout redirects visitors who have no session, but **a layout is not a security boundary**: Next.js renders a layout
+and its page side by side, and on a client-side navigation it renders the page alone. Until this fix the pages read customer
+data with the service-role client without checking the session, and the middleware only checks that a cookie *exists*. The
+result, reproduced in a browser test: a request with the header `RSC: 1` and a cookie with the right name but any made-up
+value (or the cookie of a session that had been ended) was answered with the customer requests (names, phones, messages) of
+`/operator/quotes` and `/beauty/operator/quotes`; the redirect travelled in the same response. Server actions were not
+affected (each checks the session first, pinned by `tests/panel-actions-guard.test.mjs` when that PR is merged).
+
+Now `lib/operator/panelGuard.js` (`requireHealthSession` / `requireBeautySession`) is awaited first in **every** panel page and
+in **every** service-role reader (`lib/operator/data.js`, `categoryTreeData.js`, `lib/beauty/operator/data.js`, both
+`getImportLogs`). Tests: `tests/panel-pages-guard.test.mjs` (a new page or reader without the guard fails the build) and
+`tests/e2e/panel-session-gate.e2e.mjs` (replays a recorded navigation request after logout, and a forged cookie, for both
+panels; red before the fix, green after).
+
+If this was live for a while: customer requests may have been readable by someone who knew the trick. There is no log of it
+in the application; the reverse proxy access log (`/operator` or `/beauty/operator` requests with a `_rsc` query from addresses
+other than yours) is the only place to look, and it is the owner's call whether that is worth doing.
 
 ## Reading the log
 

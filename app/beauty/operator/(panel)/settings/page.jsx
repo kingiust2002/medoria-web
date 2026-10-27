@@ -9,6 +9,7 @@ import { revokeOtherSessions, revokeAllSessions } from "@/lib/beauty/operator/se
 import { isAdminConfigured } from "@/lib/operator/supabaseAdmin";
 import { PageHeader, SectionCard } from "@/components/operator/ui";
 import LogoutButton from "@/components/beauty/operator/LogoutButton";
+import { requireBeautySession } from "@/lib/operator/panelGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ function StatusRow({ ok, label, hint }) {
 }
 
 export default async function SettingsPage() {
+  await requireBeautySession();
   const secret = hasSessionSecret();
   const user = hasUsername();
   const pass = hasPasswordHash();

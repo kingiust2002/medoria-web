@@ -1,5 +1,6 @@
 // app/operator/(panel)/page.jsx — dashboard.
 import Link from "next/link";
+import { requireHealthSession } from "@/lib/operator/panelGuard";
 import Icon from "@/components/shared/Icon";
 import { imageUrl } from "@/lib/supabase";
 import { getDashboardData } from "@/lib/operator/data";
@@ -25,6 +26,7 @@ const QUICK = [
 ];
 
 export default async function DashboardPage() {
+  await requireHealthSession();
   const configured = isAdminConfigured();
   const { stats, recentProducts, recentQuotes } = await getDashboardData();
 
