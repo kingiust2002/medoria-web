@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ActivityPage() {
   const t = await getT();
-  await requireBeautySession();
+  await requireBeautySession("audit.view");
   const rows = await listAudit(getAdminClient(), { panel: "beauty", limit: 200 });
   return (
     <>

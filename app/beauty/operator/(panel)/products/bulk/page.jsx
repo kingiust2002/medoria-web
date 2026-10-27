@@ -7,7 +7,7 @@ import { requireBeautySession } from "@/lib/operator/panelGuard";
 export const dynamic = "force-dynamic";
 
 export default async function BulkAddPage() {
-  await requireBeautySession();
+  await requireBeautySession("products.edit");
   const categories = await getAdminBeautyCategories();
   return <BulkAddGrid categories={categories} />;
 }

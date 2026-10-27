@@ -6,7 +6,7 @@ import { requireBeautySession } from "@/lib/operator/panelGuard";
 export const dynamic = "force-dynamic";
 
 export default async function ProductsPage(props) {
-  await requireBeautySession();
+  await requireBeautySession("products.view");
   const searchParams = await props.searchParams;
   const [products, categories] = await Promise.all([getAdminBeautyProducts(), getAdminBeautyCategories()]);
   const initialQuery = typeof searchParams?.brand === "string" ? searchParams.brand.slice(0, 120) : "";

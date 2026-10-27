@@ -28,12 +28,33 @@ server (see "Release order"). The staged plan is `docs/PANEL_PLATFORM_PLAN.md`.
 * **Audit**: login, failure and bootstrap entries carry `user_id` and `result`; reasons are `password`, `inactive`, `house`,
   `bad_code`, `replay`, `recovery_used`, `seed_unreadable`, `2fa_not_enrolled`. Passwords, seeds and codes are never written.
 
+## Permissions are enforced (S2e)
+
+Every server action, page and data reader asks `lib/operator/access.js` (rules: `authz.js`) **at the moment of use**, from the account
+as it is in the database right now (not from the cookie, and not from what the screen showed):
+
+* **Actions**: `authed("<operation>")` / `gate(session, house, operation)` right after the session check, before any database access.
+  Fields decide extra operations: a product edit that changes the price also needs `products.price`; one that changes visibility needs
+  `products.publish` / `products.archive`; creating a product that is live at once needs `products.publish` (a person who may only
+  create drafts must save it inactive); a quick/bulk edit asks for one operation per touched field. A refusal is returned to the
+  screen and written to the activity log (`access.denied`, result `rejected`, with the operation and the person).
+* **Pages and readers**: `requireHealthSession("products.view")` etc. A person without the permission is sent to a "no access" page
+  and the data is never read. The dashboard reads only the blocks (products, requests) the person may see; the menu shows only what
+  opens. Personal accounts see only their **own** sessions and end only their own.
+* **Default closed**, deny beats allow, houses never mix. "Needs approval" is a **refusal** until the approval queue exists (S2f): nothing
+  is half-done.
+* The old single env account (`OPERATOR_USERS` off) keeps its full power in its own house, exactly as before.
+* Pinned by tests: `tests/panel-permissions.test.mjs` fails if an action, page or reader stops naming what it needs or names an operation
+  that does not exist; `tests/access.test.mjs` is the role matrix; `tests/e2e/accounts-permissions.e2e.mjs` proves it end to end,
+  including a click from a stale screen after a permission was withdrawn.
+
 ## What does NOT exist yet (do not switch the flag on before these ship)
 
-* **Permissions are not enforced on pages and actions yet** (S2e). Until then every signed-in person can do everything the single
-  account could. **`OPERATOR_USERS=on` must not be set until S2c–S2e are deployed.**
 * No screen to create or edit people (S2c), to change one's own password or set up two-step login (S2d), no approval queue (S2f), no
   audit viewer by person (S2g). A person created by hand with `require_2fa` but no seed is refused at login.
+  **`OPERATOR_USERS=on` must not be set until S2c–S2d are deployed** (otherwise nobody but the bootstrapped owner can be created, and
+  only by hand in the database).
+* The buttons are not yet hidden per permission inside the pages (a refused click shows the refusal); polishing that is stage 3.
 
 ## Environment
 

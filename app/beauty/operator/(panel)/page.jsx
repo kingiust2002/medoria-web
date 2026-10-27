@@ -32,13 +32,15 @@ export default async function BeautyDashboardPage() {
   const { t, lang } = await getPanel();
   await requireBeautySession();
   const configured = isAdminConfigured();
-  const { stats, recentProducts, recentQuotes } = await getBeautyDashboardData();
+  const { access, stats, recentProducts, recentQuotes } = await getBeautyDashboardData();
 
   return (
     <>
       <PageHeader title={t("داشبورد بیوتی")} subtitle={t("نمای کلی کاتالوگ لوکس و استعلام‌ها")}>
-        <Link href={`${BASE}/products/new`} className="btn-primary size-md">
-          <Icon name="plus" size={18} /> {t("افزودن محصول")}</Link>
+        {access.create && (
+          <Link href={`${BASE}/products/new`} className="btn-primary size-md">
+            <Icon name="plus" size={18} /> {t("افزودن محصول")}</Link>
+        )}
       </PageHeader>
 
       {!configured && (
@@ -53,20 +55,20 @@ export default async function BeautyDashboardPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
-        <StatCard icon="package"  tone="violet" label={t("کل محصولات")}        value={stats?.total ?? "—"} />
-        <StatCard icon="badgeCheck" tone="ok"   label={t("محصولات فعال")}       value={stats?.active ?? "—"} />
-        <StatCard icon="dollar"   tone="warn"   label={t("بدون قیمت (استعلام)")} value={stats?.noPrice ?? "—"} />
-        <StatCard icon="image"    tone="muted"  label={t("بدون تصویر")}          value={stats?.noImage ?? "—"} />
-        <StatCard icon="alertTriangle" tone="warn" label={t("محصولات با اطلاعات ناقص")} value={stats?.incomplete ?? "—"} />
-        <StatCard icon="quote"    tone="blue"   label={t("استعلام‌های جدید")}     value={stats?.newQuotes ?? "—"} />
-        <StatCard icon="chat"     tone="violet" label={t("کل استعلام‌ها")}        value={stats?.totalQuotes ?? "—"} />
-        <StatCard icon="alertTriangle" tone="warn" label={t("بدون پاسخ بیش از ۲۴ ساعت")} value={stats?.overdueQuotes ?? "—"} />
-        <StatCard icon="send"     tone="warn"   label={t("اعلان تلگرام نرسیده")}   value={stats?.notifyFailures ?? "—"} />
+        {access.products && <StatCard icon="package"  tone="violet" label={t("کل محصولات")}        value={stats?.total ?? "—"} />}
+        {access.products && <StatCard icon="badgeCheck" tone="ok"   label={t("محصولات فعال")}       value={stats?.active ?? "—"} />}
+        {access.products && <StatCard icon="dollar"   tone="warn"   label={t("بدون قیمت (استعلام)")} value={stats?.noPrice ?? "—"} />}
+        {access.products && <StatCard icon="image"    tone="muted"  label={t("بدون تصویر")}          value={stats?.noImage ?? "—"} />}
+        {access.products && <StatCard icon="alertTriangle" tone="warn" label={t("محصولات با اطلاعات ناقص")} value={stats?.incomplete ?? "—"} />}
+        {access.quotes && <StatCard icon="quote"    tone="blue"   label={t("استعلام‌های جدید")}     value={stats?.newQuotes ?? "—"} />}
+        {access.quotes && <StatCard icon="chat"     tone="violet" label={t("کل استعلام‌ها")}        value={stats?.totalQuotes ?? "—"} />}
+        {access.quotes && <StatCard icon="alertTriangle" tone="warn" label={t("بدون پاسخ بیش از ۲۴ ساعت")} value={stats?.overdueQuotes ?? "—"} />}
+        {access.quotes && <StatCard icon="send"     tone="warn"   label={t("اعلان تلگرام نرسیده")}   value={stats?.notifyFailures ?? "—"} />}
       </div>
 
       {/* Quick actions */}
       <div className="flex flex-wrap gap-2 mb-8">
-        {QUICK.map((q) => (
+        {QUICK.filter((q) => (q.href.endsWith("/new") ? access.create : q.href.endsWith("/products") ? access.products : q.href.endsWith("/quotes") ? access.quotes : true)).map((q) => (
           <Link key={q.href} href={q.href} className={`${q.primary ? "btn-primary" : "btn-ghost"} size-sm`}>
             <Icon name={q.icon} size={16} /> {t(q.label)}
           </Link>
@@ -75,7 +77,7 @@ export default async function BeautyDashboardPage() {
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Recent quotes */}
-        <SectionCard title={t("استعلام‌های اخیر")} icon="quote">
+        {access.quotes && <SectionCard title={t("استعلام‌های اخیر")} icon="quote">
           {recentQuotes?.length ? (
             <ul className="flex flex-col divide-y divide-line">
               {recentQuotes.map((q) => (
@@ -93,10 +95,10 @@ export default async function BeautyDashboardPage() {
           )}
           <Link href={`${BASE}/quotes`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-violet mt-4 hover:gap-2.5 transition-all">{t("مشاهده همه")} <Icon name="chevronLeft" size={14} className="ltr:-scale-x-100" />
           </Link>
-        </SectionCard>
+        </SectionCard>}
 
         {/* Recently updated products */}
-        <SectionCard title={t("محصولات اخیراً به‌روزشده")} icon="refresh">
+        {access.products && <SectionCard title={t("محصولات اخیراً به‌روزشده")} icon="refresh">
           {recentProducts?.length ? (
             <ul className="flex flex-col divide-y divide-line">
               {recentProducts.map((p) => {
@@ -121,7 +123,7 @@ export default async function BeautyDashboardPage() {
               <Link href={`${BASE}/products/new`} className="btn-primary size-sm"><Icon name="plus" size={16} /> {t("افزودن محصول")}</Link>
             </EmptyState>
           )}
-        </SectionCard>
+        </SectionCard>}
       </div>
     </>
   );

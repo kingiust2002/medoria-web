@@ -69,7 +69,7 @@ let app = null;
 let appLog = "";
 // Test files that need the app in a different configuration: personal accounts switched on (OPERATOR_USERS) with a data key.
 const dataKey = randomBytes(32).toString("base64");
-const FILE_ENV = { "accounts.e2e.mjs": { OPERATOR_USERS: "on", OPERATOR_DATA_KEY: dataKey } };
+const FILE_ENV = new Proxy({}, { get: (_t, name) => (/^accounts[-.]/.test(String(name)) ? { OPERATOR_USERS: "on", OPERATOR_DATA_KEY: dataKey } : undefined) });
 const startApp = (extra = {}) => {
   app = spawn("npx", ["next", "start", "-p", String(APP_PORT), "-H", "127.0.0.1"], { cwd: root, env: { ...serverEnv, ...extra }, stdio: ["ignore", "pipe", "pipe"] });
   app.stdout.on("data", (d) => { appLog += d; });
