@@ -127,6 +127,8 @@ public route/API/payload/print path.
 | PR | State | Evidence |
 | --- | --- | --- |
 | #203 session guard on pages/readers | **merged** (not deployed) | CI green, 3 browser tests red→green |
-| #204 product delete | open; **S1a done inside it** (attempt entry first, missing log table = refusal, separate outcome entry; 6 unit tests red→green, 1 new e2e) | 288 unit tests |
+| #204 product delete | open; **S1a done inside it** (attempt entry first, missing log table = refusal, separate outcome entry; 6 unit tests red→green, 1 new e2e) | CI green (validate, browser-flows) |
+| #207 S1b: same rule for quote / category / brand deletes | open, stacked on #204; **needs migration 30 applied before deploy** | 294 unit, full browser suite green |
 | #206 three-language panel | open | 297 unit, 120 browser tests |
-| S1a … S6c | not started | |
+| S2a `lib/operator/authz.js` (pure; nothing calls it yet, so no behaviour change) | in this PR | 21 unit tests: default closed, deny>allow, house separation, grant ceiling, last owner, no self-escalation, per-operation approval, "publish directly" ≠ "may approve" |
+| S2b … S6c | not started | |
