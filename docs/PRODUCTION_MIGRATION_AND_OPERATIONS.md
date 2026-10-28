@@ -1,6 +1,6 @@
 # Medoria Production Migration & Operations Runbook
 
-> Latest review checkpoint: **§23.10 (2026-10-26)** — reviewed code merged, production rollout still pending.
+> Latest review checkpoint: **§23.11 (2026-10-28)** — owner-reported October 26 rollout recorded; safe panel subset merged; the larger platform stack is blocked pending review fixes.
 
 > **Authoritative operational record.**
 >
@@ -2645,3 +2645,32 @@ A summary of the work that followed the 16-point review of 2026-10-20, in the sa
 8. Configure and prove actual outside alerts, optional 2FA and optional reminders separately. Confirm with a real phone. Record the results as they happen; none is established by this pre-deployment note.
 
 **Still open:** current backup/restore proof, outside alert delivery, the data-recovery gap, old GitHub token revocation, Docker hold/package review, real 2FA/Telegram/mobile confirmation, and the intermittent browser-test race. The cookie-rotation closure in §23.9.4 is also superseded: the exposed Supavisor cookie remains a rotation task under `docs/SECRETS_AND_ACCESS_CLEANUP.md`; private ports alone are not evidence that an exposed secret was rotated.
+
+### 23.11 Independent panel review and superseding deployment checkpoint — 2026-10-28
+
+This section preserves the earlier checkpoints and supersedes their pending/completed labels only where new evidence exists. Full findings, exact tested commits and reproduction instructions: [independent panel review](PANEL_INDEPENDENT_REVIEW_2026-10-28.md).
+
+#### 23.11.1 October 26 operations — owner's terminal output
+
+- Fresh backup `20261026T130240Z`: `AUTO_BACKUP`, `LOCAL_BACKUP`, `OFFSITE_UPLOAD`, `OFFSITE_VERIFY`, `R2_RETENTION` and `LOCAL_RETENTION` all PASS. The first R2 attempt logged HTTP 501; the second succeeded and read-back verification passed. This is a successful reported snapshot, not proof of today's backup/alert health or a restore drill.
+- The running app image was saved as `medoria-app-app:rollback-before-20261026T130240Z`; inspection printed image id `sha256:92823cf30ccec9f381fe753385c639ba250ea0f2d7b2a51d256f0dc04c18c8d4`.
+- Migrations **30, 31, 32 and 33** were run individually against `supabase-db` with `ON_ERROR_STOP=1`. Every supplied output ended in COMMIT. The “does not exist, skipping” notices came from defensive constraint/trigger replacement; no SQL error was shown.
+- Backup, heartbeat and restore-drill scripts were installed in `/home/medoria/bin` with owner/group medoria and mode 755; `SCRIPTS_INSTALL=PASS`. Installation alone does not configure real outside alerts or prove a restore drill.
+- `deploy.sh` fast-forwarded the clean checkout to **`b835da8`** (#202), built the app image and reported the app healthy. Public route checks returned the expected 200 responses and the www redirect 308. Final output: `Deployed b835da8 and verified live.` This is owner-supplied deployment output, not an independently inspected running-image attestation.
+- The corrected RLS command returned **18 passed, 0 failed, 0 unknown; exit 0**. The earlier mistyped `vrunuser` failed before running the checker and is superseded by the successful `runuser` execution. The insert probe was skipped.
+- `npm audit --omit=dev`: zero vulnerabilities. Full audit: one moderate development dependency finding in `postcss-selector-parser`; it was not automatically changed on production.
+- The owner reported that forms, Telegram delivery and viewing requests in an incognito authenticated session worked. This is owner confirmation, not a security test proving anonymous access is blocked.
+
+These observations supersede §23.10.2's pending rollout/migrations 30–33. #202's inquiry-list race fix is in the reported deployed commit; the older open-race note in §23.10 is historical.
+
+#### 23.11.2 New repository changes — not reported deployed
+
+- #203's page/reader session checks had already been merged. This review merged **#204**, **#207**, then **#206**, producing application commit **`b641c101734668df01077afb17c4be51ab3b09b2`**. The safe subset provides archived-product deletion, fail-closed destructive audit and Persian/Tajik/English interface language. The tested integration tree matches that application tree.
+- **#208–#224 remain unmerged.** Eight reproducible blockers affect delegation ceilings, stronger-account password reset, personal-account second-factor state and recovery-code races, self-removal of the required-2FA policy, in-use media deletion, stock-count consistency and stale approved deletion. Details and tests are in the linked review; the author's all-green CI is not sufficient to dismiss these reproductions.
+- No SSH session, server command, production migration, environment change, publishing cron or deployment was performed during this review. No later production deployment than the owner's `b835da8` output is established here.
+- For a deliberate deployment of the safe subset, take a fresh verified local/encrypted-R2 backup and save the current image with a new unique tag, check a clean medoria-owned checkout, run the existing deploy script, then verify public health and both panels. Test deletion only with disposable archived data and confirm the three languages.
+- **Do not apply migrations 34–42 or enable `OPERATOR_USERS` as part of this safe-subset deployment.** The merged subset requires no new migration or environment variable. New platform secrets, cron and the personal-account rollout remain blocked until the larger stack is corrected and reviewed again.
+
+#### 23.11.3 Still open
+
+Real outside alert delivery and a restore drill; any data-recovery gap; old GitHub-token revocation and Supavisor-cookie rotation; deliberate Docker package/hold review; native-speaker translation review and physical-phone verification; unfinished platform requirements listed in the independent review. Preserve the distinction between code present, code merged, deployed behavior and owner-reported verification.
