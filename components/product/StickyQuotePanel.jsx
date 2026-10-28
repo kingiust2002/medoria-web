@@ -6,12 +6,15 @@ import { waLink, tgLink, productInquiryMessage } from "@/lib/whatsapp";
 import { imageUrl } from "@/lib/supabase";
 import { priceLabel, isOnRequest, formatPrice } from "@/lib/price";
 import { useCompare } from "@/lib/compare";
+import { usePreview } from "@/components/shared/PreviewContext";
 import Icon from "@/components/shared/Icon";
 
 export default function StickyQuotePanel({ product, lang, onQuoteClick, compareId = product.id }) {
   const t = getTranslations(lang);
   const [show, setShow] = useState(false);
-  const { has, toggle } = useCompare();
+  const compare = useCompare();
+  const preview = usePreview();            // a private preview of a draft does not touch the viewer's compare list
+  const { has } = compare, toggle = preview ? () => {} : compare.toggle;
   const isCompared = has(compareId);
 
   // Show when scrolled past initial CTA card (~600px)

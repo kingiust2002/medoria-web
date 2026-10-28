@@ -58,6 +58,16 @@ export function middleware(req) {
 
   const seg1 = pathname.split("/")[1];
 
+  // ── The private preview of a product (N5): /health/{lang}/preview/… and /beauty/{lang}/preview/…. The page itself answers 404 to anyone
+  //    without a panel session; these headers make sure that nothing it ever renders is indexed, archived or stored by a cache or a proxy.
+  if (VERTICALS.includes(seg1) && /^\/(health|beauty)\/[a-z]{2}\/preview(\/|$)/.test(pathname)) {
+    const res = NextResponse.next();
+    res.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet, noimageindex");
+    res.headers.set("Cache-Control", "private, no-store, max-age=0, must-revalidate");
+    res.headers.set("Referrer-Policy", "no-referrer");
+    return res;
+  }
+
   // Gateway, framework internals, the vertical trees, and static files: leave be.
   if (
     pathname === "/" ||

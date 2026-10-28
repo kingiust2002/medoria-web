@@ -363,7 +363,7 @@ test("the public pages read variants only through the database functions, and a 
   }
   assert.match(read("app/health/[lang]/catalog/[slug]/page.jsx"), /getProductVariants\(product\.id\)/);
   assert.match(read("app/beauty/[lang]/catalog/[slug]/page.jsx"), /getBeautyProductVariants\(product\.id\)/);
-  assert.match(read("app/beauty/[lang]/catalog/[slug]/page.jsx"), /variants\.length > 0 \?/, "a product without variants keeps its server-rendered card");
+  assert.match(read("components/beauty/BeautyProductView.jsx"), /variants\.length > 0 \?/, "a product without variants keeps its server-rendered card");
   // compare, wish list and "recently viewed" stay on the product (variants are not public rows)
   const detail = read("app/health/[lang]/catalog/[slug]/ProductDetailClient.jsx");
   assert.match(detail, /toggle\(parent\.id\)/); assert.match(detail, /toggleWish\(parent\.id\)/); assert.match(detail, /excludeId=\{parent\.id\}/);

@@ -9,6 +9,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { LANG_META } from "@/lib/i18n";
 import { waLink, tgLink } from "@/lib/whatsapp";
 import { submitBeautyQuoteRequest } from "@/lib/beauty/actions/quote";
+import { usePreview } from "@/components/shared/PreviewContext";
 import { priceLabel, priceLine, isOnRequest, formatPrice } from "@/lib/price";
 import Icon from "@/components/shared/Icon";
 import MathCaptcha, { captchaErrorText } from "@/components/shared/MathCaptcha";
@@ -74,6 +75,7 @@ export default function BeautyQuoteModal({ product, lang, onClose }) {
   const [formError, setFormError] = useState(null);
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const preview = usePreview();            // a private preview shows the form but sends nothing and opens no messenger
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -104,6 +106,7 @@ export default function BeautyQuoteModal({ product, lang, onClose }) {
   const handleSend = async (e) => {
     e.preventDefault();
     if (!name.trim() || sending) return;
+    if (preview) { setSent(true); return; }
     setSending(true);
     setFormError(null);
 
