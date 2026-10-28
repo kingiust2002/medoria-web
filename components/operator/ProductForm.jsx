@@ -11,11 +11,15 @@ import ImageUploader from "@/components/operator/ImageUploader";
 import SpecsEditor from "@/components/operator/SpecsEditor";
 import QuickCategoryModal from "@/components/operator/QuickCategoryModal";
 import { SectionCard, Field, Input, Textarea, Select, Toggle, Spinner } from "@/components/operator/ui";
+import { useT, usePanelLang } from "@/components/panel/PanelI18n";
+import { localName } from "@/lib/panel/i18n";
 
 // Unsaved NEW-product draft (never edit pages, never secrets) survives reloads.
 const DRAFT_KEY = "medoria_operator_product_draft_v1";
 
 export default function ProductForm({ mode, product, categories }) {
+  const t = useT();
+  const { lang } = usePanelLang();
   const router = useRouter();
   const editing = mode === "edit";
   const galleryRef = useRef(null);
@@ -34,7 +38,7 @@ export default function ProductForm({ mode, product, categories }) {
     is_featured: !!product?.is_featured,
     is_active: product ? product.is_active !== false : true,
     image_url: product?.image_url || "", brochure_url: product?.brochure_url || "",
-    tags: Array.isArray(product?.tags) ? product.tags.join("، ") : "",
+    tags: Array.isArray(product?.tags) ? product.tags.join(t("، ")) : "",
     seo_title: product?.seo_title || "", seo_description: product?.seo_description || "",
   });
   const [gallery, setGallery] = useState(Array.isArray(product?.gallery_urls) ? product.gallery_urls : []);
@@ -86,10 +90,10 @@ export default function ProductForm({ mode, product, categories }) {
 
   useEffect(() => {
     if (editing || !dirty) return;
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ f, gallery, specs, priceOnRequest, at: Date.now() })); } catch { /* storage full */ }
     }, 600);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [f, gallery, specs, priceOnRequest, dirty, editing]);
 
   useEffect(() => {
@@ -137,9 +141,9 @@ export default function ProductForm({ mode, product, categories }) {
   }
 
   const selectedCat = cats.find((c) => String(c.id) === String(f.category_id));
-  const catLabel = selectedCat ? (selectedCat.name_fa || selectedCat.name_en || selectedCat.slug) : "بدون دسته";
+  const catLabel = selectedCat ? (localName(selectedCat, lang)) : t("بدون دسته");
   const previewImg = f.image_url ? imageUrl(f.image_url) : null;
-  const priceLabel = priceOnRequest || !f.price ? "استعلام قیمت" : `$${Number(f.price).toFixed(2)}`;
+  const priceLabel = priceOnRequest || !f.price ? t("استعلام قیمت") : `$${Number(f.price).toFixed(2)}`;
 
   async function addGalleryFile(file) {
     if (!file) return;
@@ -148,18 +152,18 @@ export default function ProductForm({ mode, product, categories }) {
     const res = await uploadProductImage(fd);
     setGalleryBusy(false);
     if (res.ok) setGallery((g) => [...g, res.path]);
-    else setErr(res.error || "آپلود گالری ناموفق بود.");
+    else setErr(t(res.error) || t("آپلود گالری ناموفق بود."));
   }
 
   async function autoTranslate() {
     setErr("");
     const srcName = f[`name_${transSource}`] || "";
     const srcDesc = f[`description_${transSource}`] || "";
-    if (!srcName.trim() && !srcDesc.trim()) { setErr("اول نام یا توضیحات زبانِ مبدأ را پر کن."); return; }
+    if (!srcName.trim() && !srcDesc.trim()) { setErr(t("اول نام یا توضیحات زبانِ مبدأ را پر کن.")); return; }
     setTranslating(true);
     const res = await translateProductFields({ source: transSource, name: srcName, description: srcDesc });
     setTranslating(false);
-    if (!res.ok) { setErr(res.error || "ترجمه ناموفق بود."); return; }
+    if (!res.ok) { setErr(t(res.error) || t("ترجمه ناموفق بود.")); return; }
     setF((s) => {
       const next = { ...s };
       for (const [lang, vals] of Object.entries(res.translations)) {
@@ -174,7 +178,7 @@ export default function ProductForm({ mode, product, categories }) {
   async function submit(e) {
     e.preventDefault();
     setErr("");
-    if (!f.name_fa.trim() && !f.name_en.trim()) { setErr("حداقل نام فارسی یا انگلیسی محصول را وارد کنید."); return; }
+    if (!f.name_fa.trim() && !f.name_en.trim()) { setErr(t("حداقل نام فارسی یا انگلیسی محصول را وارد کنید.")); return; }
     setSaving(true);
     const payload = {
       ...f,
@@ -201,14 +205,14 @@ export default function ProductForm({ mode, product, categories }) {
       router.push("/operator/products");
     } else {
       addAnotherRef.current = false;
-      setErr(res.error || "ذخیره ناموفق بود.");
+      setErr(t(res.error) || t("ذخیره ناموفق بود."));
     }
   }
 
   const SaveButton = ({ full }) => (
     <button type="submit" disabled={saving} className={`btn-primary size-md ${full ? "w-full" : ""} disabled:opacity-60`}>
       {saving ? <Spinner /> : <Icon name="save" size={18} />}
-      {saving ? "در حال ذخیره…" : editing ? "ذخیره تغییرات" : "افزودن محصول"}
+      {saving ? t("در حال ذخیره…") : editing ? t("ذخیره تغییرات") : t("افزودن محصول")}
     </button>
   );
 
@@ -222,8 +226,7 @@ export default function ProductForm({ mode, product, categories }) {
         onClick={() => { addAnotherRef.current = true; }}
         className={`btn-ghost size-md ${full ? "w-full" : ""} disabled:opacity-60`}
       >
-        <Icon name="plusCircle" size={18} /> ذخیره و افزودن بعدی
-      </button>
+        <Icon name="plusCircle" size={18} /> {t("ذخیره و افزودن بعدی")}</button>
     )
   );
 
@@ -232,29 +235,25 @@ export default function ProductForm({ mode, product, categories }) {
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-3 min-w-0">
-          <Link href="/operator/products" className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-line-soft shrink-0"><Icon name="chevronRight" size={18} /></Link>
-          <h1 className="text-xl sm:text-2xl font-bold font-display text-ink tracking-tight truncate">{editing ? "ویرایش محصول" : "افزودن محصول"}</h1>
+          <Link href="/operator/products" className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-line-soft shrink-0"><Icon name="chevronRight" size={18} className="ltr:-scale-x-100" /></Link>
+          <h1 className="text-xl sm:text-2xl font-bold font-display text-ink tracking-tight truncate">{editing ? t("ویرایش محصول") : t("افزودن محصول")}</h1>
         </div>
         <div className="hidden sm:flex items-center gap-2"><SaveAndNextButton /><SaveButton /></div>
       </div>
 
       {draftFound && (
         <div className="mb-5 text-sm rounded-xl px-3 py-2.5 flex flex-wrap items-center gap-2 bg-primary/10 text-primary">
-          <Icon name="archive" size={16} />
-          پیش‌نویس ذخیره‌نشده‌ای از قبل وجود دارد{draftFound.f?.name_fa ? ` («${draftFound.f.name_fa}»)` : ""}.
-          <button type="button" onClick={restoreDraft} className="font-semibold underline underline-offset-2">بازیابی</button>
-          <button type="button" onClick={discardDraft} className="text-ink-muted underline underline-offset-2">حذف پیش‌نویس</button>
+          <Icon name="archive" size={16} />{draftFound.f?.name_fa ? t("پیش‌نویس ذخیره‌نشده‌ای از قبل وجود دارد («{name}»).", { name: draftFound.f.name_fa }) : t("پیش‌نویس ذخیره‌نشده‌ای از قبل وجود دارد.")}<button type="button" onClick={restoreDraft} className="font-semibold underline underline-offset-2">{t("بازیابی")}</button>
+          <button type="button" onClick={discardDraft} className="text-ink-muted underline underline-offset-2">{t("حذف پیش‌نویس")}</button>
         </div>
       )}
 
       {savedToast && (
         <div className="mb-5 text-sm rounded-xl px-3 py-2.5 flex flex-wrap items-center gap-2 bg-ok/10 text-ok">
-          <Icon name="check" size={16} />
-          «{savedToast.name}» ذخیره شد.
-          {savedToast.id && (
-            <Link href={`/operator/products/${savedToast.id}/edit`} className="font-semibold underline underline-offset-2">ویرایش</Link>
+          <Icon name="check" size={16} />{t("«{name}» ذخیره شد.", { name: savedToast.name })}{savedToast.id && (
+            <Link href={`/operator/products/${savedToast.id}/edit`} className="font-semibold underline underline-offset-2">{t("ویرایش")}</Link>
           )}
-          <button type="button" onClick={() => setSavedToast(null)} className="mr-auto text-ink-muted"><Icon name="close" size={14} /></button>
+          <button type="button" onClick={() => setSavedToast(null)} className="ms-auto text-ink-muted"><Icon name="close" size={14} /></button>
         </div>
       )}
 
@@ -268,96 +267,94 @@ export default function ProductForm({ mode, product, categories }) {
         {/* ── Left: form sections ─────────────────────────────────────────── */}
         <div className="flex flex-col gap-5 min-w-0">
           {/* Basic */}
-          <SectionCard title="اطلاعات پایه" desc="نام و مشخصات اصلی محصول" icon="package">
+          <SectionCard title={t("اطلاعات پایه")} desc={t("نام و مشخصات اصلی محصول")} icon="package">
             <div className="grid sm:grid-cols-2 gap-4">
-              <Field label="نام محصول (فارسی)" required><Input id="pf-name-fa" value={f.name_fa} onChange={(e) => up("name_fa", e.target.value)} placeholder="دستکش نیتریل" /></Field>
-              <Field label="نام محصول (انگلیسی)" hint="برای ساخت آدرس صفحه استفاده می‌شود"><Input value={f.name_en} onChange={(e) => onNameEn(e.target.value)} dir="ltr" placeholder="Nitrile gloves" /></Field>
+              <Field label={t("نام محصول (فارسی)")} required><Input id="pf-name-fa" value={f.name_fa} onChange={(e) => up("name_fa", e.target.value)} placeholder={t("دستکش نیتریل")} /></Field>
+              <Field label={t("نام محصول (انگلیسی)")} hint={t("برای ساخت آدرس صفحه استفاده می‌شود")}><Input value={f.name_en} onChange={(e) => onNameEn(e.target.value)} dir="ltr" placeholder="Nitrile gloves" /></Field>
             </div>
 
             {/* Auto-translate */}
             <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-brand-violet/5 border border-brand-violet/15 p-2.5">
               <Icon name="globe" size={15} className="text-brand-violet shrink-0" />
-              <span className="text-[12px] text-ink-muted">ترجمهٔ خودکار از</span>
+              <span className="text-[12px] text-ink-muted">{t("ترجمهٔ خودکار از")}</span>
               <select value={transSource} onChange={(e) => setTransSource(e.target.value)} className="input !h-8 w-auto text-xs py-0">
-                <option value="fa">فارسی</option>
-                <option value="en">انگلیسی</option>
-                <option value="ru">روسی</option>
-                <option value="tg">تاجیکی</option>
+                <option value="fa">{t("فارسی")}</option>
+                <option value="en">{t("انگلیسی")}</option>
+                <option value="ru">{t("روسی")}</option>
+                <option value="tg">{t("تاجیکی")}</option>
               </select>
               <button type="button" onClick={autoTranslate} disabled={translating} className="btn-ghost size-sm">
-                {translating ? <Spinner /> : <Icon name="sparkles" size={15} />} ترجمه به سایر زبان‌ها
-              </button>
-              <span className="text-[11px] text-ink-faint">نام و توضیحات را پر می‌کند</span>
+                {translating ? <Spinner /> : <Icon name="sparkles" size={15} />} {t("ترجمه به سایر زبان‌ها")}</button>
+              <span className="text-[11px] text-ink-faint">{t("نام و توضیحات را پر می‌کند")}</span>
             </div>
 
             <details open={expandLangs} onToggle={(e) => setExpandLangs(e.currentTarget.open)} className="mt-3 group">
-              <summary className="cursor-pointer text-xs font-semibold text-brand-violet inline-flex items-center gap-1">نام‌های روسی و تاجیکی (اختیاری) <Icon name="chevronDown" size={14} className="group-open:rotate-180 transition-transform" /></summary>
+              <summary className="cursor-pointer text-xs font-semibold text-brand-violet inline-flex items-center gap-1">{t("نام‌های روسی و تاجیکی (اختیاری)")} <Icon name="chevronDown" size={14} className="group-open:rotate-180 transition-transform" /></summary>
               <div className="grid sm:grid-cols-2 gap-4 mt-3">
-                <Field label="نام (روسی)"><Input value={f.name_ru} onChange={(e) => up("name_ru", e.target.value)} dir="ltr" /></Field>
-                <Field label="نام (تاجیکی)"><Input value={f.name_tg} onChange={(e) => up("name_tg", e.target.value)} dir="ltr" /></Field>
+                <Field label={t("نام (روسی)")}><Input value={f.name_ru} onChange={(e) => up("name_ru", e.target.value)} dir="ltr" /></Field>
+                <Field label={t("نام (تاجیکی)")}><Input value={f.name_tg} onChange={(e) => up("name_tg", e.target.value)} dir="ltr" /></Field>
               </div>
             </details>
             <div className="grid sm:grid-cols-3 gap-4 mt-4">
-              <Field label="اسلاگ (slug)" hint="در آدرس صفحه"><Input value={f.slug} onChange={(e) => { setSlugTouched(true); up("slug", e.target.value); }} dir="ltr" placeholder="nitrile-gloves" /></Field>
-              <Field label="کد محصول (SKU)"><Input value={f.sku} onChange={(e) => up("sku", e.target.value)} dir="ltr" placeholder="GLV-001" /></Field>
-              <Field label="برند"><Input value={f.brand} onChange={(e) => up("brand", e.target.value)} placeholder="MediCare" /></Field>
+              <Field label={t("اسلاگ (slug)")} hint={t("در آدرس صفحه")}><Input value={f.slug} onChange={(e) => { setSlugTouched(true); up("slug", e.target.value); }} dir="ltr" placeholder="nitrile-gloves" /></Field>
+              <Field label={t("کد محصول (SKU)")}><Input value={f.sku} onChange={(e) => up("sku", e.target.value)} dir="ltr" placeholder="GLV-001" /></Field>
+              <Field label={t("برند")}><Input value={f.brand} onChange={(e) => up("brand", e.target.value)} placeholder="MediCare" /></Field>
             </div>
             <div className="mt-4 flex items-end gap-2">
               <div className="flex-1">
-                <Field label="دسته‌بندی">
+                <Field label={t("دسته‌بندی")}>
                   <Select value={f.category_id} onChange={(e) => up("category_id", e.target.value)}>
-                    <option value="">— انتخاب دسته —</option>
-                    {cats.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{c.name_fa || c.name_en || c.slug}</option>)}
+                    <option value="">{t("— انتخاب دسته —")}</option>
+                    {cats.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{localName(c, lang)}</option>)}
                   </Select>
                 </Field>
               </div>
-              <button type="button" onClick={() => setCatModal(true)} title="دسته جدید" className="btn-ghost size-md shrink-0">
-                <Icon name="plus" size={16} /> دسته جدید
-              </button>
+              <button type="button" onClick={() => setCatModal(true)} title={t("دسته جدید")} className="btn-ghost size-md shrink-0">
+                <Icon name="plus" size={16} /> {t("دسته جدید")}</button>
             </div>
             <div className="mt-4">
-              <Field label="توضیحات (فارسی)"><Textarea value={f.description_fa} onChange={(e) => up("description_fa", e.target.value)} rows={4} placeholder="توضیح کامل محصول…" /></Field>
+              <Field label={t("توضیحات (فارسی)")}><Textarea value={f.description_fa} onChange={(e) => up("description_fa", e.target.value)} rows={4} placeholder={t("توضیح کامل محصول…")} /></Field>
             </div>
             <details open={expandLangs} onToggle={(e) => setExpandLangs(e.currentTarget.open)} className="mt-3 group">
-              <summary className="cursor-pointer text-xs font-semibold text-brand-violet inline-flex items-center gap-1">توضیحات به زبان‌های دیگر (اختیاری) <Icon name="chevronDown" size={14} className="group-open:rotate-180 transition-transform" /></summary>
+              <summary className="cursor-pointer text-xs font-semibold text-brand-violet inline-flex items-center gap-1">{t("توضیحات به زبان‌های دیگر (اختیاری)")} <Icon name="chevronDown" size={14} className="group-open:rotate-180 transition-transform" /></summary>
               <div className="grid gap-4 mt-3">
-                <Field label="توضیحات (انگلیسی)"><Textarea value={f.description_en} onChange={(e) => up("description_en", e.target.value)} dir="ltr" rows={3} /></Field>
+                <Field label={t("توضیحات (انگلیسی)")}><Textarea value={f.description_en} onChange={(e) => up("description_en", e.target.value)} dir="ltr" rows={3} /></Field>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <Field label="توضیحات (روسی)"><Textarea value={f.description_ru} onChange={(e) => up("description_ru", e.target.value)} dir="ltr" rows={3} /></Field>
-                  <Field label="توضیحات (تاجیکی)"><Textarea value={f.description_tg} onChange={(e) => up("description_tg", e.target.value)} dir="ltr" rows={3} /></Field>
+                  <Field label={t("توضیحات (روسی)")}><Textarea value={f.description_ru} onChange={(e) => up("description_ru", e.target.value)} dir="ltr" rows={3} /></Field>
+                  <Field label={t("توضیحات (تاجیکی)")}><Textarea value={f.description_tg} onChange={(e) => up("description_tg", e.target.value)} dir="ltr" rows={3} /></Field>
                 </div>
               </div>
             </details>
           </SectionCard>
 
           {/* Pricing */}
-          <SectionCard title="قیمت و موجودی" desc="قیمت ثابت یا استعلام قیمت" icon="dollar">
+          <SectionCard title={t("قیمت و موجودی")} desc={t("قیمت ثابت یا استعلام قیمت")} icon="dollar">
             <div className="rounded-xl bg-canvas-soft border border-line p-3.5 mb-4">
-              <Toggle checked={priceOnRequest} onChange={setPriceOnRequest} label="استعلام قیمت" desc="قیمت نمایش داده نمی‌شود؛ مشتری درخواست قیمت می‌دهد." />
+              <Toggle checked={priceOnRequest} onChange={setPriceOnRequest} label={t("استعلام قیمت")} desc={t("قیمت نمایش داده نمی‌شود؛ مشتری درخواست قیمت می‌دهد.")} />
             </div>
             <div className="grid sm:grid-cols-3 gap-4">
-              <Field label="قیمت (دلار)" hint={priceOnRequest ? "غیرفعال (حالت استعلام)" : "خالی = استعلام قیمت"}>
+              <Field label={t("قیمت (دلار)")} hint={priceOnRequest ? t("غیرفعال (حالت استعلام)") : t("خالی = استعلام قیمت")}>
                 <Input type="number" step="0.01" min="0" value={priceOnRequest ? "" : f.price} disabled={priceOnRequest} onChange={(e) => up("price", e.target.value)} dir="ltr" placeholder="8.50" />
               </Field>
-              <Field label="واحد"><Input value={f.unit} onChange={(e) => up("unit", e.target.value)} placeholder="× ۱۰۰ عدد" /></Field>
-              <Field label="حداقل سفارش"><Input type="number" min="1" value={f.min_order_qty} onChange={(e) => up("min_order_qty", e.target.value)} dir="ltr" /></Field>
+              <Field label={t("واحد")}><Input value={f.unit} onChange={(e) => up("unit", e.target.value)} placeholder={t("× ۱۰۰ عدد")} /></Field>
+              <Field label={t("حداقل سفارش")}><Input type="number" min="1" value={f.min_order_qty} onChange={(e) => up("min_order_qty", e.target.value)} dir="ltr" /></Field>
             </div>
             <div className="grid sm:grid-cols-2 gap-4 mt-4 items-center">
-              <Field label="نشان محصول"><Select value={f.badge} onChange={(e) => up("badge", e.target.value)}>{PRODUCT_BADGES.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}</Select></Field>
-              <div className="rounded-xl bg-canvas-soft border border-line p-3.5 mt-6 sm:mt-5"><Toggle checked={f.in_stock} onChange={(v) => up("in_stock", v)} label="موجود است" /></div>
+              <Field label={t("نشان محصول")}><Select value={f.badge} onChange={(e) => up("badge", e.target.value)}>{PRODUCT_BADGES.map((b) => <option key={b.value} value={b.value}>{t(b.label)}</option>)}</Select></Field>
+              <div className="rounded-xl bg-canvas-soft border border-line p-3.5 mt-6 sm:mt-5"><Toggle checked={f.in_stock} onChange={(v) => up("in_stock", v)} label={t("موجود است")} /></div>
             </div>
           </SectionCard>
 
           {/* Images */}
-          <SectionCard title="تصاویر" desc="تصویر اصلی و گالری محصول" icon="image">
-            <Field label="تصویر اصلی"><ImageUploader value={f.image_url} onChange={(v) => up("image_url", v)} /></Field>
+          <SectionCard title={t("تصاویر")} desc={t("تصویر اصلی و گالری محصول")} icon="image">
+            <Field label={t("تصویر اصلی")}><ImageUploader value={f.image_url} onChange={(v) => up("image_url", v)} /></Field>
             <div className="mt-5">
-              <span className="block text-[13px] font-medium text-ink-soft mb-2">گالری (اختیاری)</span>
+              <span className="block text-[13px] font-medium text-ink-soft mb-2">{t("گالری (اختیاری)")}</span>
               <div className="flex flex-wrap gap-2.5">
                 {gallery.map((g, i) => (
                   <span key={i} className="img-ph relative w-20 h-20 rounded-lg overflow-hidden border border-line group">
                     <img src={imageUrl(g)} alt="" className="w-full h-full object-cover" />
-                    <button type="button" onClick={() => setGallery(gallery.filter((_, idx) => idx !== i))} className="absolute top-1 left-1 grid place-items-center w-6 h-6 rounded-md bg-navy/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="close" size={13} /></button>
+                    <button type="button" onClick={() => setGallery(gallery.filter((_, idx) => idx !== i))} className="absolute top-1 end-1 grid place-items-center w-6 h-6 rounded-md bg-navy/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="close" size={13} /></button>
                   </span>
                 ))}
                 <button type="button" onClick={() => galleryRef.current?.click()} disabled={galleryBusy} className="w-20 h-20 rounded-lg border-2 border-dashed border-line grid place-items-center text-ink-faint hover:border-brand-violet/40 hover:text-brand-violet transition-colors">
@@ -369,17 +366,17 @@ export default function ProductForm({ mode, product, categories }) {
           </SectionCard>
 
           {/* Specs */}
-          <SectionCard title="مشخصات فنی" desc="ویژگی‌ها به‌صورت کلید/مقدار" icon="list">
+          <SectionCard title={t("مشخصات فنی")} desc={t("ویژگی‌ها به‌صورت کلید/مقدار")} icon="list">
             <SpecsEditor rows={specs} onChange={setSpecs} />
           </SectionCard>
 
           {/* SEO & more */}
-          <SectionCard title="سئو و موارد بیشتر" desc="اختیاری — برای بهبود نمایش در گوگل" icon="search">
+          <SectionCard title={t("سئو و موارد بیشتر")} desc={t("اختیاری — برای بهبود نمایش در گوگل")} icon="search">
             <div className="grid gap-4">
-              <Field label="برچسب‌ها (با ویرگول جدا کنید)"><Input value={f.tags} onChange={(e) => up("tags", e.target.value)} placeholder="دستکش، نیتریل، یکبار مصرف" /></Field>
-              <Field label="عنوان سئو"><Input value={f.seo_title} onChange={(e) => up("seo_title", e.target.value)} /></Field>
-              <Field label="توضیح سئو"><Textarea value={f.seo_description} onChange={(e) => up("seo_description", e.target.value)} rows={2} /></Field>
-              <Field label="لینک بروشور (PDF)"><Input value={f.brochure_url} onChange={(e) => up("brochure_url", e.target.value)} dir="ltr" placeholder="https://…" /></Field>
+              <Field label={t("برچسب‌ها (با ویرگول جدا کنید)")}><Input value={f.tags} onChange={(e) => up("tags", e.target.value)} placeholder={t("دستکش، نیتریل، یکبار مصرف")} /></Field>
+              <Field label={t("عنوان سئو")}><Input value={f.seo_title} onChange={(e) => up("seo_title", e.target.value)} /></Field>
+              <Field label={t("توضیح سئو")}><Textarea value={f.seo_description} onChange={(e) => up("seo_description", e.target.value)} rows={2} /></Field>
+              <Field label={t("لینک بروشور (PDF)")}><Input value={f.brochure_url} onChange={(e) => up("brochure_url", e.target.value)} dir="ltr" placeholder="https://…" /></Field>
             </div>
           </SectionCard>
 
@@ -388,34 +385,34 @@ export default function ProductForm({ mode, product, categories }) {
 
         {/* ── Right: publish + live preview ───────────────────────────────── */}
         <div className="flex flex-col gap-5 lg:sticky lg:top-6">
-          <SectionCard title="انتشار" icon="badgeCheck">
+          <SectionCard title={t("انتشار")} icon="badgeCheck">
             <div className="flex flex-col gap-3">
-              <div className="rounded-xl bg-canvas-soft border border-line p-3.5"><Toggle checked={f.is_active} onChange={(v) => up("is_active", v)} label="فعال (نمایش در سایت)" desc="غیرفعال = آرشیو، در سایت دیده نمی‌شود." /></div>
-              <div className="rounded-xl bg-canvas-soft border border-line p-3.5"><Toggle checked={f.is_featured} onChange={(v) => up("is_featured", v)} label="ویژه (Featured)" desc="نمایش در بخش محصولات منتخب." /></div>
+              <div className="rounded-xl bg-canvas-soft border border-line p-3.5"><Toggle checked={f.is_active} onChange={(v) => up("is_active", v)} label={t("فعال (نمایش در سایت)")} desc={t("غیرفعال = آرشیو، در سایت دیده نمی‌شود.")} /></div>
+              <div className="rounded-xl bg-canvas-soft border border-line p-3.5"><Toggle checked={f.is_featured} onChange={(v) => up("is_featured", v)} label={t("ویژه (Featured)")} desc={t("نمایش در بخش محصولات منتخب.")} /></div>
             </div>
             <div className="mt-4 flex flex-col gap-2">
               <SaveButton full />
               <SaveAndNextButton full />
-              <Link href="/operator/products" className="btn-ghost size-md w-full">انصراف</Link>
+              <Link href="/operator/products" className="btn-ghost size-md w-full">{t("انصراف")}</Link>
             </div>
           </SectionCard>
 
-          <SectionCard title="پیش‌نمایش" icon="eye">
+          <SectionCard title={t("پیش‌نمایش")} icon="eye">
             <div className="card-flat overflow-hidden">
               <div className="img-ph aspect-[4/3] grid place-items-center text-ink-faint relative">
                 {previewImg ? <img src={previewImg} alt="" className="w-full h-full object-cover" /> : <Icon name="image" size={30} />}
-                {f.badge && <span className="tag absolute top-2.5 right-2.5 bg-primary text-white">{f.badge}</span>}
-                {!f.in_stock && <span className="pill absolute bottom-2.5 right-2.5 bg-navy/70 text-white !text-[10px]">ناموجود</span>}
+                {f.badge && <span className="tag absolute top-2.5 start-2.5 bg-primary text-white">{f.badge}</span>}
+                {!f.in_stock && <span className="pill absolute bottom-2.5 start-2.5 bg-navy/70 text-white !text-[10px]">{t("ناموجود")}</span>}
               </div>
               <div className="p-3.5">
-                <p className="font-semibold text-ink truncate">{f.name_fa || f.name_en || "نام محصول"}</p>
+                <p className="font-semibold text-ink truncate">{f.name_fa || f.name_en || t("نام محصول")}</p>
                 <p className="text-xs text-ink-muted truncate mt-0.5">{[f.brand, catLabel].filter(Boolean).join(" · ") || "—"}</p>
                 <p className={`mt-2 font-bold ${priceOnRequest || !f.price ? "text-brand-violet text-sm" : "text-ink"}`}>
                   {priceLabel}{!priceOnRequest && f.price && f.unit ? <span className="text-ink-faint font-normal text-xs"> / {f.unit}</span> : null}
                 </p>
               </div>
             </div>
-            <p className="text-[11px] text-ink-faint mt-3 leading-relaxed text-center">پیش‌نمایش زنده — همراه با تغییر فیلدها به‌روز می‌شود.</p>
+            <p className="text-[11px] text-ink-faint mt-3 leading-relaxed text-center">{t("پیش‌نمایش زنده — همراه با تغییر فیلدها به‌روز می‌شود.")}</p>
           </SectionCard>
         </div>
       </div>

@@ -1,15 +1,18 @@
 // app/operator/layout.jsx — base wrapper for the entire operator area.
-// RTL + Persian font, calm canvas background. Not indexed by search engines.
-export const metadata = {
-  title: "پنل اپراتور | Medoria",
-  robots: { index: false, follow: false },
-  icons: { icon: "/logo-mark.png", apple: "/logo-mark.png" },
-};
+// Direction, language and font follow the panel language (Persian / Tajik / English, a cookie), calm canvas background.
+// Not indexed by search engines.
+import PanelFrame from "@/components/panel/PanelFrame";
+import { getT } from "@/lib/panel/server";
+
+export async function generateMetadata() {
+  const t = await getT();
+  return {
+    title: t("پنل اپراتور | Medoria"),
+    robots: { index: false, follow: false },
+    icons: { icon: "/logo-mark.png", apple: "/logo-mark.png" },
+  };
+}
 
 export default function OperatorLayout({ children }) {
-  return (
-    <div dir="rtl" lang="fa" className="font-farsi min-h-screen bg-canvas text-ink">
-      {children}
-    </div>
-  );
+  return <PanelFrame>{children}</PanelFrame>;
 }

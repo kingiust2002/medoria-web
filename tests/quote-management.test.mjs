@@ -401,7 +401,7 @@ test("the reminder endpoint is off without a long token, refuses a wrong one, an
 
 test("the panel shows code, assignee, waiting and notice-failure markers, and filters by them", () => {
   const panel = read("components/operator/QuotesPanel.jsx");
-  assert.match(panel, /label="کد پیگیری" value=\{x\.tracking_code\}/);
+  assert.match(panel, /label=\{t\("کد پیگیری"\)\} value=\{x\.tracking_code\}/);
   assert.match(panel, /actions\.assignQuote\(/);
   assert.match(panel, /isOverdue\(x, \{ now \}\)/);
   assert.match(panel, /اعلان تلگرام نرسید/);

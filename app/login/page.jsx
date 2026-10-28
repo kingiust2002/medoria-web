@@ -2,6 +2,7 @@
 // operator panel. Lives outside both vertical trees (like /operator and
 // /beauty/operator) so middleware never locale-rewrites or vertical-scopes
 // it. Not indexed — this is an internal door, not a public page.
+import PanelFrame from "@/components/panel/PanelFrame";
 import LoginChooser from "./LoginChooser";
 
 export const metadata = {
@@ -10,5 +11,5 @@ export const metadata = {
 };
 
 export default function AdminEntryPage() {
-  return <LoginChooser />;
+  return <PanelFrame><LoginChooser /></PanelFrame>;
 }

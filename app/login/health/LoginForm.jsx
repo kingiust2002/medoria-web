@@ -3,8 +3,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
 import { Spinner } from "@/components/operator/ui";
+import { useT } from "@/components/panel/PanelI18n";
+import PanelLangSwitch from "@/components/panel/PanelLangSwitch";
 
 export default function LoginForm() {
+  const t = useT();
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -31,16 +34,17 @@ export default function LoginForm() {
       }
       const data = await res.json().catch(() => ({}));
       if (data.needCode) setNeedCode(true);
-      setError(data.error || "ورود ناموفق بود.");
+      setError(t(data.error) || t("ورود ناموفق بود."));
     } catch {
-      setError("ارتباط برقرار نشد. دوباره تلاش کنید.");
+      setError(t("ارتباط برقرار نشد. دوباره تلاش کنید."));
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen grid place-items-center p-4 bg-brand-gradient-soft dark:bg-canvas">
+    <div className="relative min-h-screen grid place-items-center p-4 bg-brand-gradient-soft dark:bg-canvas">
+      <div className="absolute top-4 end-4 z-10"><PanelLangSwitch /></div>
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center gap-3 mb-7 text-center">
           <span className="grid place-items-center w-14 h-14 rounded-2xl bg-brand-gradient text-white shadow-brand">
@@ -48,13 +52,13 @@ export default function LoginForm() {
           </span>
           <div>
             <h1 className="text-2xl font-extrabold font-display gradient-text">Medoria</h1>
-            <p className="text-sm text-ink-muted mt-1">ورود به پنل اپراتور</p>
+            <p className="text-sm text-ink-muted mt-1">{t("ورود به پنل اپراتور")}</p>
           </div>
         </div>
 
         <form onSubmit={submit} className="card p-6 flex flex-col gap-4">
           <label className="block">
-            <span className="block text-[13px] font-medium text-ink-soft mb-1.5">نام کاربری</span>
+            <span className="block text-[13px] font-medium text-ink-soft mb-1.5">{t("نام کاربری")}</span>
             <input
               type="text"
               name="username"
@@ -71,7 +75,7 @@ export default function LoginForm() {
           </label>
 
           <label className="block">
-            <span className="block text-[13px] font-medium text-ink-soft mb-1.5">رمز عبور</span>
+            <span className="block text-[13px] font-medium text-ink-soft mb-1.5">{t("رمز عبور")}</span>
             <input
               type="password"
               name="password"
@@ -86,7 +90,7 @@ export default function LoginForm() {
 
           {needCode && (
             <label className="block">
-              <span className="block text-[13px] font-medium text-ink-soft mb-1.5">{useRecovery ? "کد بازیابی" : "کد ۶ رقمی برنامهٔ احراز هویت"}</span>
+              <span className="block text-[13px] font-medium text-ink-soft mb-1.5">{useRecovery ? t("کد بازیابی") : t("کد ۶ رقمی برنامهٔ احراز هویت")}</span>
               <input
                 type="text"
                 name="code"
@@ -101,7 +105,7 @@ export default function LoginForm() {
                 placeholder={useRecovery ? "XXXX-XXXX-XXXX" : "123456"}
               />
               <button type="button" onClick={() => { setUseRecovery((v) => !v); setCode(""); }} className="text-[12px] text-ink-muted underline underline-offset-2 mt-1.5">
-                {useRecovery ? "استفاده از کد برنامه" : "کد را ندارم — استفاده از کد بازیابی"}
+                {useRecovery ? t("استفاده از کد برنامه") : t("کد را ندارم — استفاده از کد بازیابی")}
               </button>
             </label>
           )}
@@ -114,14 +118,12 @@ export default function LoginForm() {
           )}
 
           <button type="submit" disabled={loading || !username || !password || (needCode && !code)} className="btn-primary size-lg w-full disabled:opacity-60">
-            {loading ? <Spinner /> : <Icon name="arrowL" size={18} />}
-            {loading ? "در حال ورود…" : "ورود"}
+            {loading ? <Spinner /> : <Icon name="arrowL" size={18} className="ltr:-scale-x-100" />}
+            {loading ? t("در حال ورود…") : t("ورود")}
           </button>
         </form>
 
-        <p className="text-center text-[11px] text-ink-faint mt-5 leading-relaxed">
-          دسترسی فقط برای کارکنان مجاز. تمام فعالیت‌ها ثبت می‌شود.
-        </p>
+        <p className="text-center text-[11px] text-ink-faint mt-5 leading-relaxed">{t("دسترسی فقط برای کارکنان مجاز. تمام فعالیت‌ها ثبت می‌شود.")}</p>
       </div>
     </div>
   );
