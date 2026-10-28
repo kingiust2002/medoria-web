@@ -112,7 +112,8 @@ test("a viewer can do nothing: nothing is written, nothing purged, refusals are 
 test("an admin creates a banner and an FAQ item; the row names the person; the public pages are purged; the log has a line", async () => {
   const r = await content.createContent(ctxFor(boss), "banner", banner({ is_published: true, link: "/health/en", label: { tg: "Бештар" } }));
   assert.equal(r.ok, true);
-  assert.deepEqual([r.row.house, r.row.kind, r.row.is_published, r.row.updated_label, r.row.created_by], ["health", "banner", true, "user1", boss.id]);
+  assert.deepEqual([r.row.house, r.row.kind, r.row.is_published, r.row.updated_label], ["health", "banner", true, "user1"]);
+  assert.equal(db.tables.site_content[0].created_by, boss.id, "the stored row names the person (the returned columns are only those the screen needs)");
   assert.equal((await content.createContent(ctxFor(boss), "faq", { q: { tg: "Q" }, a: { tg: "A" } })).ok, true);
   assert.deepEqual(purged, ["health", "health"]);
   assert.deepEqual(audits.map((a) => [a.action, a.result, a.detail.kind]), [["content.create", "success", "banner"], ["content.create", "success", "faq"]]);
