@@ -451,6 +451,18 @@ test("no list screen or reader keeps a cap that hides rows; the screens page on 
   }
 });
 
+test("no reader of a product/request table asks for 'everything' in one plain select (the API would stop at 1,000 rows without saying so)", () => {
+  // every whole-table read in these files goes through readAll / readProductCounts
+  for (const [f, needles] of [
+    ["lib/operator/categoryTreeData.js", ['readProductCounts(admin, "health")']],
+    ["lib/operator/importActions.js", ['readAll((from, to) => admin.from("products").select("sku")', 'readAll((from, to) => admin.from("products").select("*")']],
+    ["lib/beauty/operator/importActions.js", ['readAll((from, to) => admin.from("beauty_products").select("sku")', 'readAll((from, to) => admin.from("beauty_products").select("*")']],
+    ["lib/operator/importEngine.js", ['readAll((from, to) => admin.from("products").select("id,sku,slug")']],
+    ["lib/beauty/operator/importEngine.js", ['readAll((from, to) => admin.from("beauty_products").select("id,sku,slug")']],
+  ]) for (const n of needles) assert.ok(read(f).includes(n), `${f} no longer reads everything in chunks: ${n}`);
+  assert.ok(!/from\("products"\)\.select\("id,category_id,category"\)/.test(read("lib/operator/categoryTreeData.js")));
+});
+
 test("migration 43 is documented and additive", () => {
   const sql = read("migrations/43_panel_list_paging.sql").split("\n").filter((l) => !l.trim().startsWith("--")).join("\n");
   assert.match(sql, /^BEGIN;/m); assert.match(sql, /^COMMIT;/m);

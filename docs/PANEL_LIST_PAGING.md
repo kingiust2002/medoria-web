@@ -21,6 +21,7 @@ The whole state of a list lives in the **address**: `?page=&size=&q=&cat=&world=
 | Warehouse stock | every balance row read in chunks, grouped per product, filtered (search over the whole catalogue, low stock, one warehouse), ordered by SKU, cut into pages of 50 with an exact total | one narrow read per view; fine at this scale, a database function can replace it when a house passes ~100k balance rows |
 | Warehouse reservations, count list | paged (50) with previous/next | |
 | Approval queue | "waiting for you": every pending request the person may decide (read in chunks — the old read stopped at 200 *before* filtering by who may decide, so a long queue hid requests and under-counted the menu badge); "my requests": pages of 25 with an exact total | |
+| Import: existing-SKU check, the matching step of an import (id/SKU/slug of every product), the product CSV export, the Health category tree's product counts | all products, read in chunks (before, an import matched against the first 1,000 products only — it could create duplicates — and the export silently stopped at 1,000) | |
 | People (users) list, activity-log CSV | every row (chunked); the activity viewer was already paged by the database | |
 | Stock-count snapshot, count lines, minimum levels, CSV exports (stock, movements, requests), the quote report | all rows, read in chunks; an unreadable chunk or more than 200,000 rows is an **error** (the count is cancelled; the export fails), never a silently partial snapshot or file | |
 
