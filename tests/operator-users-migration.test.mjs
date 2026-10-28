@@ -38,8 +38,8 @@ const psqlAsync = (sql) => new Promise((resolve) => {
   const cmd = isRoot ? "runuser" : path.join(pgBin, "psql");
   const full = isRoot ? ["-u", "nobody", "--", path.join(pgBin, "psql"), ...args] : args;
   const p = spawn(cmd, full, { stdio: ["ignore", "pipe", "pipe"] });
-  let err = ""; p.stderr.on("data", (d) => (err += d));
-  p.on("close", (code) => resolve({ ok: code === 0, err }));
+  let err = "", out = ""; p.stderr.on("data", (d) => (err += d)); p.stdout.on("data", (d) => (out += d));
+  p.on("close", (code) => resolve({ ok: code === 0, err, out: out.trim() }));
 });
 
 before(() => {
@@ -137,6 +137,19 @@ test("two owners demoting each other at the same moment: exactly one of them goe
   const [a, b] = await Promise.all([psqlAsync(mk("boss1")), psqlAsync(mk("boss2"))]);
   assert.equal([a.ok, b.ok].filter(Boolean).length, 1, `a: ${a.err} | b: ${b.err}`);
   assert.equal(must(psql("SELECT count(*) FROM operator_users WHERE role = 'owner' AND status = 'active'")), "1", "an owner must remain");
+});
+
+test("R4: the compare-and-swap of a recovery code is atomic — two requests that read the same list cannot both write (real concurrency)", { skip: SKIP }, async () => {
+  must(psql("UPDATE operator_users SET recovery_hashes = ARRAY['hash-A','hash-B'] WHERE username = 'alice'"));
+  // exactly the statement the store sends: the stored list must contain every hash it read AND nothing else
+  const cas = (next) => `WITH u AS (UPDATE operator_users SET recovery_hashes = ARRAY['${next}'] WHERE username = 'alice' AND recovery_hashes @> ARRAY['hash-A','hash-B'] AND recovery_hashes <@ ARRAY['hash-A','hash-B'] RETURNING 1) SELECT count(*) FROM u`;
+  const first = `BEGIN; ${cas("hash-B")}; SELECT pg_sleep(1); COMMIT;`;          // spends A (keeps B) and holds the row lock for a second
+  const second = `SELECT pg_sleep(0.3); ${cas("hash-A")};`;                       // read the same list; spends B (would keep A)
+  const [a, b] = await Promise.all([psqlAsync(first), psqlAsync(second)]);
+  assert.ok(a.ok && b.ok, `${a.err} | ${b.err}`);
+  assert.match(b.out, /(^|\n)0$/, `the second writer found the list changed and wrote nothing (got ${JSON.stringify(b.out)})`);
+  assert.equal(must(psql("SELECT array_to_string(recovery_hashes, ',') FROM operator_users WHERE username = 'alice'")), "hash-B", "the spent code A is not back");
+  must(psql("UPDATE operator_users SET recovery_hashes = '{}' WHERE username = 'alice'"));
 });
 
 test("a sessions row can point at a user; the audit columns accept only known results", { skip: SKIP }, () => {
