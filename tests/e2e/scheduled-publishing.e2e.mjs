@@ -56,7 +56,7 @@ test("the cron endpoint: off without a valid token; applies due dates (history +
   const res = await run(TOKEN);
   assert.equal(res.status, 200);
   const body = await res.json();
-  assert.deepEqual(body.houses.health, { published: 1, archived: 1, cleared: 0 });
+  assert.deepEqual(body.houses.health, { published: 1, archived: 1, cleared: 0, blocked: 0 });
   assert.ok(!JSON.stringify(body).includes("e2e-"), "counts only");
   const st = await state();
   const by = Object.fromEntries(st.products.map((x) => [x.id, x]));
@@ -70,5 +70,5 @@ test("the cron endpoint: off without a valid token; applies due dates (history +
   assert.ok([200, 404].includes(pub.status));
   // idempotent: nothing more is due
   const again = await (await run(TOKEN)).json();
-  assert.deepEqual(again.houses.health, { published: 0, archived: 0, cleared: 0 });
+  assert.deepEqual(again.houses.health, { published: 0, archived: 0, cleared: 0, blocked: 0 });
 });

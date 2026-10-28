@@ -1,4 +1,6 @@
 // app/beauty/operator/(panel)/products/[id]/edit/page.jsx
+import { readRules } from "@/lib/operator/publishGate";
+import { getAdminClient } from "@/lib/operator/supabaseAdmin";
 import { notFound, redirect } from "next/navigation";
 import { getAdminBeautyProduct, getAdminBeautyCategories, getAdminBeautyVariants } from "@/lib/beauty/operator/data";
 import ProductForm from "@/components/beauty/operator/ProductForm";
@@ -12,6 +14,7 @@ export const dynamic = "force-dynamic";
 export default async function EditProductPage(props) {
   await requireBeautySession("products.view");
   const params = await props.params;
+  const rules = await readRules(getAdminClient(), "beauty");
   const [product, categories] = await Promise.all([
     getAdminBeautyProduct(params.id),
     getAdminBeautyCategories(),
@@ -22,7 +25,7 @@ export default async function EditProductPage(props) {
   const variants = await getAdminBeautyVariants(product.id);
   return (
     <>
-      <ProductForm mode="edit" product={product} categories={categories} />
+      <ProductForm mode="edit" product={product} categories={categories} publishRules={rules.state === "ok" ? rules.rules : []} publishRulesUnavailable={rules.state === "error"} />
       {!variants.hidden && (
         <div className="mt-6 max-w-5xl">
           <VariantsManager house="beauty" parent={product} variants={variants.variants} unavailable={variants.unavailable}

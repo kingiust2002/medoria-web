@@ -6,6 +6,7 @@
 // server-only — never shipped to the browser, so the public bundle stays
 // light); .csv is parsed in the browser (no library needed). Uploaded files
 // are read in memory and never stored.
+import { codesText } from "@/lib/operator/publishRules";
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,6 +22,10 @@ const UPLOAD_ACCEPT = ".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-o
 import { PageHeader, SectionCard, Badge, Spinner } from "@/components/operator/ui";
 import { useT } from "@/components/panel/PanelI18n";
 import { tr } from "@/lib/panel/i18n";
+
+// a row the publish rule stopped is saved (or would be) as an inactive draft; say why, in the person's language
+const draftNote = (r, t) => (r.publishUnavailable ? [t("قوانین کیفیت انتشار خوانده نشد؛ به‌صورت پیش‌نویس غیرفعال ذخیره شد.")]
+  : r.publishBlocked?.length ? [t("به‌صورت پیش‌نویس غیرفعال ذخیره می‌شود؛ ناقص: {items}", { items: codesText(r.publishBlocked, t) })] : []);
 
 const DRY_CHUNK = 100;
 const COMMIT_CHUNK = 25;
@@ -239,6 +244,7 @@ export default function ImportWizard({ recentLogs = [] }) {
     if (!view) return [];
     if (filter === "all") return view.results;
     if (filter === "warning") return view.results.filter((r) => r.warnings?.length);
+    if (filter === "draft") return view.results.filter((r) => r.publishBlocked?.length || r.publishUnavailable);
     return view.results.filter((r) => r.status === filter);
   }, [view, filter]);
 
@@ -358,6 +364,7 @@ export default function ImportWizard({ recentLogs = [] }) {
                   ["skip", t("رد {skip}", { skip: view.counts.skip })],
                   ["error", t("خطا {error}", { error: view.counts.error })],
                   ["warning", t("هشدار {warnings}", { warnings: view.counts.warnings })],
+                  ["draft", t("پیش‌نویس (ناقص) {drafts}", { drafts: view.results.filter((r) => r.publishBlocked?.length || r.publishUnavailable).length })],
                 ].map(([key, label]) => (
                   <button key={key} type="button" onClick={() => setFilter(key)}
                     className={`pill !text-[11px] font-semibold transition-colors ${filter === key ? "bg-brand-violet text-white" : "bg-line-soft text-ink-muted hover:text-ink"}`}>
@@ -386,7 +393,7 @@ export default function ImportWizard({ recentLogs = [] }) {
                         <td className="px-2.5 py-2 text-ink max-w-[220px] truncate">{nameOf(r.rowNum)}</td>
                         <td className="px-2.5 py-2"><Badge tone={STATUS_TONE[r.status]}>{STATUS_FA[r.status] ? t(STATUS_FA[r.status]) : r.status}</Badge></td>
                         <td className="px-2.5 py-2 text-ink-muted leading-relaxed">
-                          {[...(r.messages || []), ...(r.warnings || [])].join(" · ") || "—"}
+                          {[...(r.messages || []), ...(r.warnings || []), ...draftNote(r, t)].join(" · ") || "—"}
                         </td>
                       </tr>
                     ))}

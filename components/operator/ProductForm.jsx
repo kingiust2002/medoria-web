@@ -1,4 +1,6 @@
 "use client";
+import { blockedText, publishBlockers, codesText, blockerCodes } from "@/lib/operator/publishRules";
+import { buildProductRow } from "@/lib/operator/productRow";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,7 +24,7 @@ import { createProductPreview } from "@/lib/operator/previewActions";
 // Unsaved NEW-product draft (never edit pages, never secrets) survives reloads.
 const DRAFT_KEY = "medoria_operator_product_draft_v1";
 
-export default function ProductForm({ mode, product, categories }) {
+export default function ProductForm({ mode, product, categories, publishRules = [], publishRulesUnavailable = false }) {
   const t = useT();
   const { lang, date: fmtDate } = usePanelLang();
   const router = useRouter();
@@ -253,9 +255,18 @@ export default function ProductForm({ mode, product, categories }) {
       setConflict({ currentUpdatedAt: res.currentUpdatedAt, lastChange: res.lastChange });
     } else {
       addAnotherRef.current = false;
-      setErr(t(res.error) || t("ذخیره ناموفق بود."));
+      setErr(blockedText(res, t) || t("ذخیره ناموفق بود."));
     }
   }
+
+  // the publish rule, shown before the save: what the server would refuse to publish (it enforces the same rule again)
+  const publishGaps = (() => {
+    if (!publishRules.length) return [];
+    try {
+      const row = { ...(product || {}), ...buildProductRow(buildPayload()), is_active: f.is_active, publish_at: localToIso(f.publish_at) || null, variant_of: product?.variant_of ?? null };
+      return blockerCodes(publishBlockers(row, publishRules, product || null));
+    } catch { return []; }
+  })();
 
   const SaveButton = ({ full }) => (
     readOnly ? null : (
@@ -318,7 +329,7 @@ export default function ProductForm({ mode, product, categories }) {
       )}
 
       {err && (
-        <div className="mb-5 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn">
+        <div role="alert" data-testid="form-error" className="mb-5 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn">
           <Icon name="alertTriangle" size={16} /> {err}
         </div>
       )}
@@ -464,6 +475,11 @@ export default function ProductForm({ mode, product, categories }) {
         <div className="flex flex-col gap-5 lg:sticky lg:top-6">
           <SectionCard title={t("انتشار")} icon="badgeCheck">
             <div className="flex flex-col gap-3">
+              {(publishGaps.length > 0 || publishRulesUnavailable) && (
+                <div role="status" data-testid="publish-gaps" className="rounded-xl bg-warn/10 text-warn text-sm p-3 mb-3 break-words">
+                  {publishRulesUnavailable ? t("قوانین کیفیت انتشار خوانده نشد؛ انتشار در حال حاضر انجام نمی‌شود.") : t("برای انتشار این محصول باید کامل شود: {items}", { items: codesText(publishGaps, t) })}
+                </div>
+              )}
               <div className="rounded-xl bg-canvas-soft border border-line p-3.5"><Toggle checked={f.is_active} onChange={(v) => up("is_active", v)} disabled={f.is_active ? !canArchive : !canPublish} label={t("فعال (نمایش در سایت)")} desc={t("غیرفعال = آرشیو، در سایت دیده نمی‌شود.")} /></div>
               <div className="rounded-xl bg-canvas-soft border border-line p-3.5"><Toggle checked={f.is_featured} onChange={(v) => up("is_featured", v)} label={t("ویژه (Featured)")} desc={t("نمایش در بخش محصولات منتخب.")} /></div>
             </div>

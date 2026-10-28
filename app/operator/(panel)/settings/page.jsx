@@ -9,6 +9,10 @@ import { changeMyPassword, startMyTwoStep, confirmMyTwoStep, disableMyTwoStep, n
 import { revokeOtherSessions, revokeAllSessions } from "@/lib/operator/securityActions";
 import { isAdminConfigured } from "@/lib/operator/supabaseAdmin";
 import { PageHeader, SectionCard } from "@/components/operator/ui";
+import PublishRulesCard from "@/components/operator/PublishRulesCard";
+import { savePublishRulesAction } from "@/lib/operator/publishRuleActions";
+import { readRules } from "@/lib/operator/publishGate";
+import { mayView } from "@/lib/operator/access";
 import LogoutButton from "@/components/operator/LogoutButton";
 import { requireHealthSession } from "@/lib/operator/panelGuard";
 import { getT } from "@/lib/panel/server";
@@ -42,6 +46,9 @@ export default async function SettingsPage() {
   const sessions = await listSessions(getAdminClient(), { panel: "health", userId: session?.user?.id });
   const registryReady = Boolean(session?.sid) && sessions.some((s) => s.sid === session.sid);
   const twoStep = isTwoStepEnabled();
+  const seesRules = mayView(session, "health", "products.view");
+  const rules = seesRules ? await readRules(getAdminClient(), "health") : null;
+  const canEditRules = mayView(session, "health", "products.rules");
 
   return (
     <>
@@ -52,6 +59,12 @@ export default async function SettingsPage() {
       {session?.user && (
         <div className="mb-6">
           <AccountSecurity user={session.user} actions={{ changeMyPassword, startMyTwoStep, confirmMyTwoStep, disableMyTwoStep, newMyRecoveryCodes }} />
+        </div>
+      )}
+
+      {rules && (
+        <div className="mb-6">
+          <PublishRulesCard initial={{ state: rules.state === "none" ? "none" : rules.state, rules: rules.rules || [], version: rules.version || 0, updatedLabel: rules.updatedLabel || null }} canEdit={canEditRules} save={savePublishRulesAction} />
         </div>
       )}
 
