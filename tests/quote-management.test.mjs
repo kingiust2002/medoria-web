@@ -90,16 +90,16 @@ test("assigning updates only assigned_to of that one row, in the panel's own tab
   assert.deepEqual(res, { ok: true, assignee: "Sara" });
   assert.equal(calls.length, 1);
   assert.equal(calls[0].table, "beauty_quote_requests");
-  assert.deepEqual(calls[0].values, { assigned_to: "Sara" });
+  assert.deepEqual(calls[0].values, { assigned_to: "Sara", assigned_user_id: null });
   assert.deepEqual(calls[0].eq, ["id", 7]);
   assert.equal(logged.length, 1);
   assert.equal(logged[0].action, "quote.assign");
-  assert.deepEqual(logged[0].detail, { assigned: true });
+  assert.deepEqual(logged[0].detail, { assigned: true, person: false });
   assert.ok(!JSON.stringify(logged).includes("Sara"), "the typed name must not be in the activity log");
 
   const cleared = await assignQuoteGuarded({ ...base, table: "quote_requests", id: 7, assignee: "" });
   assert.deepEqual(cleared, { ok: true, assignee: null });
-  assert.deepEqual(calls[1].values, { assigned_to: null });
+  assert.deepEqual(calls[1].values, { assigned_to: null, assigned_user_id: null });
 });
 
 test("assigning: unknown id, missing column (migration 32 not run) and a failing log are all handled", async () => {
@@ -152,9 +152,9 @@ test("summarizeQuotes counts waiting, overdue, oldest and notice failures (parke
     { status: "archived", created_at: ago(100), notify_status: "failed" },
     { status: "new", created_at: ago(40), notify_status: "sent" },
   ];
-  assert.deepEqual(summarizeQuotes(rows, { now: NOW }), { waiting: 4, overdue: 3, notifyFailures: 2, oldestHours: 75 });
-  assert.deepEqual(summarizeQuotes([], { now: NOW }), { waiting: 0, overdue: 0, notifyFailures: 0, oldestHours: 0 });
-  assert.deepEqual(summarizeQuotes(null, { now: NOW }), { waiting: 0, overdue: 0, notifyFailures: 0, oldestHours: 0 });
+  assert.deepEqual(summarizeQuotes(rows, { now: NOW }), { waiting: 4, overdue: 3, notifyFailures: 2, oldestHours: 75, followUpsDue: 0 });
+  assert.deepEqual(summarizeQuotes([], { now: NOW }), { waiting: 0, overdue: 0, notifyFailures: 0, oldestHours: 0, followUpsDue: 0 });
+  assert.deepEqual(summarizeQuotes(null, { now: NOW }), { waiting: 0, overdue: 0, notifyFailures: 0, oldestHours: 0, followUpsDue: 0 });
 });
 
 // ── notice record ───────────────────────────────────────────────────────────
@@ -279,7 +279,7 @@ test("the new-inquiry notice shows the tracking code; without one it looks as be
 });
 
 test("the reminder carries counts and the panel link only", () => {
-  const summary = { waiting: 4, overdue: 3, notifyFailures: 2, oldestHours: 75 };
+  const summary = { waiting: 4, overdue: 3, notifyFailures: 2, oldestHours: 75, followUpsDue: 0 };
   const health = formatReminderNotice({ kind: "health", summary, siteUrl: "https://medoriaco.com/" });
   assert.match(health, /^Medoria Health: reminder\n3 inquiry\(ies\) unanswered for 24h\+ \(oldest 75h\)\n2 inquiry notice\(s\) could not be delivered/);
   assert.match(health, /Open: https:\/\/medoriaco\.com\/operator\/quotes$/);

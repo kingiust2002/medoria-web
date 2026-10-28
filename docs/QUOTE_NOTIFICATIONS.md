@@ -177,3 +177,21 @@ there and create a new one.
 An e-mail channel (needs a transactional-mail provider and SPF/DKIM records), per-person
 assignment, and follow-up reminders: add them when the team is larger than the current one
 or two people.
+
+## Follow-up, customer file, Telegram retry, report (migration 37, stage S5e)
+
+* **Follow-up date**: in an expanded request, "تاریخ پیگیری" (a calendar day, stored at 12:00 UTC; "today" is the team's day, UTC+5).
+  Requests whose follow-up is today or overdue get a badge and count under "نیازمند پیگیری" (finished requests — closed, archived,
+  spam — never do). Setting it needs `quotes.edit`; the activity log says that a date was set, never the date or the customer.
+* **Real assignee**: when the typed assignee is exactly the display name of one active person of this house, the person's id is stored
+  too (`assigned_user_id`); otherwise only the label, as before. The suggestion list now includes the house's people.
+* **Customer file**: the other requests with the same phone number (last 9 digits, at least 7 digits) are listed in the expanded
+  request. Nothing extra is stored — the requests are the file. (No CRM, by decision.)
+* **Send the notice again**: only for a request whose Telegram notice failed, at most once per 30 s per request; the result and the
+  attempt count are recorded; "Telegram not configured" is reported plainly and changes nothing.
+* **Report** `/operator/quotes/report` (and Beauty's): last 7 / 30 / 90 days — total, by status, by assignee, average first-response
+  hours, unanswered > 24 h, follow-ups today / overdue. Needs `reports.view`; no customer text is read. **CSV** (with customers'
+  contact data, every cell safe against spreadsheet formulas) needs `quotes.export`; each download is logged (`quotes.exported`, row
+  count only). `quotes.export` was removed from the quote manager's default *approval* list: a file has nothing to approve afterwards.
+* **Not covered yet**: the daily Telegram reminder does not count follow-ups; no "my requests" shortcut beyond the assignee filter.
+* Release: migration 37 needs 32 and 34. Without it the panel works; saving a follow-up answers "apply migration 37".
