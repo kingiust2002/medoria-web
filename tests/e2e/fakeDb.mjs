@@ -26,6 +26,7 @@ const UNIQUE = {
   operator_users: [["username"]], operator_sessions: [["sid"]], operator_totp_state: [["panel"]], operator_recovery_used: [["panel", "code_hash"]],
   health_stock_levels: [["product_id"]], beauty_stock_levels: [["product_id"]],
   health_stock_count_lines: [["count_id", "product_id"]], beauty_stock_count_lines: [["count_id", "product_id"]],
+  product_documents: [["file_path"], ["product_id", "sha256"]], beauty_product_documents: [["file_path"], ["product_id", "sha256"]],   // migration 48
 };
 // migration 41's guards on stock counts: a count that is not open, and its lines, no longer change; one open count per warehouse
 const COUNTS = /^(health|beauty)_stock_counts$/, COUNT_LINES = /^(health|beauty)_stock_count_lines$/;
@@ -35,6 +36,7 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 // generated / computed columns of migration 43: products' gap_count (a computed column: only returned when selected, but filterable and sortable)
 // and the requests' phone_key (a generated column: part of the row)
 const PRODUCT_TABLES = new Set(["products", "beauty_products"]);
+const DOC_TABLES = new Set(["product_documents", "beauty_product_documents"]);
 const QUOTE_TABLES = new Set(["quote_requests", "beauty_quote_requests"]);
 const viewOf = (t, row) => (PRODUCT_TABLES.has(t) ? { ...row, gap_count: productGaps(row).length } : QUOTE_TABLES.has(t) ? { ...row, phone_key: phoneKey(row.phone) } : row);
 const API_MAX_ROWS = 1000;      // Supabase's default per-request row limit: the rest is dropped without an error
@@ -133,6 +135,17 @@ function variantsRpc(tables, name, a) {
       .sort((x, y) => (x.variant_sort || 0) - (y.variant_sort || 0) || x.id - y.id)
       .map((v) => ({ id: v.id, sku: v.sku, options: v.variant_options, price: v.price, ...(m[1] ? {} : { currency: v.currency }), unit: v.unit, in_stock: v.in_stock, image_url: v.image_url, sort: v.variant_sort || 0 }));
   }
+  // migration 48: the published, still valid documents of an ACTIVE product that is not a variant (public columns only)
+  const d = /^public_(beauty_)?product_documents$/.exec(name);
+  if (d) {
+    const products = tables[d[1] ? "beauty_products" : "products"] || [], docs = tables[d[1] ? "beauty_product_documents" : "product_documents"] || [];
+    const p = products.find((r) => r.id === a.p_product);
+    if (!p || p.is_active === false || p.variant_of != null) return [];
+    const today = new Date(Date.now() + 5 * 3_600_000).toISOString().slice(0, 10);
+    return docs.filter((x) => x.product_id === p.id && x.is_published && (!x.valid_until || x.valid_until >= today))
+      .sort((x, y) => (x.sort_order || 0) - (y.sort_order || 0) || x.id - y.id)
+      .map((x) => ({ id: x.id, kind: x.kind, title: x.title, lang: x.lang ?? null, valid_until: x.valid_until ?? null, file_path: x.file_path, file_size: x.file_size }));
+  }
   if (name === "public_variant_items") {
     const table = tables.products || [];
     return table.filter((v) => (a.p_ids || []).slice(0, 30).includes(v.id) && v.variant_of != null && v.is_active !== false)
@@ -228,7 +241,8 @@ export function createFakeDb(seedFactory) {
     }
 
     if (rpc) {
-      const body = await readBody(req);
+      // a STABLE function can be called with GET: the arguments are in the query string (numbers arrive as text)
+      const body = req.method === "GET" ? Object.fromEntries([...url.searchParams].map(([k, v]) => [k, /^-?\d+$/.test(v) ? Number(v) : v])) : await readBody(req);
       if (kind !== "service" && /_stock_/.test(rpc[1])) return respond(res, 401, { code: "42501", message: "permission denied for function" });   // like the real grants
       const variantRpc = variantsRpc(tables, rpc[1], body || {});               // migration 44's public functions
       if (variantRpc !== undefined) return respond(res, 200, variantRpc);
@@ -316,7 +330,8 @@ export function createFakeDb(seedFactory) {
           row.allow_perms ??= []; row.deny_perms ??= []; row.approval ??= {}; row.recovery_hashes ??= []; row.totp_last_step ??= 0; row.must_change_password ??= false;
         }
         if (t === "operator_change_requests") { row.id ??= randomUUID(); row.status ??= "pending"; row.requested_at ??= now(); }   // migration 35's defaults
-        if (t === "publish_rules") { row.version ??= 1; row.blocking ??= []; }   // migration 46's defaults
+        if (t === "publish_rules") { row.version ??= 1; row.blocking ??= []; }
+        if (DOC_TABLES.has(t)) { row.version ??= 1; row.is_published ??= false; row.sort_order ??= 0; row.valid_until ??= null; row.lang ??= null; }   // migration 48's defaults   // migration 46's defaults
         if (t === "site_content") { row.version ??= 1; row.is_published ??= false; row.sort_order ??= 0; row.publish_at ??= null; row.unpublish_at ??= null; }   // migration 42's defaults
         if (PRODUCT_TABLES.has(t)) { row.variant_of ??= null; row.variant_options ??= {}; row.variant_sort ??= 0; }   // migration 44's column defaults
         if (row.id == null) row.id = nextId(t);
@@ -349,7 +364,7 @@ export function createFakeDb(seedFactory) {
         }
       }
       for (const row of hit) {
-        Object.assign(row, patch, { updated_at: now() }, t === "site_content" || t === "publish_rules" ? { version: row.version + 1 } : {});   // migration 42's and 46's guard triggers
+        Object.assign(row, patch, { updated_at: now() }, t === "site_content" || t === "publish_rules" || DOC_TABLES.has(t) ? { version: row.version + 1 } : {});   // migration 42's and 46's guard triggers
         // migration 32's trigger: the first time a request is answered
         if (TRACKING_PREFIX[t] && !row.first_response_at && ANSWERED.includes(row.status)) row.first_response_at = now();
       }
@@ -360,6 +375,7 @@ export function createFakeDb(seedFactory) {
     if (req.method === "DELETE") {
       if (COUNTS.test(t) || COUNT_LINES.test(t)) return respond(res, 400, { code: "P0001", message: "stock:never_deleted" });
       const hit = tables[t].filter(pred);
+      if (PRODUCT_TABLES.has(t) && hit.some((r) => (tables[t === "products" ? "product_documents" : "beauty_product_documents"] || []).some((d) => d.product_id === r.id))) return respond(res, 409, { code: "23503", message: `update or delete on table "${t}" violates foreign key constraint (product_documents)` });   // migration 48: ON DELETE RESTRICT
       if (PRODUCT_TABLES.has(t) && hit.some((r) => tables[t].some((k) => k.variant_of === r.id))) return respond(res, 409, { code: "23503", message: `update or delete on table "${t}" violates foreign key constraint (variant_of)` });   // ON DELETE RESTRICT
       tables[t] = tables[t].filter((r) => !hit.includes(r));
       if (!wantRep) return respond(res, 204);

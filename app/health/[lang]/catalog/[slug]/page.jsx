@@ -1,6 +1,7 @@
 // app/[lang]/catalog/[slug]/page.jsx — server wrapper: SEO + JSON-LD + client.
+import { publicDocumentItems } from "@/lib/productDocuments";
 import { notFound } from "next/navigation";
-import { getProductBySlug, getProductVariants, imageUrl } from "@/lib/supabase";
+import { getProductBySlug, getProductVariants, getProductDocuments, imageUrl } from "@/lib/supabase";
 import { variantsJsonLd } from "@/lib/operator/variants";
 import { LOCALES, getTranslations, getCategoryName } from "@/lib/i18n";
 import { buildAlternates, SITE_URL, safeJsonLd } from "@/lib/seo";
@@ -58,6 +59,7 @@ export default async function ProductPage(props) {
   if (!product) notFound();
 
   const variants = await getProductVariants(product.id);        // [] for an ordinary product and before migration 44
+  const documents = publicDocumentItems(await getProductDocuments(product.id), lang, imageUrl);       // published, still valid; [] before migration 48
   const name = product[`name_${lang}`] || product.name_en;
   const desc = product[`description_${lang}`] || product.description_en || "";
   const productLd = {
@@ -96,7 +98,7 @@ export default async function ProductPage(props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd([jsonLd, crumbLd]) }}
       />
-      <ProductDetailClient product={product} lang={lang} variants={variants} />
+      <ProductDetailClient product={product} lang={lang} variants={variants} documents={documents} />
     </>
   );
 }
