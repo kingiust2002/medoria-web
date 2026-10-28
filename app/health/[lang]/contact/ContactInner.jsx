@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { getTranslations } from "@/lib/i18n";
-import { WA_NUMBER, TG_USER, waLink, tgLink } from "@/lib/whatsapp";
 import { submitQuoteRequest } from "@/lib/actions/quote";
 import MathCaptcha, { captchaErrorText } from "@/components/shared/MathCaptcha";
 import Icon from "@/components/shared/Icon";
@@ -11,11 +10,12 @@ import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import PageHeaderVisual from "@/components/shared/PageHeaderVisual";
 import SplitText from "@/components/shared/SplitText";
-import { EMAIL_HEALTH } from "@/lib/contact";
+import { useContact } from "@/components/shared/ContactContext";
 
-const PHONE = process.env.NEXT_PUBLIC_PHONE || "+992900000000";
 
 export default function ContactInner({ lang }) {
+  const { waLink, WA_NUMBER, TG_USER, email: EMAIL_HEALTH, PHONE: _PHONE } = useContact();
+  const PHONE = _PHONE || "+992900000000";
   const t = getTranslations(lang);
   const c = t.contact;
   const email = EMAIL_HEALTH;
@@ -157,6 +157,8 @@ const CHANNEL_ACTIVE = {
 };
 
 function ContactForm({ lang, t }) {
+  const { waLink, tgLink, PHONE: _PHONE } = useContact();
+  const PHONE = _PHONE || "+992900000000";
   const c = t.contact;
   const [form, setForm] = useState({
     name: "", org: "", phone: "", email: "", subject: "", message: "",

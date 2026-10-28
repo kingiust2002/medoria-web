@@ -6,9 +6,10 @@
 // (brand colours only as small icon chips, not flat green/blue fills).
 "use client";
 import { useState, useEffect } from "react";
-import { TG_USER, waLink, bulkInquiryMessage } from "@/lib/whatsapp";
+import { bulkInquiryMessage } from "@/lib/whatsapp";
 import { mailtoLink } from "@/lib/contact";
 import Icon from "./Icon";
+import { useContact } from "@/components/shared/ContactContext";
 
 const COPY = {
   tg: { title: "Бо мо дар тамос шавед", hint: "Одатан зуд ҷавоб медиҳем", email: "Почта" },
@@ -19,6 +20,7 @@ const COPY = {
 
 // `email` / `emailSubject` come from the house layout (Health or Beauty address).
 export default function FloatingWhatsApp({ lang, email = "", emailSubject = "Medoria" }) {
+  const { waLink, TG_USER } = useContact();
   const c = COPY[lang] || COPY.en;
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);

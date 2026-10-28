@@ -9,7 +9,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getBeautyCategoryTree } from "@/lib/beauty/catalog";
 import { nameOf } from "@/lib/beauty/worlds";
-import { WA_NUMBER, TG_USER } from "@/lib/whatsapp";
+import { getHouseContact } from "@/lib/contactLive";
 import { rateLimit, clientIpFromHeaders, isSameOriginRequest } from "@/lib/security/rateLimit";
 import { verifyChatPass } from "@/lib/security/chatPass";
 
@@ -48,7 +48,7 @@ export async function GET() {
   return Response.json({ available: !!provider() });
 }
 
-async function buildSystem(lang) {
+async function buildSystem(lang, contact) {
   const language = LANG_NAMES[lang] || LANG_NAMES.en;
   // The assistant was being told the catalog had three categories, from a
   // constant written before the tree existed. Give it the real departments and
@@ -78,8 +78,8 @@ PRODUCT CATEGORIES
 ${categories}
 
 CONTACT CHANNELS
-- WhatsApp: https://wa.me/${WA_NUMBER}
-- Telegram: https://t.me/${TG_USER}
+- WhatsApp: https://wa.me/${contact.whatsapp}
+- Telegram: https://t.me/${contact.telegram}
 
 YOUR ROLE
 - Help beauty professionals discover products and categories, understand how to request availability and partnership terms, and answer questions about Medoria Beauty.
@@ -213,7 +213,7 @@ export async function POST(req) {
   const messages = sanitize(body?.messages);
   if (!messages.length) return Response.json({ error: "No messages" }, { status: 400 });
 
-  const system = await buildSystem(lang);
+  const system = await buildSystem(lang, await getHouseContact("beauty"));
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({

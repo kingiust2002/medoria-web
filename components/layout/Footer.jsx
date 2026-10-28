@@ -3,13 +3,15 @@ import Link from "next/link";
 import Brand from "./Brand";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
-import { WA_NUMBER, TG_USER, waLink, bulkInquiryMessage } from "@/lib/whatsapp";
+import { bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
 import ThemeToggle from "@/components/shared/ThemeToggle";
-import { EMAIL_HEALTH } from "@/lib/contact";
+import { contactApi } from "@/lib/contactLinks";
+import { getHouseContact } from "@/lib/contactLive";
 
-export default function Footer({ lang }) {
+export default async function Footer({ lang }) {
+  const { waLink, TG_USER, email: EMAIL_HEALTH } = contactApi(await getHouseContact("health"));
   const t = getTranslations(lang);
   const email = EMAIL_HEALTH;
 

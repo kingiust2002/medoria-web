@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { imageUrl } from "@/lib/supabase";
 import { getTranslations, getCategoryName, CATEGORIES } from "@/lib/i18n";
-import { waLink, tgLink, quickInquiryMessage } from "@/lib/whatsapp";
+import { quickInquiryMessage } from "@/lib/whatsapp";
 import { priceLabel, isOnRequest, formatPrice } from "@/lib/price";
 import { useCompare } from "@/lib/compare";
 import { useWishlist } from "@/lib/wishlist";
@@ -12,6 +12,7 @@ import InquiryToggle from "@/components/inquiry/InquiryToggle";
 import QuoteModal from "@/components/product/QuoteModal";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
+import { useContact } from "@/components/shared/ContactContext";
 
 const BADGE_STYLE = {
   SALE: "bg-brand-pink text-white",
@@ -20,6 +21,7 @@ const BADGE_STYLE = {
 };
 
 export default function ProductCard({ product: p, lang, compact = false, view = "grid", onQuickView }) {
+  const { waLink, tgLink } = useContact();
   const t = getTranslations(lang);
   const [copied, setCopied] = useState(false);
   const [quoteOpen, setQuoteOpen] = useState(false);

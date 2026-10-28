@@ -4,7 +4,7 @@
 import ProductDocuments from "@/components/product/ProductDocuments";
 import Link from "next/link";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
-import { waLink, tgLink, productInquiryMessage } from "@/lib/whatsapp";
+import { productInquiryMessage } from "@/lib/whatsapp";
 import { isOnRequest, formatPrice } from "@/lib/price";
 import { SITE_URL } from "@/lib/seo";
 import { beautyImageUrl } from "@/lib/beauty/catalog";
@@ -15,6 +15,8 @@ import BeautyGallery from "@/app/beauty/[lang]/catalog/[slug]/BeautyGallery";
 import BeautyQuoteButton from "@/components/beauty/BeautyQuoteButton";
 import BeautyVariantBuy from "@/components/beauty/BeautyVariantBuy";
 import BeautyViewTracker from "@/app/beauty/[lang]/catalog/[slug]/BeautyViewTracker";
+import { contactApi } from "@/lib/contactLinks";
+import { getHouseContact } from "@/lib/contactLive";
 
 export const COPY = {
   tg: { sku: "Код (SKU)", brand: "Бренд", category: "Категория", minOrder: "Ҳадди ақалли фармоиш", inStock: "Дар анбор ҳаст", outStock: "Дар анбор нест", specs: "Хусусиятҳо", related: "Бештар аз ин категория", back: "Бозгашт ба каталог", requestPrice: "Дархости нарх", requestQuote: "Дархости нарх", ask: "Дархост тавассути WhatsApp", askTg: "Дархост тавассути Telegram" },
@@ -34,7 +36,8 @@ function Meta({ label, value }) {
 }
 
 // jsonLd: the page's structured data as a safe JSON string (the public page passes it; a preview passes none)
-export default function BeautyProductView({ product, variants = [], documents = [], related = [], cats = [], lang, jsonLd = null }) {
+export default async function BeautyProductView({ product, variants = [], documents = [], related = [], cats = [], lang, jsonLd = null }) {
+  const { waLink, tgLink } = contactApi(await getHouseContact("beauty"));
   const t = getBeautyTranslations(lang);
   const c = COPY[lang] || COPY.en;
   const cat = cats.find((x) => x.id === product.category_id) || null;

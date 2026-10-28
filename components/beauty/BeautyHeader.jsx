@@ -13,9 +13,9 @@ import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
 import Icon from "@/components/shared/Icon";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 import ContactMenu from "@/components/shared/ContactMenu";
-import { EMAIL_BEAUTY } from "@/lib/contact";
 import { getBeautyTranslations } from "./i18n";
 import BeautyMegaMenu from "./BeautyMegaMenu";
+import { useContact } from "@/components/shared/ContactContext";
 
 const MEGA = {
   tg: { all: "Дидани ҳама", viewAll: "Ҳамаи дунёҳо" },
@@ -27,6 +27,7 @@ const MEGA = {
 const megaName = (c) => c?.name || c?.slug || "";
 
 export default function BeautyHeader({ lang, categoryTree = [] }) {
+  const { email: EMAIL_BEAUTY } = useContact();
   const t = getBeautyTranslations(lang);
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);

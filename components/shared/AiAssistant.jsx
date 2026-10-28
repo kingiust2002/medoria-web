@@ -8,10 +8,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { getTranslations } from "@/lib/i18n";
-import { TG_USER, waLink, bulkInquiryMessage } from "@/lib/whatsapp";
+import { bulkInquiryMessage } from "@/lib/whatsapp";
 import { requestChatPass } from "@/lib/actions/chatPass";
 import MathCaptcha, { captchaErrorText } from "./MathCaptcha";
 import Icon from "./Icon";
+import { useContact } from "@/components/shared/ContactContext";
 
 // One-time human-check copy for the chat gate (keeps bots off the paid model).
 const GATE = {
@@ -94,6 +95,7 @@ function Dots() {
 // exact widget against /api/beauty-chat with its own copy (defaults keep
 // Health's behavior byte-for-byte).
 export default function AiAssistant({ lang, endpoint = "/api/chat", ui = UI }) {
+  const { waLink, TG_USER } = useContact();
   const t = ui[lang] || ui.en;
   const g = GATE[lang] || GATE.en;
   const tc = getTranslations(lang).common;

@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getProductsByIds, getVariantItemsByIds, imageUrl } from "@/lib/supabase";
 import { getTranslations, LANG_META } from "@/lib/i18n";
-import { waLink, tgLink } from "@/lib/whatsapp";
 import { submitQuoteRequest } from "@/lib/actions/quote";
 import { priceLabel, isOnRequest, formatPrice } from "@/lib/price";
 import { useInquiryList } from "@/lib/inquiryList";
@@ -12,11 +11,13 @@ import { copyFor, listMessage } from "@/lib/inquiry/copy";
 import Icon from "@/components/shared/Icon";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import MathCaptcha, { captchaErrorText } from "@/components/shared/MathCaptcha";
+import { useContact } from "@/components/shared/ContactContext";
 
-const PHONE = process.env.NEXT_PUBLIC_PHONE || "+992900000000";
 const CHANNELS = [["whatsapp", "chat", "WhatsApp"], ["telegram", "send", "Telegram"], ["phone", "phone", null]];
 
 export default function InquiryClient({ lang }) {
+  const { waLink, tgLink, PHONE: _PHONE } = useContact();
+  const PHONE = _PHONE || "+992900000000";
   const t = getTranslations(lang);
   const c = copyFor(lang);
   const dir = LANG_META[lang]?.dir || "ltr";

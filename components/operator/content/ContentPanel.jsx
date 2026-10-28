@@ -13,9 +13,9 @@ import { CONTENT_LANGS, LIMITS, contentStatus, pickText } from "@/lib/siteConten
 import { SCHEDULE_MESSAGES, isoToLocal, localToIso } from "@/lib/operator/schedule";
 import { tr } from "@/lib/panel/i18n";
 
-const KINDS = [{ id: "banner", label: tr("اعلان بالای صفحه") }, { id: "faq", label: tr("پرسش‌های متداول") }];
+const KINDS = [{ id: "banner", label: tr("اعلان بالای صفحه") }, { id: "faq", label: tr("پرسش‌های متداول") }, { id: "contact", label: tr("اطلاعات تماس") }, { id: "featured", label: tr("محصولات ویژهٔ صفحهٔ اول") }];
 const STATUS = { draft: { label: tr("پیش‌نویس"), tone: "neutral" }, scheduled: { label: tr("زمان‌بندی‌شده"), tone: "info" }, live: { label: tr("منتشرشده"), tone: "ok" }, ended: { label: tr("پایان‌یافته"), tone: "warn" } };
-const NEW_FORM = { text: {}, label: {}, link: "", tone: "info", q: {}, a: {}, sort_order: "0", is_published: false, publish_at: "", unpublish_at: "" };
+const NEW_FORM = { text: {}, label: {}, link: "", tone: "info", q: {}, a: {}, phone: "", whatsapp: "", telegram: "", email: "", sku: "", sort_order: "0", is_published: false, publish_at: "", unpublish_at: "" };
 
 function Modal({ title, onClose, children }) {
   const t = useT();
@@ -42,11 +42,12 @@ function formOf(kind, row) {
   const d = row.data || {};
   return {
     text: { ...(d.text || {}) }, label: { ...(d.label || {}) }, link: d.link || "", tone: d.tone || "info", q: { ...(d.q || {}) }, a: { ...(d.a || {}) },
+    phone: d.phone || "", whatsapp: d.whatsapp || "", telegram: d.telegram || "", email: d.email || "", sku: "",
     sort_order: String(row.sort_order ?? 0), is_published: Boolean(row.is_published), publish_at: isoToLocal(row.publish_at), unpublish_at: isoToLocal(row.unpublish_at),
   };
 }
 
-function ContentModal({ kind, row, actions, onClose, onDone }) {
+function ContentModal({ kind, row, actions, onClose, onDone, productName = "" }) {
   const t = useT();
   const canWrite = useCan(row ? "content.edit" : "content.create");
   const canPublish = useCan("content.publish"), canSchedule = useCan("content.schedule");
@@ -57,6 +58,7 @@ function ContentModal({ kind, row, actions, onClose, onDone }) {
   const [pending, start] = useTransition();
   const up = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const upLang = (k, v) => setF((s) => ({ ...s, [k]: { ...s[k], [lang]: v } }));
+  const textKind = kind === "banner" || kind === "faq";
   const filled = (l) => (kind === "banner" ? Boolean(f.text[l]?.trim()) : Boolean(f.q[l]?.trim()));
 
   function submit(e) {
@@ -64,7 +66,7 @@ function ContentModal({ kind, row, actions, onClose, onDone }) {
     setErr(""); setStale(false);
     const publish_at = localToIso(f.publish_at), unpublish_at = localToIso(f.unpublish_at);
     if (publish_at === undefined || unpublish_at === undefined) { setErr(t(SCHEDULE_MESSAGES.bad)); return; }
-    const payload = { text: f.text, label: f.label, link: f.link, tone: f.tone, q: f.q, a: f.a, sort_order: f.sort_order, is_published: f.is_published, publish_at, unpublish_at };
+    const payload = { text: f.text, label: f.label, link: f.link, tone: f.tone, q: f.q, a: f.a, phone: f.phone, whatsapp: f.whatsapp, telegram: f.telegram, email: f.email, sku: f.sku, sort_order: f.sort_order, is_published: f.is_published, publish_at, unpublish_at };
     start(async () => {
       const res = row ? await actions.updateContent(row.id, payload, row.version) : await actions.createContent(kind, payload);
       if (res.ok) { onDone(); return; }
@@ -74,21 +76,37 @@ function ContentModal({ kind, row, actions, onClose, onDone }) {
   }
 
   return (
-    <Modal title={row ? t("ویرایش") : kind === "banner" ? t("اعلان جدید") : t("پرسش جدید")} onClose={onClose}>
+    <Modal title={row ? t("ویرایش") : kind === "banner" ? t("اعلان جدید") : kind === "faq" ? t("پرسش جدید") : kind === "contact" ? t("اطلاعات تماس") : t("محصول ویژهٔ جدید")} onClose={onClose}>
       <form onSubmit={submit} data-testid="ct-form">
         <Err>{err}</Err>
         {stale && <button type="button" className="btn-ghost size-sm mb-4" onClick={onDone}>{t("بارگذاری دوباره")}</button>}
         <fieldset disabled={!canWrite} className="min-w-0">
-          <div role="tablist" className="flex flex-wrap gap-1.5 mb-3">
+          {textKind && <div role="tablist" className="flex flex-wrap gap-1.5 mb-3">
             {CONTENT_LANGS.map((l) => (
               <button key={l} type="button" role="tab" aria-selected={lang === l} onClick={() => setLang(l)} data-testid={`ct-lang-${l}`}
                 className={`btn-ghost size-sm uppercase ${lang === l ? "!border-brand-violet/50 !text-brand-violet !bg-brand-violet/5" : ""}`}>
                 {l}{filled(l) && <span aria-hidden="true" className="ms-1 inline-block w-1.5 h-1.5 rounded-full bg-ok" />}
               </button>
             ))}
-          </div>
+          </div>}
           <div className="grid gap-4">
-            {kind === "banner" ? (
+            {kind === "contact" ? (
+              <>
+                <p className="text-xs text-ink-muted -mb-1">{t("هر خانهٔ خالی، مقدار پیش‌فرض سایت را نگه می‌دارد. همین مقدارها در دکمه‌های واتساپ، تلگرام، تلفن و ایمیل سایت دیده می‌شوند.")}</p>
+                <Field label={t("تلفن")} hint={t("با «+» و کد کشور، مثلاً +992900000000")}><Input value={f.phone} onChange={(e) => up("phone", e.target.value)} dir="ltr" inputMode="tel" aria-label={t("تلفن")} data-testid="ct-phone" /></Field>
+                <Field label={t("شمارهٔ واتساپ")} hint={t("فقط رقم، با کد کشور و بدون «+»، مثلاً 992900000000")}><Input value={f.whatsapp} onChange={(e) => up("whatsapp", e.target.value)} dir="ltr" inputMode="numeric" aria-label={t("شمارهٔ واتساپ")} data-testid="ct-whatsapp" /></Field>
+                <Field label={t("نام کاربری تلگرام")} hint={t("بدون «@»")}><Input value={f.telegram} onChange={(e) => up("telegram", e.target.value)} dir="ltr" aria-label={t("نام کاربری تلگرام")} data-testid="ct-telegram" /></Field>
+                <Field label={t("ایمیل")}><Input value={f.email} onChange={(e) => up("email", e.target.value)} dir="ltr" inputMode="email" maxLength={120} aria-label={t("ایمیل")} data-testid="ct-email" /></Field>
+              </>
+            ) : kind === "featured" ? (
+              <>
+                {row ? (
+                  <p className="text-sm text-ink break-words" data-testid="ct-product">{productName || t("محصول")}</p>
+                ) : (
+                  <Field label={t("کد محصول (SKU)")} hint={t("محصولی از همین بخش؛ هر محصول فقط یک‌بار می‌آید.")}><Input value={f.sku} onChange={(e) => up("sku", e.target.value)} dir="ltr" aria-label={t("کد محصول (SKU)")} data-testid="ct-sku" /></Field>
+                )}
+              </>
+            ) : kind === "banner" ? (
               <>
                 <Field label={t("متن اعلان")} hint={t("حداکثر {max} نویسه؛ متن ساده.", { max: LIMITS.bannerText })}>
                   <Textarea value={f.text[lang] || ""} onChange={(e) => upLang("text", e.target.value)} rows={2} maxLength={LIMITS.bannerText} aria-label={t("متن اعلان")} dir={lang === "fa" ? "rtl" : "ltr"} data-testid="ct-text" />
@@ -167,12 +185,18 @@ export default function ContentPanel({ data, actions, house }) {
       if (res.ok) { setMsg({ text: t("حذف شد."), ok: true }); router.refresh(); } else setMsg({ text: t(res.error, res.params), ok: false });
     });
   }
-  const preview = (r) => (r.kind === "banner" ? pickText(r.data?.text, "tg") : pickText(r.data?.q, "tg"));
+  const products = data?.products || {};
+  const productOf = (r) => products[r.data?.product_id];
+  const productLabel = (r) => { const p = productOf(r); return p ? `${pickText({ tg: p.name_tg, en: p.name_en, ru: p.name_ru, fa: p.name_fa }, "tg") || p.sku || ""}${p.sku ? ` · ${p.sku}` : ""}` : ""; };
+  const contactLine = (r) => [r.data?.phone, r.data?.whatsapp && `WhatsApp ${r.data.whatsapp}`, r.data?.telegram && `@${r.data.telegram}`, r.data?.email].filter(Boolean).join(" · ");
+  const preview = (r) => (r.kind === "banner" ? pickText(r.data?.text, "tg") : r.kind === "faq" ? pickText(r.data?.q, "tg") : r.kind === "contact" ? contactLine(r) : productLabel(r));
+  const newLabel = { banner: t("اعلان جدید"), faq: t("پرسش جدید"), contact: t("ثبت اطلاعات تماس"), featured: t("محصول ویژهٔ جدید") }[kind];
+  const canAdd = canCreate && !(kind === "contact" && rows.length > 0);
 
   return (
     <>
-      <PageHeader title={t("محتوای سایت")} subtitle={house === "beauty" ? t("اعلان و پرسش‌های متداول Medoria Beauty") : t("اعلان و پرسش‌های متداول Medoria Health")}>
-        {canCreate && <button type="button" className="btn-primary size-md" onClick={() => setModal({ row: null })} data-testid="ct-new"><Icon name="plus" size={17} /> {kind === "banner" ? t("اعلان جدید") : t("پرسش جدید")}</button>}
+      <PageHeader title={t("محتوای سایت")} subtitle={house === "beauty" ? t("اعلان، پرسش‌های متداول، اطلاعات تماس و محصولات ویژهٔ Medoria Beauty") : t("اعلان، پرسش‌های متداول، اطلاعات تماس و محصولات ویژهٔ Medoria Health")}>
+        {canAdd && <button type="button" className="btn-primary size-md" onClick={() => setModal({ row: null })} data-testid="ct-new"><Icon name="plus" size={17} /> {newLabel}</button>}
       </PageHeader>
       {msg && <div role="status" data-testid="ct-msg" className={`mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 ${msg.ok ? "bg-ok/10 text-ok" : "bg-warn/10 text-warn"}`}><Icon name={msg.ok ? "check" : "alertTriangle"} size={16} /> <span className="min-w-0 break-words">{msg.text}</span></div>}
 
@@ -182,10 +206,12 @@ export default function ContentPanel({ data, actions, house }) {
             className={`btn-ghost size-sm ${kind === k.id ? "!border-brand-violet/50 !text-brand-violet !bg-brand-violet/5" : ""}`}>{t(k.label)}</button>
         ))}
       </div>
+      {kind === "contact" && <p className="text-xs text-ink-muted mb-3">{t("فقط یک مورد اطلاعات تماس برای هر بخش وجود دارد؛ تا منتشر نشود، سایت از مقدارهای پیش‌فرض استفاده می‌کند. نشانی ایمیل و تلفن دروازهٔ اصلی (صفحهٔ اول سایت) از اینجا عوض نمی‌شود.")}</p>}
+      {kind === "featured" && <p className="text-xs text-ink-muted mb-3">{t("تا چیزی منتشر نشود، صفحهٔ اول همان محصولات ستاره‌دار را نشان می‌دهد. محصول غیرفعال هرگز نمایش داده نمی‌شود. حداکثر ۱۲ مورد؛ «ترتیب» کوچک‌تر اول می‌آید.")}</p>}
       {kind === "banner" && <p className="text-xs text-ink-muted mb-3">{t("فقط یک اعلان نمایش داده می‌شود: کمترین «ترتیب»، و در برابری جدیدترین.")}</p>}
 
       {rows.length === 0 ? (
-        <EmptyState icon="list" title={kind === "banner" ? t("هنوز اعلانی ساخته نشده") : t("هنوز پرسشی ثبت نشده")} desc={t("تا چیزی منتشر نشود، سایت دقیقاً مثل قبل است.")} />
+        <EmptyState icon="list" title={{ banner: t("هنوز اعلانی ساخته نشده"), faq: t("هنوز پرسشی ثبت نشده"), contact: t("هنوز اطلاعات تماسی ثبت نشده"), featured: t("هنوز محصول ویژه‌ای انتخاب نشده") }[kind]} desc={t("تا چیزی منتشر نشود، سایت دقیقاً مثل قبل است.")} />
       ) : (
         <div className="card divide-y divide-line overflow-hidden" data-testid="ct-list">
           {rows.map((r) => {
@@ -196,7 +222,9 @@ export default function ContentPanel({ data, actions, house }) {
                 <div className="min-w-0 flex-1 basis-48">
                   <p className="text-sm text-ink break-words line-clamp-2">{preview(r) || "—"}</p>
                   <p className="text-xs text-ink-muted break-words">
-                    {[CONTENT_LANGS.filter((l) => (r.kind === "banner" ? r.data?.text?.[l] : r.data?.q?.[l])).join(" · ").toUpperCase(),
+                    {[(r.kind === "banner" || r.kind === "faq") ? CONTENT_LANGS.filter((l) => (r.kind === "banner" ? r.data?.text?.[l] : r.data?.q?.[l])).join(" · ").toUpperCase() : "",
+                      r.kind === "featured" && productOf(r) && productOf(r).is_active === false ? t("محصول غیرفعال است؛ نمایش داده نمی‌شود") : "",
+                      r.kind === "featured" ? `${t("ترتیب")}: ${r.sort_order}` : "",
                       r.publish_at ? `${t("شروع نمایش")}: ${fmtDate(r.publish_at)}` : "", r.unpublish_at ? `${t("پایان نمایش")}: ${fmtDate(r.unpublish_at)}` : "", r.updated_label].filter(Boolean).join(" · ")}
                   </p>
                 </div>
@@ -209,7 +237,7 @@ export default function ContentPanel({ data, actions, house }) {
           })}
         </div>
       )}
-      {modal && <ContentModal kind={kind} row={modal.row} actions={actions} onClose={() => setModal(null)} onDone={done} />}
+      {modal && <ContentModal kind={kind} row={modal.row} actions={actions} onClose={() => setModal(null)} onDone={done} productName={modal.row ? productLabel(modal.row) : ""} />}
     </>
   );
 }

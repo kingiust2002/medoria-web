@@ -7,11 +7,13 @@ import Icon from "@/components/shared/Icon";
 import VariantPicker from "@/components/product/VariantPicker";
 import BeautyQuoteButton from "@/components/beauty/BeautyQuoteButton";
 import { beautyImageUrl } from "@/lib/beauty/catalog";
-import { waLink, tgLink, productInquiryMessage } from "@/lib/whatsapp";
+import { productInquiryMessage } from "@/lib/whatsapp";
 import { isOnRequest, formatPrice } from "@/lib/price";
 import { defaultVariant, variantView } from "@/lib/operator/variants";
+import { useContact } from "@/components/shared/ContactContext";
 
 export default function BeautyVariantBuy({ product: parent, variants, lang, pageUrl, copy: c }) {
+  const { waLink, tgLink } = useContact();
   const [chosen, setChosen] = useState(() => defaultVariant(variants));
   const product = useMemo(() => variantView(parent, chosen), [parent, chosen]);
   const onRequest = isOnRequest(product);

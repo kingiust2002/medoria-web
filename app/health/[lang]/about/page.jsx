@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { LOCALES, getTranslations } from "@/lib/i18n";
 import { buildAlternates } from "@/lib/seo";
-import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
+import { bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
 import ImagePlaceholder from "@/components/shared/ImagePlaceholder";
@@ -10,6 +10,8 @@ import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import PageHeaderVisual from "@/components/shared/PageHeaderVisual";
 import SplitText from "@/components/shared/SplitText";
+import { contactApi } from "@/lib/contactLinks";
+import { getHouseContact } from "@/lib/contactLive";
 
 const VALUE_ICONS = ["shield", "bolt", "check", "handshake"];
 const OFFER_ICONS = ["gloves", "stethoscope", "bandage", "thermometer", "flask", "pill"];
@@ -27,6 +29,7 @@ export async function generateMetadata(props) {
 }
 
 export default async function AboutPage(props) {
+  const { waLink } = contactApi(await getHouseContact("health"));
   const params = await props.params;
   const { lang } = params;
   const t = getTranslations(lang);
