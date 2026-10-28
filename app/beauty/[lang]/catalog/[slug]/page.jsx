@@ -3,11 +3,12 @@
 // Telegram inquiry, specs, related pieces. ISR like Health's product pages —
 // served from cache, re-rendered at most every 5 minutes per slug; operator
 // saves refresh instantly via revalidatePath from the panel.
+import { publicDocumentItems } from "@/lib/productDocuments";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LOCALES } from "@/lib/i18n";
 import {
-  getBeautyProductBySlug, getBeautyProductVariants, getRelatedBeautyProducts, getBeautyCategories, beautyImageUrl,
+  getBeautyProductBySlug, getBeautyProductVariants, getBeautyProductDocuments, getRelatedBeautyProducts, getBeautyCategories, beautyImageUrl,
 } from "@/lib/beauty/catalog";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
 import { isOnRequest } from "@/lib/price";
@@ -65,11 +66,13 @@ export default async function BeautyProductPage(props) {
     );
   }
 
-  const [related, cats, variants] = await Promise.all([
+  const [related, cats, variants, docRows] = await Promise.all([
     getRelatedBeautyProducts(product, 4),
     getBeautyCategories(),
     getBeautyProductVariants(product.id),       // [] for an ordinary product and before migration 44
+    getBeautyProductDocuments(product.id),      // published, still valid documents; [] before migration 48
   ]);
+  const documents = publicDocumentItems(docRows, lang, beautyImageUrl);
   const name = product[`name_${lang}`] || product.name_en || product.name_ru;
   const desc = product[`description_${lang}`] || product.description_en;
   const onRequest = isOnRequest(product);
@@ -95,5 +98,5 @@ export default async function BeautyProductPage(props) {
   };
   const jsonLd = safeJsonLd(variantsJsonLd({ base: productLd, variants, name, url: pageUrl }) || productLd);
 
-  return <BeautyProductView product={product} variants={variants} related={related} cats={cats} lang={lang} jsonLd={jsonLd} />;
+  return <BeautyProductView product={product} variants={variants} documents={documents} related={related} cats={cats} lang={lang} jsonLd={jsonLd} />;
 }
