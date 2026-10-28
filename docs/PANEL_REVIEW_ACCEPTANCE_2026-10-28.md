@@ -49,7 +49,7 @@ Added a permanent failing-before-fix approval-flow test and preserved PostgreSQL
 - Local focused production-module tests: **83 pass** for authorization, accounts, account actions, media and counts; **31 pass** for approvals/product deletion after the supplemental R8 fix.
 - Local full unit run on combined application before the transport-test addition: **575 total, 500 pass, 1 environment failure, 74 skip**. The failure is the root/runuser/nobody backup test; PostgreSQL binaries are absent and the sandbox cannot change supplementary groups. This is NOT a fully passing local unit run. Real PostgreSQL evidence comes from the verified CI logs, not from an invented local run.
 - Initial local browser attempt under Node 24: **198 total, 162 pass, 36 fail**. Do not count a successful CI run as a successful local run. A diagnostic exposed failed server replacement: npx exited, the new server reported EADDRINUSE, and the harness accepted health from the previous server. That can leave personal-account tests running with legacy settings and preserve throttles across files.
-- The follow-up changes the harness to own the Next server directly, wait for that child to exit, wait for that child's ready output plus health, and reject an exited startup. It removes broad pkill commands. The new full rerun uses Node 22, matching the production/CI major version. At this document's writing that rerun and the follow-up PR checks are still in progress; their final logs/checks, not this snapshot, determine whether the follow-up is mergeable.
+- The follow-up changes the harness to own the Next server directly, wait for that child to exit, wait for that child's ready output plus health, and reject an exited startup. It removes broad pkill commands. The new full local rerun used Node 22, matching the production/CI major version, and passed **198/198 browser tests, zero fail/skip**. A negative control occupied the test port with an unrelated healthy HTTP server: the new runner refused the failed Next startup and left that unrelated server intact. Follow-up #226 then passed **576 unit tests and 198 browser tests, zero fail/skip in CI**, and was merged at `7db86c7d66d16e2f09e49899b80dfd5ebf1aa0a2`. The merged tree was checked against the tested PR tree and matched.
 - The transport test uses the real installed SDK and a LOCAL HTTP server with dummy values. It does not run a real PostgREST instance. Official PostgREST documentation maps cs to @> and cd to <@, combining conditions with AND: https://docs.postgrest.org/en/v12/references/api/tables_views.html . SQL concurrency and SDK serialization were checked separately; a full PostgREST integration remains unclaimed.
 - No native-speaker review, real new-user TOTP enrollment on production, new-platform Telegram delivery, external alert delivery or restore drill was performed.
 
@@ -74,3 +74,12 @@ The owner prefers completing the agreed code work before starting further server
 
 Read the plan, author's log and release runbook together with this review. Existing Docker holds, exposed-secret/token rotation, real external alerts and the historical data-recovery gap are separate open operations items, not silently completed by the panel work.
 
+
+## Final completion checkpoint
+
+The full local Node 22 unit run after the SDK test addition was **576 total: 501 pass, 1 environment failure, 74 skip**; the same runuser limitation and unavailable local PostgreSQL explain these limits. CI on #226 actually ran **576/576 with zero skip**, including the database tests; this is the source of the fully passing unit result. Full local and CI browser runs each passed **198/198**. Lint and syntax checks passed.
+
+- [Final validate check](https://github.com/kingiust2002/medoria-web/actions/runs/40667034121/job/122744007935) on `e778dcb15b09f5fb4f94018ae2967d7ab05abb6e`.
+- [Final browser-flows check](https://github.com/kingiust2002/medoria-web/actions/runs/40667034121/job/122744008390) on `e778dcb15b09f5fb4f94018ae2967d7ab05abb6e`.
+
+No new production action was taken after these merges. The deployment boundary and unfinished-feature list above remain in force; source work should continue from current main.

@@ -75,3 +75,7 @@ The local full browser attempt exposed a stale-server test-harness problem: npx 
 ## Release state
 
 Only the safe subset is owner-reported live at `5ac0592` (see operations §23.12). Platform code is merged; migrations 34–42, personal-account activation, new secrets and cron are NOT reported applied. The owner prefers completing agreed code work before further server work. The not-built list above remains open; no production upgrade follows automatically from these merges. Use corrected main and `PANEL_RELEASE_RUNBOOK.md` for a separately planned rollout.
+
+## Phase 6 — completed review follow-up
+
+PR #226 merged at `7db86c7`: the test harness owns the Next server directly and proves readiness/exit; the real-SDK recovery-code HTTP check is permanent. CI passed 576 unit and 198 browser tests with zero fail/skip; the independent full local Node 22 browser run also passed 198/198. A busy-port negative control was refused without killing the unrelated server. Local full unit results remain explicitly 501 pass / 1 executor failure / 74 skip, not a claimed green local PostgreSQL run. Details and final check links are in `PANEL_REVIEW_ACCEPTANCE_2026-10-28.md`. No platform migration, activation or deployment was performed.
