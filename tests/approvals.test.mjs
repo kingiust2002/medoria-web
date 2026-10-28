@@ -204,3 +204,43 @@ test("helpers: which operations a product change needs, and the diff shown to th
   assert.deepEqual([d.changed, d.old], [{ price: 12 }, { price: 10 }]);
   assert.equal(resourceOf("categories.delete"), "categories");
 });
+
+// ── review finding R8: an approved deletion applies only to the product version the reviewer was shown ─────────────────────
+const deleteSpec = (over = {}) => ({ operation: "products.delete", ops: ["products.delete"], entity: "products", entityId: 8, subject: "O-8", before: { sku: "O-8", is_active: false }, proposed: { confirmation: "O-8" }, baseUpdatedAt: ts, ...over });
+const archived8 = () => db.tables.products.find((p) => p.id === 8);
+
+test("R8: a product edited after the deletion was requested is NOT deleted — the request fails as stale, the newer record stays, nothing is written to the history", async () => {
+  const filed = await submitChange(db, { actor: requester(), panel: "health", spec: deleteSpec() });
+  archived8().name_en = "Edited after the request"; archived8().updated_at = "2026-10-05T00:00:00.000Z";        // still archived, same SKU, newer version
+  const res = await approveRequest(db, { reviewer: reviewer(), panel: "health", id: filed.request.id, executors: executors() });
+  assert.equal(res.ok, false);
+  assert.ok(archived8(), "the newer product is intact");
+  assert.equal(archived8().name_en, "Edited after the request");
+  assert.equal(db.tables.operator_change_requests[0].status, "failed");
+  assert.equal(audits.filter((a) => /^product\.delete/.test(a.action)).length, 0, "no attempt was written for a deletion that was never going to run");
+});
+
+test("R8: an edit that lands between the check and the delete statement is caught by the delete itself (atomic predicate)", async () => {
+  const filed = await submitChange(db, { actor: requester(), panel: "health", spec: deleteSpec() });
+  const racing = makeProductExecutors({ panel: "health", session: session(reviewer()), audit: async (e) => {
+    audits.push(e);
+    if (e.action === "product.delete_attempt") { archived8().name_en = "edited during the approval"; archived8().updated_at = "2026-10-06T00:00:00.000Z"; }   // the concurrent update
+    return { ok: true };
+  } });
+  const res = await approveRequest(db, { reviewer: reviewer(), panel: "health", id: filed.request.id, executors: racing });
+  assert.equal(res.ok, false);
+  assert.ok(archived8(), "the delete statement matched nothing");
+  assert.deepEqual(audits.filter((a) => /^product\.delete/.test(a.action)).map((a) => [a.action, a.detail?.reason]), [["product.delete_attempt", undefined], ["product.delete_failed", "state_changed"]], "a failed delete is never recorded as a success");
+});
+
+test("R8: a deletion request without a basis version deletes nothing, and the executor itself refuses a stale version even when called directly", async () => {
+  const ex = executors();
+  const noBase = await ex["products.delete"]({ admin: db, request: { entity_id: 8, base_updated_at: null, proposed: { confirmation: "O-8" } } });
+  assert.deepEqual([noBase.ok, noBase.error], [false, "stale"]);
+  const old = await ex["products.delete"]({ admin: db, request: { entity_id: 8, base_updated_at: "2026-09-01T00:00:00.000Z", proposed: { confirmation: "O-8" } } });
+  assert.deepEqual([old.ok, old.error], [false, "stale"]);
+  assert.ok(archived8());
+  const same = await ex["products.delete"]({ admin: db, request: { entity_id: 8, base_updated_at: "2026-10-01T10:00:00Z", proposed: { confirmation: "O-8" } } });
+  assert.equal(same.ok, true, "the same instant written in another ISO form is the same version");
+  assert.ok(!archived8());
+});
