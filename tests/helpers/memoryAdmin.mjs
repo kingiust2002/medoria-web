@@ -5,7 +5,7 @@
 // Fault injection: `db.fail = (table, op) => error|null`. Stored procedures: the `rpc` option (see db.rpc).
 let seq = 0;
 
-export function createMemoryAdmin(seed = {}, { unique = {}, defaults = {}, beforeUpdate = {}, beforeDelete = {}, rpc = {} } = {}) {
+export function createMemoryAdmin(seed = {}, { unique = {}, defaults = {}, beforeUpdate = {}, beforeDelete = {}, rpc = {}, schema = {} } = {}) {
   const tables = {};
   for (const [name, rows] of Object.entries(seed)) tables[name] = rows.map((r) => ({ ...r }));
   const db = { tables, fail: () => null, log: [] };
@@ -42,7 +42,8 @@ export function createMemoryAdmin(seed = {}, { unique = {}, defaults = {}, befor
     q.maybeSingle = () => { state.single = "maybe"; return q; };
 
     const run = () => {
-      const err = missing(table) || db.fail(table, state.op);
+      const unknownCol = state.cols && schema[table] ? state.cols.find((c) => !schema[table].includes(c)) : null;      // `schema: { table: [columns] }` makes an unknown column fail like PostgreSQL (42703)
+      const err = missing(table) || (unknownCol ? { code: "42703", message: `column ${table}.${unknownCol} does not exist` } : null) || db.fail(table, state.op);
       db.log.push([table, state.op]);
       if (err) return { data: null, error: err, count: null };
       const rows = rowsOf(table);

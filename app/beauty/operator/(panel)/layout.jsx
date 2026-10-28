@@ -32,6 +32,7 @@ export default async function PanelLayout({ children }) {
   if (may("categories.view") || may("products.view")) allowed.push(`${base}/categories`);
   if (may("brands.view") || may("products.view")) allowed.push(`${base}/brands`);
   if (may("quotes.view")) allowed.push(`${base}/quotes`);
+  if (may("media.view")) allowed.push(`${base}/media`);
   if (may("inventory.view")) allowed.push(`${base}/warehouse`);
   if (may("audit.view")) allowed.push(`${base}/activity`);
   if (mayGlobal(session, "beauty", "users.view")) allowed.push(`${base}/users`);

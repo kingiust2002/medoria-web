@@ -16,6 +16,7 @@ const NAV = [
   { href: "/operator", label: tr("داشبورد"), icon: "dashboard" },
   { href: "/operator/products", label: tr("محصولات"), icon: "package" },
   { href: "/operator/categories", label: tr("دسته‌بندی‌ها"), icon: "layers" },
+  { href: "/operator/media", label: tr("تصاویر"), icon: "image" },
   { href: "/operator/quotes", label: tr("استعلام‌ها"), icon: "quote" },
   { href: "/operator/warehouse", label: tr("انبار"), icon: "package" },
   { href: "/operator/approvals", label: tr("تأییدها"), icon: "check" },
