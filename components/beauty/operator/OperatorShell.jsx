@@ -14,6 +14,8 @@ import LogoutAlert from "@/components/operator/LogoutAlert";
 import PanelLangSwitch from "@/components/panel/PanelLangSwitch";
 import { useIdleLogout } from "@/lib/useIdleLogout";
 import { useT } from "@/components/panel/PanelI18n";
+import PanelSearch, { SearchTrigger } from "@/components/panel/PanelSearch";
+import { searchPanel } from "@/lib/beauty/operator/panelSearchActions";
 import { tr } from "@/lib/panel/i18n";
 
 const BASE = "/beauty/operator";
@@ -105,12 +107,16 @@ export default function OperatorShell({ children, allowed = null, badges = {} })
 
   return (
     <div className="lg:grid lg:grid-cols-[264px_1fr] min-h-screen">
+      <PanelSearch search={searchPanel} />
       <LogoutAlert message={logoutError} busy={loggingOut} onRetry={logout} onClose={() => setLogoutError("")} />
       {/* Desktop sidebar (right side in RTL) */}
       <aside className="hidden lg:flex flex-col gap-6 border-e border-line bg-surface p-4 sticky top-0 h-screen relative">
         <div className="absolute inset-y-0 end-0 w-[2px]"
           style={{ background: "linear-gradient(180deg,#0E1947,#B87D4E,#D9A276)" }} aria-hidden="true" />
         <div className="pt-2"><Brandblock /></div>
+        <SearchTrigger className="flex items-center gap-2 px-3.5 h-10 rounded-xl border border-line text-sm text-ink-muted hover:text-ink hover:border-brand-violet/40 transition-colors" label={t("جستجو")}>
+          <Icon name="search" size={16} /><span className="flex-1 text-start">{t("جستجو")}</span><kbd className="text-[11px] text-ink-faint" dir="ltr">/</kbd>
+        </SearchTrigger>
         <NavLinks />
         <div className="mt-auto flex flex-col gap-1 border-t border-line pt-3">
           <div className="px-3.5 pb-2"><PanelLangSwitch /></div>
@@ -132,6 +138,7 @@ export default function OperatorShell({ children, allowed = null, badges = {} })
           <Link href={BASE} className="inline-flex items-center rounded-full bg-white/95 px-2.5 py-1 ring-1 ring-line">
             <BeautyWordLockup height={20} />
           </Link>
+          <SearchTrigger className="grid place-items-center w-10 h-10 rounded-xl hover:bg-line-soft text-ink-muted" label={t("جستجو")}><Icon name="search" size={18} /></SearchTrigger>
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="grid place-items-center w-10 h-10 rounded-xl hover:bg-line-soft text-ink-muted"

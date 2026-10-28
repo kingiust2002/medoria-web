@@ -6,9 +6,10 @@ import { mayView } from "@/lib/operator/access";
 
 export const dynamic = "force-dynamic";
 
-export default async function QuotesPage() {
+export default async function QuotesPage({ searchParams }) {
   const session = await requireBeautySession("quotes.view");
   const [quotes, people] = await Promise.all([getBeautyQuotes(), getBeautyQuoteAssignees()]);
   const reportHref = mayView(session, "beauty", "reports.view") ? "/beauty/operator/quotes/report" : null;
-  return <QuotesManager quotes={quotes} now={Date.now()} reportHref={reportHref} people={people} />;
+  const initialQuery = String((await searchParams)?.q ?? "").slice(0, 80);       // a link from the quick search
+  return <QuotesManager quotes={quotes} now={Date.now()} reportHref={reportHref} people={people} initialQuery={initialQuery} />;
 }
