@@ -223,6 +223,7 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
     if (res.ok) {
       clearDraftStorage();
       setDirty(false);
+      if (res.pending) { router.push("/beauty/operator/approvals?sent=1"); return; }   // filed for approval: nothing changed on the site yet
       if (!editing && addAnotherRef.current) {
         addAnotherRef.current = false;
         setSavedToast({ id: res.id, name: f.name_fa || f.name_en || res.slug });

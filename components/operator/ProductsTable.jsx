@@ -85,6 +85,7 @@ export default function ProductsTable({ products, categories }) {
     startTransition(async () => {
       const res = await setProductActive(p.id, p.is_active === false);
       setBusyId(null);
+      if (res.ok && res.pending) { flash(t(res.message), true); return; }
       if (res.ok) { flash(p.is_active === false ? t("فعال شد.") : t("آرشیو شد."), true); router.refresh(); }
       else flash(t(res.error));
     });
@@ -250,7 +251,7 @@ export default function ProductsTable({ products, categories }) {
       )}
       {deleting && (
         <DeleteProductModal product={deleting} onClose={() => setDeleting(null)} onDelete={deleteProduct}
-          onDone={(res) => { setDeleting(null); flash(res?.ok ? t("محصول برای همیشه حذف شد.") : t("این محصول دیگر وجود ندارد؛ فهرست به‌روز شد."), Boolean(res?.ok)); router.refresh(); }} />
+          onDone={(res) => { setDeleting(null); flash(res?.pending ? t(res.message) : res?.ok ? t("محصول برای همیشه حذف شد.") : t("این محصول دیگر وجود ندارد؛ فهرست به‌روز شد."), Boolean(res?.ok)); router.refresh(); }} />
       )}
     </>
   );

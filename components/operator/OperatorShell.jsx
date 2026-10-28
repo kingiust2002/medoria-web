@@ -17,6 +17,7 @@ const NAV = [
   { href: "/operator/products", label: tr("محصولات"), icon: "package" },
   { href: "/operator/categories", label: tr("دسته‌بندی‌ها"), icon: "layers" },
   { href: "/operator/quotes", label: tr("استعلام‌ها"), icon: "quote" },
+  { href: "/operator/approvals", label: tr("تأییدها"), icon: "check" },
   { href: "/operator/activity", label: tr("تاریخچه"), icon: "clock" },
   { href: "/operator/users", label: tr("کاربران"), icon: "user" },
   { href: "/operator/settings", label: tr("تنظیمات"), icon: "settings" },
@@ -35,7 +36,7 @@ function Brandblock() {
   );
 }
 
-export default function OperatorShell({ children, allowed = null }) {
+export default function OperatorShell({ children, allowed = null, badges = {} }) {
   const t = useT();
   const pathname = usePathname();
   const router = useRouter();
@@ -74,6 +75,7 @@ export default function OperatorShell({ children, allowed = null }) {
           >
             <Icon name={item.icon} size={18} />
             {t(item.label)}
+            {badges[item.href] > 0 && <span className="ms-auto min-w-5 h-5 px-1.5 rounded-full bg-warn/15 text-warn text-[11px] font-bold grid place-items-center" data-testid="nav-badge">{badges[item.href]}</span>}
           </Link>
         ))}
       </nav>

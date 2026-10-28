@@ -207,6 +207,7 @@ export function createFakeDb(seedFactory) {
           row.id ??= randomUUID(); row.version ??= 1; row.authz_version ??= 1; row.status ??= "active"; row.require_2fa ??= true;
           row.allow_perms ??= []; row.deny_perms ??= []; row.approval ??= {}; row.recovery_hashes ??= []; row.totp_last_step ??= 0; row.must_change_password ??= false;
         }
+        if (t === "operator_change_requests") { row.id ??= randomUUID(); row.status ??= "pending"; row.requested_at ??= now(); }   // migration 35's defaults
         if (row.id == null) row.id = nextId(t);
         if (row.created_at == null) row.created_at = now();
         if (row.updated_at == null) row.updated_at = now();

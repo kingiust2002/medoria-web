@@ -67,13 +67,40 @@ anybody else sees only people who share a house with them (a person of another h
   (`success`, `failure`, or `rejected` for a refusal). Passwords never appear anywhere in the log or the database in clear.
 * The old shared login cannot manage people (`users.*` need a personal account).
 
+## The approval queue (S2f) — migration 35
+
+Each person's policy lists, per house, the operations that **need approval** (role default, editable on the people screen). When such a
+person changes a product, publishes it, or deletes an archived one, the live data is **not touched**: a *change request* is filed
+(`operator_change_requests`) with the old and the proposed values of only the fields that change, the version it was prepared against
+(`base_updated_at`), and the reason. Supported through the queue today: **create, edit (content / price / stock flag), publish,
+archive, permanent delete** of products in both houses. Every other operation that needs approval is still a plain **refusal** with an
+honest message (nothing half-done) until its executor exists.
+
+* **Reviewers**: need `<house>.approvals.view` and `<house>.<resource>.approve`; never the requester. "Publish directly" is a different
+  right from "approve others" (tested).
+* **Approve** = one conditional update claims the request (two reviewers at once: exactly one executes); then the requester's account is
+  re-read (active, in the house, still allowed every operation of the change); then the change is applied **only if the record is still the
+  version the request was prepared against** — a newer change is never overwritten, the request ends as *failed / stale* and the requester
+  can **resubmit** it against the current record. A permanent delete re-checks "archived" and the typed SKU at that moment.
+* **Reject** needs a reason (≥ 3 characters), shown to the requester, who can resubmit or **withdraw** a pending request.
+* Database guards (migration 35): decided once; the asker is never the decider; "approved" gets `executed_at` once; decided rows are frozen
+  and never deleted; an identical pending request cannot be filed twice (a double click is one request).
+* Audit: `approval.requested`, `approval.approved` (with `before` / `after` of the change and the request id), `approval.rejected`,
+  `approval.cancelled`; the execution of a delete writes the usual attempt + outcome entries naming the reviewer.
+* Screens: "تأییدها" in both panels with a pending-count badge for reviewers.
+
+## The activity log v2 (S2g)
+
+`user_id` (who), `target_user_id` (to whom), `result` (`attempt | success | failure | rejected`), `request_id`, and `before` / `after`
+(catalogue fields only, short, never customer data — `sanitizeChange`). The page filters by person / result / action / dates, pages by 50,
+shows names; **CSV export has its own permission** (`audit.export`), is formula-safe, and the export is itself logged. Migration 35 makes the
+log **append-only** (no update, no delete, even for the service role).
+
 ## What does NOT exist yet (do not switch the flag on before these ship)
 
-* No screen for one's own password / two-step login setup (S2d): a person created with "two-step required" is refused at login until
-  S2d lets them set it up (so create people with the requirement off, or set the seed by the owner, until then); no approval queue
-  (S2f); no audit viewer by person (S2g).
-  **`OPERATOR_USERS=on` must not be set until S2d is deployed** (a temporary password has to be changed by its owner).
-* The buttons are not yet hidden per permission inside the pages (a refused click shows the refusal); polishing that is stage 3.
+* Approvals exist only for products (see above); categories, brands, media, requests and the warehouse still refuse "needs approval".
+* The buttons are not hidden per permission inside the pages (a refused click shows the refusal); polishing that is stage 3.
+* Not deployed anywhere: **apply migrations 34 and 35 before the release, and keep `OPERATOR_USERS` empty until the owner is ready**.
 
 ## Environment
 
@@ -90,7 +117,7 @@ immediately after the bootstrap.
 ## Release order (once S2c–S2e are merged too)
 
 1. Fresh production backup; local + R2 chain must PASS.
-2. Apply migration 30 (if not yet) and **34** (one transaction, self-checking, additive).
+2. Apply migration 30 (if not yet), **34** and **35** (each one transaction, self-checking, additive; 35 makes the activity log append-only).
 3. Add `OPERATOR_DATA_KEY` to `deploy/.env` (not printed, not committed); run `node scripts/check-self-host-env.mjs deploy/.env`.
 4. Deploy the release with `OPERATOR_USERS` still **empty**; confirm `docker compose ps` and a live curl; log in as before.
 5. Set `OPERATOR_USERS=on`, restart the app; the owner logs in first (bootstrap); check the log shows `auth.bootstrap_owner`.

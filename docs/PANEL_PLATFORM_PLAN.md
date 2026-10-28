@@ -134,4 +134,5 @@ public route/API/payload/print path.
 | S2b migration 34 + account store + personal login + owner bootstrap + session gate (switched off by default) | in PR (stacked on #206/#207/#208) | see docs/OPERATOR_ACCOUNTS.md |
 | S2e permissions enforced on every action, page, reader, menu | in #209 (same branch as S2b) | `tests/panel-permissions.test.mjs`, `tests/access.test.mjs`, `tests/e2e/accounts-permissions.e2e.mjs` |
 | S2c people screen (create / change / disable / temporary password / end sessions), both panels | branch `feat/panel-users-ui` (stacked on #209) | `tests/user-actions-core.test.mjs`, `tests/e2e/accounts-people.e2e.mjs` |
-| S2d … S6c | not started | |
+| S2f approval queue (migration 35, products create/edit/publish/archive/delete) + S2g activity log v2 (people, results, before/after, filters, CSV, append-only) | branch `feat/panel-approvals` (stacked on #210) | `tests/approvals.test.mjs`, `tests/audit-view.test.mjs`, `tests/operator-change-requests-migration.test.mjs`, `tests/e2e/accounts-approvals.e2e.mjs` |
+| S3 … S6c | not started | |
