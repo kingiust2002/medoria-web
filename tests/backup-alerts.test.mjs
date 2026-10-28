@@ -372,6 +372,8 @@ test("ops reports: --check reports backup_check pass / fail, --alert-test report
 
 test("ops reports: off without configuration; a broken endpoint, a refused token or a bad URL never changes a result", async () => {
   const sb = sandbox(), srv = await alertServer();
+  // a snapshot is named by the second: clear the previous run so two quick runs cannot collide
+  const clean = () => { for (const d of ["backups", "remote"]) fs.rmSync(path.join(sb.dir, d), { recursive: true, force: true }); };
   try {
     sb.w("alerts.env", alerts(srv));
     const none = await run("bash", [BACKUP], { env: sb.env() });
@@ -381,6 +383,7 @@ test("ops reports: off without configuration; a broken endpoint, a refused token
     // endpoint answers 500 → a warning, the backup is fine
     srv.setStatus(500);
     sb.w("alerts.env", alerts(srv, opsLines(srv)));
+    clean();
     const broken = await run("bash", [BACKUP], { env: sb.env() });
     assert.equal(broken.code, 0, broken.all);
     assert.match(broken.all, /status report 'backup pass' failed/);
@@ -388,12 +391,14 @@ test("ops reports: off without configuration; a broken endpoint, a refused token
     srv.setStatus(200); srv.hits.length = 0;
     // a plain-http non-local URL and a short token are ignored with a warning (the token would travel in clear text / is not a token)
     sb.w("alerts.env", alerts(srv, "OPS_REPORT_URL=http://evil.example/report\nOPS_REPORT_TOKEN=short\n"));
+    clean();
     const bad = await run("bash", [BACKUP], { env: sb.env() });
     assert.equal(bad.code, 0, bad.all);
     assert.match(bad.all, /OPS_REPORT_URL .* must be an https URL/); assert.match(bad.all, /OPS_REPORT_TOKEN .* is not a valid token/);
     assert.equal(reports(srv).length, 0);
     // injection attempts in the detail are stripped (the body stays valid JSON)
     sb.w("alerts.env", alerts(srv, opsLines(srv)));
+    clean();
     const inj = await run("bash", [BACKUP], { env: sb.env({ STUB_FAIL: "dump" }) });
     assert.notEqual(inj.code, 0);
     for (const h of srv.hits.filter((x) => x.path === "/report")) assert.doesNotThrow(() => JSON.parse(h.body));
