@@ -26,6 +26,7 @@ const UNIQUE = {
   operator_users: [["username"]], operator_sessions: [["sid"]], operator_totp_state: [["panel"]], operator_recovery_used: [["panel", "code_hash"]],
   operator_saved_views: [["user_id", "house", "list", "name"]],   // migration 49
   operator_preferences: [["user_id", "house"]],   // migration 50
+  ops_status: [["kind"]],   // migration 52
   health_stock_levels: [["product_id"]], beauty_stock_levels: [["product_id"]],
   health_stock_count_lines: [["count_id", "product_id"]], beauty_stock_count_lines: [["count_id", "product_id"]],
   product_documents: [["file_path"], ["product_id", "sha256"]], beauty_product_documents: [["file_path"], ["product_id", "sha256"]],   // migration 48
@@ -321,7 +322,11 @@ export function createFakeDb(seedFactory) {
         for (const cols of UNIQUE[t] || []) {
           const clash = cols.every((c) => row[c] != null) && tables[t].find((r) => cols.every((c) => r[c] === row[c]));
           if (!clash) continue;
-          if (/merge-duplicates/.test(prefer)) { Object.assign(clash, row); created.push(clash); merged = true; break; }
+          if (/merge-duplicates/.test(prefer)) {
+            Object.assign(clash, row);
+            if (t === "ops_status") { clash.reported_at = now(); if (row.status === "pass") clash.last_pass_at = clash.reported_at; }   // migration 52's guard trigger: the database's clock, the last success remembered
+            created.push(clash); merged = true; break;
+          }
           return respond(res, 409, { code: "23505", message: `duplicate key value violates unique constraint on ${cols.join(",")}` });
         }
         if (merged) continue;
@@ -332,6 +337,7 @@ export function createFakeDb(seedFactory) {
           row.allow_perms ??= []; row.deny_perms ??= []; row.approval ??= {}; row.recovery_hashes ??= []; row.totp_last_step ??= 0; row.must_change_password ??= false;
         }
         if (t === "operator_change_requests") { row.id ??= randomUUID(); row.status ??= "pending"; row.requested_at ??= now(); }   // migration 35's defaults
+        if (t === "ops_status") { row.reported_at = now(); row.last_pass_at = row.status === "pass" ? row.reported_at : null; }   // migration 52
         if (t === "operator_saved_views") {   // migration 49: default id, and at most 20 per person, house and list
           row.id ??= randomUUID();
           const nm = (v) => String(v).trim().toLowerCase();   // the unique index is on lower(btrim(name))

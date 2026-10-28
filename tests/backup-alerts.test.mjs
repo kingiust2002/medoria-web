@@ -54,7 +54,7 @@ function alertServer() {
   const server = http.createServer((req, res) => {
     let body = "";
     req.on("data", (c) => { body += c; });
-    req.on("end", () => { hits.push({ method: req.method, path: req.url, body }); res.writeHead(status); res.end("OK"); });
+    req.on("end", () => { hits.push({ method: req.method, path: req.url, body, auth: req.headers.authorization || "" }); res.writeHead(status); res.end("OK"); });
   });
   return new Promise((resolve) => server.listen(0, "127.0.0.1", () => resolve({
     port: server.address().port, hits, setStatus: (s) => { status = s; }, close: () => new Promise((r) => server.close(r)),
@@ -322,4 +322,106 @@ test("heartbeat: no configuration or a dead alert service changes nothing about 
     assert.equal(dead.code, 0, "a dead alert service must not turn a healthy check into a failure");
     assert.match(dead.all, /WARNING: heartbeat ping .* failed/);
   } finally { await site.close(); sb.cleanup(); }
+});
+
+// ----------------------------------------------------------------------------- reports to the panel (N13)
+const OPS_TOKEN = "ops-token-0123456789abcdefghij";
+const opsLines = (srv, tag = "report") => `OPS_REPORT_URL=http://127.0.0.1:${srv.port}/${tag}\nOPS_REPORT_TOKEN=${OPS_TOKEN}\n`;
+const reports = (srv, tag = "/report") => srv.hits.filter((h) => h.path === tag).map((h) => ({ ...JSON.parse(h.body), auth: h.auth }));
+
+test("ops reports: a successful backup reports PASS with the token as a header, a failed one FAIL with the step; the token never reaches the output", async () => {
+  const sb = sandbox(), srv = await alertServer();
+  try {
+    sb.w("alerts.env", alerts(srv, opsLines(srv)));
+    const ok = await run("bash", [BACKUP], { env: sb.env() });
+    assert.equal(ok.code, 0, ok.all);
+    const r = reports(srv);
+    assert.equal(r.length, 1); assert.deepEqual([r[0].kind, r[0].status], ["backup", "pass"]); assert.match(r[0].detail, /snapshot 2\d{7}T\d{6}Z/);
+    assert.equal(r[0].auth, `Bearer ${OPS_TOKEN}`);
+    assert.ok(!ok.all.includes(OPS_TOKEN), "the token leaked into the output");
+    srv.hits.length = 0;
+    const bad = await run("bash", [BACKUP], { env: sb.env({ STUB_FAIL: "dump" }) });
+    assert.notEqual(bad.code, 0);
+    const f = reports(srv);
+    assert.deepEqual([f[0].kind, f[0].status], ["backup", "fail"]); assert.match(f[0].detail, /database dump/);
+    assert.ok(!bad.all.includes(OPS_TOKEN));
+  } finally { await srv.close(); sb.cleanup(); }
+});
+
+test("ops reports: --check reports backup_check pass / fail, --alert-test reports alert_test sent (and says nothing about delivery)", async () => {
+  const sb = sandbox(), srv = await alertServer();
+  try {
+    sb.w("alerts.env", alerts(srv, opsLines(srv)));
+    const stamp = (hoursAgo) => new Date(Date.now() - hoursAgo * 3600e3).toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
+    const place = (name) => { for (const base of ["backups/production-auto", "remote/production-auto"]) fs.mkdirSync(path.join(sb.dir, base, name), { recursive: true }); };
+    place(stamp(2));
+    await run("bash", [BACKUP, "--check"], { env: sb.env() });
+    assert.deepEqual(reports(srv).map((x) => [x.kind, x.status]), [["backup_check", "pass"]]);
+    srv.hits.length = 0;
+    fs.rmSync(path.join(sb.dir, "backups"), { recursive: true }); fs.rmSync(path.join(sb.dir, "remote"), { recursive: true });
+    place(stamp(80));
+    const stale = await run("bash", [BACKUP, "--check"], { env: sb.env() });
+    assert.equal(stale.code, 1);
+    assert.deepEqual(reports(srv).map((x) => [x.kind, x.status]), [["backup_check", "fail"]]);
+    srv.hits.length = 0;
+    const t = await run("bash", [BACKUP, "--alert-test"], { env: sb.env() });
+    assert.equal(t.code, 0, t.all);
+    assert.deepEqual(reports(srv).map((x) => [x.kind, x.status]), [["alert_test", "sent"]]);
+  } finally { await srv.close(); sb.cleanup(); }
+});
+
+test("ops reports: off without configuration; a broken endpoint, a refused token or a bad URL never changes a result", async () => {
+  const sb = sandbox(), srv = await alertServer();
+  try {
+    sb.w("alerts.env", alerts(srv));
+    const none = await run("bash", [BACKUP], { env: sb.env() });
+    assert.equal(none.code, 0, none.all);
+    assert.equal(reports(srv).length, 0, "no report without configuration");
+    assert.ok(!/status report/.test(none.all));
+    // endpoint answers 500 → a warning, the backup is fine
+    srv.setStatus(500);
+    sb.w("alerts.env", alerts(srv, opsLines(srv)));
+    const broken = await run("bash", [BACKUP], { env: sb.env() });
+    assert.equal(broken.code, 0, broken.all);
+    assert.match(broken.all, /status report 'backup pass' failed/);
+    assert.ok(!broken.all.includes(OPS_TOKEN));
+    srv.setStatus(200); srv.hits.length = 0;
+    // a plain-http non-local URL and a short token are ignored with a warning (the token would travel in clear text / is not a token)
+    sb.w("alerts.env", alerts(srv, "OPS_REPORT_URL=http://evil.example/report\nOPS_REPORT_TOKEN=short\n"));
+    const bad = await run("bash", [BACKUP], { env: sb.env() });
+    assert.equal(bad.code, 0, bad.all);
+    assert.match(bad.all, /OPS_REPORT_URL .* must be an https URL/); assert.match(bad.all, /OPS_REPORT_TOKEN .* is not a valid token/);
+    assert.equal(reports(srv).length, 0);
+    // injection attempts in the detail are stripped (the body stays valid JSON)
+    sb.w("alerts.env", alerts(srv, opsLines(srv)));
+    const inj = await run("bash", [BACKUP], { env: sb.env({ STUB_FAIL: "dump" }) });
+    assert.notEqual(inj.code, 0);
+    for (const h of srv.hits.filter((x) => x.path === "/report")) assert.doesNotThrow(() => JSON.parse(h.body));
+  } finally { await srv.close(); sb.cleanup(); }
+});
+
+test("ops reports: the heartbeat reports pass / fail even when it has no heartbeat URL of its own", async () => {
+  const sb = sandbox(), srv = await alertServer();
+  let site = await siteServer(200);
+  try {
+    sb.w("uptime.env", opsLines(srv));
+    const env = { UPTIME_ALERT_ENV: path.join(sb.dir, "uptime.env"), SITE_HEALTH_URL: `http://127.0.0.1:${site.port}/api/health`, DISK_PATH: sb.dir, DISK_MAX_PERCENT: "101" };
+    const ok = await run("bash", [HEARTBEAT], { env: sb.env(env) });
+    assert.equal(ok.code, 0, ok.all);
+    assert.deepEqual(reports(srv).map((x) => [x.kind, x.status]), [["heartbeat", "pass"]]);
+    srv.hits.length = 0;
+    await site.close(); site = await siteServer(503);
+    const down = await run("bash", [HEARTBEAT], { env: sb.env({ ...env, SITE_HEALTH_URL: `http://127.0.0.1:${site.port}/api/health` }) });
+    assert.notEqual(down.code, 0);
+    const r = reports(srv);
+    assert.deepEqual([r[0].kind, r[0].status], ["heartbeat", "fail"]);
+    assert.ok(!down.all.includes(OPS_TOKEN));
+  } finally { await srv.close(); await site.close(); sb.cleanup(); }
+});
+
+test("ops reports: the restore drill reports through the same helper (source pin; the drill itself is covered in restore-drill.test.mjs)", () => {
+  const src = fs.readFileSync(path.join(root, "scripts/self-host/restore-drill.sh"), "utf8");
+  assert.match(src, /ops_report restore_drill fail/); assert.match(src, /ops_report restore_drill pass/);
+  assert.match(src, /curl -sS -m 10 -o \/dev\/null -w '%\{http_code\}' -K -/, "the token goes to curl on stdin, never on the command line");
+  for (const f of ["production-backup.sh", "restore-drill.sh", "uptime-heartbeat.sh"]) assert.ok(!/-H "Authorization/.test(fs.readFileSync(path.join(root, "scripts/self-host", f), "utf8")), `${f}: no token in the command line`);
 });
