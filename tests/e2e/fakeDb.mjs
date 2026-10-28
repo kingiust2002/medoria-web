@@ -24,6 +24,7 @@ const RESERVED = new Set(["select", "order", "limit", "offset", "on_conflict", "
 const UNIQUE = {
   products: [["slug"]], beauty_products: [["slug"]], categories: [["slug"]], beauty_categories: [["slug"]],
   operator_users: [["username"]], operator_sessions: [["sid"]], operator_totp_state: [["panel"]], operator_recovery_used: [["panel", "code_hash"]],
+  operator_saved_views: [["user_id", "house", "list", "name"]],   // migration 49
   health_stock_levels: [["product_id"]], beauty_stock_levels: [["product_id"]],
   health_stock_count_lines: [["count_id", "product_id"]], beauty_stock_count_lines: [["count_id", "product_id"]],
   product_documents: [["file_path"], ["product_id", "sha256"]], beauty_product_documents: [["file_path"], ["product_id", "sha256"]],   // migration 48
@@ -330,6 +331,12 @@ export function createFakeDb(seedFactory) {
           row.allow_perms ??= []; row.deny_perms ??= []; row.approval ??= {}; row.recovery_hashes ??= []; row.totp_last_step ??= 0; row.must_change_password ??= false;
         }
         if (t === "operator_change_requests") { row.id ??= randomUUID(); row.status ??= "pending"; row.requested_at ??= now(); }   // migration 35's defaults
+        if (t === "operator_saved_views") {   // migration 49: default id, and at most 20 per person, house and list
+          row.id ??= randomUUID();
+          const nm = (v) => String(v).trim().toLowerCase();   // the unique index is on lower(btrim(name))
+          if (tables[t].some((r) => r.user_id === row.user_id && r.house === row.house && r.list === row.list && nm(r.name) === nm(row.name))) return respond(res, 409, { code: "23505", message: "duplicate key value violates unique constraint operator_saved_views_name" });
+          if (tables[t].filter((r) => r.user_id === row.user_id && r.house === row.house && r.list === row.list).length >= 20) return respond(res, 400, { code: "P0001", message: "operator_saved_views:too_many" });
+        }
         if (t === "publish_rules") { row.version ??= 1; row.blocking ??= []; }
         if (DOC_TABLES.has(t)) { row.version ??= 1; row.is_published ??= false; row.sort_order ??= 0; row.valid_until ??= null; row.lang ??= null; }   // migration 48's defaults   // migration 46's defaults
         if (t === "site_content") { row.version ??= 1; row.is_published ??= false; row.sort_order ??= 0; row.publish_at ??= null; row.unpublish_at ??= null; }   // migration 42's defaults
