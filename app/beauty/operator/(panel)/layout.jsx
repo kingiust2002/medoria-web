@@ -4,13 +4,23 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/beauty/operator/auth";
 import OperatorShell from "@/components/beauty/operator/OperatorShell";
-import { mayView } from "@/lib/operator/access";
+import AccountSecurity from "@/components/operator/AccountSecurity";
+import { mayView, mayGlobal, restrictedReason } from "@/lib/operator/access";
+import { changeMyPassword, startMyTwoStep, confirmMyTwoStep, disableMyTwoStep, newMyRecoveryCodes } from "@/lib/beauty/operator/accountActions";
 
 export const dynamic = "force-dynamic";
 
 export default async function PanelLayout({ children }) {
   const session = await getSession();
   if (!session) redirect("/login/beauty");
+  // a temporary password / a required two-step login that is not set up yet: nothing but the person's own security screen opens
+  if (restrictedReason(session)) {
+    return (
+      <OperatorShell allowed={[]}>
+        <AccountSecurity mode="setup" user={session.user} actions={{ changeMyPassword, startMyTwoStep, confirmMyTwoStep, disableMyTwoStep, newMyRecoveryCodes }} />
+      </OperatorShell>
+    );
+  }
   // the menu only shows what the person may open (every page and action checks again on the server)
   const may = (rel) => mayView(session, "beauty", rel);
   const base = "/beauty/operator";
@@ -20,5 +30,6 @@ export default async function PanelLayout({ children }) {
   if (may("brands.view") || may("products.view")) allowed.push(`${base}/brands`);
   if (may("quotes.view")) allowed.push(`${base}/quotes`);
   if (may("audit.view")) allowed.push(`${base}/activity`);
+  if (mayGlobal(session, "beauty", "users.view")) allowed.push(`${base}/users`);
   return <OperatorShell allowed={allowed}>{children}</OperatorShell>;
 }

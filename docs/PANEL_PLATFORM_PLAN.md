@@ -132,4 +132,6 @@ public route/API/payload/print path.
 | #206 three-language panel | open | 297 unit, 120 browser tests |
 | S2a `lib/operator/authz.js` (pure; nothing calls it yet, so no behaviour change) | in this PR | 21 unit tests: default closed, deny>allow, house separation, grant ceiling, last owner, no self-escalation, per-operation approval, "publish directly" ≠ "may approve" |
 | S2b migration 34 + account store + personal login + owner bootstrap + session gate (switched off by default) | in PR (stacked on #206/#207/#208) | see docs/OPERATOR_ACCOUNTS.md |
-| S2c … S6c | not started | |
+| S2e permissions enforced on every action, page, reader, menu | in #209 (same branch as S2b) | `tests/panel-permissions.test.mjs`, `tests/access.test.mjs`, `tests/e2e/accounts-permissions.e2e.mjs` |
+| S2c people screen (create / change / disable / temporary password / end sessions), both panels | branch `feat/panel-users-ui` (stacked on #209) | `tests/user-actions-core.test.mjs`, `tests/e2e/accounts-people.e2e.mjs` |
+| S2d … S6c | not started | |

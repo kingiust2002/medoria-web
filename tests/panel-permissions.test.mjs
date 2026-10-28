@@ -21,6 +21,8 @@ function walk(dir, out = []) {
 const ACTION_FILES = [
   "lib/operator/actions.js", "lib/operator/categoryTreeActions.js", "lib/operator/importActions.js", "lib/operator/securityActions.js",
   "lib/beauty/operator/actions.js", "lib/beauty/operator/importActions.js", "lib/beauty/operator/securityActions.js",
+  "lib/operator/userActions.js", "lib/beauty/operator/userActions.js",
+  "lib/operator/accountActions.js", "lib/beauty/operator/accountActions.js",
 ];
 // Actions that only touch the caller's own session need no operation of the catalog.
 const SELF_SERVICE = new Set(["revokeOtherSessions", "revokeAllSessions"]);
@@ -40,8 +42,13 @@ test("every operator server action asks for a permission right after the session
   for (const f of ACTION_FILES) {
     for (const a of exportedActions(read(f))) {
       if (SELF_SERVICE.has(a.name)) continue;
+      if (/accountActions\.js$/.test(f)) {
+        // "my password / my two-step login": a personal session is the permission; it must still be the first thing asked
+        assert.ok(/const a = await ctxFor\(\);\s*\n\s*return a\.ok \? core\./.test(a.head), `${f}:${a.name} must go through ctxFor() (session) and the shared core`);
+        continue;
+      }
       checked++;
-      const permAt = a.head.search(/await authed\((?!\))|await gate\(session, "(health|beauty)", /);
+      const permAt = a.head.search(/await authed\((?!\))|await authedManager\(\)|await gate\(session, "(health|beauty)", /);
       assert.ok(permAt >= 0, `${f}:${a.name} has a session check but no permission check`);
       const dbAt = a.head.search(/admin\.from\(|a\.admin|\.from\(|getAdminClient\(\)\.from/);
       assert.ok(dbAt < 0 || permAt < dbAt, `${f}:${a.name} touches the database before checking the permission`);

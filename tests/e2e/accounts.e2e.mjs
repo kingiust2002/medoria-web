@@ -107,12 +107,21 @@ test("a disabled account loses its cookie at once; so does a changed one; a bloc
   assert.equal((await login("health", "is.blocked")).status, 401);
 });
 
-test("an account that must use a second factor but has none is refused for now, with an honest message", async () => {
-  await addUser({ username: "needs.2fa", require_2fa: true });
+test("an account that must use a second factor but has none gets a RESTRICTED session: only its own security screen opens", async () => {
+  await addUser({ username: "needs.2fa", require_2fa: true, role: "house_admin" });
   const r = await login("health", "needs.2fa");
-  assert.equal(r.status, 403);
-  assert.equal(r.cookie, "");
-  assert.ok((await rows("operator_audit_log")).some((x) => x.detail?.reason === "2fa_not_enrolled"));
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.mustSetUpTwoStep, true);
+  const dash = await (await withCookie("/operator", r.cookie)).text();
+  assert.ok(dash.includes('data-testid="account-setup"'), "the setup screen is what opens");
+  assert.ok(!dash.includes("E2E Customer") && !dash.includes("E2E Product"), "no data until it is done");
+  for (const p of ["/operator/products", "/operator/quotes", "/operator/activity", "/operator/users"]) {
+    const res = await withCookie(p, r.cookie);
+    const body = res.status === 200 ? await res.text() : "";
+    // either sent away, or answered with the setup screen alone (the page itself is never rendered) — never with data
+    assert.ok((res.status >= 300 && res.status < 400) || body.includes('data-testid="account-setup"'), `${p} must not open for a restricted account (${res.status})`);
+    assert.ok(!body.includes("E2E Customer") && !body.includes("E2E Product"), `${p} leaked data to a restricted account`);
+  }
 });
 
 test("a person's own second factor: code needed, replay refused, recovery code once; nobody else is affected", async () => {

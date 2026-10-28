@@ -4,6 +4,8 @@ import { hasSessionSecret, hasPasswordHash, hasUsername, getSession, isTwoStepEn
 import { getAdminClient } from "@/lib/operator/supabaseAdmin";
 import { listSessions } from "@/lib/operator/security";
 import SessionsCard from "@/components/operator/SessionsCard";
+import AccountSecurity from "@/components/operator/AccountSecurity";
+import { changeMyPassword, startMyTwoStep, confirmMyTwoStep, disableMyTwoStep, newMyRecoveryCodes } from "@/lib/operator/accountActions";
 import { revokeOtherSessions, revokeAllSessions } from "@/lib/operator/securityActions";
 import { isAdminConfigured } from "@/lib/operator/supabaseAdmin";
 import { PageHeader, SectionCard } from "@/components/operator/ui";
@@ -47,16 +49,24 @@ export default async function SettingsPage() {
         <LogoutButton />
       </PageHeader>
 
+      {session?.user && (
+        <div className="mb-6">
+          <AccountSecurity user={session.user} actions={{ changeMyPassword, startMyTwoStep, confirmMyTwoStep, disableMyTwoStep, newMyRecoveryCodes }} />
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-2 gap-6">
         <SectionCard title={t("نشست‌ها")} desc={t("هر ورود یک نشست ثبت‌شده است؛ خروج و «پایان نشست‌ها» نشست را روی سرور می‌بندد")} icon="lock">
           <SessionsCard sessions={sessions} currentSid={session?.sid} registryReady={registryReady} loginHref="/login/health"
             actions={{ revokeOthers: revokeOtherSessions, revokeAll: revokeAllSessions }} />
         </SectionCard>
 
+        {!session?.user && (
         <SectionCard title={t("ورود دومرحله‌ای")} desc={t("کد ۶ رقمی برنامهٔ احراز هویت + کدهای بازیابی یک‌بارمصرف")} icon="shield">
           <StatusRow ok={twoStep} label={twoStep ? t("فعال") : t("غیرفعال")}
             hint={twoStep ? t("کدهای بازیابی باقی‌مانده در تنظیمات سرور: {recoveryCodesLeft}. گم‌شدن گوشی: از یک کد بازیابی استفاده کنید.", { recoveryCodesLeft: recoveryCodesLeft() }) : t("فعال‌سازی فقط روی سرور و با اسکریپت انجام می‌شود: node scripts/operator-2fa.mjs health (راهنما: docs/OPERATOR_SECURITY.md).")} />
         </SectionCard>
+        )}
 
         <SectionCard title={t("وضعیت پیکربندی")} desc={t("این متغیرها در محیط سرور (env) تنظیم می‌شوند")} icon="shield">
           <div className="divide-y divide-line">

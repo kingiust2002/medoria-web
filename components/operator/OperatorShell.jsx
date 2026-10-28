@@ -18,6 +18,7 @@ const NAV = [
   { href: "/operator/categories", label: tr("دسته‌بندی‌ها"), icon: "layers" },
   { href: "/operator/quotes", label: tr("استعلام‌ها"), icon: "quote" },
   { href: "/operator/activity", label: tr("تاریخچه"), icon: "clock" },
+  { href: "/operator/users", label: tr("کاربران"), icon: "user" },
   { href: "/operator/settings", label: tr("تنظیمات"), icon: "settings" },
 ];
 

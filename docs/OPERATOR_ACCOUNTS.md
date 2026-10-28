@@ -48,12 +48,31 @@ as it is in the database right now (not from the cookie, and not from what the s
   that does not exist; `tests/access.test.mjs` is the role matrix; `tests/e2e/accounts-permissions.e2e.mjs` proves it end to end,
   including a click from a stale screen after a permission was withdrawn.
 
+## The people screen (S2c) — "کاربران" in both panels
+
+`/operator/users` and `/beauty/operator/users` (permission `users.view` to open, `users.manage` to change). An owner sees everybody;
+anybody else sees only people who share a house with them (a person of another house is not even confirmed to exist).
+
+* **Create**: username, display name, role, houses, "two-step sign-in required", advanced (extra and forbidden permissions as typed
+  patterns, per-house approval policy). The server generates a **20-character temporary password**, shows it **once** and stores
+  only its hash; the person must change it at the first sign-in. Nobody can give a house they are not in, a permission they do not
+  hold, or create/touch an owner unless they are an owner (`authz.checkUserChange`, the same function the tests exercise).
+* **Change**: role, houses, status (active / disabled / blocked), two-step requirement, permissions, approval policy, display name.
+  Guarded by the optimistic `version` (a stale form is refused with "changed in the meantime"). **A change of power ends the
+  person's sessions** (`authz_version` + revoked registry rows); a harmless change (display name) does not. Nobody changes his own
+  role/houses/permissions/status here, and nobody resets his own password from this page (his own settings do that, with re-auth — S2d).
+* **Temporary password** for somebody else and **end sessions**: the same visibility and owner rules.
+* Every action writes one line to the activity log: `user.create`, `user.update`, `user.status`, `user.password_reset`,
+  `user.sessions_ended`, with the acting person (`user_id`), the person it was done to (`target_user_id`), and the result
+  (`success`, `failure`, or `rejected` for a refusal). Passwords never appear anywhere in the log or the database in clear.
+* The old shared login cannot manage people (`users.*` need a personal account).
+
 ## What does NOT exist yet (do not switch the flag on before these ship)
 
-* No screen to create or edit people (S2c), to change one's own password or set up two-step login (S2d), no approval queue (S2f), no
-  audit viewer by person (S2g). A person created by hand with `require_2fa` but no seed is refused at login.
-  **`OPERATOR_USERS=on` must not be set until S2c–S2d are deployed** (otherwise nobody but the bootstrapped owner can be created, and
-  only by hand in the database).
+* No screen for one's own password / two-step login setup (S2d): a person created with "two-step required" is refused at login until
+  S2d lets them set it up (so create people with the requirement off, or set the seed by the owner, until then); no approval queue
+  (S2f); no audit viewer by person (S2g).
+  **`OPERATOR_USERS=on` must not be set until S2d is deployed** (a temporary password has to be changed by its owner).
 * The buttons are not yet hidden per permission inside the pages (a refused click shows the refusal); polishing that is stage 3.
 
 ## Environment
