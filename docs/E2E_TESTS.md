@@ -33,6 +33,7 @@ dummy values and the operator passwords are generated per run.
 | `tests/e2e/quote-management.e2e.mjs`, `quotes-reliability.e2e.mjs` | Customer-request management (code, assignee, waiting/overdue markers, filters); the Quotes list follows rows changed by another session without losing local edits; the delete dialogs stay reachable at 320×568 |
 | `tests/e2e/check-mobile.e2e.mjs` | `npm run check:mobile` itself: a 404 page, a fixed over-wide control and an unreachable button are all reported |
 | `tests/e2e/product-delete.e2e.mjs` | Permanent delete of an archived product in both panels: only archived rows have the button, the SKU must be typed, the product leaves the panel and the public site, the activity log records it, customer requests keep the product name; a re-activated product and a failing log both refuse the delete; the dialog is reachable at 320×568 |
+| `tests/e2e/panel-i18n.e2e.mjs` | The panels in three languages: every page of both panels in Tajik and English at 320 px has no Persian text left, the right `dir`/`lang`, nothing past the screen edge; Persian stays the default; the FA/TG/EN switch changes, remembers and mirrors the sidebar; an unknown language cookie means Persian; the login pages and the chooser follow the language |
 | `tests/e2e/live-check.e2e.mjs` | The owner-run live script below works against the local stack |
 | `tests/e2e/fakeDb.mjs`, `seed.mjs` | The fake PostgREST (filters, order, single-object responses, insert/update/delete, rpc) and invented demo rows |
 

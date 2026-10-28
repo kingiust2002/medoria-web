@@ -4,57 +4,23 @@
 // wordmark alone at the top (no Health/Beauty suffix — the one neutral
 // parent mark per brand law), and each option card wears ONLY its own
 // vertical's official lockup. No cross-logo mixing.
-import { useState } from "react";
 import Link from "next/link";
 import Icon from "@/components/shared/Icon";
 import Brand from "@/components/layout/Brand";
 import { BeautyWordLockup } from "@/components/beauty/BeautyBrand";
-
-const COPY = {
-  fa: {
-    dir: "rtl",
-    eyebrow: "ورود کارکنان",
-    title: "به کدام پنل می‌روید؟",
-    subtitle: "هر پنل کاملاً مستقل است — با حساب کاربری مخصوص همان بخش وارد شوید.",
-    health: { name: "پنل مدیریت Health", desc: "مدیریت محصولات، دسته‌ها و استعلام‌های تجهیزات پزشکی" },
-    beauty: { name: "پنل مدیریت Beauty", desc: "مدیریت محصولات، دسته‌ها و استعلام‌های زیبایی لوکس" },
-    enter: "ورود",
-    footer: "دسترسی فقط برای کارکنان مجاز. تمام فعالیت‌ها ثبت می‌شود.",
-  },
-  en: {
-    dir: "ltr",
-    eyebrow: "Staff sign-in",
-    title: "Which panel are you here for?",
-    subtitle: "Each panel is fully independent — sign in with that panel's own account.",
-    health: { name: "Health Admin Panel", desc: "Manage medical products, categories and quote requests" },
-    beauty: { name: "Beauty Admin Panel", desc: "Manage luxury products, categories and quote requests" },
-    enter: "Enter",
-    footer: "Authorized staff only. All activity is logged.",
-  },
-};
+import { useT, usePanelLang } from "@/components/panel/PanelI18n";
+import PanelLangSwitch from "@/components/panel/PanelLangSwitch";
 
 export default function LoginChooser() {
-  const [lang, setLang] = useState("fa");
-  const t = COPY[lang];
+  const t = useT();
+  const { dir } = usePanelLang();
+  const arrow = dir === "rtl" ? "arrowL" : "arrow";
 
   return (
-    <div dir={t.dir} lang={lang} className="min-h-screen bg-canvas text-ink flex flex-col">
-      {/* Language toggle */}
+    <div className="min-h-screen bg-canvas text-ink flex flex-col">
+      {/* Language switch */}
       <div className="container-x pt-6 flex justify-end">
-        <div className="inline-flex rounded-full border border-line bg-surface p-1 text-[12px] font-semibold">
-          <button
-            onClick={() => setLang("fa")}
-            className={`px-3 py-1.5 rounded-full transition-colors ${lang === "fa" ? "bg-ink text-canvas" : "text-ink-muted hover:text-ink"}`}
-          >
-            فارسی
-          </button>
-          <button
-            onClick={() => setLang("en")}
-            className={`px-3 py-1.5 rounded-full transition-colors ${lang === "en" ? "bg-ink text-canvas" : "text-ink-muted hover:text-ink"}`}
-          >
-            English
-          </button>
-        </div>
+        <PanelLangSwitch />
       </div>
 
       <main className="flex-1 grid place-items-center px-4 py-10">
@@ -69,9 +35,9 @@ export default function LoginChooser() {
               </span>
             </span>
             <div>
-              <p className="text-[12px] font-semibold tracking-[0.18em] uppercase text-ink-faint mb-1.5">{t.eyebrow}</p>
-              <h1 className="text-2xl md:text-3xl font-bold font-display text-ink">{t.title}</h1>
-              <p className="text-sm text-ink-muted mt-2 max-w-md mx-auto">{t.subtitle}</p>
+              <p className="text-[12px] font-semibold tracking-[0.18em] uppercase text-ink-faint mb-1.5">{t("ورود کارکنان")}</p>
+              <h1 className="text-2xl md:text-3xl font-bold font-display text-ink">{t("به کدام پنل می‌روید؟")}</h1>
+              <p className="text-sm text-ink-muted mt-2 max-w-md mx-auto">{t("هر پنل کاملاً مستقل است — با حساب کاربری مخصوص همان بخش وارد شوید.")}</p>
             </div>
           </div>
 
@@ -86,11 +52,11 @@ export default function LoginChooser() {
               </span>
               <Brand height={26} />
               <div>
-                <p className="font-semibold text-ink">{t.health.name}</p>
-                <p className="text-[13px] text-ink-muted mt-1 leading-relaxed">{t.health.desc}</p>
+                <p className="font-semibold text-ink">{t("پنل مدیریت Health")}</p>
+                <p className="text-[13px] text-ink-muted mt-1 leading-relaxed">{t("مدیریت محصولات، دسته‌ها و استعلام‌های تجهیزات پزشکی")}</p>
               </div>
               <span className="btn-primary size-md w-full mt-1">
-                {t.enter} <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={15} />
+                {t("ورود")} <Icon name={arrow} size={15} />
               </span>
             </Link>
 
@@ -106,19 +72,19 @@ export default function LoginChooser() {
                 <BeautyWordLockup height={22} />
               </span>
               <div>
-                <p className="font-semibold text-ink">{t.beauty.name}</p>
-                <p className="text-[13px] text-ink-muted mt-1 leading-relaxed">{t.beauty.desc}</p>
+                <p className="font-semibold text-ink">{t("پنل مدیریت Beauty")}</p>
+                <p className="text-[13px] text-ink-muted mt-1 leading-relaxed">{t("مدیریت محصولات، دسته‌ها و استعلام‌های زیبایی لوکس")}</p>
               </div>
               <span className="btn-primary size-md w-full mt-1"
                 style={{ backgroundImage: "linear-gradient(120deg,#1C2951,#C87D4E)" }}>
-                {t.enter} <Icon name={lang === "fa" ? "arrowL" : "arrow"} size={15} />
+                {t("ورود")} <Icon name={arrow} size={15} />
               </span>
             </Link>
           </div>
 
           <div className="flex items-center justify-center gap-2 mt-8 text-[12px] text-ink-faint">
             <Icon name="lock" size={13} />
-            {t.footer}
+            {t("دسترسی فقط برای کارکنان مجاز. تمام فعالیت‌ها ثبت می‌شود.")}
           </div>
         </div>
       </main>

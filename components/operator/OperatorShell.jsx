@@ -7,30 +7,35 @@ import { useTheme } from "next-themes";
 import Icon from "@/components/shared/Icon";
 import { requestLogout } from "@/lib/operator/logoutClient";
 import LogoutAlert from "@/components/operator/LogoutAlert";
+import PanelLangSwitch from "@/components/panel/PanelLangSwitch";
 import { useIdleLogout } from "@/lib/useIdleLogout";
+import { useT } from "@/components/panel/PanelI18n";
+import { tr } from "@/lib/panel/i18n";
 
 const NAV = [
-  { href: "/operator", label: "داشبورد", icon: "dashboard" },
-  { href: "/operator/products", label: "محصولات", icon: "package" },
-  { href: "/operator/categories", label: "دسته‌بندی‌ها", icon: "layers" },
-  { href: "/operator/quotes", label: "استعلام‌ها", icon: "quote" },
-  { href: "/operator/activity", label: "تاریخچه", icon: "clock" },
-  { href: "/operator/settings", label: "تنظیمات", icon: "settings" },
+  { href: "/operator", label: tr("داشبورد"), icon: "dashboard" },
+  { href: "/operator/products", label: tr("محصولات"), icon: "package" },
+  { href: "/operator/categories", label: tr("دسته‌بندی‌ها"), icon: "layers" },
+  { href: "/operator/quotes", label: tr("استعلام‌ها"), icon: "quote" },
+  { href: "/operator/activity", label: tr("تاریخچه"), icon: "clock" },
+  { href: "/operator/settings", label: tr("تنظیمات"), icon: "settings" },
 ];
 
 function Brandblock() {
+  const t = useT();
   return (
     <Link href="/operator" className="flex items-center gap-2.5 px-1">
       <span className="grid place-items-center w-9 h-9 rounded-xl bg-brand-gradient text-white font-extrabold">M</span>
       <span className="leading-tight">
         <span className="block font-display font-bold text-ink">Medoria</span>
-        <span className="block text-[10px] text-ink-faint tracking-wide">پنل اپراتور</span>
+        <span className="block text-[10px] text-ink-faint tracking-wide">{t("پنل اپراتور")}</span>
       </span>
     </Link>
   );
 }
 
 export default function OperatorShell({ children }) {
+  const t = useT();
   const pathname = usePathname();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
@@ -67,7 +72,7 @@ export default function OperatorShell({ children }) {
             }`}
           >
             <Icon name={item.icon} size={18} />
-            {item.label}
+            {t(item.label)}
           </Link>
         ))}
       </nav>
@@ -78,38 +83,37 @@ export default function OperatorShell({ children }) {
     <div className="lg:grid lg:grid-cols-[264px_1fr] min-h-screen">
       <LogoutAlert message={logoutError} busy={loggingOut} onRetry={logout} onClose={() => setLogoutError("")} />
       {/* Desktop sidebar (right side in RTL) */}
-      <aside className="hidden lg:flex flex-col gap-6 border-l border-line bg-surface p-4 sticky top-0 h-screen">
+      <aside className="hidden lg:flex flex-col gap-6 border-e border-line bg-surface p-4 sticky top-0 h-screen">
         <div className="pt-2"><Brandblock /></div>
         <NavLinks />
         <div className="mt-auto flex flex-col gap-1 border-t border-line pt-3">
+          <div className="px-3.5 pb-2"><PanelLangSwitch /></div>
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="flex items-center gap-3 px-3.5 h-11 rounded-xl text-sm font-medium text-ink-muted hover:bg-line-soft hover:text-ink transition-colors"
           >
             <Icon name={theme === "dark" ? "sun" : "moon"} size={18} />
-            {theme === "dark" ? "حالت روشن" : "حالت تیره"}
+            {theme === "dark" ? t("حالت روشن") : t("حالت تیره")}
           </button>
           <button
             onClick={logout}
             className="flex items-center gap-3 px-3.5 h-11 rounded-xl text-sm font-medium text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors"
           >
-            <Icon name="logout" size={18} />
-            خروج
-          </button>
+            <Icon name="logout" size={18} />{t("خروج")}</button>
         </div>
       </aside>
 
       {/* Main column */}
       <div className="flex flex-col min-h-screen">
         <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between gap-3 h-14 px-4 border-b border-line bg-surface/90 backdrop-blur-xl">
-          <button onClick={() => setOpen(true)} className="grid place-items-center w-10 h-10 rounded-xl hover:bg-line-soft text-ink" aria-label="منو">
+          <button onClick={() => setOpen(true)} className="grid place-items-center w-10 h-10 rounded-xl hover:bg-line-soft text-ink" aria-label={t("منو")}>
             <Icon name="menu" size={20} />
           </button>
           <Brandblock />
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="grid place-items-center w-10 h-10 rounded-xl hover:bg-line-soft text-ink-muted"
-            aria-label="تغییر تم"
+            aria-label={t("تغییر تم")}
           >
             <Icon name={theme === "dark" ? "sun" : "moon"} size={18} />
           </button>
@@ -124,28 +128,27 @@ export default function OperatorShell({ children }) {
           <div className="absolute inset-0 bg-navy/40 backdrop-blur-sm" />
           <aside
             dir="rtl"
-            className="absolute top-0 bottom-0 right-0 w-72 bg-surface p-4 flex flex-col gap-6 shadow-card animate-fade-in"
+            className="absolute top-0 bottom-0 start-0 w-72 bg-surface p-4 flex flex-col gap-6 shadow-card animate-fade-in"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pt-1">
               <Brandblock />
-              <button onClick={() => setOpen(false)} className="grid place-items-center w-9 h-9 rounded-lg hover:bg-line-soft text-ink-muted" aria-label="بستن">
+              <button onClick={() => setOpen(false)} className="grid place-items-center w-9 h-9 rounded-lg hover:bg-line-soft text-ink-muted" aria-label={t("بستن")}>
                 <Icon name="close" size={18} />
               </button>
             </div>
             <NavLinks onNavigate={() => setOpen(false)} />
             <div className="mt-auto flex flex-col gap-1 border-t border-line pt-3">
+          <div className="px-3.5 pb-2"><PanelLangSwitch /></div>
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 className="flex items-center gap-3 px-3.5 h-11 rounded-xl text-sm font-medium text-ink-muted hover:bg-line-soft hover:text-ink"
               >
                 <Icon name={theme === "dark" ? "sun" : "moon"} size={18} />
-                {theme === "dark" ? "حالت روشن" : "حالت تیره"}
+                {theme === "dark" ? t("حالت روشن") : t("حالت تیره")}
               </button>
               <button onClick={logout} className="flex items-center gap-3 px-3.5 h-11 rounded-xl text-sm font-medium text-ink-muted hover:bg-warn/10 hover:text-warn">
-                <Icon name="logout" size={18} />
-                خروج
-              </button>
+                <Icon name="logout" size={18} />{t("خروج")}</button>
             </div>
           </aside>
         </div>

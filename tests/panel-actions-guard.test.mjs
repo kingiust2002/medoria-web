@@ -23,7 +23,7 @@ const isActionFile = (src) => /^(?:\s*\/\/[^\n]*\n|\s*\/\*[\s\S]*?\*\/)*\s*["']u
 const actionFiles = ["app", "lib", "components"].flatMap((d) => walk(d)).filter((f) => isActionFile(read(f)));
 
 // Public by design: the visitor forms and the chat. Each has its own abuse protection, pinned elsewhere.
-const PUBLIC = new Set(["lib/actions/captcha.js", "lib/actions/chatPass.js", "lib/actions/quote.js", "lib/beauty/actions/quote.js"]);
+const PUBLIC = new Set(["lib/actions/captcha.js", "lib/actions/chatPass.js", "lib/actions/quote.js", "lib/beauty/actions/quote.js", "lib/panel/actions.js"]);   // lib/panel/actions.js only stores the interface language
 const operatorFiles = actionFiles.filter((f) => !PUBLIC.has(f));
 
 // The session checks an operator action may open with. `authed()` and the Guarded helpers call the panel's getSession.
