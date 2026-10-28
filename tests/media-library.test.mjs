@@ -39,7 +39,8 @@ test("pathOfRef / isAllowedFile: paths and public URLs normalise; only the house
   assert.equal(isAllowedFile("health", "beauty-product-images", "products/a.webp"), false, "another house's bucket");
   assert.equal(isAllowedFile("beauty", "beauty-product-images", "categories/x.png"), true);
   assert.equal(isAllowedFile("beauty", "beauty-brand-logos", "logos/x.png"), true);
-  assert.equal(isAllowedFile("health", "product-images", "categories/x.png"), false, "a folder Health does not use");
+  assert.equal(isAllowedFile("health", "product-images", "categories/x.png"), true, "Health category pictures (N7)");
+  assert.equal(isAllowedFile("health", "product-images", "logos/x.png"), false, "a folder Health does not use");
   for (const bad of ["products/../secrets", "../products/a", "products/a/b.webp", "products/", "products", "", null, "products\\a.webp"]) assert.equal(isAllowedFile("health", "product-images", bad), false, String(bad));
 });
 
