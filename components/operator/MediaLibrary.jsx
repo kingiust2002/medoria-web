@@ -9,7 +9,7 @@ import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { useCan } from "@/components/panel/Capabilities";
 import { tr } from "@/lib/panel/i18n";
 
-const KIND = { product: tr("محصول"), category: tr("دسته"), brand: tr("برند") };
+const KIND = { product: tr("محصول"), category: tr("دسته"), brand: tr("برند"), request: tr("درخواست تغییر در انتظار") };
 const size = (n) => (n == null ? "" : n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
 
 export default function MediaLibrary({ data, actions }) {
