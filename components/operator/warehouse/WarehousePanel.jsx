@@ -8,6 +8,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
 import { PageHeader, Field, Input, Select, Textarea, Badge, EmptyState, Spinner } from "@/components/operator/ui";
+import CountsTab from "@/components/operator/warehouse/CountsTab";
+import CsvButton from "@/components/operator/warehouse/CsvButton";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { useCan, useMode } from "@/components/panel/Capabilities";
 import { tr } from "@/lib/panel/i18n";
@@ -16,6 +18,7 @@ const TABS = [
   { id: "stock", label: tr("موجودی") },
   { id: "movements", label: tr("حرکت‌ها") },
   { id: "reservations", label: tr("رزروها") },
+  { id: "counts", label: tr("شمارش") },
   { id: "locations", label: tr("انبارها") },
 ];
 const KIND_LABEL = { receive: tr("ورود"), issue: tr("خروج"), transfer: tr("انتقال"), adjust: tr("اصلاح"), reversal: tr("برگشت") };
@@ -152,6 +155,37 @@ function ReverseModal({ movement, actions, onClose, onDone }) {
   );
 }
 
+// the minimum quantity of one product (all warehouses together); empty removes it
+function LevelModal({ item, actions, onClose, onDone }) {
+  const t = useT();
+  const [min, setMin] = useState(item.minLevel == null ? "" : String(item.minLevel));
+  const [err, setErr] = useState("");
+  const [pending, start] = useTransition();
+  function submit(e) {
+    e.preventDefault();
+    setErr("");
+    start(async () => {
+      const res = await actions.setMinLevel({ productId: item.productId, minLevel: min });
+      if (res.ok) onDone(null); else setErr(t(res.error, res.params));
+    });
+  }
+  return (
+    <Modal title={t("حداقل موجودی کالا")} onClose={onClose}>
+      <form onSubmit={submit} data-testid="wh-form-level">
+        <Err>{err}</Err>
+        <p className="text-sm text-ink-soft mb-4 break-words"><span dir="ltr">{item.sku}</span>{item.name && ` · ${item.name}`}</p>
+        <Field label={t("حداقل موجودی")} hint={t("کمتر از این مقدار، کالا «کم‌موجودی» نشان داده می‌شود. خالی = بدون حداقل.")}>
+          <Input value={min} onChange={(e) => setMin(e.target.value)} inputMode="decimal" dir="ltr" placeholder="0" aria-label={t("حداقل موجودی")} />
+        </Field>
+        <div className="flex gap-2 mt-5">
+          <button type="submit" disabled={pending} className="btn-primary size-md flex-1 disabled:opacity-60">{pending ? <Spinner /> : <Icon name="save" size={17} />}{t("ذخیره")}</button>
+          <button type="button" onClick={onClose} className="btn-ghost size-md">{t("انصراف")}</button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 function LocationModal({ location, actions, onClose, onDone }) {
   const t = useT();
   const [f, setF] = useState({ code: location?.code || "", name: location?.name || "", note: location?.note || "", is_active: location ? location.is_active : true, sort_order: location?.sort_order ?? 0 });
@@ -195,11 +229,13 @@ export default function WarehousePanel({ data, actions, base }) {
   const t = useT();
   const { date: fmtDate } = usePanelLang();
   const router = useRouter();
-  const [modal, setModal] = useState(null);       // { type: "move", kind, item } | { type: "reverse", movement } | { type: "location", location }
+  const [modal, setModal] = useState(null);       // { type: "move", kind, item } | { type: "reverse", movement } | { type: "location", location } | { type: "level", item }
   const [msg, setMsg] = useState(null);
   const [pending, start] = useTransition();
   const canOp = { receive: useCan("inventory.receive"), issue: useCan("inventory.issue"), transfer: useCan("inventory.transfer"), adjust: useCan("inventory.adjust"), reserve: useCan("inventory.reserve") };
   const canLocations = useCan("inventory.locations");
+  const canLevel = useCan("inventory.level");
+  const canExport = useCan("inventory.export");
 
   const locations = data?.locations;
   const locs = useMemo(() => locations || [], [locations]);
@@ -253,7 +289,12 @@ export default function WarehousePanel({ data, actions, base }) {
             <option value="">{t("همهٔ انبارها")}</option>
             {locs.map((l) => <option key={l.id} value={String(l.id)}>{l.code}</option>)}
           </Select>
+          {data.tab === "stock" && (
+            <label className="flex items-center gap-2 text-sm text-ink-soft"><input type="checkbox" name="low" value="1" defaultChecked={data.lowOnly} className="w-4 h-4 accent-brand-violet" data-testid="wh-low-only" />{t("فقط کم‌موجودی")}</label>
+          )}
           <button type="submit" className="btn-primary size-md"><Icon name="search" size={16} /> {t("جستجو")}</button>
+          {canExport && data.tab === "stock" && <CsvButton testId="wh-stock-csv" run={() => actions.exportStockCsv({ locationId: data.locationId })} />}
+          {canExport && data.tab === "movements" && <CsvButton testId="wh-movements-csv" run={() => actions.exportMovementsCsv({})} />}
         </form>
       )}
 
@@ -270,10 +311,14 @@ export default function WarehousePanel({ data, actions, base }) {
                     {it.places.map((p) => <span key={p.locationId} dir="ltr">{code(p.locationId)}: {fmt(p.quantity)}{p.reserved ? ` (${fmt(p.reserved)} R)` : ""}</span>)}
                   </p>
                 </div>
-                <div className="text-sm tabular text-ink shrink-0" data-testid="wh-total"><b>{fmt(it.total)}</b> <span className="text-ink-faint text-xs">{t("موجود")}{it.reserved ? ` · ${fmt(it.reserved)} ${t("رزرو")}` : ""}</span></div>
+                <div className="text-sm tabular text-ink shrink-0 flex items-center gap-2" data-testid="wh-total">
+                  {it.low && <Badge tone="warn" data-testid="wh-low">{t("کم‌موجودی")}</Badge>}
+                  <span><b>{fmt(it.total)}</b> <span className="text-ink-faint text-xs">{t("موجود")}{it.reserved ? ` · ${fmt(it.reserved)} ${t("رزرو")}` : ""}{it.minLevel != null ? ` · ${t("حداقل")} ${fmt(it.minLevel)}` : ""}</span></span>
+                </div>
                 <div className="flex flex-wrap gap-1 shrink-0">
                   {KINDS.map((k) => <button key={k} type="button" className="btn-ghost size-sm" onClick={() => open("move", { kind: k, item: it })}>{t(KIND_LABEL[k])}</button>)}
                   {canOp.reserve && <button type="button" className="btn-ghost size-sm" onClick={() => open("move", { kind: "reserve", item: it })}>{t("رزرو")}</button>}
+                  {canLevel && !data.levelsUnavailable && <button type="button" className="btn-ghost size-sm" onClick={() => open("level", { item: it })} data-testid="wh-level-open">{t("حداقل")}</button>}
                 </div>
               </div>
             ))}
@@ -323,6 +368,8 @@ export default function WarehousePanel({ data, actions, base }) {
         )
       )}
 
+      {data.tab === "counts" && <CountsTab data={data} actions={actions} base={base} code={code} />}
+
       {data.tab === "locations" && (
         <>
           {canLocations && <div className="mb-3"><button type="button" className="btn-primary size-md" onClick={() => open("location", { location: null })} data-testid="wh-new-location"><Icon name="plus" size={17} /> {t("ساخت انبار")}</button></div>}
@@ -345,6 +392,7 @@ export default function WarehousePanel({ data, actions, base }) {
 
       {modal?.type === "move" && <MovementModal kind={modal.kind} item={modal.item} locations={locs} actions={actions} onClose={() => setModal(null)} onDone={done} />}
       {modal?.type === "reverse" && <ReverseModal movement={modal.movement} actions={actions} onClose={() => setModal(null)} onDone={done} />}
+      {modal?.type === "level" && <LevelModal item={modal.item} actions={actions} onClose={() => setModal(null)} onDone={done} />}
       {modal?.type === "location" && <LocationModal location={modal.location} actions={actions} onClose={() => setModal(null)} onDone={done} />}
     </>
   );

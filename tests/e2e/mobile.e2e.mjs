@@ -147,16 +147,25 @@ for (const width of WIDTHS) {
     await post("products", [{ id: 91, slug: "wh-long", sku: long, name_en: "W".repeat(80), name_fa: "W".repeat(80), price: 5, in_stock: true, is_active: true }]);
     await post("health_stock_balances", [{ location_id: 1, product_id: 91, quantity: 12, reserved: 2 }, { location_id: 2, product_id: 91, quantity: 3, reserved: 0 }]);
     await post("health_stock_movements", [{ id: 1, idempotency_key: "k".repeat(40), leg: 0, group_id: "g1", kind: "receive", product_id: 91, sku: long, location_id: 1, delta: 12, balance_after: 12, reason: "r".repeat(150), reference: "ref-" + "9".repeat(60), actor_label: "u".repeat(40), created_at: "2026-10-01T10:00:00.000Z" }]);
+    await post("health_stock_levels", [{ product_id: 91, min_level: 99 }]);
+    await post("health_stock_counts", [{ id: 1, location_id: 1, status: "open", note: "c".repeat(120), created_label: "u".repeat(40), created_at: "2026-10-01T10:00:00.000Z" }]);
+    await post("health_stock_count_lines", [{ count_id: 1, product_id: 91, sku: long, expected: 12, counted: 10 }]);
     const { ctx, page } = await phone(width);
     await login(page, "health");
-    for (const tab of ["stock", "movements", "reservations", "locations"]) {
+    for (const tab of ["stock", "movements", "reservations", "counts", "locations"]) {
       await page.goto(`${BASE}/operator/warehouse?tab=${tab}`, { waitUntil: "networkidle" });
       await assertFits(page, `warehouse ${tab} @ ${width}`);
     }
+    await page.goto(`${BASE}/operator/warehouse?tab=counts&count=1`, { waitUntil: "networkidle" });
+    await assertFits(page, `warehouse count @ ${width}`);
     await page.goto(`${BASE}/operator/warehouse?tab=stock`, { waitUntil: "networkidle" });
     await page.getByTestId("wh-open-transfer").click();
     await assertInside(page, page.getByRole("dialog"), `warehouse dialog @ ${width}`);
     await assertFits(page, `warehouse dialog open @ ${width}`);
+    await page.getByRole("dialog").getByRole("button", { name: "انصراف" }).click();
+    await page.getByTestId("wh-level-open").first().click();
+    await assertInside(page, page.getByRole("dialog"), `level dialog @ ${width}`);
+    await assertFits(page, `level dialog open @ ${width}`);
     await ctx.close();
   });
 }

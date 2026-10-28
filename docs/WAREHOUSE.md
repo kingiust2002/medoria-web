@@ -68,16 +68,44 @@ mobile e2e runs it at 320–1366 px with long unbroken SKUs and names). Tested e
 refusal changes nothing, reservations, no leak into public responses, anon cannot call the functions) and
 `tests/e2e/accounts-permissions.e2e.mjs`.
 
-## Not built yet (S4c and later)
+## Stock counts, minimum levels and reports (S4c) — migration 41
 
-* Lots, expiry dates, quarantine, low-stock alerts, stock counts and discrepancies, reports and CSV.
+**Migration 41** (`migrations/41_warehouse_counts.sql`, needs migration 36): per house `*_stock_levels` (a minimum per product),
+`*_stock_counts` (one physical count of ONE warehouse: `open → closed | cancelled`, decided once) and `*_stock_count_lines` (per product:
+`expected` = what the system held when the count started, `counted`). Private like the rest (RLS on, no policy, nothing for anon /
+authenticated). Database guards: **one open count per warehouse** (partial unique index); a closed or cancelled count and its lines are
+frozen (`stock:count_closed`) — also against a screen that was open before it was closed; `expected` never changes; counts are never
+deleted. Proved on PostgreSQL 16: `tests/warehouse-counts-migration.test.mjs`.
+
+* **Count tab** ("شمارش"): *New count* snapshots a warehouse (every product with a balance row there). The person types the counted
+  quantity per line (an empty cell = not counted = left alone; **0 is a count**); a product that is on the shelf but not on the list is
+  added by SKU (expected 0). The difference is shown while typing. *Save* stores the entries; *Cancel* ends the count without posting.
+* **Closing** posts one `adjust` movement per line whose counted quantity differs from `expected`, with the key `count-<count>-<product>`
+  (so closing twice, a retry after a half failure, or an approval executed twice posts each difference once). The difference is
+  `counted − expected`, applied to the **current** balance: stock that moved after the snapshot is preserved. If one difference cannot be
+  posted (for example the stock is now reserved), the count **stays open**, the screen names the product, and closing again is safe.
+  Closing is the operation `inventory.count_close`: direct, or — for a person whose policy says "approve" (warehouse manager by default) —
+  a change request carrying the exact differences; the reviewer's approval posts them as the requester, and an approval whose count
+  changed after it was filed fails as *stale* and posts nothing (`makeCountExecutors`).
+* **Minimum levels** (operation `inventory.level`, right `inventory.locations`): a minimum quantity per product across the whole house.
+  Below it the stock row shows a *low stock* badge and the stock tab can filter to *low stock only*. Empty removes the level; 0 never flags.
+  Without migration 41 the stock tab still works (no minimums, no button).
+* **Reports** (right `inventory.export`; each export is written to the activity log as `stock.export`): stock CSV (SKU, name, warehouse,
+  quantity, reserved, available, minimum, low), movements CSV, one count's CSV (SKU, expected, counted, difference). Every cell is
+  formula-safe (`toCsv`); at most 5000 rows, with a note when cut.
+* Code: `lib/warehouse/countsCore.js` (pure), `countsStore.js`, `countsActions.js`; screen `components/operator/warehouse/CountsTab.jsx`.
+  Tests: `tests/warehouse-counts.test.mjs`, `tests/e2e/warehouse-counts.e2e.mjs` (both houses).
+
+## Not built yet
+
+* Lots, expiry dates, quarantine, and e-mail / Telegram low-stock alerts (the badge and the filter exist).
 * Blocking the permanent deletion of a product that still has stock (today a ledger row simply outlives the product).
 * Reversal through the approval queue; reservations linked to customer requests.
 
 ## Release (when the screens exist)
 
 1. Fresh production backup; local + R2 chain must PASS.
-2. Apply migrations 30, 34, 35 (if not yet) and **36** (one transaction, idempotent, self-checking).
+2. Apply migrations 30, 34, 35 (if not yet), **36**, and — for counts and minimum levels — **41** (one transaction each, idempotent, self-checking).
 3. Deploy; `docker compose ps` and a live curl.
 4. Post-checks: `npm run check:rls` (now also proves anon cannot read the eight `*_stock_*` tables), the public pages unchanged.
 5. Rollback: the previous image ignores the new tables; the migration's own rollback note is at its top (only after the code no longer uses it).
