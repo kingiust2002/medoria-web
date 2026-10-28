@@ -11,10 +11,41 @@ import {
 import { hashPassword } from "../lib/operator/passwords.js";
 import { encryptSecret, decryptSecret } from "../lib/operator/userSecrets.js";
 import { randomBytes } from "node:crypto";
+import { createServer } from "node:http";
+import { createClient } from "@supabase/supabase-js";
 
 const KEY = randomBytes(32);
 const PW = "Correct-horse-42";
 const HASH = hashPassword(PW);
+
+test("R4: the real Supabase client sends both full-list CAS predicates in the same recovery-code PATCH", async () => {
+  const requests = [];
+  const userId = "00000000-0000-4000-8000-000000000001";
+  const server = createServer((req, res) => {
+    let body = "";
+    req.on("data", (chunk) => { body += chunk; });
+    req.on("end", () => {
+      requests.push({ method: req.method, url: new URL(req.url, "http://localhost"), body: JSON.parse(body) });
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify([{ id: userId }]));
+    });
+  });
+  await new Promise((resolve, reject) => { server.once("error", reject); server.listen(0, "127.0.0.1", resolve); });
+  try {
+    const client = createClient(`http://127.0.0.1:${server.address().port}`, "review-local-dummy-key", { auth: { persistSession: false, autoRefreshToken: false } });
+    const result = await consumeRecoveryCode(client, { userId, hash: "hash-A", hashes: ["hash-A", "hash-B"] });
+    assert.equal(result.ok, true);
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].method, "PATCH");
+    assert.equal(requests[0].url.pathname, "/rest/v1/operator_users");
+    assert.equal(requests[0].url.searchParams.get("id"), `eq.${userId}`);
+    assert.deepEqual(requests[0].url.searchParams.getAll("recovery_hashes"), ["cs.{hash-A,hash-B}", "cd.{hash-A,hash-B}"]);
+    assert.deepEqual(requests[0].body, { recovery_hashes: ["hash-B"] });
+  } finally {
+    server.closeAllConnections();
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
 
 function row(over = {}) {
   return {

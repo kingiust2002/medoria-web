@@ -1,6 +1,8 @@
 # Response to the independent review of 2026-10-28 (`PANEL_INDEPENDENT_REVIEW_2026-10-28.md`)
 
-Status: **all eight blocking findings are fixed on their owning branches, merged forward through the whole stack (#209 → #224), and covered by permanent
+> Later checkpoint: the independent re-review accepted and merged #208–#224. See `PANEL_REVIEW_ACCEPTANCE_2026-10-28.md`, including supplemental R8 microsecond precision and test-runner findings. Production platform activation remains pending. The original response below is retained as the author's pre-acceptance checkpoint.
+
+Status at the author's response: **all eight blocking findings are fixed on their owning branches, merged forward through the whole stack (#209 → #224), and covered by permanent
 tests.** This is not a certificate: the stack is **not merged, not deployed, and no migration was applied**. #208–#224 stay on hold until the corrected
 stack is reviewed again. The review's own probe file (`docs/reviews/panel-platform-regressions-20261028.mjs`) is untouched; it now passes 8/8 on the
 stack tip — see "How much each fix is proved" for what that does and does not show.

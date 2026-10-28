@@ -1,8 +1,7 @@
 # Panel platform — author's work log
 
 What was actually done, in order, so the work does not depend on a chat's memory. Status words are literal: **built** (code + tests exist), **not built**
-(listed so nobody assumes it), **owner action** (only the owner can do it). Nothing here has been merged (except #204, #206, #207 by the owner's review
-of 2026-10-28), deployed, or applied to a database by the author. Companion documents: `PANEL_PLATFORM_PLAN.md` (stages and the PR stack),
+(listed so nobody assumes it), **owner action** (only the owner can do it). The author did not deploy or apply production migrations. The independent reviewer subsequently merged #208–#224 on 2026-10-28; the earlier safe subset was owner-reported deployed at `5ac0592`. The new platform has not been reported deployed. See `PANEL_REVIEW_ACCEPTANCE_2026-10-28.md`. Companion documents: `PANEL_PLATFORM_PLAN.md` (stages and the PR stack),
 `PANEL_RELEASE_RUNBOOK.md` (how to release), `PANEL_INDEPENDENT_REVIEW_2026-10-28.md` (the owner's independent review),
 `PANEL_REVIEW_RESPONSE_2026-10-28.md` (how its eight findings were fixed and how well each fix is proved).
 
@@ -67,8 +66,12 @@ expiry, quarantine and low-stock alerts to e-mail/Telegram; saved table preferen
 personal settings and shortcuts; a verified backup/monitoring/restore-drill status; native review of Tajik/English texts; chatbot and cosmetic changes are
 explicitly out of the current stage.
 
+## Phase 5 — independent re-review and merges (2026-10-28)
+
+The reviewer verified the corrected owning branches, real PostgreSQL CI evidence, eight old probes and the actual SDK's recovery-code PATCH filters. They found an additional R8 microsecond-precision case, added two permanent tests and pushed fix `050da95` on #211 before merging it. Updated #211 CI passed 430 unit/150 browser tests. All #208–#224 were merged, pinned to reviewed heads and explicitly retargeted to main, through application checkpoint `bd9c174`.
+
+The local full browser attempt exposed a stale-server test-harness problem: npx exited but the replacement hit EADDRINUSE, while health from an old server was accepted. The reviewer prepared direct owned-child startup/shutdown and readiness checks; this test-infrastructure follow-up needs its own successful checks before merge. Failed or incomplete local runs are not reported as passing. Proof levels and the in-progress follow-up checks are recorded in the acceptance review.
+
 ## Release state
 
-Nothing of the platform is active on any server: migrations 34–42 are unapplied, `OPERATOR_USERS` is off, no cron line, no new secret. The only reviewed,
-mergeable subset is already on `main` (#204, #206, #207). The platform rollout is a **separate, staged decision** after the corrected stack is reviewed;
-the order (backup → migrations in order → env → deploy → live checks → rollback) is in `PANEL_RELEASE_RUNBOOK.md`.
+Only the safe subset is owner-reported live at `5ac0592` (see operations §23.12). Platform code is merged; migrations 34–42, personal-account activation, new secrets and cron are NOT reported applied. The owner prefers completing agreed code work before further server work. The not-built list above remains open; no production upgrade follows automatically from these merges. Use corrected main and `PANEL_RELEASE_RUNBOOK.md` for a separately planned rollout.
