@@ -287,6 +287,7 @@ test("the reminder carries counts and the panel link only", () => {
   assert.match(beauty, /^Medoria Beauty: reminder/);
   assert.ok(!/delivered/.test(beauty));
   assert.match(beauty, /\/beauty\/operator\/quotes$/);
+  assert.match(formatReminderNotice({ kind: "health", summary: { ...summary, followUpsDue: 3 }, siteUrl: "https://medoriaco.com" }), /\n3 follow-up\(s\) due today or overdue\nOpen:/);
 });
 
 // ── reminder run ────────────────────────────────────────────────────────────
@@ -299,7 +300,7 @@ const ENV = {
 };
 
 // A db with one list per table; records the query it was asked.
-function listDb(tables) {
+function listDb(tables, { followUpError = null } = {}) {
   const queries = [];
   return {
     queries,
@@ -310,7 +311,13 @@ function listDb(tables) {
       const chain = {
         select(cols) { q.cols = cols; return chain; },
         gte(col, v) { q.gte = [col, v]; return chain; },
-        limit(n) { q.limit = n; return Promise.resolve(res instanceof Error ? { data: null, error: { code: "42703" } } : { data: res, error: null }); },
+        not() { return chain; },
+        lte(col, v) { q.lte = [col, v]; return chain; },
+        limit(n) {
+          q.limit = n;
+          if (followUpError && /follow_up_at/.test(q.cols) && !/created_at/.test(q.cols)) return Promise.resolve({ data: null, error: followUpError });
+          return Promise.resolve(res instanceof Error ? { data: null, error: { code: "42703" } } : { data: res, error: null });
+        },
       };
       return chain;
     },
@@ -343,6 +350,48 @@ test("the reminder run tells each house about its own overdue requests, with cou
   assert.equal(db.queries[0].cols, "status, created_at, first_response_at, notify_status");
   assert.equal(db.queries[0].gte[0], "created_at");
   assert.ok(db.queries[0].limit > 0);
+});
+
+test("the reminder counts follow-ups due today or overdue — of requests of any age, never finished ones", async () => {
+  const DAY = new Date(NOW + 5 * 3_600_000).toISOString().slice(0, 10);            // the team's day (UTC+5)
+  const at = (offsetDays) => new Date(Date.parse(`${DAY}T12:00:00.000Z`) + offsetDays * 86_400_000).toISOString();
+  const db = listDb({
+    quote_requests: [
+      { status: "quoted", created_at: ago(24 * 90), follow_up_at: at(0), phone: "+992900000009" },         // due today, a 90-day-old request
+      { status: "in_progress", created_at: ago(3), follow_up_at: at(-4) },                                    // overdue
+      { status: "closed", created_at: ago(3), follow_up_at: at(-4) },                                         // finished: never counted
+      { status: "quoted", created_at: ago(3), follow_up_at: at(3) },                                          // later
+    ],
+    beauty_quote_requests: [],
+  });
+  const { sent, fetchImpl } = recordingFetch();
+  const report = await runQuoteReminders({ db, env: ENV, fetchImpl, now: NOW });
+  assert.equal(report.ok, true);
+  assert.equal(sent.length, 1, "only Health has something to say");
+  assert.match(sent[0].body.text, /^Medoria Health: reminder\n2 follow-up\(s\) due today or overdue\nOpen:/);
+  assert.ok(!/\+992/.test(JSON.stringify(sent)), "counts only");
+  const fq = db.queries.find((q) => q.table === "quote_requests" && /follow_up_at/.test(q.cols) && !/created_at/.test(q.cols));
+  assert.equal(fq.cols, "status, follow_up_at");
+  assert.equal(fq.lte[0], "follow_up_at");
+  assert.equal(report.houses[0].followUpsDue, 2);
+});
+
+test("without migration 37 the follow-up count is simply zero; any other failure of that query fails the run but the rest is still sent", async () => {
+  const rows = { quote_requests: [{ status: "new", created_at: ago(40) }], beauty_quote_requests: [] };
+  const a = recordingFetch();
+  const missing = await runQuoteReminders({ db: listDb(rows, { followUpError: { code: "42703" } }), env: ENV, fetchImpl: a.fetchImpl, now: NOW });
+  assert.equal(missing.ok, true);
+  assert.equal(a.sent.length, 1);
+  assert.ok(!/follow-up/.test(a.sent[0].body.text));
+  const b = recordingFetch();
+  const broken = await runQuoteReminders({ db: listDb(rows, { followUpError: { code: "57014" } }), env: ENV, fetchImpl: b.fetchImpl, now: NOW });
+  assert.equal(broken.ok, false);
+  assert.equal(broken.houses[0].followUpError, "57014");
+  assert.equal(b.sent.length, 1, "the unanswered-request reminder is not held back");
+  const c = recordingFetch();
+  const quiet = await runQuoteReminders({ db: listDb({ quote_requests: [], beauty_quote_requests: [] }, { followUpError: { code: "57014" } }), env: ENV, fetchImpl: c.fetchImpl, now: NOW });
+  assert.equal(quiet.ok, false, "an unreadable follow-up list must not look like 'nothing to report'");
+  assert.ok(quiet.houses.every((h) => !h.nothingToReport));
 });
 
 test("nothing to report means no message", async () => {

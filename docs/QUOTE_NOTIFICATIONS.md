@@ -193,5 +193,10 @@ or two people.
   hours, unanswered > 24 h, follow-ups today / overdue. Needs `reports.view`; no customer text is read. **CSV** (with customers'
   contact data, every cell safe against spreadsheet formulas) needs `quotes.export`; each download is logged (`quotes.exported`, row
   count only). `quotes.export` was removed from the quote manager's default *approval* list: a file has nothing to approve afterwards.
-* **Not covered yet**: the daily Telegram reminder does not count follow-ups; no "my requests" shortcut beyond the assignee filter.
+* **Daily reminder**: besides the unanswered and the undelivered requests, the reminder now says how many follow-ups are **due today or overdue** ("N follow-up(s)
+  due today or overdue"; counts only, no customer data). They are counted by their own query — promises made about requests of any age, not only the last 30
+  days — with the panel's rule (finished requests never count). Without migration 37 the number is simply zero; any other failure of that query makes the run
+  answer 502 (the cron's failure ping) with `followUpError` in the answer, but the rest of the reminder is still sent, and an unreadable list is never reported
+  as "nothing to report". Tested in `tests/quote-management.test.mjs`.
+* **Not covered yet**: no "my requests" shortcut beyond the assignee filter.
 * Release: migration 37 needs 32 and 34. Without it the panel works; saving a follow-up answers "apply migration 37".
