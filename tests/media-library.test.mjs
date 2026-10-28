@@ -57,9 +57,63 @@ test("the library lists the house's files with where each is used, newest first"
   assert.equal((await listMedia(db, "health")).error, MEDIA_MESSAGES.unavailable, "a failing usage read is not 'everything is unused'");
 });
 
-test("a table or column the house does not have is skipped, a real failure is not", async () => {
-  const db = setup(FILES); db.fail = (table) => (table === "categories" ? { code: "42P01", message: "x" } : null);
-  assert.equal((await usageMap(db, "health")).ok, true);
+test("usage fails CLOSED: any unreadable table, unknown column, thrown error or unreadable proposal list means 'cannot say', and nothing is removed", async () => {
+  for (const code of ["42P01", "42703", "PGRST204", "PGRST205", "57014"]) {
+    const db = setup(FILES); db.fail = (table) => (table === "categories" ? { code, message: "x" } : null);
+    assert.equal((await usageMap(db, "health")).ok, false, `error ${code} on categories must not be read as 'unused'`);
+    assert.equal((await listMedia(db, "health")).error, MEDIA_MESSAGES.unavailable);
+    assert.equal((await deleteMedia(db, "health", { bucket: "product-images", path: "products/unused.webp" })).error, MEDIA_MESSAGES.unavailable);
+    assert.deepEqual(db.removed, []);
+  }
+  const throwing = setup(FILES); throwing.from = () => { throw new Error("boom"); };
+  assert.equal((await usageMap(throwing, "health")).ok, false);
+  // the list of pending proposals unreadable (not merely absent) → cannot say; absent (migration 35 not applied) → there can be none
+  const bad = setup(FILES, { operator_change_requests: [] }); bad.fail = (table) => (table === "operator_change_requests" ? { code: "57014", message: "timeout" } : null);
+  assert.equal((await usageMap(bad, "health")).ok, false);
+  assert.equal((await usageMap(setup(FILES), "health")).ok, true, "no operator_change_requests table at all");
+});
+
+test("R6: a Beauty brand logo in use is never removed — the real schema has `name` (not name_en / name_fa) and a wrong column fails closed", async () => {
+  const LOGO = "logos/official.png";
+  const files = [{ bucket: "beauty-brand-logos", path: LOGO, at: "2026-10-01T00:00:00Z" }, { bucket: "beauty-brand-logos", path: "logos/orphan.png", at: "2026-10-01T00:00:00Z" }];
+  const schema = { beauty_products: ["id", "sku", "name_en", "name_fa", "image_url", "gallery_urls"], beauty_categories: ["id", "slug", "name_en", "name_fa", "image_url"], beauty_brands: ["id", "slug", "name", "logo_url"], operator_change_requests: ["id", "house", "status", "entity", "subject", "proposed"] };
+  const seed = { beauty_products: [], beauty_categories: [], beauty_brands: [{ id: 9, slug: "official", name: "Official Brand", logo_url: `https://x.supabase.co/storage/v1/object/public/beauty-brand-logos/${LOGO}` }], operator_change_requests: [] };
+  const mk = () => { const d = setup(files, seed); const g = createMemoryAdmin(seed, { schema }); g.storage = d.storage; g.removed = d.removed; return g; };
+  const db = mk();
+  const used = await usageMap(db, "beauty");
+  assert.equal(used.ok, true);
+  assert.deepEqual(used.map.get(`beauty-brand-logos/${LOGO}`), [{ kind: "brand", id: 9, label: "official" }]);
+  const refused = await deleteMedia(db, "beauty", { bucket: "beauty-brand-logos", path: LOGO });
+  assert.equal(refused.ok, false); assert.equal(refused.inUse, true);
+  assert.deepEqual(db.removed, [], "the logo in use stayed");
+  assert.equal((await deleteMedia(db, "beauty", { bucket: "beauty-brand-logos", path: "logos/orphan.png" })).ok, true, "a real orphan can go");
+  // the old bug: asking beauty_brands for name_en must fail (and so fail closed), not be skipped
+  const wrong = createMemoryAdmin(seed, { schema });
+  assert.equal((await wrong.from("beauty_brands").select("id,logo_url,slug,name_en,name_fa")).error.code, "42703");
+});
+
+test("usage covers EVERY row, not the first page the API returns", async () => {
+  const many = Array.from({ length: 2500 }, (_, i) => ({ id: i + 1, sku: `S-${i}`, image_url: i === 2300 ? "products/deep.webp" : null, gallery_urls: [] }));
+  const db = setup([{ bucket: "product-images", path: "products/deep.webp", at: "x" }, { bucket: "product-images", path: "products/orphan.webp", at: "x" }], { products: many });
+  const used = await usageMap(db, "health");
+  assert.equal(used.ok, true);
+  assert.deepEqual(used.map.get("product-images/products/deep.webp").map((u) => u.id), [2301], "a reference past the first 1000 rows is found");
+  assert.equal((await deleteMedia(db, "health", { bucket: "product-images", path: "products/deep.webp" })).inUse, true);
+  assert.deepEqual(db.removed, []);
+});
+
+test("a PENDING change request that would reference a file keeps it; decided ones and other houses' do not", async () => {
+  const requests = [
+    { id: "r1", house: "health", status: "pending", entity: "products", subject: "G-9", proposed: { image_url: "products/queued.webp", price: 5, __ops: ["products.content"] } },
+    { id: "r2", house: "health", status: "approved", entity: "products", subject: "G-8", proposed: { image_url: "products/decided.webp" } },
+    { id: "r3", house: "beauty", status: "pending", entity: "beauty_products", subject: "B-1", proposed: { image_url: "products/other-house.webp" } },
+    { id: "r4", house: "health", status: "pending", entity: "stock", subject: "x", proposed: { _bucket: "product-images", _path: "products/being-deleted.webp" } },
+  ];
+  const files = ["queued", "decided", "other-house", "being-deleted"].map((n) => ({ bucket: "product-images", path: `products/${n}.webp`, at: "x" }));
+  const db = setup(files, { operator_change_requests: requests });
+  const q = await deleteMedia(db, "health", { bucket: "product-images", path: "products/queued.webp" });
+  assert.equal(q.inUse, true); assert.equal(q.usedBy[0].kind, "request");
+  for (const n of ["decided", "other-house", "being-deleted"]) assert.equal((await deleteMedia(db, "health", { bucket: "product-images", path: `products/${n}.webp` })).ok, true, n);
 });
 
 test("removal: only an unused file; the usage is read again; foreign paths refused; a vanished file is reported", async () => {

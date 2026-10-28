@@ -222,3 +222,77 @@ test("listUsers never returns hashes or seeds", async () => {
   assert.equal(users[0].hasTotp, true);
   assert.equal(users[0].recoveryLeft, 1);
 });
+
+// ── review findings R3, R4, R5 (the stand-in database now returns ONLY the selected columns, like PostgREST) ─────────────────
+const SEED = "encrypted-test-seed", RHASH = "recovery-hash-test";
+
+test("R3: the second-factor state of a person is read from the real column projection and never carries the seed or a hash", async () => {
+  const r = row({ id: "00000000-0000-4000-8000-000000000031", require_2fa: true, totp_secret_enc: SEED, recovery_hashes: [RHASH, "other-hash"] });
+  const d = db([r]);
+  const list = await listUsers(d);
+  assert.equal(list.users[0].hasTotp, true, "listUsers: the seed exists in the database");
+  assert.equal(list.users[0].recoveryLeft, 2);
+  const { getUser } = await import("../lib/operator/accounts.js");
+  const got = await getUser(d, r.id);
+  assert.deepEqual([got.user.hasTotp, got.user.recoveryLeft, got.user.require2fa], [true, 2, true]);
+  for (const user of [list.users[0], got.user]) {
+    const text = JSON.stringify(user);
+    for (const secret of [SEED, RHASH, "other-hash", HASH]) assert.ok(!text.includes(secret), "a secret value reached a user object");
+    assert.ok(!("totp_secret_enc" in user) && !("recovery_hashes" in user) && !("password_hash" in user));
+  }
+  // …through the session path too: the person behind a signed session still has the second factor
+  const s = await resolveSessionUser(d, { panel: "health", uid: r.id, av: 1 });
+  assert.deepEqual([s.user.hasTotp, s.user.require2fa], [true, true]);
+  // …and an account without a seed is reported as having none (the projection did not just turn everything on)
+  const none = row({ id: "00000000-0000-4000-8000-000000000032", username: "bob", require_2fa: true });
+  assert.equal((await getUser(db([none]), none.id)).user.hasTotp, false);
+  // an update returns the same state
+  const owner = row({ id: "00000000-0000-4000-8000-000000000033", username: "boss2", role: "owner", houses: ["health", "beauty"] });
+  const d2 = db([owner, r]);
+  const upd = await updateUser(d2, { actor: rowToUser(owner), id: r.id, change: { displayName: "Renamed" }, expectedVersion: 1 });
+  assert.equal(upd.ok, true); assert.equal(upd.user.hasTotp, true);
+});
+
+test("R4: two requests that read the same recovery list cannot resurrect a spent code; each code works once, concurrently too", async () => {
+  const id = "00000000-0000-4000-8000-000000000041";
+  const original = ["hash-A", "hash-B"];
+  const d = db([row({ id, recovery_hashes: [...original] })]);
+  const first = await consumeRecoveryCode(d, { userId: id, hash: "hash-A", hashes: original });
+  const second = await consumeRecoveryCode(d, { userId: id, hash: "hash-B", hashes: original });     // read the list before the first update
+  assert.equal(first.ok, true);
+  assert.equal(second.ok, true, "a different code is retried against the latest list");
+  assert.deepEqual(d.tables.operator_users[0].recovery_hashes, [], "neither spent code is back");
+  // both fired together
+  const id2 = "00000000-0000-4000-8000-000000000042";
+  const d2 = db([row({ id: id2, username: "bob", recovery_hashes: ["x1", "x2", "x3"] })]);
+  const [a, b, c] = await Promise.all(["x1", "x2", "x3"].map((h) => consumeRecoveryCode(d2, { userId: id2, hash: h, hashes: ["x1", "x2", "x3"] })));
+  assert.deepEqual([a.ok, b.ok, c.ok], [true, true, true]);
+  assert.deepEqual(d2.tables.operator_users[0].recovery_hashes, []);
+  // the SAME code twice at once: exactly one wins
+  const id3 = "00000000-0000-4000-8000-000000000043";
+  const d3 = db([row({ id: id3, username: "cy", recovery_hashes: ["y1", "y2"] })]);
+  const rs = await Promise.all([1, 2].map(() => consumeRecoveryCode(d3, { userId: id3, hash: "y1", hashes: ["y1", "y2"] })));
+  assert.equal(rs.filter((x) => x.ok).length, 1);
+  assert.equal(rs.find((x) => !x.ok).reason, "recovery_used");
+  assert.deepEqual(d3.tables.operator_users[0].recovery_hashes, ["y2"]);
+  // a code that never existed, and a list that was regenerated meanwhile
+  assert.equal((await consumeRecoveryCode(d3, { userId: id3, hash: "nope", hashes: ["y2"] })).reason, "bad_code");
+  d3.tables.operator_users[0].recovery_hashes = ["n1", "n2"];
+  assert.equal((await consumeRecoveryCode(d3, { userId: id3, hash: "y2", hashes: ["y2"] })).ok, false, "an old code does not work after the list was replaced");
+});
+
+test("R5: a manager cannot lift their own second-factor requirement, only an owner relaxes a requirement, and a change ends the person's sessions", async () => {
+  const me = row({ id: "00000000-0000-4000-8000-000000000051", username: "mgr", role: "viewer", allow_perms: ["users.manage"], require_2fa: true, totp_secret_enc: SEED });
+  const peer = row({ id: "00000000-0000-4000-8000-000000000052", username: "peer", role: "viewer", require_2fa: true });
+  const owner = row({ id: "00000000-0000-4000-8000-000000000053", username: "own", role: "owner", houses: ["health", "beauty"] });
+  const d = db([me, peer, owner]);
+  const self = await updateUser(d, { actor: rowToUser(me), id: me.id, change: { require2fa: false }, expectedVersion: 1 });
+  assert.equal(self.ok, false);
+  assert.equal(d.tables.operator_users.find((u) => u.id === me.id).require_2fa, true);
+  const other = await updateUser(d, { actor: rowToUser(me), id: peer.id, change: { require2fa: false }, expectedVersion: 1 });
+  assert.equal(other.ok, false); assert.ok(other.codes.includes("require2fa_owner_only"));
+  const byOwner = await updateUser(d, { actor: rowToUser(owner), id: peer.id, change: { require2fa: false }, expectedVersion: 1 });
+  assert.equal(byOwner.ok, true);
+  assert.equal(byOwner.sessions, "end_all", "the requirement changed: the person signs in again under the new rule");
+  assert.equal(d.tables.operator_users.find((u) => u.id === peer.id).authz_version, 2);
+});
