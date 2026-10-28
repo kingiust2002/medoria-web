@@ -294,6 +294,7 @@ test("every changing server action writes to the activity log; the few exception
     "deleteProduct",                                                                                      // logged FIRST inside productDelete.js via `audit` (product.delete)
     "deleteCategorySafe", "deleteBrand", "deleteHealthCategorySafe",                                       // logged inside categoryDelete.js / destructiveApproval.js (attempt first, outcome after); asserted below
     "listBrandRoster",                                                                                    // read-only (the brand screen's roster and search)
+    "submitImportForApproval",                                                                              // filing a request: logged by fileForApproval (approval.requested) and, when approved, by the approval log
     "bulkUpdateProducts", "bulkUpdateFilteredProducts", "updateFilteredQuotesStatus",                                            // "all filtered results" (N9): logged inside runBulk (product.bulk, kind filtered) / quoteDelete.js setQuotesStatusGuarded
     "saveVariant",                                                                                        // logged inside variantActions.js via `audit` (product.variant.create / .update); a request is logged by fileForApproval
   ]);

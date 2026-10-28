@@ -16,11 +16,12 @@ import {
   IMPORT_COLUMNS, IMPORT_COLUMN_KEYS, MAX_ROWS_PER_FILE,
   normalizeRow, findInFileDuplicates,
 } from "@/lib/operator/importCore";
-import { dryRunProductRows, commitProductRows, finalizeProductBatch, exportProductsCsv, parseSpreadsheet, downloadTemplateXlsx } from "@/lib/beauty/operator/importActions";
+import { dryRunProductRows, commitProductRows, finalizeProductBatch, submitImportForApproval, exportProductsCsv, parseSpreadsheet, downloadTemplateXlsx } from "@/lib/beauty/operator/importActions";
 
 const UPLOAD_ACCEPT = ".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel";
 import { PageHeader, SectionCard, Badge, Spinner } from "@/components/operator/ui";
 import { useT } from "@/components/panel/PanelI18n";
+import { useMode } from "@/components/panel/Capabilities";
 import { tr } from "@/lib/panel/i18n";
 
 // a row the publish rule stopped is saved (or would be) as an inactive draft; say why, in the person's language
@@ -61,6 +62,8 @@ function downloadBase64(name, b64, mime) {
 export default function ImportWizard({ recentLogs = [] }) {
   const t = useT();
   const router = useRouter();
+  const importMode = useMode("products.import");        // "approval": the file is read and checked as usual, but the write is ONE request for a reviewer
+  const [filed, setFiled] = useState(null);                // the answer of the server when the file was sent for approval
   const fileRef = useRef(null);
   const [file, setFile] = useState(null);     // { name, rows, unknownHeaders, truncated }
   const [mode, setMode] = useState("add");
@@ -182,6 +185,16 @@ export default function ImportWizard({ recentLogs = [] }) {
   async function runCommit() {
     if (!file || !dry) return;
     if (strict && dry.counts.error > 0) return;
+    if (importMode === "approval") {
+      if (!window.confirm(t("این فایل ({create} ساخت، {update} بروزرسانی) به‌صورت یک درخواست برای تأیید ارسال شود؟ تا تأیید نشود چیزی در کاتالوگ تغییر نمی‌کند.", { create: dry.counts.create, update: dry.counts.update }))) return;
+      setBusy("commit"); setErr("");
+      const rows = file.rows.map((raw, i) => ({ raw, rowNum: i + 1 })).filter((x) => !dupRows.has(x.rowNum)).map((x) => x.raw);
+      let res = null;
+      try { res = await submitImportForApproval(rows, { mode, autoCreateCategories: autoCreate, autoTranslate, strict }, { fileName: file.name }); } catch { res = null; }
+      setBusy("");
+      if (res?.ok) setFiled({ message: res.message, duplicate: Boolean(res.duplicate) }); else setErr(t(res?.error) || t("ارتباط با سرور برقرار نشد."));
+      return;
+    }
     if (!window.confirm(t("ورود {create} ساخت و {update} بروزرسانی انجام شود؟", { create: dry.counts.create, update: dry.counts.update }))) return;
     setBusy("commit");
     setErr("");
@@ -236,7 +249,7 @@ export default function ImportWizard({ recentLogs = [] }) {
   }
 
   function reset() {
-    setFile(null); setDry(null); setFinal(null); setErr(""); setFilter("all");
+    setFile(null); setDry(null); setFinal(null); setFiled(null); setErr(""); setFilter("all");
   }
 
   const view = final || dry;
@@ -405,7 +418,7 @@ export default function ImportWizard({ recentLogs = [] }) {
               </div>
 
               <div className="flex flex-wrap items-center gap-2 mt-4">
-                {!final && (
+                {!final && !filed && (
                   <button
                     type="button"
                     onClick={runCommit}
@@ -413,9 +426,12 @@ export default function ImportWizard({ recentLogs = [] }) {
                     className="btn-primary size-md disabled:opacity-60"
                   >
                     {busy === "commit" ? <Spinner /> : <Icon name="save" size={17} />}
-                    {busy === "commit" ? t("در حال ورود…") : t("تأیید و ورود ({create} ساخت، {update} بروزرسانی)", { create: view.counts.create, update: view.counts.update })}
+                    {busy === "commit" ? (importMode === "approval" ? t("در حال ارسال…") : t("در حال ورود…")) : importMode === "approval" ? t("ارسال برای تأیید ({create} ساخت، {update} بروزرسانی)", { create: view.counts.create, update: view.counts.update }) : t("تأیید و ورود ({create} ساخت، {update} بروزرسانی)", { create: view.counts.create, update: view.counts.update })}
                   </button>
                 )}
+                {filed && <div role="status" data-testid="import-filed" className="basis-full text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-ok/10 text-ok"><Icon name="check" size={16} /> <span className="min-w-0 break-words">{t(filed.message)}</span></div>}
+                {filed && <button type="button" onClick={reset} className="btn-ghost size-md"><Icon name="refresh" size={16} /> {t("فایل جدید")}</button>}
+                {importMode === "approval" && !final && !filed && <Badge tone="warn">{t("ورود این فایل نیازمند تأیید است")}</Badge>}
                 {busy === "commit" && progress && <span className="text-xs text-ink-muted tabular">{progress.done}/{progress.total}</span>}
                 {strict && !final && view.counts.error > 0 && <Badge tone="warn">{t("حالت سخت‌گیرانه: اول خطاها را رفع کنید")}</Badge>}
                 <button type="button" onClick={downloadReport} className="btn-ghost size-md"><Icon name="download" size={16} /> {t("دانلود گزارش CSV")}</button>

@@ -57,10 +57,10 @@ test("a stored policy that lists an operation which cannot be approved CLOSES it
 test("saving a policy with an operation that cannot be approved is refused; a supported one is accepted", () => {
   const owner = { id: "o", status: "active", role: "owner", houses: ["health", "beauty"], allow: [], deny: [], approval: {} };
   const change = (approval) => checkUserChange({ actor: owner, target: null, change: { role: "product_manager", houses: ["health", "beauty"], approval, status: "active" }, users: [owner] });
-  assert.ok(change({ health: ["products.import"] }).errors.includes("approval_unsupported"));
+  assert.ok(change({ health: ["quotes.status"] }).errors.includes("approval_unsupported"));
   assert.ok(change({ beauty: ["inventory.receive"] }).errors.includes("approval_unsupported"));
   assert.ok(change({ health: ["brands.delete"] }).errors.includes("approval_unsupported"), "Health has no brand deletion");
-  assert.equal(change({ health: ["products.price", "categories.delete", "quotes.delete"], beauty: ["brands.delete", "media.delete"] }).ok, true);
+  assert.equal(change({ health: ["products.price", "categories.delete", "quotes.delete", "products.bulk", "products.import"], beauty: ["brands.delete", "media.delete", "products.bulk", "products.import"] }).ok, true, "a bulk edit and an import can be sent for approval (N12)");
 });
 
 test("every approvable operation has an executor in BOTH houses (brands only in Beauty)", () => {
@@ -88,7 +88,7 @@ test("every approvable operation can be decided by SOMEONE: the owner and the ho
 });
 
 test("every approvable operation is filed by an action, and each is filed with its own name", () => {
-  const files = ["lib/operator/actions.js", "lib/beauty/operator/actions.js", "lib/operator/destructiveFlow.js", "lib/warehouse/actionsCore.js", "lib/warehouse/countsActions.js", "lib/operator/productRestoreCore.js", "lib/operator/categoryTreeActions.js", "lib/operator/importActions.js", "lib/operator/documentsCore.js"];
+  const files = ["lib/operator/actions.js", "lib/beauty/operator/actions.js", "lib/operator/bulkCore.js", "lib/operator/importSubmit.js", "lib/operator/destructiveFlow.js", "lib/warehouse/actionsCore.js", "lib/warehouse/countsActions.js", "lib/operator/productRestoreCore.js", "lib/operator/categoryTreeActions.js", "lib/operator/importActions.js", "lib/operator/documentsCore.js"];
   const src = files.map(read).join("\n");
   const named = new Set([...src.matchAll(/(?:authed|buildActionCtx)\((?:\{[^}]*operation: )?"([a-z]+\.[a-z_]+)"[^)]*approvable: true|operation: "([a-z]+\.[a-z_]+)"|evaluate\("([a-z]+\.[a-z_]+)"\)/g)].flatMap((m) => [m[1], m[2], m[3]]).filter(Boolean));
   // quick edits / the publish toggle choose their operation by name at run time; they file under these names
@@ -96,11 +96,17 @@ test("every approvable operation is filed by an action, and each is filed with i
   for (const op of APPROVABLE_OPERATIONS) assert.ok(named.has(op), `no action files ${op}`);
 });
 
-test("an action that cannot file a request never offers the operation to a person who would need approval (bulk actions)", () => {
+test("the bulk bar offers a change to a person who would need approval (it files ONE request); only a denied operation hides its button (N12)", () => {
   for (const f of ["components/operator/ProductsTable.jsx", "components/beauty/operator/ProductsTable.jsx"]) {
-    const s = read(f);
-    assert.match(s, /bulkPublish = useMode\("products\.publish"\) === "direct"/, f);
-    for (const k of ["bulkPublish", "bulkArchive", "bulkPrice", "bulkContent"]) assert.match(s, new RegExp(`canBulk && ${k}`), `${f}: ${k} is not required for the bulk button`);
+    const s2 = read(f);
+    assert.match(s2, /const bulkMode = \(\.\.\.ms\) =>/, f);
+    for (const k of ["bulkPublish", "bulkArchive", "bulkPrice", "bulkContent"]) assert.match(s2, new RegExp(`canBulk && ${k} !== "denied"`), `${f}: ${k} is hidden only when denied`);
+    assert.match(s2, /res\.ok && res\.pending/, `${f}: a filed request is reported as pending, not as a change`);
+  }
+  for (const f of ["lib/operator/actions.js", "lib/beauty/operator/actions.js"]) {
+    const s2 = read(f);
+    assert.equal((s2.match(/authed\(bulkOps\(patch\), \{ approvable: true \}\)/g) || []).length, 2, `${f}: both bulk actions can file a request`);
+    assert.match(s2, /if \(a\.needsApproval\) return fileBulkChange\(/, f);
   }
 });
 

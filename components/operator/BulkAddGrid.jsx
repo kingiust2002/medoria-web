@@ -10,7 +10,8 @@ import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
 import { imageUrl } from "@/lib/supabase";
 import { uploadProductImage } from "@/lib/operator/actions";
-import { commitProductRows, finalizeProductBatch, checkSkusExist } from "@/lib/operator/importActions";
+import { commitProductRows, finalizeProductBatch, submitImportForApproval, checkSkusExist } from "@/lib/operator/importActions";
+import { useMode } from "@/components/panel/Capabilities";
 import { COMMIT_CHUNK_SIZE } from "@/lib/operator/importCore";
 import { PRODUCT_BADGES } from "@/lib/operator/constants";
 import QuickCategoryModal from "@/components/operator/QuickCategoryModal";
@@ -53,6 +54,8 @@ export default function BulkAddGrid({ categories }) {
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState(null); // { done, total }
   const [summary, setSummary] = useState(null);
+  const importMode = useMode("products.import");          // "approval": the rows are sent as ONE request for a reviewer instead of being saved
+  const [filed, setFiled] = useState(null);
   const imgInputRef = useRef(null);
   const imgRowRef = useRef(null);
   const skuTimer = useRef(null);
@@ -198,6 +201,14 @@ export default function BulkAddGrid({ categories }) {
       image_url: r.image_url,
     });
 
+    if (importMode === "approval") {
+      let res = null;
+      try { res = await submitImportForApproval(send.map(rawOf), { mode: "add" }, { fileName: "bulk" }); } catch { res = null; }
+      setSaving(false); setProgress(null);
+      if (res?.ok) { setFiled(t(res.message)); try { localStorage.removeItem(DRAFT_KEY); } catch { /* no-op */ } setRows([blankRow(defaults), blankRow(defaults), blankRow(defaults)]); }
+      else setSummary({ total: 0, create: 0, update: 0, skip: 0, error: 0, connectionError: t(res?.error) || t("ارتباط با سرور برقرار نشد.") });
+      return;
+    }
     const counts = { total: 0, create: 0, update: 0, skip: 0, error: 0 };
     let connectionError = "";
     for (let i = 0; i < send.length; i += COMMIT_CHUNK_SIZE) {
@@ -251,6 +262,7 @@ export default function BulkAddGrid({ categories }) {
         </div>
       )}
 
+      {filed && <div role="status" data-testid="import-filed" className="mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-ok/10 text-ok"><Icon name="check" size={16} /> <span className="min-w-0 break-words">{filed}</span></div>}
       {summary && (
         <div className={`mb-4 text-sm rounded-xl px-3 py-2.5 flex flex-wrap items-center gap-3 ${summary.error || summary.connectionError ? "bg-warn/10 text-warn" : "bg-ok/10 text-ok"}`}>
           <Icon name={summary.error || summary.connectionError ? "alertTriangle" : "check"} size={16} />
@@ -330,7 +342,7 @@ export default function BulkAddGrid({ categories }) {
             {progress && <span className="text-xs text-ink-muted tabular">{progress.done}/{progress.total}</span>}
             <button type="button" onClick={saveAll} disabled={saving || !unsaved.length} className="btn-primary size-md disabled:opacity-60">
               {saving ? <Spinner /> : <Icon name="save" size={18} />}
-              {saving ? t("در حال ذخیره…") : t("ذخیره {v} ردیف", { v: unsaved.length || "" })}
+              {saving ? t("در حال ذخیره…") : importMode === "approval" ? t("ارسال {v} ردیف برای تأیید", { v: unsaved.length || "" }) : t("ذخیره {v} ردیف", { v: unsaved.length || "" })}
             </button>
           </div>
         </div>

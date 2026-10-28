@@ -30,7 +30,7 @@ What a request stores: the operation, the thing, the old and the proposed values
 * **Nobody could approve a request to delete a file or a customer request**: `media` and `quotes` had no `approve` permission, so `canReview` was false even for the owner. Both resources now have it (house admins and owners receive it through their `*` grants). The new test "every approvable operation can be decided by someone" would have caught it.
 * **The role defaults listed operations that were never routed to approval** (deleting a category, deleting a request, publishing a document): the action refused with a message that promised approval. Category and request deletion are now real; `documents.publish` was removed from the product manager's defaults until the documents feature exists (item 8) brings its own executor.
 * **Inline price/stock edits, "duplicate" and unlinking a brand from a product** refused or — for some screens — reported "saved/deleted" when the answer was "sent for approval". Every delete/edit screen now reads `pending` and says "sent for approval" without changing the list.
-* **Bulk edits** cannot file one request per product (it would bury the reviewer). They are offered only to people who may do the operation directly; the message for the remaining path was rewritten to say so truthfully. Approval-aware bulk edit and import are item 12.
+* **Bulk edits** used to be refused for a person who needs approval (one request per product would bury the reviewer). **Since N12 a bulk edit or an import files ONE request for the whole change** — see `PANEL_BULK_IMPORT_APPROVAL.md`.
 * The approval screen showed "ask again" for requests that cannot be asked again (file deletion, stock correction); it now shows it only where a fresh basis can be read.
 
 ## Refusals that hold for every executor (tests)
@@ -48,4 +48,4 @@ What a request stores: the operation, the thing, the old and the proposed values
 
 ## Not covered (stated)
 
-Bulk edit/import under approval (item 12), content/banner publication under approval (item 11), document publication (item 8). They are **not offered** as approval options until they have their executor.
+Content/banner publication under approval is not built and is **not offered** as an approval option. (Bulk edit/import under approval: N12, `PANEL_BULK_IMPORT_APPROVAL.md`. Document publication: N8.)
