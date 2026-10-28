@@ -209,6 +209,31 @@ test("helpers: which operations a product change needs, and the diff shown to th
 const deleteSpec = (over = {}) => ({ operation: "products.delete", ops: ["products.delete"], entity: "products", entityId: 8, subject: "O-8", before: { sku: "O-8", is_active: false }, proposed: { confirmation: "O-8" }, baseUpdatedAt: ts, ...over });
 const archived8 = () => db.tables.products.find((p) => p.id === 8);
 
+test("R8: deletion uses the exact PostgreSQL basis, including microseconds within one JavaScript millisecond", async () => {
+  const basis = "2026-10-28T10:00:00.000001+00:00";
+  const newer = "2026-10-28T10:00:00.000002+00:00";
+  archived8().updated_at = basis;
+  const filed = await submitChange(db, { actor: requester(), panel: "health", spec: deleteSpec({ baseUpdatedAt: basis }) });
+  assert.equal(filed.ok, true);
+  archived8().name_en = "Edited a microsecond after the request";
+  archived8().updated_at = newer;
+  assert.equal(Date.parse(basis), Date.parse(newer), "JavaScript Date cannot distinguish these versions");
+  const res = await approveRequest(db, { reviewer: reviewer(), panel: "health", id: filed.request.id, executors: executors() });
+  assert.equal(res.ok, false, "the newer microsecond version must not be deleted");
+  assert.equal(res.error, "stale");
+  assert.equal(archived8()?.updated_at, newer);
+  assert.equal(db.tables.operator_change_requests[0].status, "failed");
+});
+
+test("R8: the same microsecond version in a different ISO offset is still deletable", async () => {
+  archived8().updated_at = "2026-10-28T13:30:00.123456+03:30";
+  const filed = await submitChange(db, { actor: requester(), panel: "health", spec: deleteSpec({ baseUpdatedAt: "2026-10-28T10:00:00.123456Z" }) });
+  assert.equal(filed.ok, true);
+  const res = await approveRequest(db, { reviewer: reviewer(), panel: "health", id: filed.request.id, executors: executors() });
+  assert.equal(res.ok, true);
+  assert.equal(archived8(), undefined);
+});
+
 test("R8: a product edited after the deletion was requested is NOT deleted — the request fails as stale, the newer record stays, nothing is written to the history", async () => {
   const filed = await submitChange(db, { actor: requester(), panel: "health", spec: deleteSpec() });
   archived8().name_en = "Edited after the request"; archived8().updated_at = "2026-10-05T00:00:00.000Z";        // still archived, same SKU, newer version
