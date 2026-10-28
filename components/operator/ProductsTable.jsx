@@ -37,8 +37,13 @@ export default function ProductsTable({ data, categories, views = null, basePath
   const canCreate = useCan("products.create"), canImport = useCan("products.import"), canBulk = useCan("products.bulk");
   const canContent = useCan("products.content"), canPrice = useCan("products.price"), canStock = useCan("products.stock_flag");
   const canPublish = useCan("products.publish"), canArchive = useCan("products.archive"), canDelete = useCan("products.delete");
-  // a bulk action cannot be sent for approval (one request per product would bury the reviewer): it is offered only to people who may do it directly
-  const bulkPublish = useMode("products.publish") === "direct", bulkArchive = useMode("products.archive") === "direct", bulkPrice = useMode("products.price") === "direct", bulkContent = useMode("products.content") === "direct";
+  // A bulk change a person may only ASK for (their policy says "needs approval") is filed as ONE request for the whole selection and applied when
+  // someone approves it; the buttons stay, marked. Only a denied operation hides its button.
+  const modeProducts = useMode("products.bulk"), modePublish = useMode("products.publish"), modeArchive = useMode("products.archive"), modePrice = useMode("products.price"), modeContent = useMode("products.content");
+  const bulkMode = (...ms) => (ms.includes("denied") ? "denied" : ms.includes("approval") ? "approval" : "direct");
+  const bulkPublish = bulkMode(modeProducts, modePublish), bulkArchive = bulkMode(modeProducts, modeArchive), bulkPrice = bulkMode(modeProducts, modePrice), bulkContent = bulkMode(modeProducts, modeContent);
+  const modeOfPatch = (patch) => ("is_active" in patch ? (patch.is_active ? bulkPublish : bulkArchive) : patch.requestPrice ? bulkPrice : bulkContent);
+  const askNote = (mode) => (mode === "approval" ? <span className="text-[11px] text-warn" data-testid="needs-approval">{t("نیازمند تأیید")}</span> : null);
 
   const { params } = data;
   const products = data.ok ? data.rows : [];
@@ -111,7 +116,7 @@ export default function ProductsTable({ data, categories, views = null, basePath
 
   // bulk
   function runBulk(patch, okText) {
-    if (scopeAll) { setConfirm({ patch, okText, what: okText }); return; }          // every filtered row: ask first, with the exact count
+    if (scopeAll) { setConfirm({ patch, okText, what: okText, approval: modeOfPatch(patch) === "approval" }); return; }          // every filtered row: ask first, with the exact count
     const ids = [...selected];
     if (!ids.length) return;
     startTransition(async () => {
@@ -120,6 +125,7 @@ export default function ProductsTable({ data, categories, views = null, basePath
     });
   }
   function showBulkResult(res, okText) {
+    if (res.ok && res.pending) { flash(t(res.message), true); clearSel(); setBulkCat(""); return; }      // filed for approval: nothing changed yet
     if (res.ok) {
       const stopped = res.blockedCount ? ` — ${blockedText({ error: t(PUBLISH_MESSAGES.blockedMany, { count: res.blockedCount }), publishBlocked: res.publishBlocked, blockedCount: res.blockedCount }, t)}` : "";
       flash(`${t("{okText} ({count} مورد)", { okText, count: res.count })}${stopped}`, !res.blockedCount);
@@ -185,10 +191,10 @@ export default function ProductsTable({ data, categories, views = null, basePath
         <div className="card mb-4 p-3 flex flex-wrap items-center gap-2 border-brand-violet/30 bg-brand-violet/5 sticky top-2 z-20">
           <span className="text-sm font-semibold text-brand-violet">{scopeAll ? t("{size} مورد انتخاب شده", { size: num(data.total) }) : t("{size} مورد انتخاب شده", { size: selected.size })}</span>
           <span className="flex-1" />
-          {canBulk && bulkPublish && <button onClick={() => runBulk({ is_active: true }, t("فعال شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="eye" size={15} /> {t("فعال‌سازی")}</button>}
-          {canBulk && bulkArchive && <button onClick={() => runBulk({ is_active: false }, t("آرشیو شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="archive" size={15} /> {t("غیرفعال")}</button>}
-          {canBulk && bulkPrice && <button onClick={() => runBulk({ requestPrice: true }, t("استعلام قیمت شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="dollar" size={15} /> {t("استعلام قیمت")}</button>}
-          {canBulk && bulkContent && (
+          {canBulk && bulkPublish !== "denied" && <button onClick={() => runBulk({ is_active: true }, t("فعال شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="eye" size={15} /> {t("فعال‌سازی")} {askNote(bulkPublish)}</button>}
+          {canBulk && bulkArchive !== "denied" && <button onClick={() => runBulk({ is_active: false }, t("آرشیو شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="archive" size={15} /> {t("غیرفعال")} {askNote(bulkArchive)}</button>}
+          {canBulk && bulkPrice !== "denied" && <button onClick={() => runBulk({ requestPrice: true }, t("استعلام قیمت شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="dollar" size={15} /> {t("استعلام قیمت")} {askNote(bulkPrice)}</button>}
+          {canBulk && bulkContent !== "denied" && (
             <Select value={bulkCat} onChange={(e) => bulkCategory(e.target.value)} disabled={pending} className="w-auto !h-9 text-xs">
               <option value="">{t("تغییر دسته…")}</option>
               {categories.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{localName(c, lang)}</option>)}
@@ -292,7 +298,7 @@ export default function ProductsTable({ data, categories, views = null, basePath
         <DeleteProductModal product={deleting} onClose={() => setDeleting(null)} onDelete={deleteProduct}
           onDone={(res) => { setDeleting(null); flash(res?.pending ? t(res.message) : res?.ok ? t("محصول برای همیشه حذف شد.") : t("این محصول دیگر وجود ندارد؛ فهرست به‌روز شد."), Boolean(res?.ok)); router.refresh(); }} />
       )}
-      {confirm && <ConfirmFiltered total={data.total} filters={describeProductFilters(params, t, { catName: (c) => catName[`id:${c}`] || catName[`slug:${c}`] || c })} what={confirm.what} busy={confirmBusy} onConfirm={runFiltered} onCancel={() => setConfirm(null)} num={num} />}
+      {confirm && <ConfirmFiltered approval={Boolean(confirm.approval)} total={data.total} filters={describeProductFilters(params, t, { catName: (c) => catName[`id:${c}`] || catName[`slug:${c}`] || c })} what={confirm.what} busy={confirmBusy} onConfirm={runFiltered} onCancel={() => setConfirm(null)} num={num} />}
     </>
   );
 }

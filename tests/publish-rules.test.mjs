@@ -284,14 +284,19 @@ test("every path that can make a product public goes through the gate — source
     assert.match(fn("updateProduct"), new RegExp(`gateOne\\(\\{ admin: a\\.admin, house: "${house}", before, after: laidOver\\(before, row\\)`));
     assert.match(fn("setProductActive"), new RegExp(`gateOne\\(\\{ admin: a\\.admin, house: "${house}", before: cur`));
     assert.match(fn("quickUpdateProduct"), new RegExp(`gateOne\\(\\{ admin: a\\.admin, house: "${house}", before: was`));
-    // bulk publish: ONE runner serves the ticked rows and "all filtered results" (N9), and the gate is inside it
+    // bulk publish: ONE runner serves the ticked rows and "all filtered results" (N9); it calls the ONE function (bulkCore) that holds the gate,
+    // which a direct change and an approved request (the executor) both use (N12)
     const runner = src.slice(src.indexOf("async function runBulk("), src.indexOf("\nexport async function", src.indexOf("async function runBulk(")));
-    assert.match(runner, new RegExp(`gateBulkPublish\\(\\{ admin: a\\.admin, house: "${house}"`));
+    assert.match(runner, new RegExp(`applyBulkChange\\(\\{ admin: a\\.admin, house: "${house}"`));
+    assert.match(runner, new RegExp(`fileBulkChange\\(a, \\{ house: "${house}"`));
     assert.match(fn("bulkUpdateProducts"), /runBulk\(/); assert.match(fn("bulkUpdateFilteredProducts"), /runBulk\(/);
     // the gate is before the approval branch: a request that could never be applied is not filed
     for (const name of ["createProduct", "updateProduct"]) assert.ok(fn(name).indexOf("gateOne(") < fn(name).indexOf("if (needsApproval)"), `${f}:${name}`);
     assert.ok(fn("setProductActive").indexOf("gateOne(") < fn("setProductActive").indexOf("a.needsApproval"));
   }
+  assert.match(read("lib/operator/bulkCore.js"), /gateBulkPublish\(\{ admin, house, table, ids \}\)/, "applyBulkChange judges every product that would go live");
+  assert.match(read("lib/operator/bulkCore.js"), /gateBulkPublish\(\{ admin: a\.admin, house, table, ids \}\)/, "and a request that could never be applied is not filed");
+  assert.match(read("lib/operator/approvalExecutors.js"), /applyBulkChange\(\{ admin, house: panel, ids, allowed \}\)/, "an approved bulk edit goes through the same function");
   assert.match(read("lib/operator/approvalExecutors.js"), /gateOne\(\{ admin, house: panel, before: cur/);
   assert.match(read("lib/operator/approvalExecutors.js"), /gateOne\(\{ admin, house: panel, before: null, after: fields/);
   assert.match(read("lib/operator/scheduledPublishing.js"), /gateItems\(\{ admin, house: panel/);
@@ -310,6 +315,7 @@ test("no other module writes is_active on a product table: the whitelist of writ
   // each file that writes product rows, and why it is allowed
   const allowed = new Set([
     "lib/operator/actions.js", "lib/beauty/operator/actions.js",                 // direct paths: gated above
+    "lib/operator/bulkCore.js",                                                  // one function for a direct bulk change AND an approved one: gateBulkPublish inside
     "lib/operator/approvalExecutors.js",                                         // approved requests: gated
     "lib/operator/scheduledPublishing.js",                                       // scheduler: gated
     "lib/operator/productRestoreCore.js",                                        // restore: gated

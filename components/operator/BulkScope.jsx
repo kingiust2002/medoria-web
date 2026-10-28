@@ -25,17 +25,17 @@ export function ScopeNotice({ pageCount, total, all, onAll, onPage, num = (n) =>
   );
 }
 
-export function ConfirmFiltered({ total, filters, what, busy, onConfirm, onCancel, num = (n) => n }) {
+export function ConfirmFiltered({ total, filters, what, busy, onConfirm, onCancel, approval = false, num = (n) => n }) {
   const t = useT();
   return (
     <div className="fixed inset-0 z-[60] grid place-items-center p-4" role="dialog" aria-modal="true" aria-label={t("تأیید تغییر همهٔ نتایج فیلترشده")} data-testid="confirm-filtered">
       <div className="absolute inset-0 bg-navy/45 backdrop-blur-sm" onClick={busy ? undefined : onCancel} />
       <div className="relative card p-5 w-full max-w-md min-w-0">
         <h2 className="font-bold text-ink mb-2">{t("تأیید تغییر همهٔ نتایج فیلترشده")}</h2>
-        <p className="text-sm text-ink-soft leading-7 break-words">{t("«{what}» روی {total} مورد اعمال می‌شود، نه فقط روی صفحهٔ فعلی.", { what, total: num(total) })}</p>
+        <p className="text-sm text-ink-soft leading-7 break-words">{approval ? t("«{what}» برای {total} مورد، به‌صورت یک درخواست برای تأیید ارسال می‌شود؛ تا تأیید نشود چیزی تغییر نمی‌کند.", { what, total: num(total) }) : t("«{what}» روی {total} مورد اعمال می‌شود، نه فقط روی صفحهٔ فعلی.", { what, total: num(total) })}</p>
         <p className="text-xs text-ink-muted mt-2 break-words">{t("فیلترها: {filters}", { filters })}</p>
         <div className="flex flex-wrap gap-2 mt-5">
-          <button type="button" onClick={onConfirm} disabled={busy} className="btn-primary size-md disabled:opacity-60" data-testid="confirm-filtered-yes">{busy ? <Spinner /> : <Icon name="check" size={16} />} {t("بله، روی همهٔ {total} مورد اعمال شود", { total: num(total) })}</button>
+          <button type="button" onClick={onConfirm} disabled={busy} className="btn-primary size-md disabled:opacity-60" data-testid="confirm-filtered-yes">{busy ? <Spinner /> : <Icon name="check" size={16} />} {approval ? t("بله، برای تأیید ارسال شود") : t("بله، روی همهٔ {total} مورد اعمال شود", { total: num(total) })}</button>
           <button type="button" onClick={onCancel} disabled={busy} className="btn-ghost size-md">{t("انصراف")}</button>
         </div>
       </div>
