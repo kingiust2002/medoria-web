@@ -96,10 +96,28 @@ honest message (nothing half-done) until its executor exists.
 shows names; **CSV export has its own permission** (`audit.export`), is formula-safe, and the export is itself logged. Migration 35 makes the
 log **append-only** (no update, no delete, even for the service role).
 
+## Screens offer only what the person may do (S3)
+
+The panel layouts hand the person's **capabilities** (`capabilitiesOf` → every operation `direct | approval | denied`, computed with the
+same `decide()` the server uses) to a client provider (`components/panel/Capabilities.jsx`, `useCan` / `useMode`). Products list and form,
+requests, the Health category tree, the Beauty category tree and brands render **only the controls the person may use**:
+
+* product list: add / import / bulk add, row selection and the bulk bar (per action), inline price, stock and featured toggles, duplicate,
+  archive / activate, permanent delete; the form is **read-only** (`fieldset disabled`, no save button, a note) for a person who can change
+  nothing, the price / stock / active switches are disabled when their own right is missing, a person who may not publish creates drafts
+  only, and a person whose edits go through approval sees "Send for approval" and a note;
+* requests: status select, archive / spam / restore, assign, notes (read-only text when not allowed), delete (row and bulk), row selection;
+* categories and brands: add, edit, archive switch / branch switch, delete.
+
+This is **convenience, not security**: every action still asks the server at the moment of use, a stale screen can do nothing the server
+refuses, and without a provider (tests, a page outside the layout) nothing is hidden. Pinned by `tests/capabilities-wiring.test.mjs`
+(unknown operation names would hide a button forever), `tests/access.test.mjs` (`capabilitiesOf` = `decide`), and
+`tests/e2e/accounts-permissions.e2e.mjs` (the rendered HTML of a viewer, a product manager and a request manager).
+
 ## What does NOT exist yet (do not switch the flag on before these ship)
 
 * Approvals exist only for products (see above); categories, brands, media, requests and the warehouse still refuse "needs approval".
-* The buttons are not hidden per permission inside the pages (a refused click shows the refusal); polishing that is stage 3.
+* Screens that are not wired to the capabilities yet (they still show a button and answer with the refusal on click): the media uploader, the import / bulk-entry wizards (their *pages* are closed to people without the right), the legacy list views, and the brand product roster's inner controls.
 * Not deployed anywhere: **apply migrations 34 and 35 before the release, and keep `OPERATOR_USERS` empty until the owner is ready**.
 
 ## Environment

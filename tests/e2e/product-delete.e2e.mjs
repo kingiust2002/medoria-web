@@ -49,6 +49,7 @@ test("Health: only the archived product has the button; the SKU must be typed; t
 
   await page.getByText("محصول برای همیشه حذف شد.").waitFor();
   assert.deepEqual(await names("health"), [1, 3], "only the archived product was removed");
+  await page.waitForFunction(() => document.querySelectorAll('[data-testid="product-delete"]').length === 0); // the list refreshes after the message
   assert.equal(await page.getByTestId("product-delete").count(), 0);
   const log = await auditOf("product.delete");
   assert.equal(log.length, 1);

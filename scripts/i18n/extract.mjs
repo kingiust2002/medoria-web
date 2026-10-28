@@ -11,7 +11,7 @@ import { pathToFileURL } from "node:url";
 import { walk } from "./scan.mjs";
 
 const AR = /[؀-ۿ]/;
-export const SCOPE = ["components/operator", "components/beauty/operator", "components/panel", "app/operator", "app/beauty/operator", "app/login", "lib/operator", "lib/beauty/operator", "lib/panel"];
+export const SCOPE = ["components/operator", "components/beauty/operator", "components/panel", "app/operator", "app/beauty/operator", "app/login", "lib/operator", "lib/beauty/operator", "lib/panel", "lib/warehouse"];
 
 export function extractFile(file) {
   const src = fs.readFileSync(file, "utf8");

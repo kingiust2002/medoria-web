@@ -2,10 +2,10 @@
 // the account / approval / inventory stores: select / insert / update / delete / upsert with eq, neq, is, in, lt, lte, gt, gte,
 // contains, or-less filters, order, limit, range, single, maybeSingle and `count`. Unique indexes and per-table triggers are
 // declared by the test so the real database rules (unique username, optimistic version, last owner) can be exercised.
-// Fault injection: `db.fail = (table, op) => error|null`.
+// Fault injection: `db.fail = (table, op) => error|null`. Stored procedures: the `rpc` option (see db.rpc).
 let seq = 0;
 
-export function createMemoryAdmin(seed = {}, { unique = {}, defaults = {}, beforeUpdate = {}, beforeDelete = {} } = {}) {
+export function createMemoryAdmin(seed = {}, { unique = {}, defaults = {}, beforeUpdate = {}, beforeDelete = {}, rpc = {} } = {}) {
   const tables = {};
   for (const [name, rows] of Object.entries(seed)) tables[name] = rows.map((r) => ({ ...r }));
   const db = { tables, fail: () => null, log: [] };
@@ -97,6 +97,13 @@ export function createMemoryAdmin(seed = {}, { unique = {}, defaults = {}, befor
     return q;
   }
   db.from = from;
+  // stored procedures: `rpc: { name: (args, db) => ({ data, error }) }`; every call is recorded in db.rpcLog
+  db.rpcLog = [];
+  db.rpc = (name, args) => {
+    db.rpcLog.push([name, args]);
+    const fn = rpc[name];
+    return Promise.resolve(fn ? fn(args, db) : { data: null, error: { code: "PGRST202", message: `function ${name} does not exist` } });
+  };
   db.nextId = () => `id-${++seq}`;
   return db;
 }

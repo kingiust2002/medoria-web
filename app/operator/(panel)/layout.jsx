@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/operator/auth";
 import OperatorShell from "@/components/operator/OperatorShell";
 import AccountSecurity from "@/components/operator/AccountSecurity";
-import { mayView, mayGlobal, restrictedReason } from "@/lib/operator/access";
+import { mayView, mayGlobal, restrictedReason, capabilitiesOf } from "@/lib/operator/access";
+import { CapabilitiesProvider } from "@/components/panel/Capabilities";
 import { countToReview } from "@/lib/operator/approvals";
 import { getAdminClient } from "@/lib/operator/supabaseAdmin";
 import { changeMyPassword, startMyTwoStep, confirmMyTwoStep, disableMyTwoStep, newMyRecoveryCodes } from "@/lib/operator/accountActions";
@@ -36,5 +37,9 @@ export default async function PanelLayout({ children }) {
     allowed.push("/operator/approvals");
     badges["/operator/approvals"] = await countToReview(getAdminClient(), { actor: session.user, panel: "health" });     // what waits for THIS person
   }
-  return <OperatorShell allowed={allowed} badges={badges}>{children}</OperatorShell>;
+  return (
+    <CapabilitiesProvider value={capabilitiesOf(session, "health")}>
+      <OperatorShell allowed={allowed} badges={badges}>{children}</OperatorShell>
+    </CapabilitiesProvider>
+  );
 }

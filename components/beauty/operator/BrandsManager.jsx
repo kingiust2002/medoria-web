@@ -13,6 +13,7 @@ import { slugify } from "@/lib/operator/validation";
 import { PageHeader, Field, Input, Toggle, Badge, EmptyState, Spinner } from "@/components/operator/ui";
 import BrandProductsModal from "./BrandProductsModal";
 import { useT } from "@/components/panel/PanelI18n";
+import { useCan } from "@/components/panel/Capabilities";
 import Trans from "@/components/panel/Trans";
 
 export default function BrandsManager({ brands, products }) {
@@ -22,12 +23,14 @@ export default function BrandsManager({ brands, products }) {
   const [deleting, setDeleting] = useState(null);
   const [managing, setManaging] = useState(null); // null | brand — product roster modal
   const [msg, setMsg] = useState(null);
+  // what this person may offer on screen (the server asks again on every action)
+  const canCreate = useCan("brands.create"), canEdit = useCan("brands.edit"), canDelete = useCan("brands.delete");
   const flash = (text, ok) => { setMsg({ text, ok }); setTimeout(() => setMsg(null), 4000); };
 
   return (
     <>
       <PageHeader title={t("برندها")} subtitle={t("{length} برند", { length: brands.length })}>
-        <button onClick={() => setEditing({})} className="btn-primary size-md"><Icon name="plus" size={18} /> {t("افزودن برند")}</button>
+        {canCreate && <button onClick={() => setEditing({})} className="btn-primary size-md"><Icon name="plus" size={18} /> {t("افزودن برند")}</button>}
       </PageHeader>
 
       <div className="mb-4 text-[12px] rounded-xl px-3 py-2.5 bg-brand-violet/[0.06] text-ink-muted leading-relaxed flex items-start gap-2">
@@ -43,7 +46,7 @@ export default function BrandsManager({ brands, products }) {
 
       {brands.length === 0 ? (
         <EmptyState icon="award" title={t("برندی وجود ندارد")} desc={t("اولین برند را اضافه کنید. لوگوی رسمی را می‌توانید در همان فرم آپلود کنید.")}>
-          <button onClick={() => setEditing({})} className="btn-primary size-sm"><Icon name="plus" size={16} /> {t("افزودن برند")}</button>
+          {canCreate && <button onClick={() => setEditing({})} className="btn-primary size-sm"><Icon name="plus" size={16} /> {t("افزودن برند")}</button>}
         </EmptyState>
       ) : (
         <div className="card divide-y divide-line overflow-hidden">
@@ -68,11 +71,11 @@ export default function BrandsManager({ brands, products }) {
                 {b.is_featured && <Badge tone="violet" className="hidden sm:inline-flex">{t("ویژه")}</Badge>}
                 <Badge tone={b.logo_url ? "ok" : "muted"} className="hidden md:inline-flex">{b.logo_url ? t("لوگو دارد") : t("بدون لوگو")}</Badge>
                 <Badge tone={active ? "ok" : "muted"} className="hidden sm:inline-flex">{active ? t("فعال") : t("غیرفعال")}</Badge>
-                <button onClick={() => setManaging(b)} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-ok/10 hover:text-ok transition-colors shrink-0" title={t("مدیریت محصولات این برند")}>
+                {canEdit && <button onClick={() => setManaging(b)} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-ok/10 hover:text-ok transition-colors shrink-0" title={t("مدیریت محصولات این برند")}>
                   <Icon name="package" size={16} />
-                </button>
-                <button onClick={() => setEditing(b)} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-brand-violet/10 hover:text-brand-violet transition-colors shrink-0" title={t("ویرایش")}><Icon name="edit" size={16} /></button>
-                <button onClick={() => setDeleting(b)} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors shrink-0" title={t("حذف")}><Icon name="trash" size={16} /></button>
+                </button>}
+                {canEdit && <button onClick={() => setEditing(b)} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-brand-violet/10 hover:text-brand-violet transition-colors shrink-0" title={t("ویرایش")}><Icon name="edit" size={16} /></button>}
+                {canDelete && <button onClick={() => setDeleting(b)} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors shrink-0" title={t("حذف")}><Icon name="trash" size={16} /></button>}
               </div>
             );
           })}

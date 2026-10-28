@@ -14,6 +14,7 @@ import {
 } from "@/lib/beauty/operator/actions";
 import { beautyImageUrl } from "@/lib/beauty/catalog";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
+import { useCan } from "@/components/panel/Capabilities";
 import { tr } from "@/lib/panel/i18n";
 import { localName } from "@/lib/panel/i18n";
 
@@ -38,6 +39,8 @@ export default function CategoryTree({ tree }) {
   const t = useT();
   const { lang } = usePanelLang();
   const router = useRouter();
+  // what this person may offer on screen (the server asks again on every action)
+  const canCreate = useCan("categories.create"), canEdit = useCan("categories.edit"), canArchive = useCan("categories.archive"), canDelete = useCan("categories.delete");
   const [expanded, setExpanded] = useState(() => new Set());
   const [q, setQ] = useState("");
   const [busyId, setBusyId] = useState(null);
@@ -117,7 +120,7 @@ export default function CategoryTree({ tree }) {
         </div>
         <button type="button" onClick={expandAll} className="btn-ghost size-md"><Icon name="plus" size={15} /> {t("باز کردن همه")}</button>
         <button type="button" onClick={collapseAll} className="btn-ghost size-md"><Icon name="close" size={15} /> {t("بستن همه")}</button>
-        <button type="button" onClick={() => setModal({ mode: "add", parent: null, rootSlug: null })} className="btn-primary size-md"><Icon name="plus" size={16} /> {t("دپارتمان جدید")}</button>
+        {canCreate && <button type="button" onClick={() => setModal({ mode: "add", parent: null, rootSlug: null })} className="btn-primary size-md"><Icon name="plus" size={16} /> {t("دپارتمان جدید")}</button>}
       </div>
 
       <div className="rounded-2xl border border-line overflow-hidden bg-surface">
@@ -162,8 +165,8 @@ export default function CategoryTree({ tree }) {
                   </span>
 
                   {busy ? <Spinner size={16} /> : (
-                    <button type="button" role="switch" aria-checked={!off} onClick={() => toggleOne(node)} title={off ? t("روشن کن") : t("خاموش کن")}
-                      className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${off ? "bg-line" : "bg-ok"}`}>
+                    <button type="button" role="switch" aria-checked={!off} disabled={!canArchive} onClick={() => toggleOne(node)} title={off ? t("روشن کن") : t("خاموش کن")}
+                      className={`relative h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${off ? "bg-line" : "bg-ok"}`}>
                       <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${off ? "start-[1.125rem]" : "start-0.5"}`} />
                     </button>
                   )}
@@ -176,15 +179,15 @@ export default function CategoryTree({ tree }) {
                       <>
                         <div className="fixed inset-0 z-10" onClick={() => setMenuFor(null)} />
                         <div className="absolute z-20 end-0 mt-1 w-48 rounded-xl border border-line bg-surface shadow-lg py-1 text-[13px]">
-                          {node.level < 3 && (
+                          {canCreate && node.level < 3 && (
                             <button type="button" onClick={() => { setMenuFor(null); setModal({ mode: "add", parent: node, rootSlug }); }} className="w-full text-start px-3 py-2 hover:bg-line-soft flex items-center gap-2"><Icon name="plusCircle" size={15} className="text-brand-violet" /> {t("افزودن زیرمجموعه")}</button>
                           )}
-                          <button type="button" onClick={() => { setMenuFor(null); setModal({ mode: "edit", node, rootSlug }); }} className="w-full text-start px-3 py-2 hover:bg-line-soft flex items-center gap-2"><Icon name="edit" size={15} /> {t("ویرایش")}</button>
-                          {hasKids && (off
+                          {canEdit && <button type="button" onClick={() => { setMenuFor(null); setModal({ mode: "edit", node, rootSlug }); }} className="w-full text-start px-3 py-2 hover:bg-line-soft flex items-center gap-2"><Icon name="edit" size={15} /> {t("ویرایش")}</button>}
+                          {canArchive && hasKids && (off
                             ? <button type="button" onClick={() => toggleBranch(node, true)} className="w-full text-start px-3 py-2 hover:bg-line-soft flex items-center gap-2"><Icon name="eye" size={15} className="text-ok" /> {t("روشن‌کردن کل شاخه")}</button>
                             : <button type="button" onClick={() => toggleBranch(node, false)} className="w-full text-start px-3 py-2 hover:bg-line-soft flex items-center gap-2"><Icon name="eyeOff" size={15} /> {t("خاموش‌کردن کل شاخه")}</button>
                           )}
-                          <button type="button" onClick={() => { setMenuFor(null); setDel(node); }} className="w-full text-start px-3 py-2 hover:bg-warn/10 text-warn flex items-center gap-2"><Icon name="trash" size={15} /> {t("حذف")}</button>
+                          {canDelete && <button type="button" onClick={() => { setMenuFor(null); setDel(node); }} className="w-full text-start px-3 py-2 hover:bg-warn/10 text-warn flex items-center gap-2"><Icon name="trash" size={15} /> {t("حذف")}</button>}
                         </div>
                       </>
                     )}

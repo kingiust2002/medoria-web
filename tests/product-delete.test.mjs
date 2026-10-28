@@ -171,7 +171,7 @@ test("both panels wire their own session, table and audit; the buttons exist onl
   assert.match(beauty, /deleteProductGuarded\(\{\s*getSession, getAdminClient, table: "beauty_products", id, confirmation,\s*audit: makeAudit\("beauty"/);
   for (const f of ["components/operator/ProductsTable.jsx", "components/beauty/operator/ProductsTable.jsx"]) {
     const src = read(f);
-    assert.match(src, /\{!active && \(\s*<button onClick=\{\(\) => setDeleting\(p\)\}/, `${f}: delete only on archived rows`);
+    assert.match(src, /\{!active && canDelete && \(\s*<button onClick=\{\(\) => setDeleting\(p\)\}/, `${f}: delete only on archived rows`);
     assert.match(src, /<DeleteProductModal product=\{deleting\}/);
   }
   for (const a of ["product.delete_attempt", "product.delete", "product.delete_failed"]) assert.match(read("lib/operator/security.js"), new RegExp(`"${a.replace(".", "\\.")}":`), `the activity page has no label for ${a}`);
