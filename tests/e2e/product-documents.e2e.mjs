@@ -14,7 +14,7 @@ const SERVICE = "service-test-key";
 const ts = "2026-10-01T10:00:00.000Z";
 const insert = async (table, rows) => { const r = await fetch(`${DB}/rest/v1/${table}`, { method: "POST", headers: { apikey: SERVICE, "content-type": "application/json", prefer: "return=representation" }, body: JSON.stringify(rows) }); assert.equal(r.status, 201); return r.json(); };
 const pdf = (extra = "") => Buffer.from(`%PDF-1.4\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [] /Count 0 >> endobj\n${extra}\ntrailer << /Root 1 0 R >>\n%%EOF\n`, "latin1");
-const beautyProduct = { id: 11, slug: "e2e-serum", sku: "B-11", name_en: "E2E Serum", name_fa: "E2E Serum", name_ru: "E2E Serum", name_tg: "E2E Serum", price: 30, in_stock: true, is_active: true, brand: "Luxe", unit: "pcs", min_order_qty: 1, specs: {}, tags: [], gallery_urls: [], created_at: ts, updated_at: ts };
+const beautyProduct = { id: 11, slug: "e2e-doc-serum", sku: "B-11", name_en: "E2E Serum", name_fa: "E2E Serum", name_ru: "E2E Serum", name_tg: "E2E Serum", price: 30, in_stock: true, is_active: true, brand: "Luxe", unit: "pcs", min_order_qty: 1, specs: {}, tags: [], gallery_urls: [], created_at: ts, updated_at: ts };
 // E2E_SHOTS=<dir> saves screenshots for a visual check (not part of the assertions)
 const shot = async (page, name) => { if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/${name}.png`, fullPage: true }); };
 const docs = async (table = "product_documents") => (await state())[table] || [];
@@ -138,7 +138,7 @@ test("Beauty: the same flow in its own table and bucket; the public product page
   await page.getByTestId("document-publish").click();
   await poll(async () => (await docs("beauty_product_documents"))[0].is_published === true, { label: "published" });
   const pub = await ctx.newPage();
-  await poll(async () => { await pub.goto(`${BASE}/beauty/en/catalog/e2e-serum`, { waitUntil: "load" }); return (await pub.getByTestId("product-documents").count()) === 1; }, { timeout: 90000, interval: 3000, label: "Beauty page shows the document" });
+  await poll(async () => { await pub.goto(`${BASE}/beauty/en/catalog/e2e-doc-serum`, { waitUntil: "load" }); return (await pub.getByTestId("product-documents").count()) === 1; }, { timeout: 90000, interval: 3000, label: "Beauty page shows the document" });
   assert.match(await pub.getByTestId("product-document-link").first().innerText(), /brochure/i);
   await ctx.close();
 });
