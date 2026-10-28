@@ -1,10 +1,12 @@
 // An in-process stand-in for migration 36's functions (<house>_stock_post / _reverse / _reserve / _release), operating on the fake
 // database's tables. It mirrors the rules the real PostgreSQL functions are proved to have in tests/warehouse-migration.test.mjs
 // (never negative, idempotency keys, transfers in two legs, reversals once, reservations) so the screens can be driven end to end.
+import { simulateCountClose } from "../helpers/countCloseSim.mjs";
+
 class Refusal extends Error { constructor(code, details) { super(`stock:${code}`); this.details = details; } }
 
 export function warehouseRpc(tables, name, a) {
-  const m = /^(health|beauty)_stock_(post|reverse|reserve|release)$/.exec(name);
+  const m = /^(health|beauty)_stock_(post|reverse|reserve|release|count_close)$/.exec(name);
   if (!m) return null;
   const [, house, fn] = m;
   const T = (t) => (tables[`${house}_stock_${t}`] ??= []);
@@ -22,6 +24,16 @@ export function warehouseRpc(tables, name, a) {
     return l;
   };
   const ledger = (row) => { const r = { id: next(T("movements")), created_at: new Date().toISOString(), reverses_id: null, reservation_id: null, ...row }; T("movements").push(r); return r; };
+  if (fn === "count_close") {
+    // migration 41's transactional close: every difference through the post rules above, all or nothing (a failing line restores the ledger)
+    const tablesToRestore = ["movements", "balances", "reservations"];
+    const snapshot = () => JSON.stringify(tablesToRestore.map((t) => T(t)));
+    const restore = (snap) => { JSON.parse(snap).forEach((rows, i) => { tables[`${house}_stock_${tablesToRestore[i]}`] = rows; }); };
+    const post = (args) => { try { warehouseRpc(tables, `${house}_stock_post`, args); return null; } catch (e) { if (e instanceof Refusal) return { error: { message: e.message, details: e.details } }; throw e; } };
+    const out = simulateCountClose({ tables, house, args: a, post, snapshot, restore });
+    if (out.error) throw new Refusal(String(out.error.message).replace(/^stock:/, ""), out.error.details);
+    return out.data;
+  }
   const key = a.p_key;
   if (typeof key !== "string" || key.length < 8 || key.length > 80) throw new Refusal("bad_key");
   const group = () => `g-${Math.random().toString(36).slice(2)}`;

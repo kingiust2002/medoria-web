@@ -158,9 +158,60 @@ test("listPeople shows only visible people, never a hash or a seed; an outage is
 });
 
 test("messages: every authz code has a message, passwords problems too", () => {
-  for (const code of ["not_allowed", "owner_only", "owner_needs_both_houses", "house_outside_actor", "target_outside_actor", "grant_above_actor", "last_owner", "self_role", "self_status"]) {
+  for (const code of ["not_allowed", "owner_only", "owner_needs_both_houses", "house_outside_actor", "target_outside_actor", "grant_above_actor", "last_owner", "self_role", "self_status", "mode_above_actor", "target_above_actor", "require2fa_owner_only", "self_require2fa"]) {
     assert.ok(messageFor({ error: "notAllowed", codes: [code] }), code);
   }
   assert.ok(messageFor({ error: "password", problem: "too_short" }));
   assert.equal(messageFor({ ok: true }), null);
+});
+
+// ── review finding R2: a limited manager cannot take over a stronger non-owner account ───────────────────────────────────
+test("R2: viewer + users.manage cannot reset the password of, or end the sessions of, a house_admin (no 2FA on the target = takeover)", async () => {
+  const weak = row(7, { username: "viewer1", role: "viewer", allow_perms: ["users.manage"] });
+  const strong = row(8, { username: "admin1", role: "house_admin", require_2fa: false });
+  const sessions = [{ sid: "keep-1", user_id: strong.id, panel: "health", revoked_at: null }];
+  setup([owner, weak, strong], sessions);
+  const before = db.tables.operator_users.find((u) => u.id === strong.id).password_hash;
+  const r = await resetPersonPassword(ctx(weak), strong.id);
+  assert.equal(r.ok, false);
+  assert.equal(r.tempPassword, undefined, "no temporary password is produced for a stronger account");
+  assert.equal(db.tables.operator_users.find((u) => u.id === strong.id).password_hash, before, "the password hash is untouched");
+  assert.equal(db.tables.operator_users.find((u) => u.id === strong.id).must_change_password, false);
+  const e = await endPersonSessions(ctx(weak), strong.id);
+  assert.equal(e.ok, false);
+  assert.ok(db.tables.operator_sessions[0].revoked_at == null, "the stronger person's session is still alive");
+  assert.deepEqual(logs.filter((l) => /password_reset|sessions_ended/.test(l.action)).map((l) => [l.action, l.result, l.detail?.reason]), [["user.password_reset", "rejected", "target_above_actor"], ["user.sessions_ended", "rejected", "target_above_actor"]]);
+  // a peer (same or less power) is still theirs, and an owner can reset anybody
+  const peer = row(9, { username: "viewer2", role: "viewer" });
+  db.tables.operator_users.push(peer);
+  assert.equal((await resetPersonPassword(ctx(weak), peer.id)).ok, true);
+  assert.equal((await resetPersonPassword(ctx(owner), strong.id)).ok, true);
+});
+
+test("R2: a target that differs only by execution mode (direct where the manager needs approval) is not the manager's to reset", async () => {
+  const mgr = row(11, { username: "pm1", role: "product_manager", allow_perms: ["users.manage"], approval: { health: ["products.price"] } });
+  const direct = row(12, { username: "pm2", role: "product_manager", approval: { health: [] } });
+  setup([owner, mgr, direct]);
+  assert.equal((await resetPersonPassword(ctx(mgr), direct.id)).ok, false);
+});
+
+// ── review finding R3 through the whole path: the database row → a signed session's person → "restricted or not" ──────────
+test("R3: a person with required 2FA AND a configured seed is not restricted after the session is resolved from the real column projection", async () => {
+  const { resolveSessionUser, getUser } = await import("../lib/operator/accounts.js");
+  const { restrictedReason, actorOf } = await import("../lib/operator/access.js");
+  const configured = row(21, { username: "enrolled", require_2fa: true, totp_secret_enc: "encrypted-test-seed", recovery_hashes: ["test-hash"] });
+  const notYet = row(22, { username: "fresh", require_2fa: true });
+  setup([owner, configured, notYet]);
+  const s1 = await resolveSessionUser(db, { panel: "health", uid: configured.id, av: 1 });
+  assert.equal(restrictedReason({ user: s1.user }), null, "enrolled: free to work");
+  assert.ok(actorOf({ user: s1.user }, "health"));
+  const s2 = await resolveSessionUser(db, { panel: "health", uid: notYet.id, av: 1 });
+  assert.equal(restrictedReason({ user: s2.user }), "twofa", "not enrolled yet: still restricted until set up");
+  assert.equal(actorOf({ user: s2.user }, "health"), null);
+  // what the people screen is given never carries the seed or the hashes
+  const listed = await listPeople(ctx(owner));
+  const text = JSON.stringify(listed);
+  assert.ok(!text.includes("encrypted-test-seed") && !text.includes("test-hash") && !text.includes(HASH));
+  assert.equal(listed.users.find((u) => u.username === "enrolled").hasTotp, true);
+  assert.equal((await getUser(db, configured.id)).user.hasTotp, true);
 });
