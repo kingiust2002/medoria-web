@@ -1,0 +1,73 @@
+# Panel platform — author's work log
+
+What was actually done, in order, so the work does not depend on a chat's memory. Status words are literal: **built** (code + tests exist), **not built**
+(listed so nobody assumes it), **owner action** (only the owner can do it). Nothing here has been merged (except #204, #206, #207 by the owner's review
+of 2026-10-28), deployed, or applied to a database by the author. Companion documents: `PANEL_PLATFORM_PLAN.md` (stages and the PR stack),
+`PANEL_RELEASE_RUNBOOK.md` (how to release), `PANEL_INDEPENDENT_REVIEW_2026-10-28.md` (the owner's independent review),
+`PANEL_REVIEW_RESPONSE_2026-10-28.md` (how its eight findings were fixed and how well each fix is proved).
+
+## Working rules kept throughout
+
+Only PR branches (never `main`); no production, DNS, Caddy, backup or secret was touched or printed; no migration applied; `lint`, unit tests and the
+browser suite run before every PR; one browser run at a time (a second run rebuilds the build under the first); pushes are plain fast-forward pushes
+(a force push on a shared PR branch was refused by the environment and not worked around — history was extended by merges instead).
+
+## Phase 1 — security base and the three-language panel
+
+* S1a / S1b (#204, #207): permanent delete of an archived product with a typed confirmation; every irreversible action (product, request, category, brand)
+  writes an **attempt** first (a missing log table = refusal) and a separate **outcome** entry. Tests that failed before the fix.
+* Three-language panel (#206): language module, provider, switcher, direction, a codemod that wrapped ~1700 Persian literals, Tajik and English dictionaries
+  (~870 texts), tests that fail on a bare Persian text or a missing translation. **Machine-written Tajik/English: no native review yet (owner action).**
+
+## Phase 2 — accounts, permissions, approvals (all switched off by default: `OPERATOR_USERS`)
+
+* S2a (#208) the pure permission model (`house.resource.action`, roles as presets, default closed, deny beats allow, `direct | approval | denied`).
+* S2b (#209, migration 34) personal accounts, login by person with a constant-cost check, owner bootstrap from the env account (keeps its password and,
+  if present, its second factor), last-owner protection, sessions re-read per request and ended when power changes. S2e: permissions on every action,
+  page, reader and menu.
+* S2c / S2d (#210) the people screen (create with a one-time temporary password, change, disable, end sessions), own password / 2FA / recovery codes with
+  re-authentication, restricted sessions.
+* S2f / S2g (#211, migration 35) approval queue (request, compare, approve/reject with reason, resubmit, stale refusal, execution re-checks the person),
+  activity log v2 (person, target, result, before/after, filters, CSV with its own permission, append-only).
+* S3 / S4a (#212, migration 36) buttons follow permissions; the internal warehouse core (private per-house tables, append-only idempotent ledger,
+  balances changed only by SECURITY DEFINER functions, reservations, reversals), leak tests, `check:rls`.
+
+## Phase 3 — screens and features on top
+
+* S4b (#213) warehouse screens. S5e (#214, migration 37) request follow-up, customer file, Telegram retry, report and CSV. S5c (#215, migration 38) optimistic
+  lock, conflict banner with a kept draft, change history, revert as a new change. S5d (#216) image library. S6a (#217, migration 39) scheduled publishing
+  and archiving with a token-protected cron route. S6b (#218) quick search. S5f (#219, migration 40) translation status.
+* S4c (#220, migration 41) stock counts, minimum levels, CSV reports. Site content (#221, migration 42) banner + FAQ per house with a live-window row policy.
+  Daily reminder counts due follow-ups (#222). Bounded product / quote / dashboard lists (#223). Per-language visitor preview and gap checklist (#224).
+* Release runbook (S6c), the PR stack in merge order, and the list of what is not built, in `PANEL_PLATFORM_PLAN.md` and `PANEL_RELEASE_RUNBOOK.md`.
+* Visual QA with real screenshots was done for the site banner, the FAQ and the content screen (both houses, desktop and phone). Other new screens were covered
+  by browser and phone-width tests, not by screenshot review.
+
+## Phase 4 — response to the independent review (2026-10-28)
+
+* The owner's review merged #204, #207, #206 into `main` and held #208–#224 for eight findings (R1–R8).
+* For each finding: fixed on the **owning** branch, merged forward through every later branch (and `main` merged into #209 so the stack is tested against it),
+  with permanent tests (several on real PostgreSQL with real concurrency). Details, proof levels and behaviour changes: `PANEL_REVIEW_RESPONSE_2026-10-28.md`.
+* The in-memory test stand-in used by many tests ignored the SELECT list; that hid R3 and R6. It now returns only the selected columns and can enforce a
+  declared schema. Any test that read a column it never selected had to be corrected.
+* Added after the review: a generated cross-house permission matrix and static pins for the new action cores' permission checks.
+
+## Mistakes made and caught on the way (so they are not repeated)
+
+* The audit log silently dropped the details of the new stock actions (`DETAIL_KEYS` is an allow-list) — found by self-review, fixed, tested.
+* The site-content update read a row before checking the permission (id probing) — fixed before release; the same shape is now pinned for all new cores.
+* A regex literal containing raw line-separator characters broke a module; a merge re-introduced an unused translation key and failed the i18n check.
+* Two browser runs started at once clobbered the shared build; a `pkill -f` matched my own shell. Neither affected results, both were rerun cleanly.
+
+## Not built / owner decisions (do not read as done)
+
+Variants; real server pagination and filtering; full private draft preview and blocking publish rules; advanced media crop/focus; product documents; lots,
+expiry, quarantine and low-stock alerts to e-mail/Telegram; saved table preferences and bulk-selection scope; editing contact details and featured content;
+personal settings and shortcuts; a verified backup/monitoring/restore-drill status; native review of Tajik/English texts; chatbot and cosmetic changes are
+explicitly out of the current stage.
+
+## Release state
+
+Nothing of the platform is active on any server: migrations 34–42 are unapplied, `OPERATOR_USERS` is off, no cron line, no new secret. The only reviewed,
+mergeable subset is already on `main` (#204, #206, #207). The platform rollout is a **separate, staged decision** after the corrected stack is reviewed;
+the order (backup → migrations in order → env → deploy → live checks → rollback) is in `PANEL_RELEASE_RUNBOOK.md`.

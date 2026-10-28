@@ -77,6 +77,16 @@ warehouse tables present and append-only (an `UPDATE` on a ledger table must fai
 runbook's §17 baseline. Known limit recorded in CLAUDE.md/§22: data written after the restored snapshot is missing — the drill measures how
 much that is.
 
+## 5a. After the independent review (2026-10-28)
+
+* The platform rollout is **blocked until the corrected stack is re-reviewed** (`PANEL_REVIEW_RESPONSE_2026-10-28.md`). The safe subset already on `main`
+  (#204, #206, #207) needs **no migration and no env change** (see `PRODUCTION_MIGRATION_AND_OPERATIONS.md`).
+* **Migration 41 changed before ever being applied** (it now contains the transactional close functions); apply the version from the corrected stack only. If
+  a throw-away database got the old 41, re-run the new file's `CREATE OR REPLACE FUNCTION` blocks.
+* Approved product deletions now need a basis version; old queued delete requests fail as stale and must be re-submitted.
+* Extra post-checks for the platform rollout, in addition to section 3: with a disposable manager account holding `users.manage` and a **viewer** role,
+  confirm it cannot reset the password of a house admin; confirm a stock-count close that cannot post one line leaves the count open and the ledger unchanged.
+
 ## 6. Not done / owner decisions
 * No native-speaker review of the Tajik/English panel texts (all new screens' texts included).
 * **Warehouse**: lots, expiry dates, quarantine and e-mail / Telegram low-stock alerts are not built (counts, minimum levels with a badge and a filter,

@@ -81,7 +81,7 @@ honest message (nothing half-done) until its executor exists.
 * **Approve** = one conditional update claims the request (two reviewers at once: exactly one executes); then the requester's account is
   re-read (active, in the house, still allowed every operation of the change); then the change is applied **only if the record is still the
   version the request was prepared against** — a newer change is never overwritten, the request ends as *failed / stale* and the requester
-  can **resubmit** it against the current record. A permanent delete re-checks "archived" and the typed SKU at that moment.
+  can **resubmit** it against the current record. A permanent delete re-checks "archived" and the typed SKU at that moment **and applies only to the product version the reviewer was shown** (`base_updated_at`): the version is compared when the request runs AND repeated inside the delete statement, so a product edited after the request — even one that is still archived with the same SKU — is never removed (the request fails as stale, nothing is written to the history); a request without a basis version deletes nothing (review R8).
 * **Reject** needs a reason (≥ 3 characters), shown to the requester, who can resubmit or **withdraw** a pending request.
 * Database guards (migration 35): decided once; the asker is never the decider; "approved" gets `executed_at` once; decided rows are frozen
   and never deleted; an identical pending request cannot be filed twice (a double click is one request).
@@ -113,6 +113,23 @@ This is **convenience, not security**: every action still asks the server at the
 refuses, and without a provider (tests, a page outside the layout) nothing is hidden. Pinned by `tests/capabilities-wiring.test.mjs`
 (unknown operation names would hide a button forever), `tests/access.test.mjs` (`capabilitiesOf` = `decide`), and
 `tests/e2e/accounts-permissions.e2e.mjs` (the rendered HTML of a viewer, a product manager and a request manager).
+
+## Delegation ceilings and the second-factor policy (independent review R1, R2, R3, R4, R5)
+
+* **Execution modes are a ceiling** (`authz.modesAboveActor`): a non-owner who manages accounts can never create or change an account so that it executes
+  something **more directly** than they do themselves (denied < needs approval < direct). A manager whose price change needs approval cannot make an account
+  that changes prices directly — by role, by custom `allow`, or by emptying the approval list. Both houses; new accounts and updates. Only an owner sets any policy.
+* **A target above the actor is not theirs to manage** (`authz.targetWithinActor`): for any change to an existing account — status, role, **password
+  reset, ending sessions** — a non-owner must hold every permission and every execution mode the target has. A viewer with `users.manage` cannot reset a
+  `house_admin` and take the account over. Owners manage everybody (never the last owner away).
+* **The second-factor requirement is a security policy**: nobody changes their own; only an owner relaxes anybody's (a manager may still tighten it);
+  any change ends the person's sessions so they sign in again under the new rule.
+* **The second-factor state is read from the real columns** (`accounts.READ_COLUMNS`): a person with a configured seed is reported as having one
+  (a required-2FA person was restricted again after login because the projection omitted the seed column). `rowToUser` computes
+  `hasTotp` / `recoveryLeft` and **never copies the seed, the hashes or the password hash** into the object that leaves the module (tests pin this).
+* **A recovery code works once, also under concurrency**: consumption is a compare-and-swap on the complete list the request read (the stored list must
+  contain every hash it read and nothing else); the loser re-reads and decides on the latest list, so a spent code can never be restored by a stale writer.
+  Proved on real PostgreSQL with two overlapping sessions (`tests/operator-users-migration.test.mjs`).
 
 ## What does NOT exist yet (do not switch the flag on before these ship)
 

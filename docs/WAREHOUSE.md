@@ -80,10 +80,15 @@ deleted. Proved on PostgreSQL 16: `tests/warehouse-counts-migration.test.mjs`.
 * **Count tab** ("شمارش"): *New count* snapshots a warehouse (every product with a balance row there). The person types the counted
   quantity per line (an empty cell = not counted = left alone; **0 is a count**); a product that is on the shelf but not on the list is
   added by SKU (expected 0). The difference is shown while typing. *Save* stores the entries; *Cancel* ends the count without posting.
-* **Closing** posts one `adjust` movement per line whose counted quantity differs from `expected`, with the key `count-<count>-<product>`
-  (so closing twice, a retry after a half failure, or an approval executed twice posts each difference once). The difference is
-  `counted − expected`, applied to the **current** balance: stock that moved after the snapshot is preserved. If one difference cannot be
-  posted (for example the stock is now reserved), the count **stays open**, the screen names the product, and closing again is safe.
+* **Closing is ONE database transaction** (`<house>_stock_count_close`, migration 41; review finding R7). The function locks the count row (every
+  concurrent save of a counted quantity waits for it, and a save that committed first is simply part of what it reads), verifies the **reviewed
+  snapshot** when one is given (an approval carries the exact differences; if the count says something else now, nothing is posted — "stale"),
+  posts one `adjust` movement per line whose counted quantity differs from `expected` (key `count-<count>-<product>`) through the ledger function of
+  migration 36, and marks the count closed. **All or nothing**: if any difference cannot be posted (for example the stock is now reserved), every
+  movement of the close is rolled back, the count stays open and the screen names the product. The difference is `counted − expected`, applied to the
+  **current** balance: stock that moved after the snapshot is preserved. Closing a closed count is a harmless replay (nothing posted, not logged
+  twice); a request for a different snapshot than the closed one is "stale". Proved on real PostgreSQL, including two sessions racing a save against the
+  close, two simultaneous closes, and an injected failure after the first of several movements (`tests/warehouse-counts-migration.test.mjs`).
   Closing is the operation `inventory.count_close`: direct, or — for a person whose policy says "approve" (warehouse manager by default) —
   a change request carrying the exact differences; the reviewer's approval posts them as the requester, and an approval whose count
   changed after it was filed fails as *stale* and posts nothing (`makeCountExecutors`).

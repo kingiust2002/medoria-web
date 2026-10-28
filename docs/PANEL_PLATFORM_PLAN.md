@@ -105,7 +105,12 @@ public route/API/payload/print path.
 | 6 | S6b | Appearance, personal settings, global search, shortcuts, real-screenshot QA in 3 languages | S2e | 30 |
 | 6 | S6c | Backup/monitoring/restore-drill status and documentation | – | 31 |
 
-## 3a. The stack — merge order (as of 2026-10-27)
+## 3a. The stack — merge order (as of 2026-10-28)
+
+**Status: on hold.** The owner's independent review (`PANEL_INDEPENDENT_REVIEW_2026-10-28.md`) merged #204, #207 and #206 and held #208–#224 for eight blocking
+findings. They are fixed on the owning branches and merged forward through the whole stack — see `PANEL_REVIEW_RESPONSE_2026-10-28.md` for each fix, its
+tests and how well it is proved. The corrected stack awaits the owner's re-review; **do not merge a higher PR to bypass a blocked ancestor.** The history of what
+was done is in `PANEL_WORK_LOG.md`.
 
 Every branch below is stacked on the one before it; merge **in this order** (each PR's base is the previous branch; GitHub retargets the next PR when its base is merged). **A merge deploys nothing.** The migrations that come with the stack are 34 (accounts), 35 (approvals, append-only log), 36 (warehouse), 37 (quote follow-up), 38 (product history), 39 (scheduled publishing), 40 (translation status), 41 (warehouse counts), 42 (site content); the order in which to apply them and the rollback of each are in `docs/PANEL_RELEASE_RUNBOOK.md`.
 

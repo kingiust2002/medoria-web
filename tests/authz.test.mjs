@@ -251,3 +251,34 @@ test("R5: nobody changes their own second-factor requirement, and only an owner 
   assert.equal(checkUserChange({ actor: me, target: U({ id: "o2", require2fa: false }), change: { require2fa: true }, users: [owner()] }).ok, true, "tightening is allowed");
   assert.equal(checkUserChange({ actor: owner(), target: other, change: { require2fa: false }, users: [owner()] }).ok, true);
 });
+
+// ── review follow-up: the whole cross-house matrix, generated (role × membership × house × operation) ─────────────────────
+test("matrix: nobody acts in a house they are not in, and membership of the other house never changes what they may do here", () => {
+  const sets = [["health"], ["beauty"], ["health", "beauty"]];
+  for (const role of ROLE_IDS) {
+    for (const houses of sets) {
+      const u = U({ id: `m-${role}`, role, houses });
+      for (const house of HOUSES) {
+        for (const op of Object.keys(OPERATIONS)) {
+          const got = decide(u, house, op);
+          if (!houses.includes(house) && role !== "owner") assert.equal(got.mode, "denied", `${role} in [${houses}] must be denied ${house}.${op}`);
+          // the same person with ONLY this house gets the same answer here
+          if (houses.includes(house)) assert.equal(got.mode, decide(U({ id: "x", role, houses: [house] }), house, op).mode, `${role} ${house}.${op}: the other house must not change this one`);
+        }
+        for (const p of ALL_PERMISSIONS.filter((x) => x.startsWith(`${house}.`))) {
+          if (!houses.includes(house) && role !== "owner") assert.equal(can(u, p), false, `${role} [${houses}] ${p}`);
+        }
+      }
+    }
+  }
+  // an owner (always both houses) is the one who can act everywhere; a per-person deny still wins
+  assert.equal(decide(owner({ deny: ["beauty.products.edit"] }), "beauty", "products.price").mode, "denied");
+  assert.equal(decide(owner(), "health", "products.price").mode, "direct");
+});
+
+test("matrix: a custom allow never reaches into a house the person is not in, and deny beats every allow", () => {
+  const u = U({ role: "viewer", houses: ["health"], allow: ["beauty.*", "health.quotes.edit"], deny: ["health.quotes.edit"] });
+  assert.equal(can(u, "beauty.products.edit"), false);
+  assert.equal(can(u, "health.quotes.edit"), false, "deny beats allow");
+  assert.equal(can(u, "health.quotes.view"), true);
+});
