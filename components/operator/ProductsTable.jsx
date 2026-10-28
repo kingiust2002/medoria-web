@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
 import { isIncomplete, gapSummary } from "@/lib/operator/completeness";
 import { imageUrl } from "@/lib/supabase";
-import { setProductActive, duplicateProduct, quickUpdateProduct, bulkUpdateProducts } from "@/lib/operator/actions";
+import { setProductActive, duplicateProduct, quickUpdateProduct, bulkUpdateProducts, deleteProduct } from "@/lib/operator/actions";
+import DeleteProductModal from "@/components/operator/DeleteProductModal";
 import {
   PageHeader, Input, Select, Badge, EmptyState, Spinner, productDisplayName, priceText, isOnRequest,
 } from "@/components/operator/ui";
@@ -15,6 +16,7 @@ export default function ProductsTable({ products, categories }) {
   const [pending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState(null);
   const [msg, setMsg] = useState(null);
+  const [deleting, setDeleting] = useState(null);   // the archived product whose permanent deletion is being confirmed
 
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("");
@@ -232,12 +234,21 @@ export default function ProductsTable({ products, categories }) {
                     <button onClick={() => toggleActive(p)} disabled={isBusy} className={`grid place-items-center w-9 h-9 rounded-lg transition-colors disabled:opacity-50 ${active ? "text-ink-muted hover:bg-warn/10 hover:text-warn" : "text-ink-muted hover:bg-ok/10 hover:text-ok"}`} title={active ? "آرشیو (غیرفعال)" : "فعال‌سازی"}>
                       {isBusy ? <Spinner /> : <Icon name={active ? "archive" : "eye"} size={16} />}
                     </button>
+                    {!active && (
+                      <button onClick={() => setDeleting(p)} disabled={isBusy} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors disabled:opacity-50" title="حذف دائمی" aria-label={`حذف دائمی: ${productDisplayName(p)}`} data-testid="product-delete">
+                        <Icon name="trash" size={16} />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
+      )}
+      {deleting && (
+        <DeleteProductModal product={deleting} onClose={() => setDeleting(null)} onDelete={deleteProduct}
+          onDone={(res) => { setDeleting(null); flash(res?.ok ? "محصول برای همیشه حذف شد." : "این محصول دیگر وجود ندارد؛ فهرست به‌روز شد.", Boolean(res?.ok)); router.refresh(); }} />
       )}
     </>
   );

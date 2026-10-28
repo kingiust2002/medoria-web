@@ -87,6 +87,26 @@ Use the second one when a password, a phone or a computer may have fallen into t
 - **An outage is not a missing table.** The session check skips itself only when the registry table really does not exist (Postgres `42P01`, PostgREST `PGRST205`: migration 30 not applied yet). Every other failure refuses: a database outage, a connection error (`PGRST000`/`PGRST001`), a schema cache that cannot be built (`PGRST002`, "Could not query the database for the schema cache"), a permission error, a network failure. The bare words "schema cache" used to count as "missing table", so during a `PGRST002` outage every correctly signed cookie opened the panel; a cookie with a random signature never did. The same classifier decides login (refused while sessions cannot be recorded), the second-factor replay memory (a code is refused if its use cannot be recorded), "end session(s)" (reports failure) and the activity log (a deletion is refused while the log cannot be written). A session already checked is trusted for at most 20 seconds, so a short outage does not log people out mid-click.
 - **Logout is confirmed by the server.** If the server cannot end the session (HTTP 503 `{ ok: false }`), the browser cookie is **kept** (so a retry can still end it), nothing is logged as `auth.logout` (the failure is logged as `auth.logout_failed`), and the panel stays open and says so with a retry button, in both panels (sidebar button and the settings page button). Only `{ ok: true }` from the server sends the user to the login page. The idle auto-logout uses the same path, so after 20 idle minutes with the server failing, the panel shows the error instead of pretending to have left.
 
+## Deleting a product
+
+A product is removed for good only after it was **archived** (the eye/archive button): the delete button exists only on archived
+rows, the person types the product's SKU (its English name when it has none) and the **server** repeats every check
+(`lib/operator/productDelete.js`): valid session, archived, matching text, and the history:
+
+1. an **attempt** entry (`product.delete_attempt`) is written first. If it cannot be written — the table does not exist
+   (migration 30 not applied), the database fails, or no audit function is wired — **nothing is deleted**: a missing log is a
+   refusal, never a permission;
+2. the delete repeats "archived" in its own condition, so a product re-activated a moment earlier survives;
+3. the **outcome** is a different entry: `product.delete` only when a row was really removed, `product.delete_failed` (reason
+   `state_changed` or `db_error`) otherwise. A failed delete can therefore never read as a successful one. If only the outcome
+   entry cannot be written, the history shows an attempt without an outcome and the panel result says so.
+
+Customer requests keep the product's name and SKU (their `product_id` link becomes empty); uploaded image files are **not**
+removed from storage (a duplicated product shares its file). Tests: `tests/product-delete.test.mjs` (red against the first
+version, green now), `tests/e2e/product-delete.e2e.mjs`. Every product action also validates its id (positive integer, at most
+500 ids in bulk), and `tests/panel-actions-guard.test.mjs` fails if any operator server action stops opening with a session
+check.
+
 ## Pages and data readers check the session themselves (found 2026-10-27)
 
 A panel layout redirects visitors who have no session, but **a layout is not a security boundary**: Next.js renders a layout
