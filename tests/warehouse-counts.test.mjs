@@ -5,6 +5,7 @@
 import test, { beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { createMemoryAdmin } from "./helpers/memoryAdmin.mjs";
+import { simulateCountClose } from "./helpers/countCloseSim.mjs";
 import { cleanCountedEntries, cleanLevel, COUNT_MESSAGES, countCsv, countDelta, countKey, differencesOf, isLow, movementsCsv, parseCounted, proposalText, stockCsv, summarize } from "../lib/warehouse/countsCore.js";
 import * as counts from "../lib/warehouse/countsActions.js";
 import { requireAll, evaluateAll } from "../lib/operator/access.js";
@@ -68,7 +69,12 @@ test("the CSV reports are formula-safe and carry the computed columns", () => {
 
 // ── the actions ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 let db, audits, posted, nextCount;
-const rpc = { health_stock_post: (a) => { posted.push(a); return rpc.result(a); }, result: () => ({ data: { ok: true, replayed: false, movement_ids: [1], balance_after: 0 }, error: null }) };
+const rpc = {
+  health_stock_post: (a) => { posted.push(a); return rpc.result(a); }, result: () => ({ data: { ok: true, replayed: false, movement_ids: [1], balance_after: 0 }, error: null }),
+  // the transactional close of migration 41 (see tests/helpers/countCloseSim.mjs): every difference through health_stock_post, all or nothing
+  health_stock_count_close: (args) => simulateCountClose({ tables: db.tables, house: "health", args, snapshot: () => posted.length, restore: (n) => posted.splice(n),
+    post: (a) => { const r = rpc.health_stock_post(a); return r.error ? r : null; } }),
+};
 const manager = urow(1, { role: "warehouse_manager" });             // closing a count needs approval by default
 const boss = urow(2, { role: "house_admin" });
 const viewer = urow(3, { role: "viewer" });
@@ -152,22 +158,28 @@ test("closing directly posts one adjustment per difference with its own key, the
   assert.equal(db.tables.health_stock_counts[0].status, "closed");
   assert.equal(db.tables.health_stock_counts[0].differences, 1);
   const again = await counts.closeCount(ctxFor(boss), { countId: cid });
-  assert.equal(again.ok, false); assert.equal(posted.length, 1);
+  assert.deepEqual([again.ok, again.differences], [true, 1], "closing a closed count is a harmless replay");
+  assert.equal(posted.length, 1, "…that posts nothing");
+  assert.equal(audits.filter((a) => a.action === "stock.count_close" && a.result === "success").length, 1, "and is not logged as a second close");
   assert.ok(audits.some((a) => a.action === "stock.count_close" && a.result === "success" && a.detail.differences === 1));
 });
 
-test("a difference that cannot be posted keeps the count open and names the line; closing again is safe", async () => {
+test("a difference that cannot be posted rolls EVERYTHING back, keeps the count open and names the line; closing again works", async () => {
   const cid = await start();
   await enter(boss, cid, [{ productId: 7, counted: "0" }, { productId: 8, counted: "6" }]);
-  rpc.result = (a) => (a.p_product === 7 ? { data: null, error: { message: "stock:insufficient_stock", details: "available=3" } } : { data: { ok: true, replayed: false, movement_ids: [2] }, error: null });
+  rpc.result = (a) => (a.p_product === 8 ? { data: null, error: { message: "stock:insufficient_stock", details: "available=3" } } : { data: { ok: true, replayed: false, movement_ids: [2] }, error: null });
   const r = await counts.closeCount(ctxFor(boss), { countId: cid });
   assert.equal(r.ok, false);
-  assert.deepEqual(r.failed.map((f) => f.sku), ["G-7"]);
+  assert.deepEqual(r.failed.map((f) => f.sku), ["M-8"], "the second of two differences failed");
+  assert.equal(r.error, COUNT_MESSAGES.some_failed);
+  assert.deepEqual(r.failed[0].params, { available: "3" });
   assert.equal(db.tables.health_stock_counts[0].status, "open");
-  rpc.result = () => ({ data: { ok: true, replayed: true, movement_ids: [2] }, error: null });
+  assert.deepEqual(posted, [], "the first difference was undone with the rest — no partial posting");
+  rpc.result = () => ({ data: { ok: true, replayed: false, movement_ids: [2] }, error: null });
   const retry = await counts.closeCount(ctxFor(boss), { countId: cid });
   assert.deepEqual([retry.ok, retry.differences], [true, 2]);
-  assert.deepEqual(posted.map((p) => p.p_key), ["count-1-7", "count-1-8", "count-1-7", "count-1-8"], "every attempt reuses the same keys");
+  assert.deepEqual(posted.map((p) => p.p_key), ["count-1-7", "count-1-8"], "each difference is posted once, with its own key");
+  assert.equal(db.tables.health_stock_counts[0].status, "closed");
 });
 
 test("nothing counted: a close is refused; cancelling ends it without posting", async () => {
