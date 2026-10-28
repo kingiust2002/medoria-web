@@ -65,6 +65,10 @@ if (!process.env.E2E_SKIP_BUILD || !fs.existsSync(path.join(root, DIST))) {
   if (b.status !== 0) { console.error("✗ build failed"); process.exit(b.status || 1); }
 }
 
+// Next keeps its data cache (fetch-cache) ON DISK inside the build directory and serves a stale entry first. A previous run's product data (for example a variant's
+// price) would otherwise be shown to the next run's first requests. Every run starts with an empty data cache, like a fresh CI checkout.
+fs.rmSync(path.join(root, DIST, "cache", "fetch-cache"), { recursive: true, force: true });
+
 const db = createFakeDb(seed);
 await db.start(DB_PORT);
 let app = null;
@@ -72,7 +76,7 @@ let appReady = false;
 let appLog = "";
 // Test files that need the app in a different configuration: personal accounts switched on (OPERATOR_USERS) with a data key.
 const dataKey = randomBytes(32).toString("base64");
-const FILE_ENV = new Proxy({}, { get: (_t, name) => (/^accounts[-.]/.test(String(name)) ? { OPERATOR_USERS: "on", OPERATOR_DATA_KEY: dataKey } : undefined) });
+const FILE_ENV = new Proxy({}, { get: (_t, name) => (/^accounts[-.]/.test(String(name)) ? { OPERATOR_USERS: "on", OPERATOR_DATA_KEY: dataKey, OPS_REPORT_TOKEN: "e2e-ops-report-token-0123456789" } : undefined) });
 const startApp = (extra = {}) => {
   // Own the server process directly. Killing an npx wrapper may leave next-server alive with the previous file's environment.
   appReady = false;

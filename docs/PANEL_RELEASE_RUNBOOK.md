@@ -1,6 +1,6 @@
 # Panel platform — release runbook (stage S6c)
 
-The one place that says **what to do, in which order, and how to go back** for the multi-user panel work (migrations 30–42). It does not
+The one place that says **what to do, in which order, and how to go back** for the multi-user panel work (migrations 30–52). It does not
 replace `docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md` (the infrastructure truth: VPS, Caddy, Supabase, backups, DNS — read it before touching
 production) — it points into it. Nothing here is automatic: **a merge deploys nothing**, and every step below is done by a person.
 
@@ -31,6 +31,18 @@ first error.
 | 40 translation status | product tables | marks are not remembered; saving works | header |
 | 41 warehouse counts and minimum levels | 36 | the count tab says "unavailable"; stock tab works without minimums | header |
 | 42 site content (banner, FAQ) | 34 | no banner / FAQ on the public pages and the content screen says "unavailable"; the site is unaffected | header |
+| 43 list paging (computed columns, indexes) | product + request tables | the completeness filter says "needs migration 43"; see `docs/PANEL_LIST_PAGING.md` for the rest | header |
+| 44 product variants | product tables | no variants; the variant screens say "unavailable"; products unaffected | header |
+| 45 warehouse lots, expiry, quarantine | 36, 41 | the lot features report that they need the migration; see `docs/PANEL_WAREHOUSE_LOTS.md` | header |
+| 46 publish quality rules | 34 | the rule cannot be saved; with no rule nothing is blocked (as before) | header |
+| 47 category / brand picture focus | category tables | focus points cannot be saved; see `docs/PANEL_CATEGORY_IMAGES.md` | header |
+| 48 product documents | 34, product tables | the documents section says "unavailable"; the public page shows none | header |
+| 49 saved list views | 34 | the lists show no "views" row | header |
+| 50 personal start page and shortcuts | 34 | the settings card says so; no shortcuts | header |
+| 51 contact details and featured products (kinds of site content) | 42 | the two new tabs cannot save; the public pages use the built-in defaults / starred products | header |
+| 52 what the server scripts reported | – | the System status screen says everything is **unknown** (never green) | header |
+
+**None of 43–52 is applied anywhere yet** (production is proven only at `5ac0592`); each is written, tested on a throw-away PostgreSQL 16 and documented in `migrations/README.md`.
 
 Before applying any of them on production: **fresh production backup and the local + R2 chain must PASS** (`scripts/self-host/production-backup.sh`;
 runbook §7). A migration is applied by the person doing the release, never by the application.
@@ -43,6 +55,7 @@ runbook §7). A migration is applied by the person doing the release, never by t
 | `OPERATOR_BOOTSTRAP_USERNAME` | only if the old username is not 3–64 `a-z0-9._-` | rarely |
 | `SCHEDULE_TOKEN` | ≥ 24 chars (`openssl rand -hex 32`): lets the cron apply scheduled publishing | scheduling is wanted |
 | `QUOTE_REMINDER_TOKEN` | same kind: the daily request reminder | reminders are wanted |
+| `OPS_REPORT_TOKEN` | same kind: lets the server's own scripts report backup / restore-drill / heartbeat results to the panel's System status screen (`docs/PANEL_SYSTEM_STATUS.md`); also set `OPS_REPORT_URL` + the same token in the two alert env files on the server | the System status screen should show real reports instead of "unknown" |
 
 `node scripts/check-self-host-env.mjs deploy/.env` checks all of them (and refuses half-configured states) without printing values.
 

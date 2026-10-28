@@ -10,6 +10,7 @@ import { changeMyPassword, startMyTwoStep, confirmMyTwoStep, disableMyTwoStep, n
 import { revokeOtherSessions, revokeAllSessions } from "@/lib/beauty/operator/securityActions";
 import { isAdminConfigured } from "@/lib/operator/supabaseAdmin";
 import { PageHeader, SectionCard } from "@/components/operator/ui";
+import Link from "next/link";
 import PublishRulesCard from "@/components/operator/PublishRulesCard";
 import { savePublishRulesAction } from "@/lib/beauty/operator/publishRuleActions";
 import { readRules } from "@/lib/operator/publishGate";
@@ -17,7 +18,7 @@ import PreferencesCard from "@/components/operator/PreferencesCard";
 import { savePreferencesAction } from "@/lib/beauty/operator/preferenceActions";
 import { openableTargets } from "@/lib/operator/navAccess";
 import { preferencesOf } from "@/lib/operator/preferencesPage";
-import { mayView } from "@/lib/operator/access";
+import { mayView, mayGlobal } from "@/lib/operator/access";
 import LogoutButton from "@/components/beauty/operator/LogoutButton";
 import { requireBeautySession } from "@/lib/operator/panelGuard";
 import { getT } from "@/lib/panel/server";
@@ -66,6 +67,14 @@ export default async function SettingsPage() {
       {session?.user && (
         <div className="mb-6">
           <AccountSecurity user={session.user} actions={{ changeMyPassword, startMyTwoStep, confirmMyTwoStep, disableMyTwoStep, newMyRecoveryCodes }} />
+        </div>
+      )}
+
+      {mayGlobal(session, "beauty", "users.view") && (
+        <div className="mb-6">
+          <SectionCard title={t("وضعیت سیستم")} desc={t("پشتیبان‌گیری، آزمون بازیابی، ضربان سرور، مهاجرت‌ها و مسیر هشدار — آنچه واقعاً دانسته شده، بدون فرض سالم‌بودن.")} icon="shield">
+            <Link href="/beauty/operator/system" className="btn-ghost size-md" data-testid="link-system"><Icon name="shield" size={16} /> {t("باز کردن وضعیت سیستم")}</Link>
+          </SectionCard>
         </div>
       )}
 
