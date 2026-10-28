@@ -8,10 +8,12 @@ import Link from "next/link";
 import { getTranslations, getCategoryName, LANG_META } from "@/lib/i18n";
 import { imageUrl } from "@/lib/supabase";
 import { priceLabel, isOnRequest } from "@/lib/price";
-import { waLink, tgLink, productInquiryMessage } from "@/lib/whatsapp";
+import { productInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
+import { useContact } from "@/components/shared/ContactContext";
 
 export default function QuickViewModal({ product, lang, onClose, onRequestQuote }) {
+  const { waLink, tgLink } = useContact();
   const t = getTranslations(lang);
   const dir = LANG_META[lang]?.dir || "ltr";
   const reduce = useReducedMotion();

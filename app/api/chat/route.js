@@ -12,7 +12,7 @@
 //   - Anthropic:    set ANTHROPIC_API_KEY (+ optional ANTHROPIC_MODEL).
 import Anthropic from "@anthropic-ai/sdk";
 import { CATEGORIES, getCategoryName } from "@/lib/i18n";
-import { WA_NUMBER, TG_USER } from "@/lib/whatsapp";
+import { getHouseContact } from "@/lib/contactLive";
 import { rateLimit, clientIpFromHeaders, isSameOriginRequest } from "@/lib/security/rateLimit";
 import { verifyChatPass } from "@/lib/security/chatPass";
 
@@ -54,7 +54,7 @@ export async function GET() {
   return Response.json({ available: !!provider() });
 }
 
-function buildSystem(lang) {
+function buildSystem(lang, contact) {
   const language = LANG_NAMES[lang] || LANG_NAMES.en;
   const categories = CATEGORIES.map(
     (c) => `- ${getCategoryName(c.slug, lang)} (${c.slug})`
@@ -76,8 +76,8 @@ PRODUCT CATEGORIES
 ${categories}
 
 CONTACT CHANNELS
-- WhatsApp: https://wa.me/${WA_NUMBER}
-- Telegram: https://t.me/${TG_USER}
+- WhatsApp: https://wa.me/${contact.whatsapp}
+- Telegram: https://t.me/${contact.telegram}
 
 YOUR ROLE
 - Help visitors discover products and categories, understand the procurement process, and answer questions about Medoria and its services.
@@ -223,7 +223,7 @@ export async function POST(req) {
   const messages = sanitize(body?.messages);
   if (!messages.length) return Response.json({ error: "No messages" }, { status: 400 });
 
-  const system = buildSystem(lang);
+  const system = buildSystem(lang, await getHouseContact("health"));
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({

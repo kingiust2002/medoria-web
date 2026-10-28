@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { getRelatedProducts } from "@/lib/supabase";
 import { getTranslations, getCategoryName } from "@/lib/i18n";
-import { waLink, tgLink, productInquiryMessage } from "@/lib/whatsapp";
+import { productInquiryMessage } from "@/lib/whatsapp";
 import { priceLabel, priceLine, isOnRequest, formatPrice } from "@/lib/price";
 import { useCompare } from "@/lib/compare";
 import { useWishlist } from "@/lib/wishlist";
@@ -22,6 +22,7 @@ import Breadcrumb from "@/components/shared/Breadcrumb";
 import VariantPicker from "@/components/product/VariantPicker";
 import { usePreview } from "@/components/shared/PreviewContext";
 import { defaultVariant, variantView } from "@/lib/operator/variants";
+import { useContact } from "@/components/shared/ContactContext";
 
 const BADGE_STYLE = {
   SALE: "bg-accent-pink text-white",
@@ -30,6 +31,7 @@ const BADGE_STYLE = {
 };
 
 export default function ProductDetailClient({ product: parent, lang, variants = [], documents = [] }) {
+  const { waLink, tgLink } = useContact();
   const t = getTranslations(lang);
   // A product with variants: the visitor chooses one and everything about buying (price, SKU, stock, picture, the request) follows it;
   // compare, wish list and "recently viewed" stay on the product itself, because only products are public pages.

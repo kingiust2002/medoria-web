@@ -2,8 +2,8 @@
 "use client";
 import { useState } from "react";
 import { getTranslations } from "@/lib/i18n";
-import { waLink, tgLink } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
+import { useContact } from "@/components/shared/ContactContext";
 
 const LABELS = {
   ru: {
@@ -65,6 +65,7 @@ const LABELS = {
 };
 
 export default function Procurement({ lang }) {
+  const { waLink, tgLink } = useContact();
   const t = getTranslations(lang);
   const L = LABELS[lang] || LABELS.en;
   const [list, setList] = useState("");

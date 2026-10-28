@@ -12,7 +12,8 @@ import BeautyHeader from "@/components/beauty/BeautyHeader";
 import BeautyFooter from "@/components/beauty/BeautyFooter";
 import SiteBanner from "@/components/shared/SiteBanner";
 import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
-import { EMAIL_BEAUTY } from "@/lib/contact";
+import { getHouseContact } from "@/lib/contactLive";
+import { ContactProvider } from "@/components/shared/ContactContext";
 import BeautyAiAssistant from "@/components/beauty/BeautyAiAssistant";
 
 // Beauty's own mark — overrides the root's neutral fused favicon. Tight-
@@ -76,7 +77,9 @@ export default async function BeautyLayout(props) {
   const { lang } = params;
   if (!LOCALES.includes(lang)) notFound();
   const dir = LANG_META[lang].dir;
+  const contact = await getHouseContact("beauty");        // the details the operators edit, over the built-in defaults
   return (
+    <ContactProvider value={contact}>
     <div
       lang={lang}
       dir={dir}
@@ -96,8 +99,9 @@ export default async function BeautyLayout(props) {
         {children}
       </main>
       <BeautyFooter lang={lang} />
-      <FloatingWhatsApp lang={lang} email={EMAIL_BEAUTY} emailSubject="Medoria Beauty" />
+      <FloatingWhatsApp lang={lang} email={contact.email} emailSubject="Medoria Beauty" />
       <BeautyAiAssistant lang={lang} />
     </div>
+    </ContactProvider>
   );
 }

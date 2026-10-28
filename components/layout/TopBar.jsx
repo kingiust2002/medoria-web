@@ -1,13 +1,14 @@
 // components/layout/TopBar.jsx
 import { getTranslations } from "@/lib/i18n";
-import { WA_NUMBER, TG_USER } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
-import { EMAIL_HEALTH } from "@/lib/contact";
+import { contactApi } from "@/lib/contactLinks";
+import { getHouseContact } from "@/lib/contactLive";
 
-export default function TopBar({ lang }) {
+export default async function TopBar({ lang }) {
+  const { WA_NUMBER, TG_USER, phone: contactPhone, email: EMAIL_HEALTH } = contactApi(await getHouseContact("health"));
   const t = getTranslations(lang);
   const email = EMAIL_HEALTH;
-  const phone = process.env.NEXT_PUBLIC_PHONE || "";
+  const phone = contactPhone || "";
 
   return (
     <div className="hidden md:block bg-navy text-white/70 text-[11px]">

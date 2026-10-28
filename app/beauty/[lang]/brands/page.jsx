@@ -11,11 +11,13 @@ import { LOCALES } from "@/lib/i18n";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
 import { getBeautyBrandDirectory, beautyBrandLogoUrl } from "@/lib/beauty/catalog";
 import { beautyRobots } from "@/lib/beauty/seo";
-import { waLink, tgLink, bulkInquiryMessage } from "@/lib/whatsapp";
+import { bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import BeautyPageHeader from "@/components/beauty/BeautyPageHeader";
 import { Reveal, Stagger, StaggerItem } from "@/components/shared/Reveal";
+import { contactApi } from "@/lib/contactLinks";
+import { getHouseContact } from "@/lib/contactLive";
 
 // ISR, not force-dynamic: this page reads no searchParams and no request
 // state, so it can be prerendered and served from the CDN edge nearest the
@@ -90,6 +92,7 @@ function monogram(name) {
 }
 
 export default async function BeautyBrandsPage(props) {
+  const { waLink, tgLink } = contactApi(await getHouseContact("beauty"));
   const params = await props.params;
   const { lang } = params;
   const t = getBeautyTranslations(lang);
