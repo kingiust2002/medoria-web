@@ -1,15 +1,14 @@
-// app/beauty/operator/(panel)/products/page.jsx — Beauty product list.
-import { getAdminBeautyProducts, getAdminBeautyCategories } from "@/lib/beauty/operator/data";
+// app/beauty/operator/(panel)/products/page.jsx — Beauty product list: one server-filtered, server-counted page (state in the address).
+import { getBeautyProductsPage, getAdminBeautyCategories } from "@/lib/beauty/operator/data";
 import ProductsTable from "@/components/beauty/operator/ProductsTable";
 import { requireBeautySession } from "@/lib/operator/panelGuard";
-import { PRODUCT_LIST_LIMIT, mayBeTruncated } from "@/lib/operator/listLimits";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProductsPage(props) {
   await requireBeautySession("products.view");
-  const searchParams = await props.searchParams;
-  const [products, categories] = await Promise.all([getAdminBeautyProducts(), getAdminBeautyCategories()]);
-  const initialQuery = typeof searchParams?.brand === "string" ? searchParams.brand.slice(0, 120) : "";
-  return <ProductsTable products={products} categories={categories} initialQuery={initialQuery} truncatedAt={mayBeTruncated(products, PRODUCT_LIST_LIMIT) ? PRODUCT_LIST_LIMIT : 0} />;
+  const sp = { ...(await props.searchParams) };
+  if (!sp.q && typeof sp.brand === "string") sp.q = sp.brand;           // a link from the brands screen
+  const [data, categories] = await Promise.all([getBeautyProductsPage(sp), getAdminBeautyCategories()]);
+  return <ProductsTable data={data} categories={categories} />;
 }

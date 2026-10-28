@@ -18,7 +18,6 @@ export default function CsvButton({ run, label, testId = "wh-csv" }) {
     const a = document.createElement("a");
     a.href = url; a.download = res.filename; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
-    if (res.truncated) setErr(t("فقط ۵۰۰۰ ردیف اول خروجی گرفته شد."));
   }
   return (
     <span className="inline-flex items-center gap-2 flex-wrap">

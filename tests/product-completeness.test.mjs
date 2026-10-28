@@ -51,9 +51,13 @@ test("both panels show the filter, the badge and the dashboard count", () => {
   for (const f of ["components/operator/ProductsTable.jsx", "components/beauty/operator/ProductsTable.jsx"]) {
     const s = read(f);
     assert.match(s, /isIncomplete, gapSummary/);
-    assert.match(s, /complete === "incomplete"/);
+    assert.match(s, /value="incomplete"/);                       // the filter option; the filtering itself is done by the database (below)
     assert.match(s, /ناقص: /);
   }
-  for (const f of ["lib/operator/data.js", "lib/beauty/operator/data.js"]) assert.match(read(f), /incomplete: countIncomplete\(products\)/);
+  // the filter and the dashboard count run on the server over ALL products, with the same rule as productGaps (migration 43 gap_count; parity test on PostgreSQL)
+  assert.match(read("lib/operator/listQuery.js"), /complete === "incomplete"\) q = q\.gt\("gap_count", 0\)/);
+  assert.match(read("lib/operator/listQuery.js"), /complete === "complete"\) q = q\.eq\("gap_count", 0\)/);
+  assert.match(read("lib/operator/listReaders.js"), /\.gt\("gap_count", 0\)\)/);
+  for (const f of ["lib/operator/data.js", "lib/beauty/operator/data.js"]) assert.match(read(f), /readDashboard\(admin, "(health|beauty)"/);
   for (const f of ["app/operator/(panel)/page.jsx", "app/beauty/operator/(panel)/page.jsx"]) assert.match(read(f), /محصولات با اطلاعات ناقص/);
 });

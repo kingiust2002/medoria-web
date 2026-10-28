@@ -8,46 +8,36 @@
 // only place that relationship is meant to be edited by hand — the
 // standalone "create a brand-new product" flow still exists (linked at the
 // bottom) for the rare case the product isn't in the catalog yet at all.
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Icon from "@/components/shared/Icon";
 import { beautyImageUrl as imageUrl } from "@/lib/beauty/catalog";
-import { quickUpdateProduct, bulkUpdateProducts } from "@/lib/beauty/operator/actions";
+import { quickUpdateProduct, bulkUpdateProducts, listBrandRoster } from "@/lib/beauty/operator/actions";
 import { Input, Spinner, productDisplayName } from "@/components/operator/ui";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import Trans from "@/components/panel/Trans";
 
-const norm = (s) => String(s || "").trim().toLowerCase();
 
-export default function BrandProductsModal({ brand, products, onClose }) {
+export default function BrandProductsModal({ brand, onClose }) {
   const t = useT();
   const { lang } = usePanelLang();
   const router = useRouter();
-  const brandKey = norm(brand.name);
-
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
   const [unlinking, setUnlinking] = useState(null);
   const [err, setErr] = useState("");
   const [flash, setFlash] = useState("");
-
-  const current = useMemo(
-    () => products.filter((p) => norm(p.brand) === brandKey),
-    [products, brandKey]
-  );
-
-  const candidates = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    let list = products.filter((p) => norm(p.brand) !== brandKey);
-    if (needle) {
-      list = list.filter((p) =>
-        [p.name_fa, p.name_en, p.sku, p.brand].filter(Boolean).some((v) => String(v).toLowerCase().includes(needle))
-      );
-    }
-    return list.slice(0, 60); // enough to scan; search narrows further
-  }, [products, brandKey, q]);
+  // the roster and the search come from the server (never the whole catalogue in the browser)
+  const [roster, setRoster] = useState({ current: [], currentTotal: 0, candidates: [], candidatesTotal: 0, loading: true });
+  const load = useCallback(async (query) => {
+    const res = await listBrandRoster(brand.name, query);
+    if (res.ok) { setRoster({ current: res.current, currentTotal: res.currentTotal, candidates: res.candidates, candidatesTotal: res.candidatesTotal, loading: false }); setErr(""); }
+    else { setRoster((r) => ({ ...r, loading: false })); setErr(t(res.error)); }
+  }, [brand.name, t]);
+  useEffect(() => { const h = setTimeout(() => load(q), q ? 300 : 0); return () => clearTimeout(h); }, [q, load]);
+  const current = roster.current, candidates = roster.candidates;
 
   function toggle(id) {
     setSelected((s) => {
@@ -65,7 +55,7 @@ export default function BrandProductsModal({ brand, products, onClose }) {
     if (res.ok) {
       setFlash(t("{count} محصول به «{name}» افزوده شد.", { count: res.count, name: brand.name }));
       setSelected(new Set());
-      router.refresh();
+      router.refresh(); load(q);
     } else {
       setErr(t(res.error) || t("افزودن ناموفق بود."));
     }
@@ -75,7 +65,7 @@ export default function BrandProductsModal({ brand, products, onClose }) {
     setErr(""); setUnlinking(product.id);
     const res = await quickUpdateProduct(product.id, { brand: null });
     setUnlinking(null);
-    if (res.ok) { setFlash(t("«{productDisplayName}» از این برند جدا شد.", { productDisplayName: productDisplayName(product, lang) })); router.refresh(); }
+    if (res.ok) { setFlash(t("«{productDisplayName}» از این برند جدا شد.", { productDisplayName: productDisplayName(product, lang) })); router.refresh(); load(q); }
     else setErr(t(res.error) || t("جداکردن ناموفق بود."));
   }
 
@@ -86,7 +76,7 @@ export default function BrandProductsModal({ brand, products, onClose }) {
         <div className="flex items-center justify-between gap-3 p-5 border-b border-line shrink-0">
           <div className="min-w-0">
             <h2 className="font-bold text-lg text-ink truncate"><Trans t={t} k="محصولات برند «{name}»" values={{ name: <span dir="ltr">{brand.name}</span> }} /></h2>
-            <p className="text-xs text-ink-muted mt-0.5">{t("{length} محصول در حال حاضر متصل است", { length: current.length })}</p>
+            <p className="text-xs text-ink-muted mt-0.5">{t("{length} محصول در حال حاضر متصل است", { length: roster.currentTotal })}</p>
           </div>
           <button type="button" onClick={onClose} className="grid place-items-center w-9 h-9 rounded-lg hover:bg-line-soft text-ink-muted shrink-0"><Icon name="close" size={18} /></button>
         </div>
@@ -98,7 +88,7 @@ export default function BrandProductsModal({ brand, products, onClose }) {
           {/* Current roster */}
           <div className="mb-6">
             <h3 className="text-[12px] font-semibold text-ink-muted mb-2">{t("محصولات این برند")}</h3>
-            {current.length === 0 ? (
+            {roster.loading ? <p className="text-[13px] text-ink-faint p-4 text-center" aria-busy="true"><Spinner /></p> : current.length === 0 ? (
               <p className="text-[13px] text-ink-faint rounded-xl border border-dashed border-line p-4 text-center">{t("هنوز محصولی به این برند وصل نیست. از پایین یکی اضافه کن.")}</p>
             ) : (
               <div className="rounded-xl border border-line divide-y divide-line overflow-hidden">

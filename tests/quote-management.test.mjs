@@ -455,7 +455,9 @@ test("the panel shows code, assignee, waiting and notice-failure markers, and fi
   assert.match(panel, /isOverdue\(x, \{ now \}\)/);
   assert.match(panel, /اعلان تلگرام نرسید/);
   assert.match(panel, /نیازمند پیگیری/);
-  assert.match(panel, /x\.tracking_code, x\.assigned_to\]/);
+  // the search runs on the server over every request: these are the columns it looks in
+  const lq = read("lib/operator/listQuery.js");
+  assert.match(lq, /QUOTE_SEARCH_COLUMNS = \["name", "phone", "product_name", "organization", "tracking_code", "assigned_to"\]/);
   for (const f of ["components/operator/QuotesManager.jsx", "components/beauty/operator/QuotesManager.jsx"]) {
     assert.match(read(f), /assignQuote/);
   }

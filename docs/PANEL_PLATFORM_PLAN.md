@@ -177,6 +177,26 @@ States below cover ONLY each row's described implementation. Missing parts of a 
 | S6c release runbook for the whole panel platform (migrations 30–42, env, cron, post-checks, rollback, monitoring, restore drill) | **merged documentation**; real restore/monitoring proof pending | – (documentation) |
 | S4c warehouse stock counts (snapshot, type, close → idempotent adjustments, approval), minimum levels + low-stock filter, CSV reports (migration 41) | **merged described scope; not deployed** | `tests/warehouse-counts*.test.mjs` (PostgreSQL 16 for the migration), `tests/e2e/warehouse-counts.e2e.mjs` |
 | S6a site content: announcement banner and FAQ per house, edited in the panel (rights per field, schedule, optimistic lock), shown on the public pages (migration 42) | **merged described scope; not deployed** | `tests/site-content*.test.mjs` (PostgreSQL 16 for the migration), `tests/e2e/site-content.e2e.mjs` |
-| S5a (bounded version): the product and quote lists of both panels load at most 2000 / 1500 rows (newest first) instead of everything, and say so when they reach the bound (the quick search at the top searches the whole catalogue on the server). **Full server-side paging / filtering is not built** — the lists still filter and sort in the browser | **merged described scope; not deployed** | `tests/list-limits.test.mjs` |
+| S5a (bounded version — **superseded by N1 / PR "server-side paging"**, see section 7 and `PANEL_LIST_PAGING.md`): the product and quote lists of both panels load at most 2000 / 1500 rows (newest first) instead of everything, and say so when they reach the bound (the quick search at the top searches the whole catalogue on the server). **Full server-side paging / filtering is not built** — the lists still filter and sort in the browser | **merged described scope; not deployed** | `tests/list-limits.test.mjs` |
 | S5b (as built): inside the live preview of both product forms, a per-language view of what a visitor sees (the public product page's own fallback to English is shown as a badge; Tajik first) and a checklist of what the product page still lacks (image, SKU, category, names, descriptions, specs). It only points at gaps and **never blocks a save**; no public route was touched (a preview of a draft on the real public page, and blocking publish rules, are **not built** — they need a decision on which gaps may block) | **merged described scope; not deployed** | `tests/preview-view.test.mjs`, `tests/e2e/product-preview.e2e.mjs` |
 | S6b: the quick search is built (branch `feat/panel-search`); **personal settings and pinned shortcuts are not built** — language and light/dark mode already exist per person, pinned shortcuts / a start page need a per-person preferences column and are deferred | **partial**: search merged; preferences/shortcuts not built | |
+
+## 7. Phase 5 — the remaining requests (started 2026-10-28, after the independent acceptance)
+
+One PR per item, each on top of the previous one (merge in this order; **a merge deploys nothing and no migration or setting has been applied to any server**). States: **complete** = built, tested, documented, CI green on the final commit; **partial** = built with a named gap; **needs real owner confirmation** = code done, the proof needs something only the owner can do (server, native speaker, real delivery); **not started**.
+
+| N | Request | State | PR | Migration | Document |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Real server-side paging of every list that was capped | in progress | – | 43 | `PANEL_LIST_PAGING.md` |
+| 2 | Approval path: every "needs approval" operation files a real, executable request; stale / revoked / self-approval refused | not started | – | – | – |
+| 3 | Product variants (own SKU, variable specs, link to the parent) | not started | – | – | – |
+| 4 | Warehouse: lots, expiry, quarantine, low-stock / expiry alerts | not started | – | – | – |
+| 5 | Full private preview of a draft on the real public layout | not started | – | – | – |
+| 6 | Publish quality rules chosen by the main manager (one rule for direct, approved, scheduled, bulk and import publishing) | not started | – | – | – |
+| 7 | Category / brand images in both panels, crop and focus point, safe media deletion | not started | – | – | – |
+| 8 | Product documents (brochure, datasheet, certificate) | not started | – | – | – |
+| 9 | Saved table views and bulk-selection scope ("this page" / "all filtered results") | not started | – | – | – |
+| 10 | Personal settings and shortcuts | not started | – | – | – |
+| 11 | Editable contact details and featured content | not started | – | – | – |
+| 12 | Import and bulk operations under the same rules | not started | – | – | – |
+| 13 | Backup / monitoring status in the panel, restore-test tooling | not started | – | – | – |

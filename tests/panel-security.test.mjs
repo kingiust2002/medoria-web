@@ -292,6 +292,7 @@ test("every changing server action writes to the activity log; the few exception
     "restoreProductVersion",                                                                             // logged inside productRestoreCore.js (product.restore, with before / after)
     "setQuoteFollowUp", "retryQuoteNotice", "exportQuotesCsv",                                            // logged inside quoteFollowUpCore.js via `audit` (quote.follow_up, quote.notice_retry, quotes.exported)
     "deleteProduct",                                                                                      // logged FIRST inside productDelete.js via `audit` (product.delete)
+    "listBrandRoster",                                                                                    // read-only (the brand screen's roster and search)
   ]);
   const missing = [];
   let checked = 0;

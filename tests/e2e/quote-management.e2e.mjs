@@ -65,16 +65,21 @@ test("panel: code, waiting and failed-notice markers, filter, search by code", a
   assert.equal(await page.getByText(/^بدون پاسخ/).count(), 2);
   assert.equal(await page.getByText("اعلان تلگرام نرسید").count(), 1);
   await page.getByRole("button", { name: /نیازمند پیگیری/ }).waitFor();
-  assert.match(await page.getByRole("button", { name: /نیازمند پیگیری/ }).innerText(), /2/);
+  assert.match(await page.getByRole("button", { name: /نیازمند پیگیری/ }).innerText(), /[2۲]/);   // the count follows the panel language's digits
 
   // the filter keeps exactly those two
   await page.getByRole("button", { name: /نیازمند پیگیری/ }).click();
+  await page.waitForURL(/attention=1/);                      // the filter runs on the server: its state is the address
   await page.getByLabel("انتخاب E2E Customer 1", { exact: true }).waitFor();
   assert.equal(await page.getByLabel(/^انتخاب E2E Customer/).count(), 2);
   await page.getByRole("button", { name: /نیازمند پیگیری/ }).click();
+  await page.waitForURL((u) => !u.search.includes("attention"));
 
   // the code is in the opened request and searchable
   await page.getByPlaceholder(/کد پیگیری/).fill("MH-0000-0000-0002");
+  await page.waitForURL(/q=MH-0000-0000-0002/);
+  await page.getByLabel("انتخاب E2E Customer 2", { exact: true }).waitFor();
+  await page.waitForFunction(() => document.querySelectorAll('input[aria-label^="انتخاب E2E Customer"]').length === 1);
   assert.equal(await page.getByLabel(/^انتخاب E2E Customer/).count(), 1);
   await page.getByLabel("انتخاب E2E Customer 2", { exact: true }).waitFor();
   await page.getByText("E2E Customer 2").first().click();
@@ -94,10 +99,15 @@ test("panel: assigning a request is saved, shown, filterable and removable", asy
   // the badge and the assignee filter appear; the filter narrows the list
   await page.getByText("مسئول: سارا").waitFor();
   await page.getByLabel("فیلتر مسئول").selectOption("سارا");
+  await page.waitForURL(/who=/);
+  await page.waitForFunction(() => document.querySelectorAll('input[aria-label^="انتخاب E2E Customer"]').length === 1);
   assert.equal(await page.getByLabel(/^انتخاب E2E Customer/).count(), 1);
   await page.getByLabel("فیلتر مسئول").selectOption("__none");
+  await page.waitForURL(/who=__none/);
+  await page.waitForFunction(() => document.querySelectorAll('input[aria-label^="انتخاب E2E Customer"]').length === 2);
   assert.equal(await page.getByLabel(/^انتخاب E2E Customer/).count(), 2);   // requests 2 and 3 (active tab)
   await page.getByLabel("فیلتر مسئول").selectOption("");
+  await page.waitForURL((u) => !u.search.includes("who="));
 
   // remove it again
   await page.getByLabel("مسئول پیگیری").fill("");

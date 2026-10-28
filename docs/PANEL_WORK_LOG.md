@@ -79,3 +79,9 @@ Only the safe subset is owner-reported live at `5ac0592` (see operations §23.12
 ## Phase 6 — completed review follow-up
 
 PR #226 merged at `7db86c7`: the test harness owns the Next server directly and proves readiness/exit; the real-SDK recovery-code HTTP check is permanent. CI passed 576 unit and 198 browser tests with zero fail/skip; the independent full local Node 22 browser run also passed 198/198. A busy-port negative control was refused without killing the unrelated server. Local full unit results remain explicitly 501 pass / 1 executor failure / 74 skip, not a claimed green local PostgreSQL run. Details and final check links are in `PANEL_REVIEW_ACCEPTANCE_2026-10-28.md`. No platform migration, activation or deployment was performed.
+
+## Phase 5 — the remaining requests (from 2026-10-28, after the independent acceptance)
+
+Each item is its own PR on top of the previous one, from current `main`. Nothing is merged or deployed by the author; no migration is applied anywhere. The status of each item is in `PANEL_PLATFORM_PLAN.md` section 7.
+
+* **N1 server-side paging.** The lists that were capped (products 2,000, requests 1,500, dashboard 5,000, warehouse stock 500, approvals 200/50, CSV 5,000, reads at the API's silent 1,000) now filter, sort, count and page in the database. Details, proof and limits: `PANEL_LIST_PAGING.md`. Along the way the test stand-ins learned the real PostgREST filter grammar and the API's silent row limit, which exposed that the old "read everything" queries (counts per category, stock-count snapshots, exports) had been losing rows beyond 1,000 without an error.

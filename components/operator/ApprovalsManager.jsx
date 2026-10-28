@@ -3,6 +3,7 @@
 // old and the proposed values, approves (the change is applied at that moment, only if the record is still as it was) or rejects with a
 // reason. A requester sees the status and the reason, can withdraw a pending request, and can ask again after a rejection. The server
 // decides everything; this is the convenience.
+import ListPager from "@/components/operator/ListPager";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
@@ -103,7 +104,7 @@ function Card({ r, mode, actions, onResult }) {
   );
 }
 
-export default function ApprovalsManager({ toReview, mine, loadError, sent, actions }) {
+export default function ApprovalsManager({ toReview, mine, minePaging = null, basePath = "", loadError, sent, actions }) {
   const t = useT();
   const router = useRouter();
   const [notice, setNotice] = useState(sent ? t("برای تأیید ارسال شد؛ تا زمان تأیید، چیزی در سایت تغییر نمی‌کند.") : "");
@@ -123,6 +124,7 @@ export default function ApprovalsManager({ toReview, mine, loadError, sent, acti
         {mine.length === 0 ? <EmptyState icon="clock" title={t("هنوز درخواستی نفرستاده‌اید")} /> : (
           <ul className="grid gap-3" data-testid="mine">{mine.map((r) => <Card key={r.id} r={r} mode="mine" actions={actions} onResult={onResult} />)}</ul>
         )}
+        {minePaging && minePaging.total > minePaging.size && <ListPager data={minePaging} href={(change) => (change.page > 1 ? `${basePath}?page=${change.page}` : basePath)} />}
       </SectionCard>
     </div>
   );

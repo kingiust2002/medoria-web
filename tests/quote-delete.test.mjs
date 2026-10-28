@@ -180,7 +180,7 @@ test("both panels show a delete button per request and confirm with the request'
   ]) {
     const s = read(file);
     assert.match(s, new RegExp(`import \\{[^}]*\\bdeleteQuote\\b[^}]*\\} from "${actions.replace(/\//g, "\\/")}"`), `${file}: wrong deleteQuote import`);
-    assert.match(s, /<QuotesPanel quotes=\{quotes\} actions=\{actions\}/, `${file}: does not render the shared screen`);
+    assert.match(s, /<QuotesPanel data=\{data\} actions=\{actions\}/, `${file}: does not render the shared screen`);
   }
   const panel = read("components/operator/QuotesPanel.jsx");
   assert.match(panel, /onClick=\{\(\) => setDeleting\(x\)\}[^>]*title=\{t\("حذف درخواست"\)\}/, "no per-row delete button");
