@@ -54,6 +54,7 @@ browser suite run before every PR; one browser run at a time (a second run rebui
 
 ## Mistakes made and caught on the way (so they are not repeated)
 
+* After the review fixes, CI showed #208 failing `main`'s panel-i18n test: its role labels were bare Persian text (the later branches already wrapped them in `tr()`, #208 on its own did not). Fixed on #208 (labels wrapped, Tajik/English added), merged forward through the stack.
 * The audit log silently dropped the details of the new stock actions (`DETAIL_KEYS` is an allow-list) — found by self-review, fixed, tested.
 * The site-content update read a row before checking the permission (id probing) — fixed before release; the same shape is now pinned for all new cores.
 * A regex literal containing raw line-separator characters broke a module; a merge re-introduced an unused translation key and failed the i18n check.
