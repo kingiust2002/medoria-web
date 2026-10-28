@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { getProductsByIds, imageUrl } from "@/lib/supabase";
+import { getProductsByIds, getVariantItemsByIds, imageUrl } from "@/lib/supabase";
 import { getTranslations, LANG_META } from "@/lib/i18n";
 import { waLink, tgLink } from "@/lib/whatsapp";
 import { submitQuoteRequest } from "@/lib/actions/quote";
@@ -47,7 +47,15 @@ export default function InquiryClient({ lang }) {
     let cancelled = false;
     if (!items.length) { setProducts([]); setLoading(false); return undefined; }
     setLoading(true); setLoadFailed(false);
-    getProductsByIds(items.map((x) => x.id)).then((rows) => {
+    // products first; the ids that are not products may be variants (migration 44), which the public tables hide: they come from their own function
+    // and link to the product they belong to
+    const ids = items.map((x) => x.id);
+    getProductsByIds(ids).then(async (found) => {
+      const known = new Set(found.map((r) => r.id));
+      const rest = ids.filter((id) => !known.has(id));
+      const variantRows = rest.length ? await getVariantItemsByIds(rest) : [];
+      return [...found, ...variantRows.map((v) => ({ ...v, slug: v.parent_slug, __variant: true }))];
+    }).then((rows) => {
       if (cancelled) return;
       setProducts(rows);
       // Archived or deleted products cannot be asked about: take them out of the list and say so.

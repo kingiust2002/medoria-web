@@ -122,6 +122,26 @@ const TRACKING_PREFIX = { quote_requests: "MH", beauty_quote_requests: "MB" };
 const ANSWERED = ["contacted", "in_progress", "quoted", "closed"];
 const hex4 = () => Math.floor(Math.random() * 0x10000).toString(16).toUpperCase().padStart(4, "0");
 
+// migration 44: the public functions that hand out the ACTIVE variants of an ACTIVE product (public columns only)
+function variantsRpc(tables, name, a) {
+  const m = /^public_(beauty_)?product_variants$/.exec(name);
+  if (m) {
+    const table = tables[m[1] ? "beauty_products" : "products"] || [];
+    const parent = table.find((r) => r.id === a.p_parent);
+    if (!parent || parent.is_active === false || parent.variant_of != null) return [];
+    return table.filter((v) => v.variant_of === parent.id && v.is_active !== false)
+      .sort((x, y) => (x.variant_sort || 0) - (y.variant_sort || 0) || x.id - y.id)
+      .map((v) => ({ id: v.id, sku: v.sku, options: v.variant_options, price: v.price, ...(m[1] ? {} : { currency: v.currency }), unit: v.unit, in_stock: v.in_stock, image_url: v.image_url, sort: v.variant_sort || 0 }));
+  }
+  if (name === "public_variant_items") {
+    const table = tables.products || [];
+    return table.filter((v) => (a.p_ids || []).slice(0, 30).includes(v.id) && v.variant_of != null && v.is_active !== false)
+      .map((v) => ({ v, p: table.find((r) => r.id === v.variant_of) })).filter(({ p }) => p && p.is_active !== false && p.variant_of == null)
+      .map(({ v, p }) => ({ id: v.id, sku: v.sku, name_en: v.name_en, name_ru: v.name_ru, name_tg: v.name_tg, name_fa: v.name_fa, price: v.price, currency: v.currency, unit: v.unit, in_stock: v.in_stock, image_url: v.image_url || p.image_url, min_order_qty: v.min_order_qty, brand: v.brand, category: v.category, options: v.variant_options, parent_id: p.id, parent_slug: p.slug }));
+  }
+  return undefined;
+}
+
 export function createFakeDb(seedFactory) {
   let tables = clone(seedFactory());
   let counters = {};
@@ -200,6 +220,8 @@ export function createFakeDb(seedFactory) {
     if (rpc) {
       const body = await readBody(req);
       if (kind !== "service" && /_stock_/.test(rpc[1])) return respond(res, 401, { code: "42501", message: "permission denied for function" });   // like the real grants
+      const variantRpc = variantsRpc(tables, rpc[1], body || {});               // migration 44's public functions
+      if (variantRpc !== undefined) return respond(res, 200, variantRpc);
       try {
         const out = warehouseRpc(tables, rpc[1], body || {});
         return respond(res, 200, out);
@@ -233,6 +255,7 @@ export function createFakeDb(seedFactory) {
 
     if (req.method === "GET" || req.method === "HEAD") {
       let rows = tables[t].filter(pred).map((r) => viewOf(t, r));
+      if (PRODUCT_TABLES.has(t) && kind !== "service") rows = rows.filter((r) => r.variant_of == null);   // migration 44's public policy: a variant is not a public product
       const selectCols = String(url.searchParams.get("select") || "*");
       if (PRODUCT_TABLES.has(t) && !/\bgap_count\b/.test(selectCols)) rows = rows.map(({ gap_count, ...rest }) => rest);   // computed columns come back only when asked for
       if (t === "site_content" && kind !== "service") {   // migration 42: the public sees LIVE rows and the public columns only
@@ -284,6 +307,7 @@ export function createFakeDb(seedFactory) {
         }
         if (t === "operator_change_requests") { row.id ??= randomUUID(); row.status ??= "pending"; row.requested_at ??= now(); }   // migration 35's defaults
         if (t === "site_content") { row.version ??= 1; row.is_published ??= false; row.sort_order ??= 0; row.publish_at ??= null; row.unpublish_at ??= null; }   // migration 42's defaults
+        if (PRODUCT_TABLES.has(t)) { row.variant_of ??= null; row.variant_options ??= {}; row.variant_sort ??= 0; }   // migration 44's column defaults
         if (row.id == null) row.id = nextId(t);
         if (row.created_at == null) row.created_at = now();
         if (row.updated_at == null) row.updated_at = now();
@@ -325,6 +349,7 @@ export function createFakeDb(seedFactory) {
     if (req.method === "DELETE") {
       if (COUNTS.test(t) || COUNT_LINES.test(t)) return respond(res, 400, { code: "P0001", message: "stock:never_deleted" });
       const hit = tables[t].filter(pred);
+      if (PRODUCT_TABLES.has(t) && hit.some((r) => tables[t].some((k) => k.variant_of === r.id))) return respond(res, 409, { code: "23503", message: `update or delete on table "${t}" violates foreign key constraint (variant_of)` });   // ON DELETE RESTRICT
       tables[t] = tables[t].filter((r) => !hit.includes(r));
       if (!wantRep) return respond(res, 204);
       return finish(hit.map(clone));

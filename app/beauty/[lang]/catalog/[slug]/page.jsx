@@ -7,7 +7,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LOCALES } from "@/lib/i18n";
 import {
-  getBeautyProductBySlug, getRelatedBeautyProducts, getBeautyCategories, beautyImageUrl,
+  getBeautyProductBySlug, getBeautyProductVariants, getRelatedBeautyProducts, getBeautyCategories, beautyImageUrl,
 } from "@/lib/beauty/catalog";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
 import { waLink, tgLink, productInquiryMessage } from "@/lib/whatsapp";
@@ -18,6 +18,8 @@ import Breadcrumb from "@/components/shared/Breadcrumb";
 import BeautyProductCard from "@/components/beauty/catalog/BeautyProductCard";
 import BeautyGallery from "./BeautyGallery";
 import BeautyQuoteButton from "@/components/beauty/BeautyQuoteButton";
+import BeautyVariantBuy from "@/components/beauty/BeautyVariantBuy";
+import { variantsJsonLd } from "@/lib/operator/variants";
 import BeautyViewTracker from "./BeautyViewTracker";
 import { beautyRobots } from "@/lib/beauty/seo";
 
@@ -84,9 +86,10 @@ export default async function BeautyProductPage(props) {
     );
   }
 
-  const [related, cats] = await Promise.all([
+  const [related, cats, variants] = await Promise.all([
     getRelatedBeautyProducts(product, 4),
     getBeautyCategories(),
+    getBeautyProductVariants(product.id),       // [] for an ordinary product and before migration 44
   ]);
   const cat = cats.find((x) => x.id === product.category_id) || null;
   const catLabel = cat ? (cat[`name_${lang}`] || cat.name_en || cat.slug) : null;
@@ -100,7 +103,7 @@ export default async function BeautyProductPage(props) {
   const images = [product.image_url, ...(Array.isArray(product.gallery_urls) ? product.gallery_urls : [])]
     .filter(Boolean).map((x) => beautyImageUrl(x));
 
-  const jsonLd = safeJsonLd({
+  const productLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name,
@@ -115,7 +118,8 @@ export default async function BeautyProductPage(props) {
         url: pageUrl,
       },
     } : {}),
-  });
+  };
+  const jsonLd = safeJsonLd(variantsJsonLd({ base: productLd, variants, name, url: pageUrl }) || productLd);
 
   return (
     <div className="bg-canvas-soft min-h-screen">
@@ -158,6 +162,9 @@ export default async function BeautyProductPage(props) {
             </div>
 
             {/* Price + CTAs */}
+            {variants.length > 0 ? (
+              <BeautyVariantBuy product={product} variants={variants} lang={lang} pageUrl={pageUrl} copy={c} />
+            ) : (
             <div className="card p-5 mb-6">
               <div className="flex items-end justify-between gap-4 mb-4">
                 <div>
@@ -182,6 +189,7 @@ export default async function BeautyProductPage(props) {
                 <BeautyQuoteButton product={product} lang={lang} label={c.requestQuote} />
               </div>
             </div>
+            )}
 
             {desc && <p className="text-[14px] md:text-[15px] text-ink-soft leading-relaxed mb-6 whitespace-pre-line">{desc}</p>}
 

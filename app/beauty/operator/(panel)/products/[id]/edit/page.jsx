@@ -1,7 +1,10 @@
 // app/beauty/operator/(panel)/products/[id]/edit/page.jsx
-import { notFound } from "next/navigation";
-import { getAdminBeautyProduct, getAdminBeautyCategories } from "@/lib/beauty/operator/data";
+import { notFound, redirect } from "next/navigation";
+import { getAdminBeautyProduct, getAdminBeautyCategories, getAdminBeautyVariants } from "@/lib/beauty/operator/data";
 import ProductForm from "@/components/beauty/operator/ProductForm";
+import VariantsManager from "@/components/operator/VariantsManager";
+import ImageUploader from "@/components/beauty/operator/ImageUploader";
+import { saveVariant, deleteProduct } from "@/lib/beauty/operator/actions";
 import { requireBeautySession } from "@/lib/operator/panelGuard";
 
 export const dynamic = "force-dynamic";
@@ -14,5 +17,18 @@ export default async function EditProductPage(props) {
     getAdminBeautyCategories(),
   ]);
   if (!product) notFound();
-  return <ProductForm mode="edit" product={product} categories={categories} />;
+  // a variant is edited from its product's page (migration 44)
+  if (product.variant_of != null) redirect(`/beauty/operator/products/${product.variant_of}/edit`);
+  const variants = await getAdminBeautyVariants(product.id);
+  return (
+    <>
+      <ProductForm mode="edit" product={product} categories={categories} />
+      {!variants.hidden && (
+        <div className="mt-6 max-w-5xl">
+          <VariantsManager house="beauty" parent={product} variants={variants.variants} unavailable={variants.unavailable}
+            save={saveVariant} remove={deleteProduct} Uploader={ImageUploader} approvalsHref="/beauty/operator/approvals" />
+        </div>
+      )}
+    </>
+  );
 }

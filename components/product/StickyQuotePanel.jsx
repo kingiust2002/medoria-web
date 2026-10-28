@@ -8,11 +8,11 @@ import { priceLabel, isOnRequest, formatPrice } from "@/lib/price";
 import { useCompare } from "@/lib/compare";
 import Icon from "@/components/shared/Icon";
 
-export default function StickyQuotePanel({ product, lang, onQuoteClick }) {
+export default function StickyQuotePanel({ product, lang, onQuoteClick, compareId = product.id }) {
   const t = getTranslations(lang);
   const [show, setShow] = useState(false);
   const { has, toggle } = useCompare();
-  const isCompared = has(product.id);
+  const isCompared = has(compareId);
 
   // Show when scrolled past initial CTA card (~600px)
   useEffect(() => {
@@ -58,7 +58,7 @@ export default function StickyQuotePanel({ product, lang, onQuoteClick }) {
 
         {/* Quick actions */}
         <button
-          onClick={() => toggle(product.id)}
+          onClick={() => toggle(compareId)}
           className={[
             "w-10 h-10 rounded-lg flex items-center justify-center transition-colors shrink-0",
             isCompared

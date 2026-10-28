@@ -105,7 +105,7 @@ test("the dashboard reads only what the person may see", () => {
     assert.match(src, /readDashboard\(admin, "(health|beauty)", \{ products: access\.products, quotes: access\.quotes \}\)/, `${f}: the dashboard must pass the person's access to the reader`);
   }
   const readers = read("lib/operator/listReaders.js");
-  assert.match(readers, /if \(products\) \{[\s\S]*?headCount\(admin, t\.products\)/, "products must not be read without products.view");
+  assert.match(readers, /if \(products\) \{[\s\S]*?headCount\(admin, t\.products/, "products must not be read without products.view");
   assert.match(readers, /if \(quotes\) \{[\s\S]*?headCount\(admin, t\.quotes\)/, "requests must not be read without quotes.view");
 });
 
