@@ -11,12 +11,15 @@ import { PageHeader, Field, Input, Select, Textarea, Badge, EmptyState, Spinner 
 import CountsTab from "@/components/operator/warehouse/CountsTab";
 import CsvButton from "@/components/operator/warehouse/CsvButton";
 import TabPager from "@/components/operator/warehouse/TabPager";
+import { Modal, Err } from "@/components/operator/warehouse/WhUi";
+import LotsTab, { LotAlerts, LotChips, STATE_LABEL } from "@/components/operator/warehouse/LotsTab";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { useCan, useMode } from "@/components/panel/Capabilities";
 import { tr } from "@/lib/panel/i18n";
 
 const TABS = [
   { id: "stock", label: tr("موجودی") },
+  { id: "lots", label: tr("بچ‌ها و انقضا") },
   { id: "movements", label: tr("حرکت‌ها") },
   { id: "reservations", label: tr("رزروها") },
   { id: "counts", label: tr("شمارش") },
@@ -29,26 +32,6 @@ const FORM_TITLE = { receive: tr("ورود کالا به انبار"), issue: tr
 const newKey = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `k-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
 const fmt = (n) => (Number.isFinite(n) ? String(Math.round(n * 1000) / 1000) : "—");
 
-function Modal({ title, onClose, children }) {
-  const t = useT();
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center p-4" onClick={onClose} role="dialog" aria-modal="true" aria-label={title}>
-      <div className="absolute inset-0 bg-navy/40 backdrop-blur-sm" />
-      <div onClick={(e) => e.stopPropagation()} className="relative card p-5 sm:p-6 w-full max-w-lg max-h-[90vh] overflow-auto animate-fade-in min-w-0">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <h2 className="font-bold text-lg text-ink min-w-0 break-words">{title}</h2>
-          <button type="button" onClick={onClose} aria-label={t("بستن")} className="grid place-items-center w-9 h-9 rounded-lg hover:bg-line-soft text-ink-muted shrink-0"><Icon name="close" size={18} /></button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function Err({ children }) {
-  return children ? <div role="alert" className="mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn"><Icon name="alertTriangle" size={16} /> <span className="min-w-0 break-words">{children}</span></div> : null;
-}
-
 // kind: receive | issue | transfer | adjust | reserve. `item` (optional): the product row the button belonged to.
 function MovementModal({ kind, item, locations, actions, onClose, onDone }) {
   const t = useT();
@@ -60,6 +43,10 @@ function MovementModal({ kind, item, locations, actions, onClose, onDone }) {
   const [qty, setQty] = useState("");
   const [reason, setReason] = useState("");
   const [reference, setReference] = useState("");
+  const [lotId, setLotId] = useState("");                   // issue / transfer / adjust: an existing lot of the product ("" = stock without a lot)
+  const [lotCode, setLotCode] = useState("");               // receive: the lot's code (new or existing)
+  const [expiry, setExpiry] = useState("");
+  const [quarantine, setQuarantine] = useState(false);
   const [err, setErr] = useState("");
   const [pending, start] = useTransition();
   const adjustMode = useMode("inventory.adjust");
@@ -70,9 +57,10 @@ function MovementModal({ kind, item, locations, actions, onClose, onDone }) {
     setErr("");
     start(async () => {
       const common = { key: key.current, locationId: loc, qty, ...(item ? { productId: item.productId } : { sku }) };
+      const lotPart = kind === "receive" ? (lotCode.trim() ? { lotCode, expiry: expiry || undefined, lotStatus: quarantine ? "quarantine" : undefined } : {}) : lotId ? { lotId } : {};
       const res = kind === "reserve"
         ? await actions.reserveStock({ ...common, reference, note: reason })
-        : await actions.postMovement({ ...common, kind, toLocationId: kind === "transfer" ? to : undefined, reason, reference });
+        : await actions.postMovement({ ...common, kind, toLocationId: kind === "transfer" ? to : undefined, reason, reference, ...lotPart });
       if (res.ok) { onDone(res.pending ? res.message : null); return; }
       setErr(t(res.error, res.params));
       if (res.code === "idempotency_key_reused") key.current = newKey();
@@ -96,6 +84,34 @@ function MovementModal({ kind, item, locations, actions, onClose, onDone }) {
             <Field label={t("به انبار")} required>
               <Select value={to} onChange={(e) => setTo(e.target.value)} aria-label={t("به انبار")}>
                 {active.map((l) => <option key={l.id} value={String(l.id)}>{l.code} — {l.name}</option>)}
+              </Select>
+            </Field>
+          )}
+          {kind === "receive" && (
+            <div className="grid gap-3 rounded-xl border border-line p-3" data-testid="wh-lot-receive">
+              <Field label={t("کد بچ (اختیاری)")} hint={t("برای ردیابی و تاریخ انقضا. همان کد دوباره = همان بچ.")}>
+                <Input value={lotCode} onChange={(e) => setLotCode(e.target.value)} dir="ltr" maxLength={40} list="wh-lot-codes" aria-label={t("کد بچ (اختیاری)")} data-testid="wh-lot-code" />
+                {item?.lots?.length > 0 && <datalist id="wh-lot-codes">{item.lots.map((l) => <option key={l.id} value={l.code} />)}</datalist>}
+              </Field>
+              {lotCode.trim() && (
+                <>
+                  <Field label={t("تاریخ انقضا (اختیاری)")} hint={t("آخرین روز اعتبار")}>
+                    <Input type="date" value={expiry} onChange={(e) => setExpiry(e.target.value)} dir="ltr" aria-label={t("تاریخ انقضا (اختیاری)")} data-testid="wh-lot-expiry-input" />
+                  </Field>
+                  <label className="flex items-center gap-2 text-sm text-ink-soft"><input type="checkbox" checked={quarantine} onChange={(e) => setQuarantine(e.target.checked)} className="w-4 h-4 accent-brand-violet" data-testid="wh-lot-quarantine" />{t("این بچ تازه است و در قرنطینه (تا بازرسی) بماند")}</label>
+                </>
+              )}
+            </div>
+          )}
+          {item && ["issue", "transfer", "adjust"].includes(kind) && item.lots?.length > 0 && (
+            <Field label={t("بچ")} hint={kind === "adjust" ? t("برای خارج کردن موجودی منقضی یا ردشده، بچ را انتخاب کنید.") : t("خروج و انتقال فقط از بچِ قابل‌استفاده ممکن است.")}>
+              <Select value={lotId} onChange={(e) => setLotId(e.target.value)} aria-label={t("بچ")} data-testid="wh-lot-select">
+                <option value="">{t("بدون بچ")}</option>
+                {item.lots.map((l) => {
+                  const here = l.byLocation?.[loc] ?? 0;
+                  const blocked = kind !== "adjust" && l.state !== "active";
+                  return <option key={l.id} value={String(l.id)} disabled={blocked}>{l.code} · {fmt(here)}{l.expiry ? ` · ${l.expiry}` : ""}{l.state !== "active" ? ` · ${t(STATE_LABEL[l.state])}` : ""}</option>;
+                })}
               </Select>
             </Field>
           )}
@@ -299,6 +315,7 @@ export default function WarehousePanel({ data, actions, base }) {
         </form>
       )}
 
+      {data.tab === "stock" && <LotAlerts data={data} base={base} />}
       {data.tab === "stock" && (
         data.items.length === 0 ? (
           <EmptyState icon="package" title={t("هنوز موجودی ثبت نشده")} desc={locs.length ? t("با «ورود کالا به انبار» شروع کنید.") : t("ابتدا از تب «انبارها» یک انبار بسازید.")} />
@@ -311,10 +328,12 @@ export default function WarehousePanel({ data, actions, base }) {
                   <p className="text-xs text-ink-muted mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
                     {it.places.map((p) => <span key={p.locationId} dir="ltr">{code(p.locationId)}: {fmt(p.quantity)}{p.reserved ? ` (${fmt(p.reserved)} R)` : ""}</span>)}
                   </p>
+                  <LotChips lots={it.lots} />
                 </div>
                 <div className="text-sm tabular text-ink shrink-0 flex items-center gap-2" data-testid="wh-total">
                   {it.low && <Badge tone="warn" data-testid="wh-low">{t("کم‌موجودی")}</Badge>}
                   <span><b>{fmt(it.total)}</b> <span className="text-ink-faint text-xs">{t("موجود")}{it.reserved ? ` · ${fmt(it.reserved)} ${t("رزرو")}` : ""}{it.minLevel != null ? ` · ${t("حداقل")} ${fmt(it.minLevel)}` : ""}</span></span>
+                  {it.unusable > 0 && <span className="text-xs" data-testid="wh-usable"><b className="text-ok tabular">{fmt(it.usable)}</b> <span className="text-ink-faint">{t("قابل‌استفاده")}</span> · <b className="text-warn tabular">{fmt(it.unusable)}</b> <span className="text-ink-faint">{t("غیرقابل‌استفاده")}</span></span>}
                 </div>
                 <div className="flex flex-wrap gap-1 shrink-0">
                   {KINDS.map((k) => <button key={k} type="button" className="btn-ghost size-sm" onClick={() => open("move", { kind: k, item: it })}>{t(KIND_LABEL[k])}</button>)}
@@ -337,7 +356,7 @@ export default function WarehousePanel({ data, actions, base }) {
                 <div key={m.id} data-testid="wh-movement" data-kind={m.kind} className="px-3 sm:px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 min-w-0">
                   <Badge tone={KIND_TONE[m.kind] || "neutral"}>{t(KIND_LABEL[m.kind] || m.kind)}</Badge>
                   <div className="min-w-0 flex-1 basis-44">
-                    <p className="text-sm text-ink truncate"><span dir="ltr">{m.sku}</span> · <span dir="ltr">{code(m.locationId)}</span></p>
+                    <p className="text-sm text-ink truncate"><span dir="ltr">{m.sku}</span> · <span dir="ltr">{code(m.locationId)}</span>{m.lotCode && <> · <span dir="ltr" data-testid="wh-movement-lot">{m.lotCode}</span></>}</p>
                     <p className="text-xs text-ink-muted break-words">{[m.reason, m.reference, m.who].filter(Boolean).join(" · ")} · {fmtDate(m.at)}</p>
                   </div>
                   <div className="tabular text-sm shrink-0" dir="ltr"><b className={m.delta > 0 ? "text-ok" : "text-warn"}>{m.delta > 0 ? "+" : ""}{fmt(m.delta)}</b> <span className="text-ink-faint text-xs">→ {fmt(m.balanceAfter)}</span></div>
@@ -369,6 +388,7 @@ export default function WarehousePanel({ data, actions, base }) {
         )
       )}
 
+      {data.tab === "lots" && <LotsTab data={data} actions={actions} base={base} code={code} />}
       {data.tab === "counts" && <CountsTab data={data} actions={actions} base={base} code={code} />}
 
       {data.tab === "locations" && (

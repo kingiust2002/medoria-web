@@ -6,7 +6,7 @@ import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 export default function TabPager({ data, base, tab, total = null, pageCount = null }) {
   const t = useT();
   const { num } = usePanelLang();
-  const href = (p) => `${base}?tab=${tab}&page=${p}${data.q ? `&q=${encodeURIComponent(data.q)}` : ""}${data.locationId ? `&location=${data.locationId}` : ""}${data.lowOnly ? "&low=1" : ""}`;
+  const href = (p) => `${base}?tab=${tab}&page=${p}${data.q ? `&q=${encodeURIComponent(data.q)}` : ""}${data.locationId ? `&location=${data.locationId}` : ""}${data.lowOnly ? "&low=1" : ""}${data.view && data.view !== "all" ? `&view=${data.view}` : ""}${tab === "lots" && data.alertWindow ? `&window=${data.alertWindow}` : ""}`;
   const hasNext = pageCount != null ? data.page < pageCount : data.hasMore;
   if (data.page === 1 && !hasNext) return total != null ? <p className="mt-3 text-sm text-ink-muted tabular" data-testid="wh-range">{t("{total} مورد", { total: num(total) })}</p> : null;
   return (

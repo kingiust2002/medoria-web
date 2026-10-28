@@ -6,7 +6,7 @@ import { simulateCountClose } from "../helpers/countCloseSim.mjs";
 class Refusal extends Error { constructor(code, details) { super(`stock:${code}`); this.details = details; } }
 
 export function warehouseRpc(tables, name, a) {
-  const m = /^(health|beauty)_stock_(post|reverse|reserve|release|count_close)$/.exec(name);
+  const m = /^(health|beauty)_stock_(post|reverse|reserve|release|count_close|lot_post|lot_reverse|lot_update)$/.exec(name);
   if (!m) return null;
   const [, house, fn] = m;
   const T = (t) => (tables[`${house}_stock_${t}`] ??= []);
@@ -35,11 +35,25 @@ export function warehouseRpc(tables, name, a) {
     return out.data;
   }
   const key = a.p_key;
-  if (typeof key !== "string" || key.length < 8 || key.length > 80) throw new Refusal("bad_key");
+  if (fn !== "lot_update" && (typeof key !== "string" || key.length < 8 || key.length > 80)) throw new Refusal("bad_key");      // a lot update is guarded by the version, not by a key
   const group = () => `g-${Math.random().toString(36).slice(2)}`;
+  // migration 45's guard on the balance: usable stock = quantity - reserved - unusable (quarantined / rejected / expired lots); lot stock is covered
+  const today = new Date(Date.now() + 5 * 3_600_000).toISOString().slice(0, 10);
+  const lots = () => T("lots"), lotBals = () => T("lot_balances");
+  const lotOf = (id) => lots().find((l) => l.id === id);
+  const unusableQty = (loc, prod) => lotBals().filter((b) => b.location_id === loc).reduce((n, b) => { const l = lotOf(b.lot_id); return l && l.product_id === prod && (l.status !== "active" || (l.expiry_date && l.expiry_date < today)) ? n + b.quantity : n; }, 0);
+  const lotSum = (loc, prod) => lotBals().filter((b) => b.location_id === loc).reduce((n, b) => (lotOf(b.lot_id)?.product_id === prod ? n + b.quantity : n), 0);
+  const guardBalance = (b, newQty, newReserved) => {
+    if ((newQty - newReserved) < (b.quantity - b.reserved)) {
+      const un = unusableQty(b.location_id, b.product_id);
+      if (newQty - newReserved < un) throw new Refusal("insufficient_stock", `available=${Math.max(b.quantity - b.reserved - un, 0)}`);
+    }
+    if (newQty < lotSum(b.location_id, b.product_id)) throw new Refusal("lot_stock_protected");
+  };
   const move = (loc, prod, delta, extra) => {
     const b = bal(loc, prod);
     if (delta < 0 && b.quantity - b.reserved < -delta) throw new Refusal("insufficient_stock", `available=${b.quantity - b.reserved}`);
+    guardBalance(b, b.quantity + delta, b.reserved);
     b.quantity = Math.round((b.quantity + delta) * 1000) / 1000; b.updated_at = new Date().toISOString();
     return ledger({ product_id: prod, location_id: loc, delta, balance_after: b.quantity, ...extra });
   };
@@ -78,6 +92,110 @@ export function warehouseRpc(tables, name, a) {
     return { ok: true, replayed: false, group_id: g, movement_ids: ids, balance_after: first.balance_after, balance_after_to: after2 };
   }
 
+  // ── migration 45: lots ─────────────────────────────────────────────────────────────────────────────────────────────────
+  const creditLot = (lotId, loc, q) => {
+    let b = lotBals().find((x) => x.lot_id === lotId && x.location_id === loc);
+    if (!b) { b = { lot_id: lotId, location_id: loc, quantity: 0, updated_at: new Date().toISOString() }; lotBals().push(b); }
+    b.quantity = Math.round((b.quantity + q) * 1000) / 1000;
+  };
+  const debitLot = (lotId, loc, q) => {
+    const b = lotBals().find((x) => x.lot_id === lotId && x.location_id === loc);
+    if (!b || b.quantity < q) throw new Refusal("insufficient_lot_stock", `available=${b ? b.quantity : 0}`);
+    b.quantity = Math.round((b.quantity - q) * 1000) / 1000;
+  };
+  const linkLot = (movementId, lotId, delta) => T("movement_lots").push({ movement_id: movementId, lot_id: lotId, delta });
+  const lotEvent = (lotId, kind, from, to, reason) => T("lot_events").push({ id: next(T("lot_events")), lot_id: lotId, kind, from_value: from, to_value: to, reason: reason || null, actor_label: a.p_actor_label ?? null, created_at: new Date().toISOString() });
+
+  if (fn === "lot_post") {
+    const code = String(a.p_lot_code || "").trim() || null;
+    if ((a.p_lot_id != null && code) || (code && a.p_kind !== "receive") || (a.p_kind === "receive" && a.p_lot_id != null) || ((a.p_expiry || a.p_lot_status) && !code) || (a.p_lot_status && !["active", "quarantine"].includes(a.p_lot_status))) throw new Refusal("bad_lot");
+    const q = Number(a.p_qty), delta = a.p_kind === "receive" || a.p_kind === "adjust" ? q : -q;
+    const first = T("movements").find((r) => r.idempotency_key === key && r.leg === 0);
+    if (first) {
+      const prev = T("movement_lots").find((l) => l.movement_id === first.id)?.lot_id ?? null;
+      const wanted = code ? (lots().find((l) => l.product_id === a.p_product && l.lot_code.toLowerCase() === code.toLowerCase())?.id ?? null) : (a.p_lot_id ?? null);
+      if (prev !== wanted) throw new Refusal("idempotency_key_reused");
+      return { ...warehouseRpc(tables, `${house}_stock_post`, a), lot_id: prev };
+    }
+    if (!products.find((p) => p.id === a.p_product)) throw new Refusal("unknown_product");
+    let lot = null, created = false;
+    if (code) {
+      lot = lots().find((l) => l.product_id === a.p_product && l.lot_code.toLowerCase() === code.toLowerCase());
+      if (lot) {
+        if (lot.status === "rejected") throw new Refusal("lot_rejected");
+        if (a.p_expiry && lot.expiry_date !== a.p_expiry) throw new Refusal("lot_expiry_mismatch");
+      } else {
+        lot = { id: next(lots()), product_id: a.p_product, lot_code: code, expiry_date: a.p_expiry || null, status: a.p_lot_status || "active", created_at: new Date().toISOString(), created_label: a.p_actor_label ?? null, updated_at: new Date().toISOString(), version: 1 };
+        lots().push(lot); created = true;
+        lotEvent(lot.id, "create", null, lot.status, a.p_reason);
+      }
+    } else if (a.p_lot_id != null) {
+      lot = lotOf(a.p_lot_id);
+      if (!lot || lot.product_id !== a.p_product) throw new Refusal("unknown_lot");
+      if (["issue", "transfer"].includes(a.p_kind) && (lot.status !== "active" || (lot.expiry_date && lot.expiry_date < today))) throw new Refusal("lot_not_usable");
+    }
+    const snap = JSON.stringify([T("lot_balances"), T("movements"), T("balances"), T("reservations"), T("lots"), T("lot_events")]);
+    try {
+      if (lot && delta < 0) debitLot(lot.id, a.p_location, -delta);
+      const res = warehouseRpc(tables, `${house}_stock_post`, a);
+      if (lot && (delta > 0 || a.p_kind === "transfer")) creditLot(lot.id, a.p_kind === "transfer" ? a.p_to_location : a.p_location, Math.abs(delta));
+      if (lot) { linkLot(res.movement_ids[0], lot.id, delta); if (a.p_kind === "transfer") linkLot(res.movement_ids[1], lot.id, q); }
+      return { ...res, lot_id: lot ? lot.id : null, lot_created: created };
+    } catch (e) {
+      const [lb, mv, ba, rs, lo, ev] = JSON.parse(snap);       // all or nothing, like the database transaction
+      Object.assign(tables, { [`${house}_stock_lot_balances`]: lb, [`${house}_stock_movements`]: mv, [`${house}_stock_balances`]: ba, [`${house}_stock_reservations`]: rs, [`${house}_stock_lots`]: lo, [`${house}_stock_lot_events`]: ev });
+      throw e;
+    }
+  }
+
+  if (fn === "lot_reverse") {
+    const orig = T("movements").find((r) => r.id === a.p_movement);
+    if (!orig) throw new Refusal("unknown_movement");
+    if (T("movements").some((r) => r.idempotency_key === key && r.leg === 0)) return warehouseRpc(tables, `${house}_stock_reverse`, a);
+    if (String(a.p_reason || "").trim().length < 3) throw new Refusal("reason_required");
+    if (orig.kind === "reversal") throw new Refusal("cannot_reverse_a_reversal");
+    const legs = T("movements").filter((r) => r.group_id === orig.group_id);
+    if (T("movements").some((r) => legs.some((l) => l.id === r.reverses_id))) throw new Refusal("already_reversed");
+    const links = legs.map((l) => ({ leg: l, link: T("movement_lots").find((x) => x.movement_id === l.id) })).filter((x) => x.link);
+    const snap = JSON.stringify([T("lot_balances"), T("movements"), T("balances")]);
+    try {
+      for (const { leg, link } of links) if (link.delta > 0) debitLot(link.lot_id, leg.location_id, link.delta);
+      const res = warehouseRpc(tables, `${house}_stock_reverse`, a);
+      for (const { leg, link } of links) if (link.delta < 0) creditLot(link.lot_id, leg.location_id, -link.delta);
+      for (const id of res.movement_ids) { const r = T("movements").find((x) => x.id === id); const l = links.find((x) => x.leg.id === r.reverses_id); if (l) linkLot(id, l.link.lot_id, -l.link.delta); }
+      return res;
+    } catch (e) {
+      const [lb, mv, ba] = JSON.parse(snap);
+      Object.assign(tables, { [`${house}_stock_lot_balances`]: lb, [`${house}_stock_movements`]: mv, [`${house}_stock_balances`]: ba });
+      throw e;
+    }
+  }
+
+  if (fn === "lot_update") {
+    const lot = lotOf(a.p_lot);
+    if (!lot) throw new Refusal("unknown_lot");
+    if (lot.version !== a.p_expected_version) throw new Refusal("stale_version");
+    const reason = String(a.p_reason || "").trim();
+    if (reason.length < 3 || reason.length > 300) throw new Refusal("reason_required");
+    const status = a.p_status || lot.status;
+    if (!["active", "quarantine", "rejected"].includes(status)) throw new Refusal("bad_lot");
+    const expiry = a.p_set_expiry ? (a.p_expiry || null) : lot.expiry_date;
+    if (status === lot.status && expiry === lot.expiry_date) throw new Refusal("nothing_to_change");
+    if (lot.status === "rejected") throw new Refusal("lot_rejected");
+    const was = lot.status !== "active" || (lot.expiry_date && lot.expiry_date < today), will = status !== "active" || (expiry && expiry < today);
+    if (will && !was) {
+      for (const lb of lotBals().filter((x) => x.lot_id === lot.id && x.quantity > 0)) {
+        const b = bal(lb.location_id, lot.product_id);
+        const un = unusableQty(lb.location_id, lot.product_id);
+        if (b.quantity - b.reserved < un + lb.quantity) throw new Refusal("reserved_stock_in_lot", `available=${Math.max(b.quantity - b.reserved - un, 0)}`);
+      }
+    }
+    if (status !== lot.status) lotEvent(lot.id, "status", lot.status, status, reason);
+    if (expiry !== lot.expiry_date) lotEvent(lot.id, "expiry", lot.expiry_date, expiry, reason);
+    Object.assign(lot, { status, expiry_date: expiry, version: lot.version + 1, updated_at: new Date().toISOString() });
+    return { ok: true, lot_id: lot.id, version: lot.version };
+  }
+
   if (fn === "reverse") {
     const orig = T("movements").find((r) => r.id === a.p_movement);
     if (!orig) throw new Refusal("unknown_movement");
@@ -109,6 +227,7 @@ export function warehouseRpc(tables, name, a) {
     activeLoc(a.p_location);
     const b = bal(a.p_location, a.p_product);
     if (b.quantity - b.reserved < q) throw new Refusal("insufficient_stock", `available=${b.quantity - b.reserved}`);
+    guardBalance(b, b.quantity, b.reserved + q);
     b.reserved += q;
     const r = { id: next(T("reservations")), idempotency_key: key, product_id: a.p_product, sku: prod.sku, location_id: a.p_location, qty: q, status: "active", reference: a.p_reference || null, note: a.p_note || null, created_at: new Date().toISOString(), created_label: a.p_actor_label, closed_at: null };
     T("reservations").push(r);
