@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   ALL_PERMISSIONS, ROLES, ROLE_IDS, OPERATIONS, HOUSES, isValidPermission, isValidPattern, expandPattern,
-  effectivePermissions, can, decide, approvalList, canReview, checkUserChange, sessionPolicy, canEraseUser,
+  effectivePermissions, can, decide, approvalList, canReview, checkUserChange, sessionPolicy, canEraseUser, modesAboveActor, targetWithinActor,
 } from "../lib/operator/authz.js";
 
 const U = (o) => ({ id: "u", status: "active", role: "viewer", houses: ["health"], allow: [], deny: [], approval: undefined, ...o });
@@ -182,4 +182,66 @@ test("accounts are never erased; session policy ends sessions when power changes
   assert.equal(sessionPolicy(before, { ...before }, { passwordChanged: true }), "end_all");
   assert.equal(sessionPolicy(before, { ...before }, { twoFactorChanged: true }), "end_all");
   assert.equal(sessionPolicy(before, { ...before, approval: { health: [] } }), "refresh");
+});
+
+// ── review findings R1, R2, R5: delegation must not exceed the delegator's own authority ─────────────────────────────────
+const pm = (o) => U({ id: "pm", role: "product_manager", allow: ["users.manage"], approval: { health: ["products.price"] }, ...o });
+
+test("R1: a manager whose price change needs approval cannot create or relax an account that changes prices directly", () => {
+  const actor = pm();
+  assert.equal(decide(actor, "health", "products.price").mode, "approval");
+  const create = checkUserChange({ actor, target: null, change: { role: "product_manager", houses: ["health"], allow: [], deny: [], approval: { health: [] }, status: "active" }, users: [owner()] });
+  assert.equal(create.ok, false); assert.ok(create.errors.includes("mode_above_actor"));
+  // the same through an update of an existing, weaker account
+  const weak = U({ id: "w", role: "product_manager", approval: { health: ["products.price", "products.publish"] } });
+  const relax = checkUserChange({ actor, target: weak, change: { approval: { health: [] } }, users: [owner()] });
+  assert.ok(relax.errors.includes("mode_above_actor"));
+  // custom allow / deny count too: an explicit allow of an operation the role approves is still the actor's mode
+  const viaAllow = checkUserChange({ actor, target: null, change: { role: "viewer", houses: ["health"], allow: ["health.products.edit"], approval: { health: [] }, status: "active" }, users: [owner()] });
+  assert.ok(viaAllow.errors.includes("mode_above_actor"));
+});
+
+test("R1: the same or a stricter mode is fine; the default policy of a role is judged by its real effect; an owner may set any policy", () => {
+  const actor = pm();
+  assert.equal(checkUserChange({ actor, target: null, change: { role: "product_manager", houses: ["health"], approval: { health: ["products.price", "products.publish"] }, status: "active" }, users: [owner()] }).ok, true);
+  const roleDefault = checkUserChange({ actor, target: null, change: { role: "product_manager", houses: ["health"], status: "active" }, users: [owner()] });
+  assert.equal(roleDefault.ok, true, "the role's default policy is never more permissive than this actor's own mode for the same operations");
+  assert.equal(checkUserChange({ actor: owner(), target: null, change: { role: "product_manager", houses: ["health"], approval: { health: [] }, status: "active" }, users: [owner()] }).ok, true);
+});
+
+test("R1: both houses, and a direct-executing actor may hand out direct execution", () => {
+  const both = pm({ houses: ["health", "beauty"], approval: { health: [], beauty: ["products.price"] } });
+  const c = (approval) => checkUserChange({ actor: both, target: null, change: { role: "product_manager", houses: ["health", "beauty"], approval, status: "active" }, users: [owner()] });
+  assert.equal(c({ health: [], beauty: ["products.price"] }).ok, true, "equal in both houses");
+  assert.ok(c({ health: [], beauty: [] }).errors.includes("mode_above_actor"), "Beauty is where the actor needs approval");
+  assert.deepEqual(modesAboveActor(both, U({ role: "viewer" }), U({ role: "product_manager", houses: ["health", "beauty"], approval: { health: [], beauty: [] } })).filter((k) => k.includes("products.price")), ["beauty:products.price"]);
+});
+
+test("R2: a limited manager cannot manage (reset, end sessions, disable) an account that can do more than they can", () => {
+  const actor = U({ id: "v", role: "viewer", allow: ["users.manage"] });
+  const stronger = U({ id: "ha", role: "house_admin" });
+  for (const change of [{}, { status: "disabled" }]) {
+    const r = checkUserChange({ actor, target: stronger, change, users: [owner()] });
+    assert.equal(r.ok, false, JSON.stringify(change)); assert.ok(r.errors.includes("target_above_actor"));
+  }
+  const peer = U({ id: "p", role: "viewer" });
+  assert.equal(checkUserChange({ actor, target: peer, change: {}, users: [owner()] }).ok, true, "a peer or weaker account is theirs to manage");
+  assert.equal(targetWithinActor(actor, stronger), false);
+  assert.equal(targetWithinActor(owner(), stronger), true);
+  assert.equal(checkUserChange({ actor: owner(), target: stronger, change: {}, users: [owner()] }).ok, true, "an owner manages everybody");
+  // a stronger target by execution mode only (same permissions, but direct where the actor needs approval)
+  const needsApproval = pm();
+  const direct = U({ id: "d", role: "product_manager", approval: { health: [] } });
+  assert.ok(checkUserChange({ actor: needsApproval, target: direct, change: {}, users: [owner()] }).errors.includes("target_above_actor"));
+});
+
+test("R5: nobody changes their own second-factor requirement, and only an owner relaxes anybody's", () => {
+  const me = U({ id: "me", role: "viewer", allow: ["users.manage"], require2fa: true });
+  const self = checkUserChange({ actor: me, target: me, change: { require2fa: false }, users: [owner()] });
+  assert.ok(self.errors.includes("self_require2fa"));
+  assert.equal(checkUserChange({ actor: me, target: me, change: { require2fa: true }, users: [owner()] }).ok, true, "a no-op is fine");
+  const other = U({ id: "o", role: "viewer", require2fa: true });
+  assert.ok(checkUserChange({ actor: me, target: other, change: { require2fa: false }, users: [owner()] }).errors.includes("require2fa_owner_only"));
+  assert.equal(checkUserChange({ actor: me, target: U({ id: "o2", require2fa: false }), change: { require2fa: true }, users: [owner()] }).ok, true, "tightening is allowed");
+  assert.equal(checkUserChange({ actor: owner(), target: other, change: { require2fa: false }, users: [owner()] }).ok, true);
 });
