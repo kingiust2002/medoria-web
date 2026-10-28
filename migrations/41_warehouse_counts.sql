@@ -5,14 +5,15 @@
 --   health_/beauty_stock_counts       a physical count of ONE warehouse: open → closed | cancelled (once); only one open count per warehouse
 --   health_/beauty_stock_count_lines  per product: what the system expected when the count started, and what was counted
 --
--- Closing a count posts the differences through the ledger functions of migration 36 (nothing here changes a balance by itself);
+-- Closing a count is ONE transaction (<house>_stock_count_close): it locks the count, verifies the reviewed snapshot, posts every difference through the
+-- ledger functions of migration 36 and closes the count — all or nothing (nothing else here changes a balance by itself);
 -- a closed or cancelled count and its lines are frozen. Private like the rest of the warehouse: RLS on, no policy, nothing for
 -- anon / authenticated; service_role reads and writes these workspace tables (never the ledger, which stays function-only).
 -- Needs migration 36. One transaction; idempotent; a self-check at the end aborts (rolls back) on any mismatch.
 --
 -- Rollback (only after the deployed code no longer uses it):
 --   DROP TABLE public.health_stock_count_lines, public.health_stock_counts, public.health_stock_levels;  (same for beauty_*)
---   DROP FUNCTION public.stock_count_guard(), public.stock_count_line_guard();
+--   DROP FUNCTION public.health_stock_count_close(BIGINT, JSONB, UUID, TEXT, TEXT), public.beauty_stock_count_close(BIGINT, JSONB, UUID, TEXT, TEXT), public.stock_count_guard();
 -- ════════════════════════════════════════════════════════════════════════════
 
 BEGIN;
@@ -96,6 +97,46 @@ BEGIN
     EXECUTE format('DROP TRIGGER IF EXISTS %1$s_stock_counts_guard ON public.%1$s_stock_counts', h);
     EXECUTE format('CREATE TRIGGER %1$s_stock_counts_guard BEFORE UPDATE OR DELETE ON public.%1$s_stock_counts FOR EACH ROW EXECUTE FUNCTION public.stock_count_guard()', h);
 
+    -- CLOSING A COUNT IS ONE TRANSACTION. The function locks the count row (the line guard above takes a shared lock on the same row, so every
+    -- concurrent save of a counted quantity waits for the close, and a save that committed first is simply part of what the close reads), verifies
+    -- the reviewed snapshot when one is given, posts every difference through the ledger function of migration 36 and marks the count closed — all or
+    -- nothing: an exception anywhere (not enough stock for the second of three differences, a deactivated warehouse, …) rolls every movement back and
+    -- the count stays open. Closing an already closed count is a harmless replay (the closed state proves all of its movements were committed with it).
+    EXECUTE format($f$
+      CREATE OR REPLACE FUNCTION public.%1$s_stock_count_close(p_count BIGINT, p_expected JSONB, p_actor UUID, p_actor_label TEXT, p_request TEXT)
+      RETURNS JSONB LANGUAGE plpgsql SET search_path = public, pg_temp AS $b$
+      DECLARE
+        c RECORD; d RECORD; v_actual JSONB; v_n INT := 0; v_counted INT; v_detail TEXT;
+      BEGIN
+        SELECT * INTO c FROM public.%1$s_stock_counts WHERE id = p_count FOR UPDATE;
+        IF NOT FOUND THEN RAISE EXCEPTION 'stock:unknown_count' USING ERRCODE = 'P0001'; END IF;
+        IF c.status NOT IN ('open', 'closed') THEN RAISE EXCEPTION 'stock:count_closed' USING ERRCODE = 'P0001'; END IF;
+        SELECT count(*) INTO v_counted FROM public.%1$s_stock_count_lines WHERE count_id = p_count AND counted IS NOT NULL;
+        IF c.status = 'open' AND v_counted = 0 THEN RAISE EXCEPTION 'stock:nothing_counted' USING ERRCODE = 'P0001'; END IF;
+        SELECT COALESCE(jsonb_agg(jsonb_build_array(x.product_id, x.delta) ORDER BY x.product_id), '[]'::jsonb) INTO v_actual
+          FROM (SELECT product_id, round(counted - expected, 3) AS delta FROM public.%1$s_stock_count_lines
+                 WHERE count_id = p_count AND counted IS NOT NULL AND round(counted - expected, 3) <> 0) x;
+        IF p_expected IS NOT NULL AND v_actual IS DISTINCT FROM p_expected THEN RAISE EXCEPTION 'stock:count_stale' USING ERRCODE = 'P0001'; END IF;
+        -- already closed: the lines are frozen, so what was posted is exactly v_actual; a request for the same snapshot is a replay
+        IF c.status = 'closed' THEN RETURN jsonb_build_object('ok', true, 'replayed', true, 'differences', COALESCE(c.differences, 0)); END IF;
+        FOR d IN SELECT product_id, sku, round(counted - expected, 3) AS delta FROM public.%1$s_stock_count_lines
+                  WHERE count_id = p_count AND counted IS NOT NULL AND round(counted - expected, 3) <> 0 ORDER BY product_id LOOP
+          BEGIN
+            PERFORM public.%1$s_stock_post('count-' || p_count || '-' || d.product_id, 'adjust', d.product_id, c.location_id, NULL, d.delta,
+                                         'Stock count #' || p_count, 'count-' || p_count, NULL, p_actor, p_actor_label, p_request);
+          EXCEPTION WHEN OTHERS THEN
+            GET STACKED DIAGNOSTICS v_detail = PG_EXCEPTION_DETAIL;
+            RAISE EXCEPTION 'stock:count_line_failed' USING ERRCODE = 'P0001',
+              DETAIL = 'product=' || d.product_id || ';sku=' || COALESCE(d.sku, '') || ';reason=' || SQLERRM || ';detail=' || COALESCE(v_detail, '');
+          END;
+          v_n := v_n + 1;
+        END LOOP;
+        UPDATE public.%1$s_stock_counts SET status = 'closed', closed_at = NOW(), closed_by = p_actor, closed_label = p_actor_label, differences = v_n WHERE id = p_count;
+        RETURN jsonb_build_object('ok', true, 'replayed', false, 'differences', v_n);
+      END $b$$f$, h);
+    EXECUTE format('REVOKE ALL ON FUNCTION public.%1$s_stock_count_close(BIGINT, JSONB, UUID, TEXT, TEXT) FROM PUBLIC, anon, authenticated', h);
+    EXECUTE format('GRANT EXECUTE ON FUNCTION public.%1$s_stock_count_close(BIGINT, JSONB, UUID, TEXT, TEXT) TO service_role', h);
+
     EXECUTE format('ALTER TABLE public.%1$s_stock_levels ENABLE ROW LEVEL SECURITY', h);
     EXECUTE format('ALTER TABLE public.%1$s_stock_counts ENABLE ROW LEVEL SECURITY', h);
     EXECUTE format('ALTER TABLE public.%1$s_stock_count_lines ENABLE ROW LEVEL SECURITY', h);
@@ -121,6 +162,11 @@ BEGIN
       IF NOT has_table_privilege('service_role', 'public.' || h || '_' || t, 'SELECT') THEN RAISE EXCEPTION 'migration 41 self-check failed: service_role cannot read %', h || '_' || t; END IF;
     END LOOP;
     IF has_table_privilege('service_role', 'public.' || h || '_stock_counts', 'DELETE') THEN RAISE EXCEPTION 'migration 41 self-check failed: service_role can delete counts'; END IF;
+    IF to_regprocedure('public.' || h || '_stock_count_close(bigint, jsonb, uuid, text, text)') IS NULL THEN RAISE EXCEPTION 'migration 41 self-check failed: % is missing', h || '_stock_count_close'; END IF;
+    IF has_function_privilege('anon', 'public.' || h || '_stock_count_close(bigint, jsonb, uuid, text, text)', 'EXECUTE') OR has_function_privilege('authenticated', 'public.' || h || '_stock_count_close(bigint, jsonb, uuid, text, text)', 'EXECUTE')
+       OR NOT has_function_privilege('service_role', 'public.' || h || '_stock_count_close(bigint, jsonb, uuid, text, text)', 'EXECUTE') THEN
+      RAISE EXCEPTION 'migration 41 self-check failed: wrong privileges on %', h || '_stock_count_close';
+    END IF;
   END LOOP;
 END $$;
 
