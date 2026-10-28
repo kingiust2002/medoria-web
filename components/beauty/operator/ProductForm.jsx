@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
 import { beautyImageUrl as imageUrl } from "@/lib/beauty/catalog";
+import PreviewLanguages from "@/components/operator/PreviewLanguages";
 import { createProduct, updateProduct, uploadProductImage, translateProductFields } from "@/lib/beauty/operator/actions";
 import { slugify } from "@/lib/operator/validation";
 import { PRODUCT_BADGES } from "@/lib/beauty/operator/constants";
@@ -505,6 +506,7 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
                 </p>
               </div>
             </div>
+            <PreviewLanguages values={f} product={{ ...f, specs: Object.fromEntries(specs.filter((r) => r.key.trim()).map((r) => [r.key.trim(), r.value])) }} />
             <p className="text-[11px] text-ink-faint mt-3 leading-relaxed text-center">{t("پیش‌نمایش زنده — همراه با تغییر فیلدها به‌روز می‌شود.")}</p>
           </SectionCard>
         </div>

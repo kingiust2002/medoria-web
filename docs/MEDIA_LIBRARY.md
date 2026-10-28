@@ -7,6 +7,11 @@
   thumbnail, size, date and **where it is used** (products' main image and gallery, categories' image, Beauty brands' logo). A
   reference may be a bare storage path or a full public URL; both count. A failing usage read is reported as "unavailable", never as
   "everything is unused".
+  **Review R6**: the usage scan reads the real schema (Beauty brands use `name`, not `name_en` / `name_fa`; a wrong column once made every brand logo
+  look unused), reads **every row page by page** (the API returns a bounded page; a partial scan proves nothing), counts **pending change requests**
+  that would put the file on a record, and **fails closed**: any unreadable table, unexpected error or exception means "cannot say", never "unused"
+  (no table or column is skipped any more). Known limit: the version history of products still holds older image references — a file used only by
+  history can be removed, and reverting to that version then shows a broken image (the file is not part of the revert).
 * **Remove**: only a file nothing uses. The usage is read again at the moment of removal (a page may be minutes old); a file that
   became used meanwhile is refused with the list of users. A person whose policy says "approve" (`media.delete` is on the product
   manager's default list) files a request; the reviewer's approval runs the same checks again, and a file that became used fails the
