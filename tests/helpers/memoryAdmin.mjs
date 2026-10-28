@@ -17,7 +17,9 @@ export function createMemoryAdmin(seed = {}, { unique = {}, defaults = {}, befor
     const state = { op: "select", filters: [], payload: null, order: null, limit: null, count: false, returning: false, single: null, onConflict: null };
     const q = {};
     const add = (fn) => { state.filters.push(fn); return q; };
-    q.select = (_cols, opts) => { if (opts?.count) state.count = true; if (state.op !== "select") state.returning = true; return q; };
+    // `select("a,b")` returns ONLY those columns, like PostgREST: a store that later reads a column it did not select gets undefined,
+    // exactly as in production (a full-row stand-in once hid such a bug). "*" / no argument returns the whole row.
+    q.select = (cols, opts) => { if (typeof cols === "string" && cols.trim() && cols.trim() !== "*") state.cols = cols.split(",").map((c) => c.trim()).filter(Boolean); if (opts?.count) state.count = true; if (state.op !== "select") state.returning = true; return q; };
     q.insert = (p) => { state.op = "insert"; state.payload = p; return q; };
     q.update = (p) => { state.op = "update"; state.payload = p; return q; };
     q.delete = () => { state.op = "delete"; return q; };
@@ -31,6 +33,7 @@ export function createMemoryAdmin(seed = {}, { unique = {}, defaults = {}, befor
     q.gt = (c, v) => add((r) => r[c] > v);
     q.gte = (c, v) => add((r) => r[c] >= v);
     q.contains = (c, v) => add((r) => Array.isArray(r[c]) && v.every((x) => r[c].includes(x)));
+    q.containedBy = (c, v) => add((r) => Array.isArray(r[c]) && r[c].every((x) => v.includes(x)));
     q.order = (c, o) => { state.order = [c, o?.ascending !== false]; return q; };
     q.limit = (n) => { state.limit = n; return q; };
     q.range = (a, b) => { state.range = [a, b]; return q; };
@@ -80,7 +83,8 @@ export function createMemoryAdmin(seed = {}, { unique = {}, defaults = {}, befor
       if (state.range) out = out.slice(state.range[0], state.range[1] + 1);
       if (state.limit != null) out = out.slice(0, state.limit);
       const returning = state.op === "select" || state.returning;
-      let data = returning ? out.map((r) => ({ ...r })) : null;
+      const project = (r) => (state.cols ? Object.fromEntries(state.cols.filter((c) => c in r).map((c) => [c, r[c]])) : { ...r });
+      let data = returning ? out.map(project) : null;
       if (state.single) {
         if (!returning) data = null;
         else if (data.length === 1) data = data[0];
