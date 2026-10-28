@@ -7,6 +7,8 @@ import OperatorShell from "@/components/beauty/operator/OperatorShell";
 import AccountSecurity from "@/components/operator/AccountSecurity";
 import { mayView, mayGlobal, restrictedReason, capabilitiesOf } from "@/lib/operator/access";
 import { CapabilitiesProvider } from "@/components/panel/Capabilities";
+import { menuHrefs, openableTargets } from "@/lib/operator/navAccess";
+import { preferencesOf } from "@/lib/operator/preferencesPage";
 import { countToReview } from "@/lib/operator/approvals";
 import { getAdminClient } from "@/lib/operator/supabaseAdmin";
 import { changeMyPassword, startMyTwoStep, confirmMyTwoStep, disableMyTwoStep, newMyRecoveryCodes } from "@/lib/beauty/operator/accountActions";
@@ -26,25 +28,18 @@ export default async function PanelLayout({ children }) {
   }
   // the menu only shows what the person may open (every page and action checks again on the server)
   const may = (rel) => mayView(session, "beauty", rel);
-  const base = "/beauty/operator";
-  const allowed = [base, `${base}/settings`];
-  if (may("products.view")) allowed.push(`${base}/products`);
-  if (may("categories.view") || may("products.view")) allowed.push(`${base}/categories`);
-  if (may("brands.view") || may("products.view")) allowed.push(`${base}/brands`);
-  if (may("quotes.view")) allowed.push(`${base}/quotes`);
-  if (may("media.view")) allowed.push(`${base}/media`);
-  if (may("inventory.view")) allowed.push(`${base}/warehouse`);
-  if (may("content.view")) allowed.push(`${base}/content`);
-  if (may("audit.view")) allowed.push(`${base}/activity`);
-  if (mayGlobal(session, "beauty", "users.view")) allowed.push(`${base}/users`);
+  const allowed = menuHrefs(session, "beauty");
   const badges = {};
   if (session.user && may("approvals.view")) {
-    allowed.push(`${base}/approvals`);
-    badges[`${base}/approvals`] = await countToReview(getAdminClient(), { actor: session.user, panel: "beauty" });      // what waits for THIS person
+    badges["/beauty/operator/approvals"] = await countToReview(getAdminClient(), { actor: session.user, panel: "beauty" });      // what waits for THIS person
   }
+  // pinned shortcuts: only addresses the person can still open (the menu list above is built by the same function)
+  const prefs = await preferencesOf(session, "beauty");
+  const byHref = new Map(openableTargets(session, "beauty").map((x) => [x.href, x]));
+  const shortcuts = prefs.shortcuts.map((h) => byHref.get(h)).filter(Boolean);
   return (
     <CapabilitiesProvider value={capabilitiesOf(session, "beauty")}>
-      <OperatorShell allowed={allowed} badges={badges}>{children}</OperatorShell>
+      <OperatorShell allowed={allowed} badges={badges} shortcuts={shortcuts}>{children}</OperatorShell>
     </CapabilitiesProvider>
   );
 }

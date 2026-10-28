@@ -1,5 +1,7 @@
 // app/beauty/operator/(panel)/page.jsx — Beauty dashboard.
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { preferencesOf } from "@/lib/operator/preferencesPage";
 import { requireBeautySession } from "@/lib/operator/panelGuard";
 import Icon from "@/components/shared/Icon";
 import { beautyImageUrl as imageUrl } from "@/lib/beauty/catalog";
@@ -28,9 +30,14 @@ const QUICK = [
   { href: `${BASE}/quotes`, label: tr("استعلام‌ها"), icon: "quote" },
 ];
 
-export default async function BeautyDashboardPage() {
+export default async function BeautyDashboardPage({ searchParams }) {
   const { t, lang } = await getPanel();
-  await requireBeautySession();
+  const session = await requireBeautySession();
+  // right after a login the person's own start page opens, if they chose one (the menu's Dashboard link never redirects)
+  if ((await searchParams)?.start === "1") {
+    const prefs = await preferencesOf(session, "beauty");
+    if (prefs.startPage) redirect(prefs.startPage);
+  }
   const configured = isAdminConfigured();
   const { access, stats, recentProducts, recentQuotes } = await getBeautyDashboardData();
 

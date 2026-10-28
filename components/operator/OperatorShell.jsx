@@ -10,6 +10,7 @@ import LogoutAlert from "@/components/operator/LogoutAlert";
 import PanelLangSwitch from "@/components/panel/PanelLangSwitch";
 import { useIdleLogout } from "@/lib/useIdleLogout";
 import { useT } from "@/components/panel/PanelI18n";
+import Shortcuts from "@/components/operator/Shortcuts";
 import PanelSearch, { SearchTrigger } from "@/components/panel/PanelSearch";
 import { searchPanel } from "@/lib/operator/panelSearchActions";
 import { tr } from "@/lib/panel/i18n";
@@ -41,7 +42,7 @@ function Brandblock() {
   );
 }
 
-export default function OperatorShell({ children, allowed = null, badges = {} }) {
+export default function OperatorShell({ children, allowed = null, badges = {}, shortcuts = [] }) {
   const t = useT();
   const pathname = usePathname();
   const router = useRouter();
@@ -98,6 +99,7 @@ export default function OperatorShell({ children, allowed = null, badges = {} })
           <Icon name="search" size={16} /><span className="flex-1 text-start">{t("جستجو")}</span><kbd className="text-[11px] text-ink-faint" dir="ltr">/</kbd>
         </SearchTrigger>
         <NavLinks />
+        <Shortcuts items={shortcuts} />
         <div className="mt-auto flex flex-col gap-1 border-t border-line pt-3">
           <div className="px-3.5 pb-2"><PanelLangSwitch /></div>
           <button
@@ -151,6 +153,7 @@ export default function OperatorShell({ children, allowed = null, badges = {} })
               </button>
             </div>
             <NavLinks onNavigate={() => setOpen(false)} />
+            <Shortcuts items={shortcuts} onNavigate={() => setOpen(false)} />
             <div className="mt-auto flex flex-col gap-1 border-t border-line pt-3">
           <div className="px-3.5 pb-2"><PanelLangSwitch /></div>
               <button

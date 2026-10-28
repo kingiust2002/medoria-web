@@ -12,6 +12,10 @@ import { PageHeader, SectionCard } from "@/components/operator/ui";
 import PublishRulesCard from "@/components/operator/PublishRulesCard";
 import { savePublishRulesAction } from "@/lib/operator/publishRuleActions";
 import { readRules } from "@/lib/operator/publishGate";
+import PreferencesCard from "@/components/operator/PreferencesCard";
+import { savePreferencesAction } from "@/lib/operator/preferenceActions";
+import { openableTargets } from "@/lib/operator/navAccess";
+import { preferencesOf } from "@/lib/operator/preferencesPage";
 import { mayView } from "@/lib/operator/access";
 import LogoutButton from "@/components/operator/LogoutButton";
 import { requireHealthSession } from "@/lib/operator/panelGuard";
@@ -49,6 +53,8 @@ export default async function SettingsPage() {
   const seesRules = mayView(session, "health", "products.view");
   const rules = seesRules ? await readRules(getAdminClient(), "health") : null;
   const canEditRules = mayView(session, "health", "products.rules");
+  const prefs = await preferencesOf(session, "health");
+  const prefTargets = openableTargets(session, "health").map(({ href, label, icon }) => ({ href, label, icon }));
 
   return (
     <>
@@ -61,6 +67,10 @@ export default async function SettingsPage() {
           <AccountSecurity user={session.user} actions={{ changeMyPassword, startMyTwoStep, confirmMyTwoStep, disableMyTwoStep, newMyRecoveryCodes }} />
         </div>
       )}
+
+      <div className="mb-6">
+        <PreferencesCard targets={prefTargets} initial={prefs} save={savePreferencesAction} />
+      </div>
 
       {rules && (
         <div className="mb-6">
