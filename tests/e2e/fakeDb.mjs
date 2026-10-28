@@ -220,6 +220,12 @@ export function createFakeDb(seedFactory) {
 
     if (req.method === "GET" || req.method === "HEAD") {
       let rows = tables[t].filter(pred);
+      if (t === "site_content" && kind !== "service") {   // migration 42: the public sees LIVE rows and the public columns only
+        const cols = String(url.searchParams.get("select") || "*").split(",").map((c) => c.trim());
+        if (cols.some((c) => !["id", "house", "kind", "data", "sort_order"].includes(c))) return respond(res, 401, { code: "42501", message: "permission denied for table site_content" });
+        const nowMs = Date.now();
+        rows = rows.filter((r) => r.is_published && (!r.publish_at || Date.parse(r.publish_at) <= nowMs) && (!r.unpublish_at || Date.parse(r.unpublish_at) > nowMs));
+      }
       const total = rows.length;
       rows = applyOrder(rows, url.searchParams.get("order"));
       const off = Number(url.searchParams.get("offset") || 0);
@@ -262,6 +268,7 @@ export function createFakeDb(seedFactory) {
           row.allow_perms ??= []; row.deny_perms ??= []; row.approval ??= {}; row.recovery_hashes ??= []; row.totp_last_step ??= 0; row.must_change_password ??= false;
         }
         if (t === "operator_change_requests") { row.id ??= randomUUID(); row.status ??= "pending"; row.requested_at ??= now(); }   // migration 35's defaults
+        if (t === "site_content") { row.version ??= 1; row.is_published ??= false; row.sort_order ??= 0; row.publish_at ??= null; row.unpublish_at ??= null; }   // migration 42's defaults
         if (row.id == null) row.id = nextId(t);
         if (row.created_at == null) row.created_at = now();
         if (row.updated_at == null) row.updated_at = now();
@@ -292,7 +299,7 @@ export function createFakeDb(seedFactory) {
         }
       }
       for (const row of hit) {
-        Object.assign(row, patch, { updated_at: now() });
+        Object.assign(row, patch, { updated_at: now() }, t === "site_content" ? { version: row.version + 1 } : {});   // migration 42's guard trigger
         // migration 32's trigger: the first time a request is answered
         if (TRACKING_PREFIX[t] && !row.first_response_at && ANSWERED.includes(row.status)) row.first_response_at = now();
       }

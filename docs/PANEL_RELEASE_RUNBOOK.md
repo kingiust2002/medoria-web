@@ -1,6 +1,6 @@
 # Panel platform — release runbook (stage S6c)
 
-The one place that says **what to do, in which order, and how to go back** for the multi-user panel work (migrations 30–41). It does not
+The one place that says **what to do, in which order, and how to go back** for the multi-user panel work (migrations 30–42). It does not
 replace `docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md` (the infrastructure truth: VPS, Caddy, Supabase, backups, DNS — read it before touching
 production) — it points into it. Nothing here is automatic: **a merge deploys nothing**, and every step below is done by a person.
 
@@ -29,6 +29,7 @@ first error.
 | 38 product history | 34 | no history; saves never blocked | header |
 | 39 scheduled publishing | product tables | dates cannot be stored; cron skips the house | header |
 | 40 translation status | product tables | marks are not remembered; saving works | header |
+| 42 site content (banner, FAQ) | 34 | no banner / FAQ on the public pages and the content screen says "unavailable"; the site is unaffected | header |
 | 41 warehouse counts and minimum levels | 36 | the count tab says "unavailable"; stock tab works without minimums | header |
 
 Before applying any of them on production: **fresh production backup and the local + R2 chain must PASS** (`scripts/self-host/production-backup.sh`;

@@ -2,6 +2,7 @@
 import { LOCALES, getTranslations } from "@/lib/i18n";
 import { buildAlternates } from "@/lib/seo";
 import ContactInner from "./ContactInner";
+import SiteFaq from "@/components/shared/SiteFaq";
 
 export async function generateMetadata(props) {
   const params = await props.params;
@@ -17,5 +18,10 @@ export async function generateMetadata(props) {
 
 export default async function ContactPage(props) {
   const params = await props.params;
-  return <ContactInner lang={params.lang} />;
+  return (
+    <>
+      <ContactInner lang={params.lang} />
+      <SiteFaq house="health" lang={params.lang} />
+    </>
+  );
 }
