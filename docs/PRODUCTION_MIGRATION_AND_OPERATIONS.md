@@ -1,6 +1,6 @@
 # Medoria Production Migration & Operations Runbook
 
-> Latest review checkpoint: **§23.11 (2026-10-28)** — owner-reported October 26 rollout recorded; safe panel subset merged; the larger platform stack is blocked pending review fixes.
+> Latest review checkpoint: **§23.12 (2026-10-28)** — safe subset deployed at 5ac0592; platform corrections accepted and merged; platform migration/activation still pending.
 
 > **Authoritative operational record.**
 >
@@ -2674,3 +2674,23 @@ These observations supersede §23.10.2's pending rollout/migrations 30–33. #20
 #### 23.11.3 Still open
 
 Real outside alert delivery and a restore drill; any data-recovery gap; old GitHub-token revocation and Supavisor-cookie rotation; deliberate Docker package/hold review; native-speaker translation review and physical-phone verification; unfinished platform requirements listed in the independent review. Preserve the distinction between code present, code merged, deployed behavior and owner-reported verification.
+
+### 23.12 Safe-subset deployment and platform re-review — 2026-10-28
+
+This dated checkpoint supersedes §23.11's deployment/merge-pending states only as specified below. Full evidence and limits: [panel acceptance review](PANEL_REVIEW_ACCEPTANCE_2026-10-28.md).
+
+#### 23.12.1 Production: owner-supplied output and confirmations
+
+- Fresh snapshot `20261028T072012Z`: AUTO_BACKUP, LOCAL_BACKUP, OFFSITE_UPLOAD, OFFSITE_VERIFY, R2_RETENTION and LOCAL_RETENTION PASS. The first upload logged HTTP 501; retry and encrypted-R2 read-back verification succeeded.
+- Saved app image tag `medoria-app-app:rollback-before-20261028T072012Z`; owner supplied successful image inspection. Keep this rollback material until the next release's observation window is closed.
+- Clean checkout began at `b835da8`; deliberate `deploy.sh` finished **`Deployed 5ac0592 and verified live.`** The app was healthy; public routes and www redirect returned their expected 200/308. #203 and the safe deletion/three-language subset reached production according to this supplied output.
+- Post-deploy RLS: **17 PASS, 0 FAIL, 1 UNKNOWN; exit 3**. Read-only database counts: Health 3 total/0 active, Beauty 2 total/1 active. This explains the empty anonymous Health-product response; it does not prove a successful public positive read and must not be relabelled PASS. The anonymous insert probe was skipped. No product was activated just to change the test result.
+- Owner confirmed fresh unauthenticated incognito access to both quotes pages redirects to login. Reviewer separately checked invalid correctly named cookies with RSC requests on both routes: login-redirect markers, no customer response content printed or retained. A real revoked production session was not tested.
+
+#### 23.12.2 Repository: new platform code merged, not reported deployed
+
+- All #208–#224 were reviewed again and merged in order, each targeting main and pinned to the reviewed head. Final application merge checkpoint: `bd9c1749ff4c26bbce6e2da8cedeab2ed1fecbdf`. The reviewer supplemented R8 with exact PostgreSQL timestamp precision (`050da95` in #211) and two permanent tests; refreshed #211 CI passed 430 unit and 150 browser tests.
+- The accompanying test-infrastructure follow-up owns the Next child process directly and verifies its readiness/exit, avoiding stale servers/broad pkill. It also pins actual SDK serialization of both recovery-code CAS filters. Its own successful PR checks are required before merging that follow-up; see the acceptance review for local-run limits.
+- **No migrations 34–42, new platform secrets, cron or OPERATOR_USERS activation are reported applied. No platform deployment follows from these repository merges.** Production's last verified owner checkpoint remains `5ac0592`.
+- Do not reuse an old deploy command blindly against newer main. The owner prefers finishing the remaining agreed code work before further server work. A future platform release requires a fresh verified backup/current-image rollback, corrected migrations 34–42 in numeric order, secret/key backup and supervised activation/post-checks through `PANEL_RELEASE_RUNBOOK.md`.
+- Unbuilt feature scope, native-language review, real restore/monitoring proof, old-token/cookie rotation, Docker hold/package review and the historical data-recovery gap remain open; see the acceptance review and earlier operations records. These are not completed by a green unit/browser suite.

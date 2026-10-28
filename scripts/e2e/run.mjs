@@ -68,27 +68,39 @@ if (!process.env.E2E_SKIP_BUILD || !fs.existsSync(path.join(root, DIST))) {
 const db = createFakeDb(seed);
 await db.start(DB_PORT);
 let app = null;
+let appReady = false;
 let appLog = "";
 // Test files that need the app in a different configuration: personal accounts switched on (OPERATOR_USERS) with a data key.
 const dataKey = randomBytes(32).toString("base64");
 const FILE_ENV = new Proxy({}, { get: (_t, name) => (/^accounts[-.]/.test(String(name)) ? { OPERATOR_USERS: "on", OPERATOR_DATA_KEY: dataKey } : undefined) });
 const startApp = (extra = {}) => {
-  app = spawn("npx", ["next", "start", "-p", String(APP_PORT), "-H", "127.0.0.1"], { cwd: root, env: { ...serverEnv, ...extra }, stdio: ["ignore", "pipe", "pipe"] });
-  app.stdout.on("data", (d) => { appLog += d; });
+  // Own the server process directly. Killing an npx wrapper may leave next-server alive with the previous file's environment.
+  appReady = false;
+  app = spawn(process.execPath, [path.join(root, "node_modules/next/dist/bin/next"), "start", "-p", String(APP_PORT), "-H", "127.0.0.1"], { cwd: root, env: { ...serverEnv, ...extra }, stdio: ["ignore", "pipe", "pipe"] });
+  const server = app;
+  let startupOutput = "";
+  app.stdout.on("data", (d) => {
+    appLog += d;
+    startupOutput += d;
+    if (app === server && startupOutput.includes("Ready in")) appReady = true;
+  });
   app.stderr.on("data", (d) => { appLog += d; });
 };
 const killApp = async () => {
-  app?.kill("SIGTERM");
-  // `npx` wraps next-server; make sure nothing keeps the port
-  spawnSync("pkill", ["-f", `next start -p ${APP_PORT}`]);
-  spawnSync("pkill", ["-f", `next-server`]);
-  for (let i = 0; i < 40; i++) {                                   // wait until the port is really free
-    try { await fetch(`http://127.0.0.1:${APP_PORT}/api/health`); await new Promise((r) => setTimeout(r, 250)); } catch { break; }
+  const server = app;
+  if (server && server.exitCode === null && server.signalCode === null) {
+    await new Promise((resolve) => {
+      const timer = setTimeout(() => server.kill("SIGKILL"), 10000);
+      server.once("exit", () => { clearTimeout(timer); resolve(); });
+      server.kill("SIGTERM");
+    });
   }
+  appReady = false;
 };
 const waitUp = async (base) => {
   for (let i = 0; i < 60; i++) {
-    try { if ((await fetch(`${base}/api/health`)).ok) return true; } catch { /* not yet */ }
+    if (!app || app.exitCode !== null || app.signalCode !== null) return false;
+    try { if (appReady && (await fetch(`${base}/api/health`)).ok && app.exitCode === null && app.signalCode === null) return true; } catch { /* not yet */ }
     await new Promise((r) => setTimeout(r, 500));
   }
   return false;

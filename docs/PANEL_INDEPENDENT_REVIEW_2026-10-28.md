@@ -1,5 +1,7 @@
 # Independent panel-platform review — 2026-10-28
 
+> Superseded checkpoint: the later independent re-review accepted and merged corrected #208–#224. See [acceptance and production boundary](PANEL_REVIEW_ACCEPTANCE_2026-10-28.md). The findings and red reproductions below remain the original baseline evidence.
+
 ## Decision and repository state
 
 The owner requested an independent code review and merging the work that is ready. This review does **not** certify production deployment or the entire platform as complete.

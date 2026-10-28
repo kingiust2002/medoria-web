@@ -29,8 +29,8 @@ first error.
 | 38 product history | 34 | no history; saves never blocked | header |
 | 39 scheduled publishing | product tables | dates cannot be stored; cron skips the house | header |
 | 40 translation status | product tables | marks are not remembered; saving works | header |
-| 42 site content (banner, FAQ) | 34 | no banner / FAQ on the public pages and the content screen says "unavailable"; the site is unaffected | header |
 | 41 warehouse counts and minimum levels | 36 | the count tab says "unavailable"; stock tab works without minimums | header |
+| 42 site content (banner, FAQ) | 34 | no banner / FAQ on the public pages and the content screen says "unavailable"; the site is unaffected | header |
 
 Before applying any of them on production: **fresh production backup and the local + R2 chain must PASS** (`scripts/self-host/production-backup.sh`;
 runbook §7). A migration is applied by the person doing the release, never by the application.
@@ -53,7 +53,7 @@ runbook §7). A migration is applied by the person doing the release, never by t
 4. Add the new environment values (section 2); run the env checker.
 5. Deploy deliberately (runbook §9): then **`docker compose ps` and a live curl** — "Started" is not proof the container stayed up.
 6. Post-checks:
-   * `npm run check:rls` (now also proves anonymous callers cannot read the warehouse tables, including the stock counts and levels) — must be all PASS;
+   * `npm run check:rls` (now also proves anonymous callers cannot read the warehouse tables, including the stock counts and levels) — privacy denials must be proved; retain FAIL/UNKNOWN exit semantics. The current Health positive-read probe is UNKNOWN because there are no active Health products; record it honestly rather than weakening the checker or publishing unwanted data;
    * the public pages answer and look as before; no warehouse/schedule data in a public response;
    * the owner logs in; one permission-denied probe (a viewer account cannot open `/operator/users`);
    * after `OPERATOR_USERS=on`: the activity log shows `auth.bootstrap_owner` once.
@@ -79,8 +79,7 @@ much that is.
 
 ## 5a. After the independent review (2026-10-28)
 
-* The platform rollout is **blocked until the corrected stack is re-reviewed** (`PANEL_REVIEW_RESPONSE_2026-10-28.md`). The safe subset already on `main`
-  (#204, #206, #207) needs **no migration and no env change** (see `PRODUCTION_MIGRATION_AND_OPERATIONS.md`).
+* The corrected implemented stack was independently re-reviewed and #208–#224 merged on 2026-10-28 (`PANEL_REVIEW_ACCEPTANCE_2026-10-28.md`). The safe subset (#203/#204/#206/#207) is owner-reported live at `5ac0592`. The platform itself is NOT reported deployed; continue only through a separate planned rollout, after the owner's agreed remaining code work. Do not blindly reuse the earlier safe-subset deploy command.
 * **Migration 41 changed before ever being applied** (it now contains the transactional close functions); apply the version from the corrected stack only. If
   a throw-away database got the old 41, re-run the new file's `CREATE OR REPLACE FUNCTION` blocks.
 * Approved product deletions now need a basis version; old queued delete requests fail as stale and must be re-submitted.
