@@ -139,6 +139,26 @@ for (const width of WIDTHS) {
     await assertFits(page, `single delete dialog open @ ${width}`);
     await ctx.close();
   });
+
+  test(`Health warehouse at ${width}px: stock, movements, locations and the movement dialog fit, even with long unbroken text`, async () => {
+    const post = (table, rows) => fetch(`${process.env.E2E_DB_URL}/rest/v1/${table}`, { method: "POST", headers: { apikey: "service-test-key", "content-type": "application/json" }, body: JSON.stringify(rows) });
+    const long = "LONG-" + "X".repeat(60);
+    await post("health_stock_locations", [{ id: 1, code: "MAIN", name: "N".repeat(70), note: "n".repeat(120), is_active: true, sort_order: 0, version: 1 }, { id: 2, code: "SHOP", name: "Shop", is_active: true, sort_order: 1, version: 1 }]);
+    await post("products", [{ id: 91, slug: "wh-long", sku: long, name_en: "W".repeat(80), name_fa: "W".repeat(80), price: 5, in_stock: true, is_active: true }]);
+    await post("health_stock_balances", [{ location_id: 1, product_id: 91, quantity: 12, reserved: 2 }, { location_id: 2, product_id: 91, quantity: 3, reserved: 0 }]);
+    await post("health_stock_movements", [{ id: 1, idempotency_key: "k".repeat(40), leg: 0, group_id: "g1", kind: "receive", product_id: 91, sku: long, location_id: 1, delta: 12, balance_after: 12, reason: "r".repeat(150), reference: "ref-" + "9".repeat(60), actor_label: "u".repeat(40), created_at: "2026-10-01T10:00:00.000Z" }]);
+    const { ctx, page } = await phone(width);
+    await login(page, "health");
+    for (const tab of ["stock", "movements", "reservations", "locations"]) {
+      await page.goto(`${BASE}/operator/warehouse?tab=${tab}`, { waitUntil: "networkidle" });
+      await assertFits(page, `warehouse ${tab} @ ${width}`);
+    }
+    await page.goto(`${BASE}/operator/warehouse?tab=stock`, { waitUntil: "networkidle" });
+    await page.getByTestId("wh-open-transfer").click();
+    await assertInside(page, page.getByRole("dialog"), `warehouse dialog @ ${width}`);
+    await assertFits(page, `warehouse dialog open @ ${width}`);
+    await ctx.close();
+  });
 }
 
 test("Beauty panel on a phone: Quotes screen, settings and activity fit", async () => {

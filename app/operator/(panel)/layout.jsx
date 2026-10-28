@@ -30,6 +30,7 @@ export default async function PanelLayout({ children }) {
   if (may("products.view")) allowed.push("/operator/products");
   if (may("categories.view") || may("products.view")) allowed.push("/operator/categories");
   if (may("quotes.view")) allowed.push("/operator/quotes");
+  if (may("inventory.view")) allowed.push("/operator/warehouse");
   if (may("audit.view")) allowed.push("/operator/activity");
   if (mayGlobal(session, "health", "users.view")) allowed.push("/operator/users");
   const badges = {};
