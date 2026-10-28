@@ -81,7 +81,8 @@ test("inventory permissions are separate: product managers and viewers see no st
 test("decide(): direct | approval | denied, per operation and per house", () => {
   const pm = U({ role: "product_manager", houses: ["health", "beauty"] });
   assert.equal(decide(pm, "health", "products.content").mode, "direct");
-  assert.equal(decide(pm, "health", "products.publish").mode, "denied", "no publish permission in the role");
+  assert.equal(decide(pm, "health", "products.publish").mode, "approval", "the role may publish, but only through approval by default");
+  assert.equal(decide(U({ role: "viewer" }), "health", "products.publish").mode, "denied");
   const pub = U({ role: "product_manager", houses: ["health"], allow: ["health.products.publish"] });
   assert.equal(decide(pub, "health", "products.publish").mode, "approval", "role default says publish needs approval");
   const trusted = U({ role: "product_manager", houses: ["health"], allow: ["health.products.publish"], approval: { health: [] } });
@@ -182,6 +183,11 @@ test("accounts are never erased; session policy ends sessions when power changes
   assert.equal(sessionPolicy(before, { ...before }, { passwordChanged: true }), "end_all");
   assert.equal(sessionPolicy(before, { ...before }, { twoFactorChanged: true }), "end_all");
   assert.equal(sessionPolicy(before, { ...before, approval: { health: [] } }), "refresh");
+});
+
+test("an owner always has both houses", () => {
+  const r = checkUserChange({ actor: owner(), target: null, change: { role: "owner", houses: ["health"] }, users: [owner()] });
+  assert.ok(r.errors.includes("owner_needs_both_houses"));
 });
 
 // ── review findings R1, R2, R5: delegation must not exceed the delegator's own authority ─────────────────────────────────

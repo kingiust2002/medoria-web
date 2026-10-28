@@ -348,8 +348,12 @@ test("login: every session is registered before its cookie is issued, each panel
   assert.match(beauty, /BEAUTY_OPERATOR_TOTP_SECRET/);
   for (const f of ["app/api/operator/logout/route.js", "app/api/beauty-operator/logout/route.js"]) assert.match(read(f), /handleLogout/);
   // getSession checks the registry of its own panel
-  assert.match(read("lib/operator/auth.js"), /sessionStatus\(getAdminClient\(\), \{ panel: "health", sid: payload\.sid \}\)/);
-  assert.match(read("lib/beauty/operator/auth.js"), /sessionStatus\(getAdminClient\(\), \{ panel: "beauty", sid: payload\.sid \}\)/);
+  assert.match(read("lib/operator/auth.js"), /sessionStatus\(admin, \{ panel: "health", sid: payload\.sid \}\)/);
+  assert.match(read("lib/beauty/operator/auth.js"), /sessionStatus\(admin, \{ panel: "beauty", sid: payload\.sid \}\)/);
+  // a personal-account login registers its session (with the person) before the cookie is signed, and asks the second factor only after the password
+  const personal = flow.slice(flow.indexOf("async function handleUserLogin"));
+  assert.ok(personal.indexOf("registerSession(") < personal.indexOf("signSession("), "personal login: register before sign");
+  assert.ok(personal.indexOf("verifyLogin(") < personal.indexOf("consumeRecoveryCode(") && personal.indexOf("verifyLogin(") < personal.indexOf("acceptTotpStep("), "personal login: password before second factor");
   // the revoke actions are bound to their own panel too
   assert.ok(!/panel: "beauty"/.test(read("lib/operator/securityActions.js")));
   assert.ok(!/panel: "health"/.test(read("lib/beauty/operator/securityActions.js")));

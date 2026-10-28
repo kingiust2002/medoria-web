@@ -7,7 +7,7 @@ import { requireHealthSession } from "@/lib/operator/panelGuard";
 export const dynamic = "force-dynamic";
 
 export default async function BulkAddPage() {
-  await requireHealthSession();
+  await requireHealthSession("products.edit");
   const categories = await getAdminCategories();
   return <BulkAddGrid categories={categories} />;
 }

@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 
 const config = {
   panel: "beauty", cookieName: BOP_COOKIE, role: "beauty-admin", limiterPrefix: "boplogin",
-  env: { totp: "BEAUTY_OPERATOR_TOTP_SECRET", recovery: "BEAUTY_OPERATOR_RECOVERY_CODE_HASHES" },
+  env: { totp: "BEAUTY_OPERATOR_TOTP_SECRET", recovery: "BEAUTY_OPERATOR_RECOVERY_CODE_HASHES", username: "BEAUTY_OPERATOR_USERNAME", passwordHash: "BEAUTY_OPERATOR_PASSWORD_HASH" },
   auth: { verifyCredentials, isConfigured: isBeautyOperatorConfigured, sessionCookieOptions, credentialsVersion, isSameOrigin },
   session: { signSession, verifySession, sessionTtlMs },
 };

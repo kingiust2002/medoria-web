@@ -7,7 +7,7 @@ import { requireBeautySession } from "@/lib/operator/panelGuard";
 export const dynamic = "force-dynamic";
 
 export default async function ImportPage() {
-  await requireBeautySession();
+  await requireBeautySession("products.create");
   const logs = await getImportLogs(8);
   return <ImportWizard recentLogs={logs} />;
 }

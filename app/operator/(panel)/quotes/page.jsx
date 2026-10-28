@@ -6,7 +6,7 @@ import { requireHealthSession } from "@/lib/operator/panelGuard";
 export const dynamic = "force-dynamic";
 
 export default async function QuotesPage() {
-  await requireHealthSession();
+  await requireHealthSession("quotes.view");
   const quotes = await getQuotes();
   return <QuotesManager quotes={quotes} now={Date.now()} />;
 }

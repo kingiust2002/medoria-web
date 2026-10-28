@@ -6,7 +6,7 @@ import { requireBeautySession } from "@/lib/operator/panelGuard";
 export const dynamic = "force-dynamic";
 
 export default async function BrandsPage() {
-  await requireBeautySession();
+  await requireBeautySession(["brands.view", "products.view"]);
   const [brands, products] = await Promise.all([getBeautyBrandsWithCounts(), getAdminBeautyProducts()]);
   return <BrandsManager brands={brands} products={products} />;
 }

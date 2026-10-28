@@ -30,7 +30,7 @@ test("every panel page awaits the session guard before anything else", () => {
       const m = src.match(/export default async function \w+\([^)]*\)\s*\{\n([\s\S]*)/);
       assert.ok(m, `${f}: the page must be an async function`);
       // the language helper (a cookie read) may come first; nothing else may
-      assert.ok(new RegExp(`^\\s*(?:const [\\w{}, ]+ = await (?:getT|getPanel)\\(\\);\\s*)?await ${p.guard}\\(\\);`).test(m[1]), `${f} must start with await ${p.guard}()`);
+      assert.ok(new RegExp(`^\\s*(?:const [\\w{}, ]+ = await (?:getT|getPanel)\\(\\);\\s*)?await ${p.guard}\\([^)]*\\);`).test(m[1]), `${f} must start with await ${p.guard}(…)`);
       assert.match(src, new RegExp(`import \\{ ${p.guard} \\} from "@/lib/operator/panelGuard"`));
     }
   }
@@ -45,7 +45,7 @@ test("every exported service-role reader checks the session before it asks for t
       assert.ok(fns.length > 0, `${f}: no readers found`);
       for (const m of fns) {
         const body = m[2];
-        const guardAt = body.indexOf(`await ${p.guard}();`);
+        const guardAt = body.indexOf(`await ${p.guard}(`);
         assert.ok(guardAt >= 0, `${f}:${m[1]} does not check the session`);
         const dbAt = body.search(/getAdminClient\(\)|\.from\(/);
         assert.ok(dbAt < 0 || guardAt < dbAt, `${f}:${m[1]} reaches the database before checking the session`);
@@ -56,7 +56,7 @@ test("every exported service-role reader checks the session before it asks for t
 
 test("a new page or reader cannot slip in: every file under the panel directories is accounted for", () => {
   for (const p of PANELS) {
-    const guarded = walk(p.dir).filter((x) => x.endsWith("page.jsx")).every((f) => read(f).includes(`await ${p.guard}();`));
+    const guarded = walk(p.dir).filter((x) => x.endsWith("page.jsx")).every((f) => read(f).includes(`await ${p.guard}(`));
     assert.ok(guarded);
     // route handlers inside a panel directory would bypass the page guard: there must be none
     assert.deepEqual(walk(p.dir).filter((x) => /route\.(js|ts)$/.test(x)), [], `${p.dir} must not contain route handlers`);

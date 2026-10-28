@@ -38,7 +38,7 @@ export default async function SettingsPage() {
   const admin = isAdminConfigured();
   const translate = Boolean(process.env.GOOGLE_TRANSLATE_API_KEY);
   const session = await getSession();
-  const sessions = await listSessions(getAdminClient(), { panel: "beauty" });
+  const sessions = await listSessions(getAdminClient(), { panel: "beauty", userId: session?.user?.id });
   const registryReady = Boolean(session?.sid) && sessions.some((s) => s.sid === session.sid);
   const twoStep = isTwoStepEnabled();
 

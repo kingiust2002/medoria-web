@@ -34,7 +34,7 @@ function Brandblock() {
   );
 }
 
-export default function OperatorShell({ children }) {
+export default function OperatorShell({ children, allowed = null }) {
   const t = useT();
   const pathname = usePathname();
   const router = useRouter();
@@ -62,7 +62,7 @@ export default function OperatorShell({ children }) {
   function NavLinks({ onNavigate }) {
     return (
       <nav className="flex flex-col gap-1">
-        {NAV.map((item) => (
+        {NAV.filter((item) => !allowed || allowed.includes(item.href)).map((item) => (
           <Link
             key={item.href}
             href={item.href}

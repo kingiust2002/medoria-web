@@ -7,7 +7,7 @@ import { requireBeautySession } from "@/lib/operator/panelGuard";
 export const dynamic = "force-dynamic";
 
 export default async function EditProductPage(props) {
-  await requireBeautySession();
+  await requireBeautySession("products.view");
   const params = await props.params;
   const [product, categories] = await Promise.all([
     getAdminBeautyProduct(params.id),

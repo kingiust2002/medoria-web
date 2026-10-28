@@ -7,7 +7,7 @@ import { requireHealthSession } from "@/lib/operator/panelGuard";
 export const dynamic = "force-dynamic";
 
 export default async function ImportPage() {
-  await requireHealthSession();
+  await requireHealthSession("products.create");
   const logs = await getImportLogs(8);
   return <ImportWizard recentLogs={logs} />;
 }

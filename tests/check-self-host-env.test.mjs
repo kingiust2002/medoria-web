@@ -150,3 +150,20 @@ test("QUOTE_REMINDER_TOKEN: empty or a long safe token passes; a short or unsafe
   assert.equal(unsafe.code, 1);
   assert.match(unsafe.stderr, /may only contain letters/);
 });
+
+test("personal accounts: OPERATOR_USERS needs a valid OPERATOR_DATA_KEY; garbage is refused; empty is fine", async () => {
+  const key = Buffer.alloc(32, 7).toString("base64");
+  assert.equal((await runChecker({ NEXT_PUBLIC_SITE_URL: "https://medoriaco.com", OPERATOR_USERS: "on", OPERATOR_DATA_KEY: key })).code, 0);
+  assert.equal((await runChecker({ NEXT_PUBLIC_SITE_URL: "https://medoriaco.com", OPERATOR_USERS: "", OPERATOR_DATA_KEY: "" })).code, 0);
+  assert.equal((await runChecker({ NEXT_PUBLIC_SITE_URL: "https://medoriaco.com", OPERATOR_USERS: "off" })).code, 0);
+  const noKey = await runChecker({ NEXT_PUBLIC_SITE_URL: "https://medoriaco.com", OPERATOR_USERS: "on" });
+  assert.equal(noKey.code, 1);
+  assert.match(noKey.stderr, /needs OPERATOR_DATA_KEY/);
+  const shortKey = await runChecker({ NEXT_PUBLIC_SITE_URL: "https://medoriaco.com", OPERATOR_USERS: "on", OPERATOR_DATA_KEY: Buffer.alloc(16, 1).toString("base64") });
+  assert.equal(shortKey.code, 1);
+  assert.match(shortKey.stderr, /32 random bytes/);
+  assert.ok(!shortKey.stderr.includes(Buffer.alloc(16, 1).toString("base64")), "the key must never be printed");
+  const flag = await runChecker({ NEXT_PUBLIC_SITE_URL: "https://medoriaco.com", OPERATOR_USERS: "yes", OPERATOR_DATA_KEY: key });
+  assert.equal(flag.code, 1);
+  assert.match(flag.stderr, /`on` or `off`/);
+});

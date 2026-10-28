@@ -6,7 +6,7 @@ import { requireHealthSession } from "@/lib/operator/panelGuard";
 export const dynamic = "force-dynamic";
 
 export default async function ProductsPage() {
-  await requireHealthSession();
+  await requireHealthSession("products.view");
   const [products, categories] = await Promise.all([getAdminProducts(), getAdminCategories()]);
   return <ProductsTable products={products} categories={categories} />;
 }

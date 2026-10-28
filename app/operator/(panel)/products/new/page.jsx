@@ -6,7 +6,7 @@ import { requireHealthSession } from "@/lib/operator/panelGuard";
 export const dynamic = "force-dynamic";
 
 export default async function NewProductPage() {
-  await requireHealthSession();
+  await requireHealthSession("products.create");
   const categories = await getAdminCategories();
   return <ProductForm mode="new" categories={categories} />;
 }
