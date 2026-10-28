@@ -16,7 +16,7 @@ import { localName } from "@/lib/panel/i18n";
 
 export default function ProductsTable({ products, categories }) {
   const t = useT();
-  const { lang } = usePanelLang();
+  const { lang, date: fmtDate } = usePanelLang();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState(null);
@@ -241,6 +241,7 @@ export default function ProductsTable({ products, categories }) {
 
                   {isIncomplete(p) && <Badge tone="warn" className="hidden md:inline-flex" title={gapSummary(p, 6, t)}>{t("ناقص: {count}", { count: productGaps(p).length })}</Badge>}
                   <Badge tone={active ? "ok" : "muted"} className="hidden md:inline-flex">{active ? t("فعال") : t("غیرفعال")}</Badge>
+                  {(p.publish_at || p.unpublish_at) && <Badge tone="violet" className="hidden md:inline-flex" title={[p.publish_at && `${t("انتشار خودکار")}: ${fmtDate(p.publish_at)}`, p.unpublish_at && `${t("آرشیو خودکار")}: ${fmtDate(p.unpublish_at)}`].filter(Boolean).join(" · ")} data-testid="badge-scheduled">{t("زمان‌بندی‌شده")}</Badge>}
 
                   <div className="flex items-center gap-1 shrink-0">
                     <Link href={`/operator/products/${p.id}/edit`} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-brand-violet/10 hover:text-brand-violet transition-colors" title={t("ویرایش")}><Icon name={canContent || canPrice ? "edit" : "eye"} size={16} /></Link>
