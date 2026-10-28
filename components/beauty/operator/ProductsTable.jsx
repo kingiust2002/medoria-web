@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
 import { isIncomplete, gapSummary, productGaps } from "@/lib/operator/completeness";
 import { beautyImageUrl as imageUrl } from "@/lib/beauty/catalog";
-import { setProductActive, duplicateProduct, quickUpdateProduct, bulkUpdateProducts, deleteProduct } from "@/lib/beauty/operator/actions";
+import { setProductActive, duplicateProduct, quickUpdateProduct, bulkUpdateProducts, bulkUpdateFilteredProducts, deleteProduct } from "@/lib/beauty/operator/actions";
 import DeleteProductModal from "@/components/operator/DeleteProductModal";
 import { BEAUTY_WORLDS } from "@/lib/beauty/operator/constants";
 import {
@@ -18,9 +18,15 @@ import { localName } from "@/lib/panel/i18n";
 import ListPager from "@/components/operator/ListPager";
 import { useListNav, useDebouncedQuery } from "@/components/operator/useListNav";
 import { productHref } from "@/lib/operator/listQuery";
+import { ScopeNotice, ConfirmFiltered } from "@/components/operator/BulkScope";
+import SavedViews from "@/components/operator/SavedViews";
+import { saveListView, deleteListView } from "@/lib/beauty/operator/savedViewActions";
+
+const viewActions = { save: saveListView, remove: deleteListView };
+import { describeProductFilters } from "@/lib/operator/bulkScope";
 
 // `data` is one server-rendered page: { params, ok, rows, total, page, pageCount, size } or { params, ok: false, error } (lib/beauty/operator/data.js getBeautyProductsPage).
-export default function ProductsTable({ data, categories, basePath = "/beauty/operator/products" }) {
+export default function ProductsTable({ data, categories, views = null, basePath = "/beauty/operator/products" }) {
   const t = useT();
   const { lang, date: fmtDate, num } = usePanelLang();
   const router = useRouter();
@@ -44,8 +50,11 @@ export default function ProductsTable({ data, categories, basePath = "/beauty/op
   const [selected, setSelected] = useState(() => new Set());
   const [editPrice, setEditPrice] = useState(null); // { id, val }
   const [bulkCat, setBulkCat] = useState("");
+  const [scopeAll, setScopeAll] = useState(false);          // "all filtered results" instead of the ticked rows of this page
+  const [confirm, setConfirm] = useState(null);             // { patch, okText, what } waiting for the person's yes
+  const [confirmBusy, setConfirmBusy] = useState(false);
   const listKey = data.ok ? `${data.page}|${JSON.stringify(params)}` : "";
-  useEffect(() => { setSelected(new Set()); }, [listKey]);   // a selection belongs to the page it was made on
+  useEffect(() => { setSelected(new Set()); setScopeAll(false); setConfirm(null); }, [listKey]);   // a selection belongs to the page it was made on
 
   const catName = useMemo(() => {
     const m = {};
@@ -68,7 +77,7 @@ export default function ProductsTable({ data, categories, basePath = "/beauty/op
   const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
   const toggleSel = (id) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleAll = () => setSelected((s) => { if (rows.every((r) => s.has(r.id))) return new Set(); return new Set(rows.map((r) => r.id)); });
-  const clearSel = () => setSelected(new Set());
+  const clearSel = () => { setSelected(new Set()); setScopeAll(false); };
 
   // single quick edits
   function runQuick(p, patch, okText) {
@@ -109,17 +118,29 @@ export default function ProductsTable({ data, categories, basePath = "/beauty/op
 
   // bulk
   function runBulk(patch, okText) {
+    if (scopeAll) { setConfirm({ patch, okText, what: okText }); return; }          // every filtered row: ask first, with the exact count
     const ids = [...selected];
     if (!ids.length) return;
     startTransition(async () => {
       const res = await bulkUpdateProducts(ids, patch);
-      if (res.ok) {
-        const stopped = res.blockedCount ? ` — ${blockedText({ error: t(PUBLISH_MESSAGES.blockedMany, { count: res.blockedCount }), publishBlocked: res.publishBlocked, blockedCount: res.blockedCount }, t)}` : "";
-        flash(`${t("{okText} ({count} مورد)", { okText, count: res.count })}${stopped}`, !res.blockedCount);
-        clearSel(); setBulkCat(""); router.refresh();
-      }
-      else flash(blockedText(res, t));
+      showBulkResult(res, okText);
     });
+  }
+  function showBulkResult(res, okText) {
+    if (res.ok) {
+      const stopped = res.blockedCount ? ` — ${blockedText({ error: t(PUBLISH_MESSAGES.blockedMany, { count: res.blockedCount }), publishBlocked: res.publishBlocked, blockedCount: res.blockedCount }, t)}` : "";
+      flash(`${t("{okText} ({count} مورد)", { okText, count: res.count })}${stopped}`, !res.blockedCount);
+      clearSel(); setBulkCat(""); router.refresh();
+    } else flash(blockedText(res, t));
+  }
+  async function runFiltered() {
+    const { patch, okText } = confirm;
+    setConfirmBusy(true);
+    const res = await bulkUpdateFilteredProducts(Object.fromEntries(Object.entries(params).filter(([k]) => !["page", "size"].includes(k))), patch, data.total).catch(() => null);
+    setConfirmBusy(false); setConfirm(null);
+    if (!res) { flash(t("ارتباط با سرور برقرار نشد.")); return; }
+    if (res.scopeChanged) router.refresh();
+    showBulkResult(res, okText);
   }
   function bulkCategory(value) {
     setBulkCat(value);
@@ -156,6 +177,7 @@ export default function ProductsTable({ data, categories, basePath = "/beauty/op
         <Select name="sort" value={sort} onChange={(e) => nav.go({ sort: e.target.value })} className="w-auto" aria-label={t("مرتب‌سازی")}><option value="updated">{t("آخرین تغییر")}</option><option value="newest">{t("جدیدترین")}</option><option value="name">{t("نام")}</option><option value="category">{t("دسته")}</option></Select>
         <noscript><button type="submit" className="btn-ghost size-sm">{t("اعمال")}</button></noscript>
       </form>
+      <SavedViews list="products" basePath={basePath} params={params} views={views} actions={viewActions} />
 
       {!data.ok && (
         <div role="alert" data-testid="list-error" className="mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn">
@@ -172,7 +194,7 @@ export default function ProductsTable({ data, categories, basePath = "/beauty/op
       {/* Bulk bar */}
       {selected.size > 0 && (
         <div className="card mb-4 p-3 flex flex-wrap items-center gap-2 border-brand-violet/30 bg-brand-violet/5 sticky top-2 z-20">
-          <span className="text-sm font-semibold text-brand-violet">{t("{size} مورد انتخاب شده", { size: selected.size })}</span>
+          <span className="text-sm font-semibold text-brand-violet">{scopeAll ? t("{size} مورد انتخاب شده", { size: num(data.total) }) : t("{size} مورد انتخاب شده", { size: selected.size })}</span>
           <span className="flex-1" />
           {canBulk && bulkPublish && <button onClick={() => runBulk({ is_active: true }, t("فعال شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="eye" size={15} /> {t("فعال‌سازی")}</button>}
           {canBulk && bulkArchive && <button onClick={() => runBulk({ is_active: false }, t("آرشیو شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="archive" size={15} /> {t("غیرفعال")}</button>}
@@ -184,6 +206,7 @@ export default function ProductsTable({ data, categories, basePath = "/beauty/op
             </Select>
           )}
           <button onClick={clearSel} className="btn-ghost size-sm !text-ink-muted"><Icon name="close" size={15} /> {t("لغو")}</button>
+          {canBulk && allSelected && <ScopeNotice pageCount={rows.length} total={data.total} all={scopeAll} onAll={() => setScopeAll(true)} onPage={() => setScopeAll(false)} num={num} />}
         </div>
       )}
 
@@ -280,6 +303,7 @@ export default function ProductsTable({ data, categories, basePath = "/beauty/op
         <DeleteProductModal product={deleting} onClose={() => setDeleting(null)} onDelete={deleteProduct}
           onDone={(res) => { setDeleting(null); flash(res?.pending ? t(res.message) : res?.ok ? t("محصول برای همیشه حذف شد.") : t("این محصول دیگر وجود ندارد؛ فهرست به‌روز شد."), Boolean(res?.ok)); router.refresh(); }} />
       )}
+      {confirm && <ConfirmFiltered total={data.total} filters={describeProductFilters(params, t, { catName: (c) => catName[`id:${c}`] || catName[`slug:${c}`] || c })} what={confirm.what} busy={confirmBusy} onConfirm={runFiltered} onCancel={() => setConfirm(null)} num={num} />}
     </>
   );
 }

@@ -284,7 +284,10 @@ test("every path that can make a product public goes through the gate — source
     assert.match(fn("updateProduct"), new RegExp(`gateOne\\(\\{ admin: a\\.admin, house: "${house}", before, after: laidOver\\(before, row\\)`));
     assert.match(fn("setProductActive"), new RegExp(`gateOne\\(\\{ admin: a\\.admin, house: "${house}", before: cur`));
     assert.match(fn("quickUpdateProduct"), new RegExp(`gateOne\\(\\{ admin: a\\.admin, house: "${house}", before: was`));
-    assert.match(fn("bulkUpdateProducts"), new RegExp(`gateBulkPublish\\(\\{ admin: a\\.admin, house: "${house}"`));
+    // bulk publish: ONE runner serves the ticked rows and "all filtered results" (N9), and the gate is inside it
+    const runner = src.slice(src.indexOf("async function runBulk("), src.indexOf("\nexport async function", src.indexOf("async function runBulk(")));
+    assert.match(runner, new RegExp(`gateBulkPublish\\(\\{ admin: a\\.admin, house: "${house}"`));
+    assert.match(fn("bulkUpdateProducts"), /runBulk\(/); assert.match(fn("bulkUpdateFilteredProducts"), /runBulk\(/);
     // the gate is before the approval branch: a request that could never be applied is not filed
     for (const name of ["createProduct", "updateProduct"]) assert.ok(fn(name).indexOf("gateOne(") < fn(name).indexOf("if (needsApproval)"), `${f}:${name}`);
     assert.ok(fn("setProductActive").indexOf("gateOne(") < fn("setProductActive").indexOf("a.needsApproval"));
