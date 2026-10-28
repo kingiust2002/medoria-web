@@ -157,9 +157,10 @@ test("both panels' actions share the one status list and bind bulk actions to th
   const hd = grab(health, "deleteQuotes"), hs = grab(health, "updateQuotesStatus");
   const bd = grab(beauty, "deleteQuotes"), bs = grab(beauty, "updateQuotesStatus");
   assert.ok(hd && hs && bd && bs, "a bulk action is missing in one panel");
-  assert.match(hd, /deleteQuotesGuarded\(\{ getSession, getAdminClient, table: "quote_requests", ids, audit: makeAudit\("health", getSession, getAdminClient\) \}\)/);
+  // the delete goes through the one flow (direct deletion or an approval request); the flow maps the house to its own table
+  assert.match(hd, /quotesDeleteFlow\(\{ a, house: "health", ids, getSession, getAdminClient, audit: makeAudit\("health", getSession, getAdminClient\) \}\)/);
   assert.match(hs, /setQuotesStatusGuarded\(\{ getSession, getAdminClient, table: "quote_requests", ids, status, audit: makeAudit\("health", getSession, getAdminClient\) \}\)/);
-  assert.match(bd, /deleteQuotesGuarded\(\{ getSession, getAdminClient, table: "beauty_quote_requests", ids, audit: makeAudit\("beauty", getSession, getAdminClient\) \}\)/);
+  assert.match(bd, /quotesDeleteFlow\(\{ a, house: "beauty", ids, getSession, getAdminClient, audit: makeAudit\("beauty", getSession, getAdminClient\) \}\)/);
   assert.match(bs, /setQuotesStatusGuarded\(\{ getSession, getAdminClient, table: "beauty_quote_requests", ids, status, audit: makeAudit\("beauty", getSession, getAdminClient\) \}\)/);
   for (const body of [hd, hs]) assert.ok(!body.includes("beauty"), "Health bulk action mentions Beauty");
   for (const body of [bd, bs]) assert.ok(!/table: "quote_requests"/.test(body), "Beauty bulk action touches the Health table");

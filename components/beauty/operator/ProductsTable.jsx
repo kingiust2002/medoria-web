@@ -12,7 +12,7 @@ import {
   PageHeader, Input, Select, Badge, EmptyState, Spinner, productDisplayName, priceText, isOnRequest,
 } from "@/components/operator/ui";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
-import { useCan } from "@/components/panel/Capabilities";
+import { useCan, useMode } from "@/components/panel/Capabilities";
 import { localName } from "@/lib/panel/i18n";
 import ListPager from "@/components/operator/ListPager";
 import { useListNav, useDebouncedQuery } from "@/components/operator/useListNav";
@@ -31,6 +31,8 @@ export default function ProductsTable({ data, categories, basePath = "/beauty/op
   const canCreate = useCan("products.create"), canImport = useCan("products.import"), canBulk = useCan("products.bulk");
   const canContent = useCan("products.content"), canPrice = useCan("products.price"), canStock = useCan("products.stock_flag");
   const canPublish = useCan("products.publish"), canArchive = useCan("products.archive"), canDelete = useCan("products.delete");
+  // a bulk action cannot be sent for approval (one request per product would bury the reviewer): it is offered only to people who may do it directly
+  const bulkPublish = useMode("products.publish") === "direct", bulkArchive = useMode("products.archive") === "direct", bulkPrice = useMode("products.price") === "direct", bulkContent = useMode("products.content") === "direct";
 
   const { params } = data;
   const products = data.ok ? data.rows : [];
@@ -73,6 +75,7 @@ export default function ProductsTable({ data, categories, basePath = "/beauty/op
     startTransition(async () => {
       const res = await quickUpdateProduct(p.id, patch);
       setBusyId(null);
+      if (res.ok && res.pending) { flash(t(res.message), true); return; }          // sent for approval: the product is unchanged
       if (res.ok) { if (okText) flash(okText, true); router.refresh(); }
       else flash(t(res.error));
     });
@@ -92,6 +95,7 @@ export default function ProductsTable({ data, categories, basePath = "/beauty/op
     startTransition(async () => {
       const res = await duplicateProduct(p.id);
       setBusyId(null);
+      if (res.ok && res.pending) { flash(t(res.message), true); return; }          // sent for approval: no copy exists yet
       if (res.ok) router.push(`/beauty/operator/products/${res.id}/edit`);
       else flash(t(res.error));
     });
@@ -165,10 +169,10 @@ export default function ProductsTable({ data, categories, basePath = "/beauty/op
         <div className="card mb-4 p-3 flex flex-wrap items-center gap-2 border-brand-violet/30 bg-brand-violet/5 sticky top-2 z-20">
           <span className="text-sm font-semibold text-brand-violet">{t("{size} مورد انتخاب شده", { size: selected.size })}</span>
           <span className="flex-1" />
-          {canPublish && <button onClick={() => runBulk({ is_active: true }, t("فعال شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="eye" size={15} /> {t("فعال‌سازی")}</button>}
-          {canArchive && <button onClick={() => runBulk({ is_active: false }, t("آرشیو شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="archive" size={15} /> {t("غیرفعال")}</button>}
-          {canPrice && <button onClick={() => runBulk({ requestPrice: true }, t("استعلام قیمت شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="dollar" size={15} /> {t("استعلام قیمت")}</button>}
-          {canContent && (
+          {canBulk && bulkPublish && <button onClick={() => runBulk({ is_active: true }, t("فعال شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="eye" size={15} /> {t("فعال‌سازی")}</button>}
+          {canBulk && bulkArchive && <button onClick={() => runBulk({ is_active: false }, t("آرشیو شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="archive" size={15} /> {t("غیرفعال")}</button>}
+          {canBulk && bulkPrice && <button onClick={() => runBulk({ requestPrice: true }, t("استعلام قیمت شد"))} disabled={pending} className="btn-ghost size-sm"><Icon name="dollar" size={15} /> {t("استعلام قیمت")}</button>}
+          {canBulk && bulkContent && (
             <Select value={bulkCat} onChange={(e) => bulkCategory(e.target.value)} disabled={pending} className="w-auto !h-9 text-xs">
               <option value="">{t("تغییر دسته…")}</option>
               {categories.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? "")}>{localName(c, lang)}</option>)}

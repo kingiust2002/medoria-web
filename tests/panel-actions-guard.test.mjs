@@ -27,7 +27,7 @@ const PUBLIC = new Set(["lib/actions/captcha.js", "lib/actions/chatPass.js", "li
 const operatorFiles = actionFiles.filter((f) => !PUBLIC.has(f));
 
 // The session checks an operator action may open with. `authed()` and the Guarded helpers call the panel's getSession.
-const GUARD = /await authed\(|await authedManager\(\)|await ctxFor\(\)|await getSession\(\)|Guarded\(\{/;
+const GUARD = /await authed\(|await authedManager\(\)|await ctxFor\(\)|await getSession\(\)|await buildActionCtx\(\{ panel: "(health|beauty)", getSession,|Guarded\(\{/;
 
 function exportedActions(src) {
   const out = [];

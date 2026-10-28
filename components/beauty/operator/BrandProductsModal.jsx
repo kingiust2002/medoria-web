@@ -17,12 +17,16 @@ import { quickUpdateProduct, bulkUpdateProducts, listBrandRoster } from "@/lib/b
 import { Input, Spinner, productDisplayName } from "@/components/operator/ui";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import Trans from "@/components/panel/Trans";
+import { useMode } from "@/components/panel/Capabilities";
 
 
 export default function BrandProductsModal({ brand, onClose }) {
   const t = useT();
   const { lang } = usePanelLang();
   const router = useRouter();
+  // attaching many products at once is a bulk edit: it cannot be sent for approval, so it is offered only to people who may edit directly
+  const contentMode = useMode("products.content"), bulkMode = useMode("products.bulk");
+  const canAttach = contentMode === "direct" && bulkMode === "direct";
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
@@ -65,6 +69,7 @@ export default function BrandProductsModal({ brand, onClose }) {
     setErr(""); setUnlinking(product.id);
     const res = await quickUpdateProduct(product.id, { brand: null });
     setUnlinking(null);
+    if (res.ok && res.pending) { setFlash(t(res.message)); return; }          // sent for approval: the product still carries the brand
     if (res.ok) { setFlash(t("«{productDisplayName}» از این برند جدا شد.", { productDisplayName: productDisplayName(product, lang) })); router.refresh(); load(q); }
     else setErr(t(res.error) || t("جداکردن ناموفق بود."));
   }
@@ -113,7 +118,7 @@ export default function BrandProductsModal({ brand, onClose }) {
           </div>
 
           {/* Attach existing products */}
-          <div>
+          {canAttach && <div>
             <h3 className="text-[12px] font-semibold text-ink-muted mb-2">{t("افزودن محصول موجود به این برند")}</h3>
             <div className="relative mb-3">
               <span className="absolute start-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"><Icon name="search" size={15} /></span>
@@ -140,15 +145,15 @@ export default function BrandProductsModal({ brand, onClose }) {
                 })}
               </div>
             )}
-          </div>
+          </div>}
         </div>
 
         <div className="flex items-center justify-between gap-3 p-5 border-t border-line shrink-0">
           <Link href={`/beauty/operator/products/new?brand=${encodeURIComponent(brand.name)}`} className="text-[12px] font-semibold text-brand-violet hover:opacity-80">{t("+ محصول کاملاً تازه برای این برند بساز")}</Link>
-          <button type="button" onClick={attachSelected} disabled={busy || !selected.size} className="btn-primary size-md disabled:opacity-60">
+          {canAttach && <button type="button" onClick={attachSelected} disabled={busy || !selected.size} className="btn-primary size-md disabled:opacity-60">
             {busy ? <Spinner /> : <Icon name="plus" size={16} />}
             {busy ? t("در حال افزودن…") : (selected.size ? t("افزودن {count} مورد به برند", { count: selected.size }) : t("افزودن به برند"))}
-          </button>
+          </button>}
         </div>
       </div>
     </div>

@@ -123,6 +123,7 @@ test("Quotes screen: tabs, tick selection, bulk archive/restore/delete, single d
 
   // restore both from the archive tab
   await page.getByRole("tab", { name: /آرشیو/ }).click();
+  await page.waitForURL(/tab=archived/);                      // the tab is an address now: wait for the server-rendered list of that tab
   await page.getByLabel(/انتخاب همه/).check();
   await page.getByRole("button", { name: /بازگردانی به «جدید»/ }).click();
   await page.getByText("3 درخواست بازگردانی شد.").waitFor({ timeout: 10000 });
@@ -130,6 +131,7 @@ test("Quotes screen: tabs, tick selection, bulk archive/restore/delete, single d
 
   // single delete with the confirmation showing the request
   await page.getByRole("tab", { name: /همه/ }).click();
+  await page.waitForURL(/tab=all/);
   await page.getByRole("button", { name: "حذف درخواست E2E Customer 3" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByText("E2E Customer 3").waitFor();
@@ -138,6 +140,7 @@ test("Quotes screen: tabs, tick selection, bulk archive/restore/delete, single d
 
   // bulk delete of what is left in the spam tab
   await page.getByRole("tab", { name: /اسپم/ }).click();
+  await page.waitForURL(/tab=spam/);
   await page.getByLabel(/انتخاب همه/).check();
   await page.getByRole("button", { name: "حذف", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: /^حذف \d+ درخواست$/ }).click();

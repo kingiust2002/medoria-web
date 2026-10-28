@@ -187,8 +187,8 @@ One PR per item, each on top of the previous one (merge in this order; **a merge
 
 | N | Request | State | PR | Migration | Document |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Real server-side paging of every list that was capped | in progress | – | 43 | `PANEL_LIST_PAGING.md` |
-| 2 | Approval path: every "needs approval" operation files a real, executable request; stale / revoked / self-approval refused | not started | – | – | – |
+| 1 | Real server-side paging of every list that was capped | **complete** (PR 228; needs migration 43 only for the incomplete-filter and the cross-page customer file) | [#228](https://github.com/kingiust2002/medoria-web/pull/228) | 43 | `PANEL_LIST_PAGING.md` |
+| 2 | Approval path: every "needs approval" operation files a real, executable request; stale / revoked / self-approval refused | **complete** for the listed operations (bulk edit/import, content and documents under approval are items 12 / 11 / 8 and are not offered until then) | – | – | `PANEL_APPROVAL_PATH.md` |
 | 3 | Product variants (own SKU, variable specs, link to the parent) | not started | – | – | – |
 | 4 | Warehouse: lots, expiry, quarantine, low-stock / expiry alerts | not started | – | – | – |
 | 5 | Full private preview of a draft on the real public layout | not started | – | – | – |

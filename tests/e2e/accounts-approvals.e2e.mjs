@@ -177,6 +177,78 @@ test("a permanent delete through the queue: filed against an archived product wi
   await r.ctx.close();
 });
 
+test("deleting a customer request by a quote manager is FILED (no customer data in the queue); the reviewer's approval deletes it", async () => {
+  await addUser({ username: "qm.requester", role: "quote_manager" });                    // deleting a request needs approval by default
+  const before = (await state()).quote_requests.length;
+  const m = await pageAs("qm.requester");
+  await m.page.goto(`${BASE}/operator/quotes?tab=all`, { waitUntil: "networkidle" });
+  await m.page.getByRole("button", { name: "حذف درخواست E2E Customer 3" }).click();
+  await m.page.getByRole("dialog").getByRole("button", { name: "حذف درخواست" }).click();
+  await m.page.getByText("برای تأیید ارسال شد").first().waitFor();
+  assert.equal((await state()).quote_requests.length, before, "nothing is deleted while the request is pending");
+  assert.ok(await m.page.getByText("E2E Customer 3").count() > 0, "the request stays in the list, it is not shown as deleted");
+  const req = (await requests()).find((r) => r.operation === "quotes.delete");
+  assert.ok(req && req.status === "pending");
+  assert.ok(!JSON.stringify(req).includes("E2E Customer"), "customer names must not enter the approval queue");
+  await m.ctx.close();
+  const r = await pageAs("rev.admin");
+  await r.page.goto(`${BASE}/operator/approvals`, { waitUntil: "networkidle" });
+  const card = r.page.getByTestId("to-review").getByTestId("request").filter({ hasText: "MH-0000-0000-0003" });
+  await card.getByTestId("approve").click();
+  await r.page.getByText("تأیید شد و اعمال شد.").waitFor();
+  assert.equal((await state()).quote_requests.find((q) => q.id === 3), undefined, "deleted after the approval");
+  const trail = (await state()).operator_audit_log.filter((x) => /^quote\.delete/.test(x.action)).map((x) => x.action);
+  assert.deepEqual(trail, ["quote.delete_attempt", "quote.delete"]);
+  await r.ctx.close();
+});
+
+test("an inline price edit by a product manager is FILED, not saved; the list says so", async () => {
+  const live = (await product(3)).price;
+  const m = await pageAs("pm.requester");
+  await m.page.goto(`${BASE}/operator/products`, { waitUntil: "networkidle" });
+  await m.page.locator("div", { has: m.page.getByText("E2E-3") }).getByTitle("ویرایش قیمت").last().click();
+  await m.page.getByPlaceholder("خالی=استعلام").fill("77");
+  await m.page.getByPlaceholder("خالی=استعلام").press("Enter");
+  await m.page.getByText("برای تأیید ارسال شد").first().waitFor();
+  assert.equal((await product(3)).price, live, "the live price is unchanged");
+  assert.equal(await m.page.getByText("قیمت ذخیره شد.").count(), 0, "it must not claim the price was saved");
+  const req = (await requests()).filter((r) => r.entity_id === 3).pop();
+  assert.deepEqual([req.status, req.operation, req.proposed.price, req.before.price], ["pending", "products.price", 77, live]);
+  await m.ctx.close();
+  const r = await pageAs("rev.admin");
+  await r.page.goto(`${BASE}/operator/approvals`, { waitUntil: "networkidle" });
+  await r.page.getByTestId("to-review").getByTestId("request").filter({ hasText: "E2E-3" }).getByTestId("approve").click();
+  await r.page.getByText("تأیید شد و اعمال شد.").waitFor();
+  assert.equal((await product(3)).price, 77);
+  await r.ctx.close();
+});
+
+test("deleting a category by a product manager is FILED with the destination; the approval moves the products and deletes it", async () => {
+  await rest("categories", { method: "POST", body: JSON.stringify({ id: 9, slug: "spare", name_en: "Spare", name_ru: "Spare", name_tg: "Spare", name_fa: "Spare", icon: "x", is_active: true, is_featured: false, sort_order: 9, parent_id: null }) });
+  await rest("products", { method: "POST", body: JSON.stringify({ id: 90, slug: "in-spare", sku: "E2E-90", name_en: "In spare", category: "spare", category_id: 9, is_active: true, in_stock: true, price: 5 }) });
+  const m = await pageAs("pm.requester");
+  await m.page.goto(`${BASE}/operator/categories`, { waitUntil: "networkidle" });
+  await m.page.getByText("Spare").first().locator("xpath=ancestor::*[self::div or self::li][.//button[@title='حذف']][1]").getByTitle("حذف").click();
+  const dialog = m.page.locator("div.fixed").last();
+  await dialog.locator("select").selectOption({ index: 1 });
+  await dialog.getByRole("button", { name: "حذف", exact: true }).click();
+  await m.page.getByText("برای تأیید ارسال شد").first().waitFor();
+  const st = await state();
+  assert.ok(st.categories.some((c) => c.id === 9), "the category is still there while pending");
+  assert.equal(st.products.find((p) => p.id === 90).category_id, 9, "the product has not been moved");
+  const req = (await requests()).find((x) => x.operation === "categories.delete");
+  assert.deepEqual([req.status, req.entity_id, req.before.products], ["pending", 9, 1]);
+  await m.ctx.close();
+  const r = await pageAs("rev.admin");
+  await r.page.goto(`${BASE}/operator/approvals`, { waitUntil: "networkidle" });
+  await r.page.getByTestId("to-review").getByTestId("request").filter({ hasText: "spare" }).getByTestId("approve").click();
+  await r.page.getByText("تأیید شد و اعمال شد.").waitFor();
+  const after = await state();
+  assert.ok(!after.categories.some((c) => c.id === 9), "deleted after the approval");
+  assert.notEqual(after.products.find((p) => p.id === 90).category_id, 9, "its product was moved to the destination first");
+  await r.ctx.close();
+});
+
 test("people without the right cannot reach the queue; the old shared login has none", async () => {
   await addUser({ username: "plain.viewer", role: "viewer" });
   const s = await login("plain.viewer");

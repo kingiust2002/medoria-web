@@ -292,6 +292,7 @@ test("every changing server action writes to the activity log; the few exception
     "restoreProductVersion",                                                                             // logged inside productRestoreCore.js (product.restore, with before / after)
     "setQuoteFollowUp", "retryQuoteNotice", "exportQuotesCsv",                                            // logged inside quoteFollowUpCore.js via `audit` (quote.follow_up, quote.notice_retry, quotes.exported)
     "deleteProduct",                                                                                      // logged FIRST inside productDelete.js via `audit` (product.delete)
+    "deleteCategorySafe", "deleteBrand", "deleteHealthCategorySafe",                                       // logged inside categoryDelete.js / destructiveApproval.js (attempt first, outcome after); asserted below
     "listBrandRoster",                                                                                    // read-only (the brand screen's roster and search)
   ]);
   const missing = [];
@@ -329,11 +330,18 @@ test("every irreversible action writes an ATTEMPT before it and a separate OUTCO
   const productBody = read("lib/operator/productDelete.js").match(/export async function deleteProductGuarded\(([\s\S]*?)\n\}\n/)[1];
   assert.ok(productBody.indexOf("product.delete_attempt") < productBody.indexOf(".delete()"), "deleteProductGuarded deletes before it logs the attempt");
   assert.ok(productBody.indexOf(".delete()") < productBody.lastIndexOf('action: "product.delete"'), "the outcome is written after the delete");
-  for (const [f, fn] of [["lib/beauty/operator/actions.js", "deleteCategorySafe"], ["lib/beauty/operator/actions.js", "deleteBrand"], ["lib/operator/categoryTreeActions.js", "deleteHealthCategorySafe"], ["lib/operator/importActions.js", "deleteCategorySafe"]]) {
+  // categories and brands are deleted by the shared cores (direct and approved deletions use the same code): the attempt comes first and
+  // refuses when the log cannot be written, products are moved only after it, the outcome is written last
+  const catCore = read("lib/operator/categoryDelete.js").match(/export async function runCategoryDelete\(([\s\S]*?)\n\}\n/)[1];
+  order(catCore, "runCategoryDelete");
+  assert.ok(catCore.includes("requireAttempt(") && catCore.indexOf("requireAttempt(") < catCore.search(/\.update\(/), "runCategoryDelete must write the attempt before it moves any product");
+  const brandCore = read("lib/operator/destructiveApproval.js").match(/export async function runBrandDelete\(([\s\S]*?)\n\}\n/)[1];
+  order(brandCore, "runBrandDelete");
+  assert.ok(brandCore.includes("requireAttempt("), "runBrandDelete must refuse when the attempt cannot be written");
+  for (const [f, fn, via] of [["lib/beauty/operator/actions.js", "deleteCategorySafe", "categoryDeleteFlow("], ["lib/beauty/operator/actions.js", "deleteBrand", "brandDeleteFlow("], ["lib/operator/categoryTreeActions.js", "deleteHealthCategorySafe", "categoryDeleteFlow("], ["lib/operator/importActions.js", "deleteCategorySafe", "categoryDeleteFlow("]]) {
     const body = read(f).match(new RegExp(`export async function ${fn}\\(([\\s\\S]*?)\\n\\}\\n`))[1];
-    order(body, `${f}:${fn}`);
-    assert.ok(body.includes("requireAttempt("), `${f}:${fn} must refuse when the attempt cannot be written`);
-    if (/category/i.test(fn)) assert.ok(body.indexOf("requireAttempt(") < body.search(/\.update\(/), `${f}:${fn} must write the attempt before it moves any product`);
+    assert.ok(body.includes(via), `${f}:${fn} must delete through the shared flow`);
+    assert.ok(!/\.delete\(\)/.test(body), `${f}:${fn} must not delete by itself`);
   }
   // nothing may still treat a missing log table as permission
   for (const f of ["lib/operator/quoteDelete.js", "lib/operator/productDelete.js", "lib/operator/categoryTreeActions.js", "lib/operator/importActions.js", "lib/beauty/operator/actions.js"]) {

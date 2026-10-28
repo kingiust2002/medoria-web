@@ -94,7 +94,7 @@ export default function BrandsManager({ brands }) {
         <DeleteBrandModal
           brand={deleting}
           onClose={() => setDeleting(null)}
-          onDone={() => { setDeleting(null); flash(t("برند حذف شد."), true); router.refresh(); }}
+          onDone={(pendingMessage) => { setDeleting(null); flash(pendingMessage ? t(pendingMessage) : t("برند حذف شد."), true); router.refresh(); }}
         />
       )}
 
@@ -116,7 +116,7 @@ function DeleteBrandModal({ brand, onClose, onDone }) {
     setErr(""); setBusy(true);
     const res = await deleteBrand(brand.id);
     setBusy(false);
-    if (res.ok) onDone(); else setErr(t(res.error) || t("حذف ناموفق بود."));
+    if (res.ok) onDone(res.pending ? res.message : undefined); else setErr(t(res.error) || t("حذف ناموفق بود."));
   }
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4" onClick={onClose}>
