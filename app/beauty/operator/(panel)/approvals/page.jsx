@@ -4,6 +4,7 @@ import { getPanel } from "@/lib/panel/server";
 import { PageHeader } from "@/components/operator/ui";
 import { getAdminClient } from "@/lib/operator/supabaseAdmin";
 import { approvalsView } from "@/lib/operator/approvalActionsCore";
+import { parsePage } from "@/lib/operator/listQuery";
 import ApprovalsManager from "@/components/operator/ApprovalsManager";
 import { approveRequestAction, rejectRequestAction, cancelRequestAction, resubmitRequestAction } from "@/lib/beauty/operator/approvalActions";
 
@@ -13,12 +14,12 @@ export default async function BeautyApprovalsPage({ searchParams }) {
   const { t } = await getPanel();
   const session = await requireBeautySession("approvals.view");
   const sp = (await searchParams) || {};
-  const view = await approvalsView({ admin: getAdminClient(), session, panel: "beauty" });
+  const view = await approvalsView({ admin: getAdminClient(), session, panel: "beauty" }, { page: parsePage(sp.page) });
   return (
     <>
       <PageHeader title={t("تأییدها")} subtitle={t("تغییرهایی که پیش از اعمال به تأیید نیاز دارند")} />
       <ApprovalsManager
-        toReview={view.ok ? view.toReview : []} mine={view.ok ? view.mine : []} loadError={view.ok ? "" : view.error} sent={sp.sent === "1"}
+        toReview={view.ok ? view.toReview : []} mine={view.ok ? view.mine : []} minePaging={view.ok ? view.minePaging : null} basePath="/beauty/operator/approvals" loadError={view.ok ? "" : view.error} sent={sp.sent === "1"}
         actions={{ approve: approveRequestAction, reject: rejectRequestAction, cancel: cancelRequestAction, resubmit: resubmitRequestAction }}
       />
     </>

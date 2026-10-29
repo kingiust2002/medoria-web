@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
@@ -13,11 +13,14 @@ import {
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { useCan } from "@/components/panel/Capabilities";
 import { localName } from "@/lib/panel/i18n";
-import TruncatedNotice from "@/components/operator/TruncatedNotice";
+import ListPager from "@/components/operator/ListPager";
+import { useListNav, useDebouncedQuery } from "@/components/operator/useListNav";
+import { productHref } from "@/lib/operator/listQuery";
 
-export default function ProductsTable({ products, categories, truncatedAt = 0 }) {
+// `data` is one server-rendered page: { params, ok, rows, total, page, pageCount, size } or { params, ok: false, error } (lib/operator/data.js getProductsPage).
+export default function ProductsTable({ data, categories, basePath = "/operator/products" }) {
   const t = useT();
-  const { lang, date: fmtDate } = usePanelLang();
+  const { lang, date: fmtDate, num } = usePanelLang();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState(null);
@@ -28,16 +31,17 @@ export default function ProductsTable({ products, categories, truncatedAt = 0 })
   const canContent = useCan("products.content"), canPrice = useCan("products.price"), canStock = useCan("products.stock_flag");
   const canPublish = useCan("products.publish"), canArchive = useCan("products.archive"), canDelete = useCan("products.delete");
 
-  const [q, setQ] = useState("");
-  const [cat, setCat] = useState("");
-  const [stock, setStock] = useState("");
-  const [status, setStatus] = useState("");
-  const [complete, setComplete] = useState("");   // "" · "incomplete" · "complete"
-  const [sort, setSort] = useState("updated");
+  const { params } = data;
+  const products = data.ok ? data.rows : [];
+  const nav = useListNav(basePath, productHref, params);
+  const search = useDebouncedQuery(params.q, (q) => nav.go({ q }));
+  const { cat, stock, status, complete, sort } = params;
 
   const [selected, setSelected] = useState(() => new Set());
   const [editPrice, setEditPrice] = useState(null); // { id, val }
   const [bulkCat, setBulkCat] = useState("");
+  const listKey = data.ok ? `${data.page}|${JSON.stringify(params)}` : "";
+  useEffect(() => { setSelected(new Set()); }, [listKey]);   // a selection belongs to the page it was made on
 
   const catName = useMemo(() => {
     const m = {};
@@ -46,27 +50,7 @@ export default function ProductsTable({ products, categories, truncatedAt = 0 })
   }, [categories, lang]);
   const nameOf = (p) => catName[`id:${p.category_id}`] || catName[`slug:${p.category}`] || "—";
 
-  const rows = useMemo(() => {
-    let list = [...products];
-    const needle = q.trim().toLowerCase();
-    if (needle) list = list.filter((p) => [p.name_fa, p.name_en, p.name_ru, p.name_tg, p.sku, p.brand].filter(Boolean).some((v) => String(v).toLowerCase().includes(needle)));
-    if (cat) list = list.filter((p) => String(p.category_id) === cat || p.category === cat);
-    if (stock === "in") list = list.filter((p) => p.in_stock);
-    else if (stock === "out") list = list.filter((p) => !p.in_stock);
-    if (status === "active") list = list.filter((p) => p.is_active !== false);
-    else if (status === "inactive") list = list.filter((p) => p.is_active === false);
-    if (complete === "incomplete") list = list.filter(isIncomplete);
-    else if (complete === "complete") list = list.filter((p) => !isIncomplete(p));
-    list.sort((a, b) => {
-      switch (sort) {
-        case "newest": return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-        case "name": return productDisplayName(a, lang).localeCompare(productDisplayName(b, lang), lang);
-        case "category": return nameOf(a).localeCompare(nameOf(b), lang);
-        default: return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
-      }
-    });
-    return list;
-  }, [products, q, cat, stock, status, complete, sort]); // eslint-disable-line react-hooks/exhaustive-deps
+  const rows = products;
 
   function flash(text, ok = false) { setMsg({ text, ok }); setTimeout(() => setMsg(null), 4000); }
 
@@ -130,28 +114,34 @@ export default function ProductsTable({ products, categories, truncatedAt = 0 })
 
   return (
     <>
-      <PageHeader title={t("محصولات")} subtitle={t("{length} محصول", { length: products.length })}>
+      <PageHeader title={t("محصولات")} subtitle={data.ok ? t("{length} محصول", { length: num(data.total) }) : ""}>
         {canImport && <Link href="/operator/products/import" className="btn-ghost size-md"><Icon name="upload" size={17} /> Excel/CSV</Link>}
         {canBulk && <Link href="/operator/products/bulk" className="btn-ghost size-md"><Icon name="plusCircle" size={17} /> {t("افزودن گروهی")}</Link>}
         {canCreate && <Link href="/operator/products/new" className="btn-primary size-md"><Icon name="plus" size={18} /> {t("افزودن محصول")}</Link>}
       </PageHeader>
-      <TruncatedNotice limit={truncatedAt} />
 
-      {/* Filters */}
-      <div className="card-flat p-3 mb-4 flex flex-wrap items-center gap-2">
+      {/* Filters: their state is the address (server-side filtering over ALL products) */}
+      <form method="get" action={basePath} onSubmit={(e) => { e.preventDefault(); search.commitNow(); }} className="card-flat p-3 mb-4 flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px]">
           <span className="absolute start-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"><Icon name="search" size={16} /></span>
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("جستجوی نام، SKU یا برند…")} className="ps-9" />
+          <Input name="q" value={search.text} onChange={(e) => search.change(e.target.value)} placeholder={t("جستجوی نام، SKU یا برند…")} className="ps-9" aria-label={t("جستجو")} />
         </div>
-        <Select value={cat} onChange={(e) => setCat(e.target.value)} className="w-auto min-w-[130px]">
+        <Select name="cat" value={cat} onChange={(e) => nav.go({ cat: e.target.value })} className="w-auto min-w-[130px]" aria-label={t("دسته")}>
           <option value="">{t("همه دسته‌ها")}</option>
           {categories.map((c) => <option key={c.id ?? c.slug} value={String(c.id ?? c.slug)}>{localName(c, lang)}</option>)}
         </Select>
-        <Select value={stock} onChange={(e) => setStock(e.target.value)} className="w-auto"><option value="">{t("موجودی: همه")}</option><option value="in">{t("موجود")}</option><option value="out">{t("ناموجود")}</option></Select>
-        <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-auto"><option value="">{t("وضعیت: همه")}</option><option value="active">{t("فعال")}</option><option value="inactive">{t("غیرفعال")}</option></Select>
-        <Select value={complete} onChange={(e) => setComplete(e.target.value)} aria-label={t("تکمیل اطلاعات")} className="w-auto"><option value="">{t("اطلاعات: همه")}</option><option value="incomplete">{t("ناقص")}</option><option value="complete">{t("کامل")}</option></Select>
-        <Select value={sort} onChange={(e) => setSort(e.target.value)} className="w-auto"><option value="updated">{t("آخرین تغییر")}</option><option value="newest">{t("جدیدترین")}</option><option value="name">{t("نام")}</option><option value="category">{t("دسته")}</option></Select>
-      </div>
+        <Select name="stock" value={stock} onChange={(e) => nav.go({ stock: e.target.value })} className="w-auto" aria-label={t("موجودی")}><option value="">{t("موجودی: همه")}</option><option value="in">{t("موجود")}</option><option value="out">{t("ناموجود")}</option></Select>
+        <Select name="status" value={status} onChange={(e) => nav.go({ status: e.target.value })} className="w-auto" aria-label={t("وضعیت")}><option value="">{t("وضعیت: همه")}</option><option value="active">{t("فعال")}</option><option value="inactive">{t("غیرفعال")}</option></Select>
+        <Select name="complete" value={complete} onChange={(e) => nav.go({ complete: e.target.value })} aria-label={t("تکمیل اطلاعات")} className="w-auto"><option value="">{t("اطلاعات: همه")}</option><option value="incomplete">{t("ناقص")}</option><option value="complete">{t("کامل")}</option></Select>
+        <Select name="sort" value={sort} onChange={(e) => nav.go({ sort: e.target.value })} className="w-auto" aria-label={t("مرتب‌سازی")}><option value="updated">{t("آخرین تغییر")}</option><option value="newest">{t("جدیدترین")}</option><option value="name">{t("نام")}</option><option value="category">{t("دسته")}</option></Select>
+        <noscript><button type="submit" className="btn-ghost size-sm">{t("اعمال")}</button></noscript>
+      </form>
+
+      {!data.ok && (
+        <div role="alert" data-testid="list-error" className="mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn">
+          <Icon name="alertTriangle" size={16} className="shrink-0" /> <span className="min-w-0 break-words">{data.error === "needs_migration" ? t("فیلتر «ناقص/کامل» به مایگریشن ۴۳ نیاز دارد. فیلتر را بردارید یا مایگریشن را اجرا کنید.") : t("فهرست خوانده نشد. دوباره تلاش کنید.")}</span>
+        </div>
+      )}
 
       {msg && (
         <div className={`mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 ${msg.ok ? "bg-ok/10 text-ok" : "bg-warn/10 text-warn"}`}>
@@ -177,14 +167,14 @@ export default function ProductsTable({ products, categories, truncatedAt = 0 })
         </div>
       )}
 
-      {rows.length === 0 ? (
+      {!data.ok ? null : rows.length === 0 ? (
         <EmptyState icon="package" title={t("محصولی یافت نشد")} desc={t("فیلترها را تغییر دهید یا محصول جدید اضافه کنید.")} />
       ) : (
         <div className="card overflow-hidden">
           {/* select-all header */}
           {canBulk && (
             <label className="flex items-center gap-3 px-3 sm:px-4 py-2.5 border-b border-line bg-canvas-soft/60 cursor-pointer text-xs text-ink-muted">
-              <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 accent-brand-violet" />{t("انتخاب همه ({length})", { length: rows.length })}</label>
+              <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 accent-brand-violet" />{t("انتخاب همه ({length})", { length: num(rows.length) })}</label>
           )}
 
           <div className="divide-y divide-line">
@@ -263,6 +253,7 @@ export default function ProductsTable({ products, categories, truncatedAt = 0 })
           </div>
         </div>
       )}
+      {data.ok && data.total > 0 && <ListPager data={data} href={nav.href} onSize={(size) => nav.go({ size })} />}
       {deleting && (
         <DeleteProductModal product={deleting} onClose={() => setDeleting(null)} onDelete={deleteProduct}
           onDone={(res) => { setDeleting(null); flash(res?.pending ? t(res.message) : res?.ok ? t("محصول برای همیشه حذف شد.") : t("این محصول دیگر وجود ندارد؛ فهرست به‌روز شد."), Boolean(res?.ok)); router.refresh(); }} />

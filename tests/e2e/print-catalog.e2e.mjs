@@ -110,10 +110,15 @@ test("the panel marks incomplete products: filter, badge and dashboard count", a
   await login(page, "health");
   await page.goto(`${BASE}/operator/products`, { waitUntil: "networkidle" });
   const names = async () => (await page.locator("body").innerText());
+  // the filter runs on the server now (the address changes, the list is re-rendered): wait for the new list
   await page.getByLabel("تکمیل اطلاعات").selectOption("complete");
+  await page.waitForURL(/complete=complete/);
+  await page.getByText("E2E Complete 1").first().waitFor();
   assert.ok((await names()).includes("E2E Complete 1"));
   assert.ok(!(await names()).includes("E2E Product 1"));
   await page.getByLabel("تکمیل اطلاعات").selectOption("incomplete");
+  await page.waitForURL(/complete=incomplete/);
+  await page.getByText("E2E Product 1").first().waitFor();
   assert.ok((await names()).includes("E2E Product 1") && (await names()).includes("E2E Product 3"));
   assert.ok(!(await names()).includes("E2E Complete 1"));
   assert.ok(await page.getByText(/^ناقص: \d+/).count() >= 2, "the badge is shown on incomplete rows");

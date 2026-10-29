@@ -101,9 +101,12 @@ test("every panel page names the permission it needs; readers too", () => {
 test("the dashboard reads only what the person may see", () => {
   for (const f of ["lib/operator/data.js", "lib/beauty/operator/data.js"]) {
     const src = read(f);
-    assert.match(src, /access\.products \? admin\.from\(/, `${f}: products must not be read without products.view`);
-    assert.match(src, /access\.quotes \? admin\.from\(/, `${f}: requests must not be read without quotes.view`);
+    // the reader is told which blocks the person may see and reads only those
+    assert.match(src, /readDashboard\(admin, "(health|beauty)", \{ products: access\.products, quotes: access\.quotes \}\)/, `${f}: the dashboard must pass the person's access to the reader`);
   }
+  const readers = read("lib/operator/listReaders.js");
+  assert.match(readers, /if \(products\) \{[\s\S]*?headCount\(admin, t\.products\)/, "products must not be read without products.view");
+  assert.match(readers, /if \(quotes\) \{[\s\S]*?headCount\(admin, t\.quotes\)/, "requests must not be read without quotes.view");
 });
 
 test("the menu and the 'no access' page exist for both panels, and an unknown operation is never granted", async () => {

@@ -16,31 +16,37 @@ import BulkDeleteQuotesModal from "@/components/operator/BulkDeleteQuotesModal";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { useCan } from "@/components/panel/Capabilities";
 import { tr } from "@/lib/panel/i18n";
-import TruncatedNotice from "@/components/operator/TruncatedNotice";
+import ListPager from "@/components/operator/ListPager";
+import { useListNav, useDebouncedQuery } from "@/components/operator/useListNav";
+import { quoteHref } from "@/lib/operator/listQuery";
 
 const digits = (s) => String(s || "").replace(/[^\d]/g, "");
 const isDue = (x, now) => { const f = followUpState(x, now); return f === "overdue" || f === "today"; };
 
+const EMPTY_ROWS = [];
 const TABS = [
   { id: "active", label: tr("فعال") },
   { id: "archived", label: tr("آرشیو") },
   { id: "spam", label: tr("اسپم") },
   { id: "all", label: tr("همه") },
 ];
+// A row that changed on this screen leaves the tab / status it no longer belongs to at once; the server list catches up with the refresh.
 const inTab = (x, tab) => (tab === "all" ? true : tab === "active" ? x.status !== "archived" && x.status !== "spam" : x.status === tab);
 const MOVED = { archived: tr("درخواست به آرشیو منتقل شد."), spam: tr("درخواست به اسپم منتقل شد."), new: tr("درخواست بازگردانی شد.") };
 const BULK_MOVED = { archived: tr("{count} درخواست به آرشیو منتقل شد."), spam: tr("{count} درخواست به اسپم منتقل شد."), new: tr("{count} درخواست بازگردانی شد.") };
 
-export default function QuotesPanel({ quotes: initial, actions, now: nowProp, reportHref = null, people = [], initialQuery = "", truncatedAt = 0 }) {
+// `data` is one server-rendered page (lib/operator/data.js getQuotesPage): { params, ok, rows, total, page, pageCount, size, tabCounts, statusCounts,
+// attentionCount, related, customerFile } or { params, ok: false, error }. Tab, text, filters and page live in the address; counts are exact.
+export default function QuotesPanel({ data, actions, now: nowProp, reportHref = null, people = [], basePath = "/operator/quotes" }) {
   const t = useT();
-  const { date: fmtDate, lang } = usePanelLang();
+  const { date: fmtDate, lang, num } = usePanelLang();
   const router = useRouter();
+  const { params } = data;
+  const initial = data.ok ? data.rows : EMPTY_ROWS;
   const [quotes, setQuotes] = useState(initial);
-  const [tab, setTab] = useState("active");
-  const [q, setQ] = useState(initialQuery);
-  const [status, setStatus] = useState("");
-  const [who, setWho] = useState("");                 // "" = everyone · "__none" = unassigned · else a name
-  const [attention, setAttention] = useState(false);  // only requests that need follow-up
+  const nav = useListNav(basePath, quoteHref, params);
+  const search = useDebouncedQuery(params.q, (q) => nav.go({ q }));
+  const { tab, status, who, attention } = params;
   // The server page passes its clock, so SSR and hydration agree; every refresh brings a newer one, so "waiting for 24 h"
   // keeps counting while the screen stays open.
   const [now, setNow] = useState(() => nowProp ?? Date.now());
@@ -77,22 +83,15 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp, re
     return () => { window.removeEventListener("focus", again); document.removeEventListener("visibilitychange", again); };
   }, [router]);
 
-  const counts = useMemo(() => { const c = {}; for (const x of quotes) c[x.status] = (c[x.status] || 0) + 1; return c; }, [quotes]);
-  const tabCounts = useMemo(() => Object.fromEntries(TABS.map((tb) => [tb.id, quotes.filter((x) => inTab(x, tb.id)).length])), [quotes]);
+  const counts = data.ok ? data.statusCounts : {};                 // exact, per status of this tab
+  const tabCounts = data.ok ? data.tabCounts : { active: 0, archived: 0, spam: 0, all: 0 };
   const statusOptions = tab === "active" ? QUOTE_ACTIVE_STATUSES : tab === "all" ? QUOTE_STATUSES : [];
 
-  const rows = useMemo(() => {
-    let list = quotes.filter((x) => inTab(x, tab));
-    const n = q.trim().toLowerCase();
-    if (n) list = list.filter((x) => [x.name, x.phone, x.product_name, x.organization, x.tracking_code, x.assigned_to].filter(Boolean).some((v) => String(v).toLowerCase().includes(n)));
-    if (status) list = list.filter((x) => x.status === status);
-    if (who) list = list.filter((x) => (who === "__none" ? !x.assigned_to : x.assigned_to === who));
-    if (attention) list = list.filter((x) => isOverdue(x, { now }) || notifyFailed(x) || isDue(x, now));
-    return list;
-  }, [quotes, tab, q, status, who, attention, now]);
+  // the server already filtered; only the rows edited on this screen are re-checked, so a moved request leaves the list at once
+  const rows = useMemo(() => quotes.filter((x) => inTab(x, tab) && (!status || x.status === status)), [quotes, tab, status]);
 
-  const assignees = useMemo(() => [...new Set([...people, ...quotes.map((x) => x.assigned_to).filter(Boolean)])].sort((a, b) => a.localeCompare(b, lang)), [quotes, people, lang]);
-  const needAttention = useMemo(() => quotes.filter((x) => inTab(x, "active") && (isOverdue(x, { now }) || notifyFailed(x) || isDue(x, now))).length, [quotes, now]);
+  const assignees = useMemo(() => [...new Set([...people, who && who !== "__none" ? who : null, ...quotes.map((x) => x.assigned_to)].filter(Boolean))].sort((a, b) => a.localeCompare(b, lang)), [quotes, people, who, lang]);
+  const needAttention = data.ok ? data.attentionCount : 0;
 
   // Only rows that are on screen can be selected: a filter change can never leave
   // a hidden row inside a bulk action.
@@ -102,7 +101,7 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp, re
 
   function flash(text, ok = false) { setMsg({ text, ok }); setTimeout(() => setMsg(null), 4500); }
   function patch(id, fields) { setQuotes((qs) => qs.map((x) => (x.id === id ? { ...x, ...fields } : x))); }
-  function goTab(id) { setTab(id); setStatus(""); setWho(""); setAttention(false); setSelected(new Set()); setOpenId(null); }
+  function goTab(id) { setSelected(new Set()); setOpenId(null); nav.go({ tab: id, status: "", who: "", attention: false }, { replace: false }); }
   function toggle(id) { setSelected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
   function toggleAll() { setSelected(allChecked ? new Set() : new Set(rows.map((x) => x.id))); }
 
@@ -114,7 +113,7 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp, re
       let res;
       try { res = await actions.updateQuoteStatus(id, val); } finally { inflight.current.delete(id); }
       if (!res.ok) { patch(id, { status: prev }); flash(t(res.error)); }
-      else if (okText) flash(okText, true);
+      else { if (okText) flash(okText, true); router.refresh(); }     // the exact counts come from the server
     });
   }
   function saveAssignee(id, name) {
@@ -183,10 +182,9 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp, re
 
   return (
     <>
-      <PageHeader title={t("استعلام‌ها")} subtitle={t("{nActive} فعال · {nArch} آرشیو · {nSpam} اسپم", { nActive, nArch, nSpam })}>
+      <PageHeader title={t("استعلام‌ها")} subtitle={t("{nActive} فعال · {nArch} آرشیو · {nSpam} اسپم", { nActive: num(nActive), nArch: num(nArch), nSpam: num(nSpam) })}>
         {reportHref && <Link href={reportHref} className="btn-ghost size-md" data-testid="quotes-report-link"><Icon name="clock" size={17} /> {t("گزارش")}</Link>}
       </PageHeader>
-      <TruncatedNotice limit={truncatedAt} />
 
       <div role="tablist" aria-label={t("دسته‌بندی استعلام‌ها")} className="flex flex-wrap gap-2 mb-3">
         {TABS.map((tb) => {
@@ -200,33 +198,41 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp, re
         })}
       </div>
 
-      <div className="card-flat p-3 mb-4 flex flex-wrap items-center gap-2">
+      <form method="get" action={basePath} onSubmit={(e) => { e.preventDefault(); search.commitNow(); }} className="card-flat p-3 mb-4 flex flex-wrap items-center gap-2">
+        <input type="hidden" name="tab" value={tab} />
         <div className="relative flex-1 min-w-[180px]">
           <span className="absolute start-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"><Icon name="search" size={16} /></span>
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("جستجو: نام، تلفن، محصول، کد پیگیری…")} className="ps-9" />
+          <Input name="q" value={search.text} onChange={(e) => search.change(e.target.value)} placeholder={t("جستجو: نام، تلفن، محصول، کد پیگیری…")} className="ps-9" aria-label={t("جستجو")} />
         </div>
         {statusOptions.length > 0 && (
-          <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-auto min-w-[150px]">
+          <Select name="status" value={status} onChange={(e) => nav.go({ status: e.target.value })} className="w-auto min-w-[150px]" aria-label={t("وضعیت")}>
             <option value="">{t("همه وضعیت‌ها")}</option>
-            {statusOptions.map((s) => <option key={s} value={s}>{t(QUOTE_STATUS_FA[s])} ({counts[s] || 0})</option>)}
+            {statusOptions.map((s) => <option key={s} value={s}>{t(QUOTE_STATUS_FA[s])} ({num(counts[s] || 0)})</option>)}
           </Select>
         )}
-        {(assignees.length > 0) && (
-          <Select value={who} onChange={(e) => setWho(e.target.value)} aria-label={t("فیلتر مسئول")} className="w-auto min-w-[140px]">
+        {(assignees.length > 0 || who) && (          // an active filter always keeps its control, so it can be switched off again
+          <Select name="who" value={who} onChange={(e) => nav.go({ who: e.target.value })} aria-label={t("فیلتر مسئول")} className="w-auto min-w-[140px]">
             <option value="">{t("همه مسئول‌ها")}</option>
             <option value="__none">{t("بدون مسئول")}</option>
             {assignees.map((n) => <option key={n} value={n}>{n}</option>)}
           </Select>
         )}
-        <button type="button" aria-pressed={attention} onClick={() => setAttention((v) => !v)}
+        <button type="button" aria-pressed={attention} onClick={() => nav.go({ attention: !attention })}
           className={`btn-ghost size-sm ${attention ? "!border-warn/60 !text-warn !bg-warn/5" : ""}`}>
-          <Icon name="alertTriangle" size={15} /> {t("نیازمند پیگیری")} <span className="tabular">{needAttention}</span>
+          <Icon name="alertTriangle" size={15} /> {t("نیازمند پیگیری")} <span className="tabular">{num(needAttention)}</span>
         </button>
         {rows.length > 0 && (canStatus || canDelete) && (
           <label className="inline-flex items-center gap-2 text-sm text-ink-soft cursor-pointer select-none">
-            <input ref={allRef} type="checkbox" checked={allChecked} onChange={toggleAll} className="w-4 h-4 accent-brand-violet" />{t("انتخاب همه ({length})", { length: rows.length })}</label>
+            <input ref={allRef} type="checkbox" checked={allChecked} onChange={toggleAll} className="w-4 h-4 accent-brand-violet" />{t("انتخاب همه ({length})", { length: num(rows.length) })}</label>
         )}
-      </div>
+        <noscript><button type="submit" className="btn-ghost size-sm">{t("اعمال")}</button></noscript>
+      </form>
+
+      {!data.ok && (
+        <div role="alert" data-testid="list-error" className="mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn">
+          <Icon name="alertTriangle" size={16} className="shrink-0" /> <span className="min-w-0 break-words">{t("فهرست خوانده نشد. دوباره تلاش کنید.")}</span>
+        </div>
+      )}
 
       {selectedRows.length > 0 && (
         <div role="region" aria-label={t("عملیات گروهی")} className="card-flat p-3 mb-4 flex flex-wrap items-center gap-2 border border-brand-violet/30">
@@ -247,7 +253,7 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp, re
         </div>
       )}
 
-      {rows.length === 0 ? (
+      {!data.ok ? null : rows.length === 0 ? (
         <EmptyState icon="quote" title={t("استعلامی یافت نشد")} desc={tab === "archived" ? t("آرشیو خالی است.") : tab === "spam" ? t("اسپمی ثبت نشده است.") : t("هنوز درخواستی ثبت نشده یا با فیلتر مطابقت ندارد.")} />
       ) : (
         <div className="flex flex-col gap-2.5">
@@ -325,7 +331,7 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp, re
                       {x.phone && <a href={`tel:${x.phone}`} className="btn-ghost size-sm"><Icon name="phone" size={15} /> {t("تماس")}</a>}
                     </div>
 
-                    <CustomerFile history={customerHistory(quotes, x)} fmtDate={fmtDate} />
+                    <CustomerFile history={customerHistory(data.ok ? data.related : quotes, x)} fmtDate={fmtDate} />
                     {notifyFailed(x) && canStatus && <RetryNotice quote={x} now={now} saving={savingId === x.id && pending} onRetry={() => retryNotice(x.id)} />}
                     {canStatus && <FollowUpBox quote={x} saving={savingId === x.id && pending} onSave={(d) => saveFollowUp(x.id, d)} />}
                     {canAssign && <AssigneeBox quote={x} saving={savingId === x.id && pending} suggestions={assignees} onSave={(v) => saveAssignee(x.id, v)} />}
@@ -339,6 +345,8 @@ export default function QuotesPanel({ quotes: initial, actions, now: nowProp, re
           })}
         </div>
       )}
+
+      {data.ok && data.total > 0 && <ListPager data={data} href={nav.href} onSize={(size) => nav.go({ size })} />}
 
       {deleting && (
         <DeleteQuoteModal

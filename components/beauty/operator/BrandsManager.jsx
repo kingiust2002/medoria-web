@@ -16,7 +16,7 @@ import { useT } from "@/components/panel/PanelI18n";
 import { useCan } from "@/components/panel/Capabilities";
 import Trans from "@/components/panel/Trans";
 
-export default function BrandsManager({ brands, products }) {
+export default function BrandsManager({ brands }) {
   const t = useT();
   const router = useRouter();
   const [editing, setEditing] = useState(null);   // null | {} (new) | brand
@@ -101,7 +101,6 @@ export default function BrandsManager({ brands, products }) {
       {managing !== null && (
         <BrandProductsModal
           brand={managing}
-          products={products}
           onClose={() => setManaging(null)}
         />
       )}

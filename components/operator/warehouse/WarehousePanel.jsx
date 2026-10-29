@@ -10,6 +10,7 @@ import Icon from "@/components/shared/Icon";
 import { PageHeader, Field, Input, Select, Textarea, Badge, EmptyState, Spinner } from "@/components/operator/ui";
 import CountsTab from "@/components/operator/warehouse/CountsTab";
 import CsvButton from "@/components/operator/warehouse/CsvButton";
+import TabPager from "@/components/operator/warehouse/TabPager";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { useCan, useMode } from "@/components/panel/Capabilities";
 import { tr } from "@/lib/panel/i18n";
@@ -325,7 +326,7 @@ export default function WarehousePanel({ data, actions, base }) {
           </div>
         )
       )}
-      {data.tab === "stock" && data.truncated && <p className="text-xs text-ink-faint mt-2">{t("فقط ۵۰۰ ردیف اول نشان داده شد؛ جستجو را محدودتر کنید.")}</p>}
+      {data.tab === "stock" && data.total > 0 && <TabPager data={data} base={base} tab="stock" total={data.total} pageCount={data.pageCount} />}
 
       {data.tab === "movements" && (
         data.noSuchProduct ? <EmptyState icon="search" title={t("این SKU پیدا نشد")} /> :
@@ -344,16 +345,14 @@ export default function WarehousePanel({ data, actions, base }) {
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-between mt-3">
-              {data.page > 1 ? <Link className="btn-ghost size-sm" href={`${base}?tab=movements&page=${data.page - 1}&q=${encodeURIComponent(data.q)}${data.locationId ? `&location=${data.locationId}` : ""}`}>{t("قبلی")}</Link> : <span />}
-              {data.hasMore && <Link className="btn-ghost size-sm" href={`${base}?tab=movements&page=${data.page + 1}&q=${encodeURIComponent(data.q)}${data.locationId ? `&location=${data.locationId}` : ""}`}>{t("بعدی")}</Link>}
-            </div>
+            <TabPager data={data} base={base} tab="movements" />
           </>
         )
       )}
 
       {data.tab === "reservations" && (
-        data.reservations.length === 0 ? <EmptyState icon="clock" title={t("رزرو فعالی وجود ندارد")} /> : (
+        data.reservations.length === 0 && data.page === 1 ? <EmptyState icon="clock" title={t("رزرو فعالی وجود ندارد")} /> : (
+          <>
           <div className="card divide-y divide-line overflow-hidden" data-testid="wh-reservations">
             {data.reservations.map((r) => (
               <div key={r.id} data-testid="wh-reservation" className="px-3 sm:px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 min-w-0">
@@ -365,6 +364,8 @@ export default function WarehousePanel({ data, actions, base }) {
               </div>
             ))}
           </div>
+          <TabPager data={data} base={base} tab="reservations" />
+          </>
         )
       )}
 
@@ -397,3 +398,4 @@ export default function WarehousePanel({ data, actions, base }) {
     </>
   );
 }
+

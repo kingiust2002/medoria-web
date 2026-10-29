@@ -12,6 +12,9 @@
 import http from "node:http";
 import { warehouseRpc, Refusal } from "./fakeWarehouse.mjs";
 import { randomUUID } from "node:crypto";
+import { parseFilterExpr, nodeTest } from "../helpers/postgrestFilter.mjs";
+import { productGaps } from "../../lib/operator/completeness.js";
+import { phoneKey } from "../../lib/operator/quoteOps.js";
 
 export const ANON_KEY = "anon-test-key";
 export const SERVICE_KEY = "service-test-key";
@@ -29,6 +32,12 @@ const COUNTS = /^(health|beauty)_stock_counts$/, COUNT_LINES = /^(health|beauty)
 const countClosed = { code: "P0001", message: "stock:count_closed" };
 
 const clone = (x) => JSON.parse(JSON.stringify(x));
+// generated / computed columns of migration 43: products' gap_count (a computed column: only returned when selected, but filterable and sortable)
+// and the requests' phone_key (a generated column: part of the row)
+const PRODUCT_TABLES = new Set(["products", "beauty_products"]);
+const QUOTE_TABLES = new Set(["quote_requests", "beauty_quote_requests"]);
+const viewOf = (t, row) => (PRODUCT_TABLES.has(t) ? { ...row, gap_count: productGaps(row).length } : QUOTE_TABLES.has(t) ? { ...row, phone_key: phoneKey(row.phone) } : row);
+const API_MAX_ROWS = 1000;      // Supabase's default per-request row limit: the rest is dropped without an error
 const now = () => new Date().toISOString();
 
 // split on commas that are not inside parentheses: "a.eq.1,b.in.(1,2)" -> ["a.eq.1","b.in.(1,2)"]
@@ -83,8 +92,9 @@ function buildPredicate(searchParams) {
   for (const [key, value] of searchParams) {
     if (RESERVED.has(key)) continue;
     if (key === "or") {
-      const alts = splitTop(value.replace(/^\(|\)$/g, "")).map((a) => { const i = a.indexOf("."); return [a.slice(0, i), a.slice(i + 1)]; });
-      preds.push((row) => alts.some(([c, e]) => test(row, c, e)));
+      // the full PostgREST grammar (and(...) / or(...) groups, not.in.(a,b), …); a malformed expression answers 400 like the real API
+      const nodes = parseFilterExpr(value.replace(/^\(|\)$/g, ""));
+      preds.push((row) => nodes.some((n) => nodeTest(n, row)));
     } else {
       preds.push((row) => test(row, key, value));
     }
@@ -208,7 +218,10 @@ export function createFakeDb(seedFactory) {
     const wantCount = /count=/.test(prefer);
     const single = /vnd\.pgrst\.object/.test(String(req.headers.accept || ""));
     tables[t] = tables[t] || [];
-    const pred = buildPredicate(url.searchParams);
+    let pred;
+    try { pred = buildPredicate(url.searchParams); } catch (e) { return respond(res, 400, { code: "PGRST100", message: String(e.message) }); }
+    const rowPred = pred;
+    pred = (row) => rowPred(viewOf(t, row));
 
     const finish = (rows, status = 200) => {
       if (single) {
@@ -219,7 +232,9 @@ export function createFakeDb(seedFactory) {
     };
 
     if (req.method === "GET" || req.method === "HEAD") {
-      let rows = tables[t].filter(pred);
+      let rows = tables[t].filter(pred).map((r) => viewOf(t, r));
+      const selectCols = String(url.searchParams.get("select") || "*");
+      if (PRODUCT_TABLES.has(t) && !/\bgap_count\b/.test(selectCols)) rows = rows.map(({ gap_count, ...rest }) => rest);   // computed columns come back only when asked for
       if (t === "site_content" && kind !== "service") {   // migration 42: the public sees LIVE rows and the public columns only
         const cols = String(url.searchParams.get("select") || "*").split(",").map((c) => c.trim());
         if (cols.some((c) => !["id", "house", "kind", "data", "sort_order"].includes(c))) return respond(res, 401, { code: "42501", message: "permission denied for table site_content" });
@@ -230,7 +245,7 @@ export function createFakeDb(seedFactory) {
       rows = applyOrder(rows, url.searchParams.get("order"));
       const off = Number(url.searchParams.get("offset") || 0);
       const lim = url.searchParams.get("limit");
-      rows = rows.slice(off, lim != null ? off + Number(lim) : undefined);
+      rows = rows.slice(off, lim != null ? off + Number(lim) : undefined).slice(0, API_MAX_ROWS);
       const range = `${rows.length ? off : "*"}${rows.length ? `-${off + rows.length - 1}` : ""}/${wantCount ? total : "*"}`;
       if (req.method === "HEAD") { res.writeHead(200, { "content-range": range, "access-control-allow-origin": "*" }); return res.end(); }
       if (single) {

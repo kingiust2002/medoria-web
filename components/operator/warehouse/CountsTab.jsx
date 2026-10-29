@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
 import { Field, Input, Select, Textarea, Badge, EmptyState, Spinner } from "@/components/operator/ui";
 import CsvButton from "@/components/operator/warehouse/CsvButton";
+import TabPager from "@/components/operator/warehouse/TabPager";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { useCan, useMode } from "@/components/panel/Capabilities";
 import { countDelta, parseCounted } from "@/lib/warehouse/countsCore";
@@ -63,7 +64,7 @@ function CountList({ data, actions, base, code }) {
       {data.countError && <Msg msg={{ ok: false, text: t(data.countError) }} />}
       {canStart && hasActive && !form && <div className="mb-3"><button type="button" className="btn-primary size-md" onClick={() => setForm(true)} data-testid="wh-count-new"><Icon name="plus" size={17} /> {t("شمارش جدید")}</button></div>}
       {form && <StartForm locations={data.locations} actions={actions} onCancel={() => setForm(false)} onStarted={(id) => router.push(`${base}?tab=counts&count=${id}`)} />}
-      {data.list.length === 0 && !data.countError ? <EmptyState icon="list" title={t("هنوز شمارشی انجام نشده")} desc={t("با «شمارش جدید» موجودی واقعی یک انبار را با سیستم مقایسه کنید.")} /> : (
+      {data.list.length === 0 && !data.countError && data.page === 1 ? <EmptyState icon="list" title={t("هنوز شمارشی انجام نشده")} desc={t("با «شمارش جدید» موجودی واقعی یک انبار را با سیستم مقایسه کنید.")} /> : (
         <div className="card divide-y divide-line overflow-hidden" data-testid="wh-counts">
           {data.list.map((c) => (
             <Link key={c.id} href={`${base}?tab=counts&count=${c.id}`} data-testid="wh-count-row" className="px-3 sm:px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 min-w-0 hover:bg-line-soft/50">
@@ -77,6 +78,7 @@ function CountList({ data, actions, base, code }) {
           ))}
         </div>
       )}
+      {!data.countError && <TabPager data={data} base={base} tab="counts" />}
     </>
   );
 }
