@@ -7,8 +7,16 @@ Initial `main`: `c57313c08726e89ba94adfe6f95e400b2d7fd10d`.
 Reviewed submitted tip (#240): `c8cb9c60b46efa6e75892d2f3b24f5cca0877575`.
 No production commands, migrations, environment changes, notifications or customer-data reads were performed in this review.
 
-N1 (#228) has a small independently fixed issue (R8 below). The corrected head is
-`b0d42d8c96ef9676629012923e6f35932c92a0a5`; merge is conditional on its fresh checks.
+N1 (#228), including our customer-history correction (R8 below), is now **merged into main** at
+`e881ab0dabcb4e5dd0fb006e7c452d5d762adb32`. The tested head was
+`b0d42d8c96ef9676629012923e6f35932c92a0a5`. Its fresh CI passed **612/612 unit tests**
+(including PostgreSQL integration; 0 skip), **204/204 browser tests** (0 skip), lint,
+build, container build/scan/smoke checks, and Vercel. The merge's file tree was checked
+to equal the tested tree exactly (`bdd64999ec4ea16a08967322fc7f00280c2061d6`).
+All #229–#240 PRs were verified still open after the merge. **Nothing was deployed.**
+
+CI: [validate](https://github.com/kingiust2002/medoria-web/actions/runs/40835411836/job/123318911579),
+[browser-flows](https://github.com/kingiust2002/medoria-web/actions/runs/40835411836/job/123318912031).
 The remaining stack (#229–#240) is held: #229 already introduces unresolved destructive-approval races and the later features depend on it.
 Do not cherry-pick a dependent PR wholesale; that would import the blocked ancestors.
 
