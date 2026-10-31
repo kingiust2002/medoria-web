@@ -1,7 +1,10 @@
 // app/operator/(panel)/products/[id]/edit/page.jsx
-import { notFound } from "next/navigation";
-import { getAdminProduct, getAdminCategories } from "@/lib/operator/data";
+import { notFound, redirect } from "next/navigation";
+import { getAdminProduct, getAdminCategories, getAdminVariants } from "@/lib/operator/data";
 import ProductForm from "@/components/operator/ProductForm";
+import VariantsManager from "@/components/operator/VariantsManager";
+import ImageUploader from "@/components/operator/ImageUploader";
+import { saveVariant, deleteProduct } from "@/lib/operator/actions";
 import { requireHealthSession } from "@/lib/operator/panelGuard";
 
 export const dynamic = "force-dynamic";
@@ -14,5 +17,18 @@ export default async function EditProductPage(props) {
     getAdminCategories(),
   ]);
   if (!product) notFound();
-  return <ProductForm mode="edit" product={product} categories={categories} />;
+  // a variant is edited from its product's page (migration 44)
+  if (product.variant_of != null) redirect(`/operator/products/${product.variant_of}/edit`);
+  const variants = await getAdminVariants(product.id);
+  return (
+    <>
+      <ProductForm mode="edit" product={product} categories={categories} />
+      {!variants.hidden && (
+        <div className="mt-6 max-w-5xl">
+          <VariantsManager house="health" parent={product} variants={variants.variants} unavailable={variants.unavailable}
+            save={saveVariant} remove={deleteProduct} Uploader={ImageUploader} approvalsHref="/operator/approvals" />
+        </div>
+      )}
+    </>
+  );
 }

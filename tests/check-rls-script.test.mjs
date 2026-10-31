@@ -47,6 +47,8 @@ function handle(req, res) {
   if (securityColumns[table] && u.searchParams.get("select")?.split(",").some((c) => !securityColumns[table].includes(c))) {
     return json(400, { code: "42703", message: "selected column does not exist" });
   }
+  // migration 44: a variant is not a public row (the public policy requires variant_of IS NULL); an open project would show them
+  if (u.searchParams.get("variant_of") === "not.is.null" && (table === "products" || table === "beauty_products")) return json(200, open ? [{ id: 4 }] : []);
   const archivedOnly = u.searchParams.get("is_active") === "eq.false";
   if (table === "products" || table === "categories") return json(200, archivedOnly ? (open ? [{ id: 2 }] : []) : [{ id: 1 }]);
   if (table === "beauty_products") return json(200, archivedOnly && open ? [{ id: 3 }] : []);
@@ -89,6 +91,8 @@ test("an open project fails: archived products, customer data and open signup ar
   const { code, out } = await run();
   assert.equal(code, 1, out);
   assert.match(out, /✗ FAIL\s+anon CANNOT see archived \(inactive\) Health products/);
+  assert.match(out, /✗ FAIL\s+anon CANNOT see product variants as products \(Health\)/);
+  assert.match(out, /✗ FAIL\s+anon CANNOT see product variants as products \(Beauty\)/);
   for (const label of ["Health categories", "Beauty categories", "Beauty brands"]) assert.match(out, new RegExp(`✗ FAIL\\s+anon CANNOT see inactive ${label}`), `${label} (migration 31)`);
   assert.match(out, /✗ FAIL\s+anon CANNOT read quote_requests/);
   assert.match(out, /✗ FAIL\s+anon CANNOT read beauty_quote_requests/);

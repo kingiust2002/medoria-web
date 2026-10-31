@@ -294,6 +294,7 @@ test("every changing server action writes to the activity log; the few exception
     "deleteProduct",                                                                                      // logged FIRST inside productDelete.js via `audit` (product.delete)
     "deleteCategorySafe", "deleteBrand", "deleteHealthCategorySafe",                                       // logged inside categoryDelete.js / destructiveApproval.js (attempt first, outcome after); asserted below
     "listBrandRoster",                                                                                    // read-only (the brand screen's roster and search)
+    "saveVariant",                                                                                        // logged inside variantActions.js via `audit` (product.variant.create / .update); a request is logged by fileForApproval
   ]);
   const missing = [];
   let checked = 0;
@@ -317,6 +318,8 @@ test("every changing server action writes to the activity log; the few exception
   for (const a of ["quote.follow_up", "quote.notice_retry", "quotes.exported"]) assert.ok(fu.includes(`action: "${a}"`), `${a} is not logged`);
   assert.match(read("lib/operator/productDelete.js"), /action: "product\.delete_attempt"/);
   assert.match(read("lib/operator/importActions.js"), /action: "product\.import"/);
+  const variantSrc = read("lib/operator/variantActions.js");
+  for (const a of ["product.variant.create", "product.variant.update"]) assert.ok(variantSrc.includes(`"${a}"`), `${a} is not logged`);
 });
 
 test("every irreversible action writes an ATTEMPT before it and a separate OUTCOME after it; a missing log is a refusal", () => {

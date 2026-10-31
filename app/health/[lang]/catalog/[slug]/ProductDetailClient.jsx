@@ -1,6 +1,6 @@
 // app/[lang]/catalog/[slug]/ProductDetailClient.jsx — interactive product detail.
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { getRelatedProducts } from "@/lib/supabase";
 import { getTranslations, getCategoryName } from "@/lib/i18n";
@@ -18,6 +18,8 @@ import ProductViewTracker from "@/components/product/ProductViewTracker";
 import RecentlyViewed from "@/components/product/RecentlyViewed";
 import Icon from "@/components/shared/Icon";
 import Breadcrumb from "@/components/shared/Breadcrumb";
+import VariantPicker from "@/components/product/VariantPicker";
+import { defaultVariant, variantView } from "@/lib/operator/variants";
 
 const BADGE_STYLE = {
   SALE: "bg-accent-pink text-white",
@@ -25,8 +27,12 @@ const BADGE_STYLE = {
   TOP:  "bg-cyan-600 text-white",
 };
 
-export default function ProductDetailClient({ product, lang }) {
+export default function ProductDetailClient({ product: parent, lang, variants = [] }) {
   const t = getTranslations(lang);
+  // A product with variants: the visitor chooses one and everything about buying (price, SKU, stock, picture, the request) follows it;
+  // compare, wish list and "recently viewed" stay on the product itself, because only products are public pages.
+  const [chosen, setChosen] = useState(() => defaultVariant(variants));
+  const product = useMemo(() => variantView(parent, chosen), [parent, chosen]);
   const [related, setRelated] = useState([]);
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -34,18 +40,19 @@ export default function ProductDetailClient({ product, lang }) {
   const { has: hasWish, toggle: toggleWish } = useWishlist();
 
   useEffect(() => {
-    getRelatedProducts(product).then(setRelated);
-  }, [product]);
+    getRelatedProducts(parent).then(setRelated);
+  }, [parent]);
 
-  const name = product[`name_${lang}`] || product.name_en;
+  const name = parent[`name_${lang}`] || parent.name_en;                    // the page is the product's; the variant's own name goes into what is copied and requested
+  const shownName = product[`name_${lang}`] || product.name_en;
   const desc = product[`description_${lang}`] || product.description_en;
   const pageUrl = typeof window !== "undefined" ? window.location.href : "";
-  const isCompared = has(product.id);
-  const isWished = hasWish(product.id);
+  const isCompared = has(parent.id);
+  const isWished = hasWish(parent.id);
   const onRequest = isOnRequest(product);
 
   const handleCopy = () => {
-    navigator.clipboard?.writeText(`${name} — ${priceLine(product, lang)}\n${pageUrl}`);
+    navigator.clipboard?.writeText(`${shownName} — ${priceLine(product, lang)}\n${pageUrl}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -54,7 +61,7 @@ export default function ProductDetailClient({ product, lang }) {
 
   return (
     <>
-      <ProductViewTracker id={product.id} />
+      <ProductViewTracker id={parent.id} />
       {quoteOpen && <QuoteModal product={product} lang={lang} onClose={() => setQuoteOpen(false)} />}
 
       <div className="bg-canvas-soft min-h-screen">
@@ -109,6 +116,8 @@ export default function ProductDetailClient({ product, lang }) {
 
               {desc && <p className="text-[15px] text-ink-muted leading-relaxed mb-5">{desc}</p>}
 
+              {variants.length > 0 && <VariantPicker variants={variants} selected={chosen} onSelect={setChosen} lang={lang} className="mb-5" />}
+
               {/* Price card */}
               <div className="card p-5 mb-5">
                 <div className="flex items-end justify-between gap-4 mb-4">
@@ -151,7 +160,7 @@ export default function ProductDetailClient({ product, lang }) {
                     {copied ? t.common.copied : t.common.copy}
                   </button>
                   <button
-                    onClick={() => toggle(product.id)}
+                    onClick={() => toggle(parent.id)}
                     className={[
                       "btn size-sm transition-colors",
                       isCompared
@@ -164,7 +173,7 @@ export default function ProductDetailClient({ product, lang }) {
                   </button>
                 </div>
                 <button
-                  onClick={() => toggleWish(product.id)}
+                  onClick={() => toggleWish(parent.id)}
                   className={[
                     "btn size-sm w-full mt-2 transition-colors",
                     isWished
@@ -231,7 +240,7 @@ export default function ProductDetailClient({ product, lang }) {
           )}
 
           {/* Recently viewed */}
-          <RecentlyViewed lang={lang} excludeId={product.id} />
+          <RecentlyViewed lang={lang} excludeId={parent.id} />
 
           <div className="mt-12">
             <Link href={`/health/${lang}/catalog`} className="text-[13px] font-semibold text-primary hover:opacity-80 inline-flex items-center gap-1">
@@ -243,7 +252,7 @@ export default function ProductDetailClient({ product, lang }) {
       </div>
 
       {/* Sticky panel + drawer */}
-      <StickyQuotePanel product={product} lang={lang} onQuoteClick={() => setQuoteOpen(true)} />
+      <StickyQuotePanel product={product} compareId={parent.id} lang={lang} onQuoteClick={() => setQuoteOpen(true)} />
       <CompareDrawer lang={lang} />
     </>
   );

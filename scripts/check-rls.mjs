@@ -7,7 +7,7 @@
 //
 // Checks (anon perspective):
 //   1. products / categories SELECT → allowed   (public catalog read)
-//   2. ARCHIVED products (is_active = false) → invisible (Health and Beauty)
+//   2. ARCHIVED products (is_active = false) and product VARIANTS (migration 44) → invisible (Health and Beauty)
 //   3. quote_requests, beauty_quote_requests, contact_inquiries, import_logs,
 //      beauty_import_logs, operator_* (log, sessions, 2FA state) → not readable (private). The lock-down
 //      (migration 28) removes anon's table grants, so the proof is an explicit
@@ -112,6 +112,10 @@ expectReadable("anon can read categories", await select("categories"));
 // 2) archived products are not public
 expectInvisible("anon CANNOT see archived (inactive) Health products", await select("products", "&is_active=eq.false"));
 expectInvisible("anon CANNOT see archived (inactive) Beauty products", await select("beauty_products", "&is_active=eq.false"));
+
+// variants (migration 44) are not public rows: the product page reads them through a function. Before the migration the column does not exist and the answer is inconclusive.
+expectInvisible("anon CANNOT see product variants as products (Health)", await select("products", "&variant_of=not.is.null"));
+expectInvisible("anon CANNOT see product variants as products (Beauty)", await select("beauty_products", "&variant_of=not.is.null"));
 
 // inactive categories and brands are not public either (migration 31)
 for (const [table, label] of [["categories", "Health categories"], ["beauty_categories", "Beauty categories"], ["beauty_brands", "Beauty brands"]]) {

@@ -199,6 +199,8 @@ export default function ProductsTable({ data, categories, basePath = "/operator/
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-ink truncate">{productDisplayName(p, lang)}</p>
                       {p.badge && <span className="tag bg-line-soft text-ink-muted shrink-0">{p.badge}</span>}
+                      {p.variant_of != null && <span className="tag bg-brand-violet/10 text-brand-violet shrink-0" data-testid="variant-tag">{t("تنوع")}</span>}
+                      {(data.variantCounts?.[p.id] || 0) > 0 && <span className="tag bg-brand-violet/10 text-brand-violet shrink-0" data-testid="variant-count">{t("{count} تنوع", { count: num(data.variantCounts[p.id]) })}</span>}
                     </div>
                     <p className="text-xs text-ink-muted truncate mt-0.5"><span className="tabular">{p.sku || "—"}</span> · {nameOf(p)}</p>
                   </div>

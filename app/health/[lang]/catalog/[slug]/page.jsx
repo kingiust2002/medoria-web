@@ -1,6 +1,7 @@
 // app/[lang]/catalog/[slug]/page.jsx — server wrapper: SEO + JSON-LD + client.
 import { notFound } from "next/navigation";
-import { getProductBySlug, imageUrl } from "@/lib/supabase";
+import { getProductBySlug, getProductVariants, imageUrl } from "@/lib/supabase";
+import { variantsJsonLd } from "@/lib/operator/variants";
 import { LOCALES, getTranslations, getCategoryName } from "@/lib/i18n";
 import { buildAlternates, SITE_URL, safeJsonLd } from "@/lib/seo";
 import { isOnRequest } from "@/lib/price";
@@ -56,9 +57,10 @@ export default async function ProductPage(props) {
   // a real 404, not a 200 "no results" page (see not-found.jsx).
   if (!product) notFound();
 
+  const variants = await getProductVariants(product.id);        // [] for an ordinary product and before migration 44
   const name = product[`name_${lang}`] || product.name_en;
   const desc = product[`description_${lang}`] || product.description_en || "";
-  const jsonLd = {
+  const productLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name,
@@ -74,6 +76,8 @@ export default async function ProductPage(props) {
       ...(isOnRequest(product) ? {} : { price: Number(product.price), priceCurrency: "USD" }),
     },
   };
+
+  const jsonLd = variantsJsonLd({ base: productLd, variants, name, url: `${SITE_URL}/health/${lang}/catalog/${product.slug || product.id}` }) || productLd;
 
   const crumbLd = {
     "@context": "https://schema.org",
@@ -92,7 +96,7 @@ export default async function ProductPage(props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd([jsonLd, crumbLd]) }}
       />
-      <ProductDetailClient product={product} lang={lang} />
+      <ProductDetailClient product={product} lang={lang} variants={variants} />
     </>
   );
 }
