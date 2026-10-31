@@ -14,6 +14,9 @@ import {
 } from "@/lib/operator/categoryTreeActions";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { useCan } from "@/components/panel/Capabilities";
+import CategoryImageField from "@/components/operator/CategoryImageField";
+import { imageUrl } from "@/lib/supabase";
+import { uploadCategoryImage as uploadHealthCategoryImage } from "@/lib/operator/actions";
 import { tr } from "@/lib/panel/i18n";
 import { localName } from "@/lib/panel/i18n";
 
@@ -34,7 +37,7 @@ function flatten(tree) {
   return out;
 }
 
-export default function HealthCategoryTree({ tree }) {
+export default function HealthCategoryTree({ tree, focusAvailable = false }) {
   const t = useT();
   const { lang } = usePanelLang();
   const router = useRouter();
@@ -171,13 +174,13 @@ export default function HealthCategoryTree({ tree }) {
         )}
       </div>
 
-      {modal && <CategoryModal modal={modal} onClose={() => setModal(null)} onDone={(text) => { setModal(null); notify(text); router.refresh(); }} />}
+      {modal && <CategoryModal modal={modal} focusAvailable={focusAvailable} onClose={() => setModal(null)} onDone={(text) => { setModal(null); notify(text); router.refresh(); }} />}
       {deleting && <DeleteModal node={deleting} leaves={leaves} onClose={() => setDeleting(null)} onDone={(text) => { setDeleting(null); notify(text); router.refresh(); }} />}
     </div>
   );
 }
 
-function CategoryModal({ modal, onClose, onDone }) {
+function CategoryModal({ modal, focusAvailable, onClose, onDone }) {
   const t = useT();
   const { lang } = usePanelLang();
   const editing = modal.mode === "edit";
@@ -190,6 +193,7 @@ function CategoryModal({ modal, onClose, onDone }) {
     icon: source?.icon || parent?.icon || "package",
     sort_order: String(source?.sort_order ?? ((parent?.children?.length || 0) + 1) * 10),
     is_active: source?.is_active !== false, is_featured: Boolean(source?.is_featured),
+    image_url: source?.image_url || "", image_focus_x: source?.image_focus_x ?? "", image_focus_y: source?.image_focus_y ?? "",
   });
   const [slugTouched, setSlugTouched] = useState(Boolean(source?.slug));
   const [saving, setSaving] = useState(false);
@@ -228,6 +232,15 @@ function CategoryModal({ modal, onClose, onDone }) {
           <Field label={t("اسلاگ")} required hint={editing ? t("برای حفظ لینک‌ها قابل تغییر نیست") : t("حروف لاتین و خط تیره")}><Input dir="ltr" disabled={editing} value={form.slug} onChange={(event) => { setSlugTouched(true); update("slug", event.target.value); }} /></Field>
           <Field label={t("آیکون")}><Select value={form.icon} onChange={(event) => update("icon", event.target.value)}>{ICON_OPTIONS.map((icon) => <option value={icon} key={icon}>{icon}</option>)}</Select></Field>
           <Field label={t("ترتیب نمایش")}><Input type="number" min="0" dir="ltr" value={form.sort_order} onChange={(event) => update("sort_order", event.target.value)} /></Field>
+        </div>
+        <div className="mt-5">
+          <Field label={t("تصویر دسته (اختیاری) — در کاشی دسته‌ها روی سایت نمایش داده می‌شود")}>
+            <CategoryImageField
+              value={form.image_url} focus={form.image_focus_x === "" ? null : { x: form.image_focus_x, y: form.image_focus_y }} focusAvailable={focusAvailable}
+              srcOf={(v) => imageUrl(v)} upload={uploadHealthCategoryImage} onError={setError}
+              onChange={({ image_url, focus }) => setForm((cur) => ({ ...cur, image_url, image_focus_x: focus ? focus.x : "", image_focus_y: focus ? focus.y : "" }))}
+            />
+          </Field>
         </div>
         <div className="grid sm:grid-cols-2 gap-3 mt-5">
           <div className="rounded-xl border border-line bg-canvas-soft p-3.5"><Toggle checked={form.is_active} onChange={(value) => update("is_active", value)} label={t("فعال در سایت")} /></div>

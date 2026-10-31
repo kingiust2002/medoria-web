@@ -176,7 +176,7 @@ export function createFakeDb(seedFactory) {
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, "http://fake");
     if (req.method === "OPTIONS") { res.writeHead(204, { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*" }); return res.end(); }
-    if (url.pathname === "/__state") return respond(res, 200, tables);
+    if (url.pathname === "/__state") return respond(res, 200, { ...tables, ...(tables.storage_objects ? { storage_objects: tables.storage_objects.map(({ data, ...rest }) => rest) } : {}) });
     if (url.pathname === "/__log") return respond(res, 200, log);
     if (url.pathname === "/__reset") { reset(url.searchParams.get("all") === "1"); return respond(res, 200, { ok: true }); }
     // fault injection: POST /__fault {table, method, status, code}  → every such request answers with that error
@@ -188,6 +188,15 @@ export function createFakeDb(seedFactory) {
     const rpc = url.pathname.match(/^\/rest\/v1\/rpc\/([\w]+)/);
     const m = url.pathname.match(/^\/rest\/v1\/([\w]+)/);
     log.push({ method: req.method, path: url.pathname, query: url.search, kind });
+
+    // Public file download (what the browser's <img> asks for): the bytes kept at upload time, with their type
+    const pub = req.method === "GET" && url.pathname.match(/^\/storage\/v1\/object\/public\/([\w-]+)\/(.+)$/);
+    if (pub) {
+      const o = (tables.storage_objects || []).find((x) => x.bucket === pub[1] && x.name === decodeURIComponent(pub[2]));
+      if (!o?.data) return respond(res, 404, { message: "not found" });
+      res.writeHead(200, { "content-type": o.type || "application/octet-stream", "cache-control": "no-store" });
+      return res.end(o.data);
+    }
 
     // Storage (list / upload / remove) — just enough for the media library: objects live in tables.storage_objects
     const st = url.pathname.match(/^\/storage\/v1\/object\/(list\/)?([\w-]+)(?:\/(.+))?$/);
@@ -211,7 +220,8 @@ export function createFakeDb(seedFactory) {
       }
       if (!st[1] && req.method === "POST" && st[3]) {
         const chunks = []; for await (const c of req) chunks.push(c);
-        objs.push({ id: randomUUID(), bucket, name: decodeURIComponent(st[3]), size: Buffer.concat(chunks).length, created_at: new Date().toISOString() });
+        const data = Buffer.concat(chunks);
+        objs.push({ id: randomUUID(), bucket, name: decodeURIComponent(st[3]), size: data.length, created_at: new Date().toISOString(), data, type: String(req.headers["content-type"] || "").split(";")[0] });
         return respond(res, 200, { Key: `${bucket}/${st[3]}` });
       }
       return respond(res, 404, { message: "not found" });

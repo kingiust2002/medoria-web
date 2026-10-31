@@ -4,6 +4,7 @@
 // addition is an OFFICIAL LOGO upload (the operator supplies the licensed file;
 // nothing here fetches or fabricates a brand mark). Brand ↔ products is the
 // text join on the brand name, so the row shows how many products carry it.
+import ImageCropDialog, { CROP_ASPECTS } from "@/components/operator/ImageCropDialog";
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
@@ -15,6 +16,8 @@ import BrandProductsModal from "./BrandProductsModal";
 import { useT } from "@/components/panel/PanelI18n";
 import { useCan } from "@/components/panel/Capabilities";
 import Trans from "@/components/panel/Trans";
+
+const LOGO_ASPECTS = CROP_ASPECTS.filter((a) => ["1:1", "4:3", "16:9"].includes(a.key));
 
 export default function BrandsManager({ brands }) {
   const t = useT();
@@ -152,20 +155,27 @@ function BrandModal({ brand, onClose, onSaved }) {
   const [slugTouched, setSlugTouched] = useState(!!brand.slug);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [pendingLogo, setPendingLogo] = useState(null);
   const [err, setErr] = useState("");
   const fileRef = useRef(null);
   const up = (k, v) => setF((s) => ({ ...s, [k]: v }));
 
-  async function onPickLogo(e) {
+  // the chosen file first goes through the crop dialog (the original can be sent as it is — an official logo should not be altered)
+  function onPickLogo(e) {
     const file = e.target.files?.[0];
+    if (fileRef.current) fileRef.current.value = "";
     if (!file) return;
+    setErr("");
+    setPendingLogo(file);
+  }
+  async function sendLogo(file) {
+    setPendingLogo(null);
     setErr(""); setUploading(true);
     const fd = new FormData();
     fd.append("file", file);
     const res = await uploadBrandLogo(fd);
     setUploading(false);
     if (res.ok) up("logo_url", res.url); else setErr(t(res.error) || t("آپلود لوگو ناموفق بود."));
-    if (fileRef.current) fileRef.current.value = "";
   }
 
   async function save(e) {
@@ -203,6 +213,7 @@ function BrandModal({ brand, onClose, onSaved }) {
               {f.logo_url && <button type="button" onClick={() => up("logo_url", "")} className="btn-ghost size-sm !text-warn">{t("حذف لوگو")}</button>}
             </div>
             <p className="text-[11px] text-ink-faint mt-1.5 leading-relaxed">{t("PNG شفاف ترجیح دارد. حداکثر ۵ مگابایت. فقط لوگوی مجاز خودتان.")}</p>
+            {pendingLogo && <ImageCropDialog file={pendingLogo} aspects={LOGO_ASPECTS} defaultAspect="1:1" title={t("برش لوگو")} onCancel={() => setPendingLogo(null)} onDone={sendLogo} />}
           </div>
         </div>
 
