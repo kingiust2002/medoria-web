@@ -306,6 +306,7 @@ export function createFakeDb(seedFactory) {
           row.allow_perms ??= []; row.deny_perms ??= []; row.approval ??= {}; row.recovery_hashes ??= []; row.totp_last_step ??= 0; row.must_change_password ??= false;
         }
         if (t === "operator_change_requests") { row.id ??= randomUUID(); row.status ??= "pending"; row.requested_at ??= now(); }   // migration 35's defaults
+        if (t === "publish_rules") { row.version ??= 1; row.blocking ??= []; }   // migration 46's defaults
         if (t === "site_content") { row.version ??= 1; row.is_published ??= false; row.sort_order ??= 0; row.publish_at ??= null; row.unpublish_at ??= null; }   // migration 42's defaults
         if (PRODUCT_TABLES.has(t)) { row.variant_of ??= null; row.variant_options ??= {}; row.variant_sort ??= 0; }   // migration 44's column defaults
         if (row.id == null) row.id = nextId(t);
@@ -338,7 +339,7 @@ export function createFakeDb(seedFactory) {
         }
       }
       for (const row of hit) {
-        Object.assign(row, patch, { updated_at: now() }, t === "site_content" ? { version: row.version + 1 } : {});   // migration 42's guard trigger
+        Object.assign(row, patch, { updated_at: now() }, t === "site_content" || t === "publish_rules" ? { version: row.version + 1 } : {});   // migration 42's and 46's guard triggers
         // migration 32's trigger: the first time a request is answered
         if (TRACKING_PREFIX[t] && !row.first_response_at && ANSWERED.includes(row.status)) row.first_response_at = now();
       }

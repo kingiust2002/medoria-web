@@ -3,6 +3,7 @@
 // Draft rows live client-side (localStorage-backed); saving sends them through
 // the same validated batch engine as the Excel/CSV import, in small chunks.
 // One bad row never blocks the rest — failed rows stay editable.
+import { codesText } from "@/lib/operator/publishRules";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -217,7 +218,7 @@ export default function BulkAddGrid({ categories }) {
         counts.total += 1;
         counts[out.status] = (counts[out.status] || 0) + 1;
         if (out.status === "create") {
-          setRow(row._key, { _status: "saved", _id: out.id, _msgs: [], _warns: out.warnings || [], _skuExists: false });
+          setRow(row._key, { _status: "saved", _id: out.id, _msgs: [], _warns: [...(out.warnings || []), ...(out.publishUnavailable ? [t("قوانین کیفیت انتشار خوانده نشد؛ به‌صورت پیش‌نویس غیرفعال ذخیره شد.")] : out.publishBlocked?.length ? [t("به‌صورت پیش‌نویس غیرفعال ذخیره شد؛ ناقص: {items}", { items: codesText(out.publishBlocked, t) })] : [])], _skuExists: false });
         } else {
           setRow(row._key, { _status: out.status === "error" ? "error" : "skip", _msgs: out.messages || [], _warns: out.warnings || [] });
         }

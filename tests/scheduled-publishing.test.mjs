@@ -43,7 +43,7 @@ test("a due publish goes live, a due archive goes offline, future schedules wait
   const { db, audit, logged } = setup([prod(1, { publish_at: at(-1) }), prod(2, { is_active: true, unpublish_at: at(-2) }), prod(3, { publish_at: at(5) }), prod(4, { is_active: true })]);
   const revalidated = [];
   const r = await runScheduledPublishing({ admin: db, now: NOW, audit, revalidate: { health: () => revalidated.push("health") } });
-  assert.deepEqual(r, { ok: true, houses: { health: { published: 1, archived: 1, cleared: 0 }, beauty: { published: 0, archived: 0, cleared: 0 } } });
+  assert.deepEqual(r, { ok: true, houses: { health: { published: 1, archived: 1, cleared: 0, blocked: 0 }, beauty: { published: 0, archived: 0, cleared: 0, blocked: 0 } } });
   const by = Object.fromEntries(db.tables.products.map((p) => [p.id, p]));
   assert.deepEqual([by[1].is_active, by[1].publish_at], [true, null]);
   assert.deepEqual([by[2].is_active, by[2].unpublish_at], [false, null]);
@@ -67,7 +67,7 @@ test("the later of two due events wins; a due date that no longer matters is jus
   assert.deepEqual([by[2].is_active, by[2].publish_at, by[2].unpublish_at], [true, null, null]);
   assert.deepEqual([by[3].is_active, by[3].publish_at], [true, null]);
   assert.deepEqual([by[4].is_active, by[4].unpublish_at], [false, null]);
-  assert.deepEqual(r.houses.health, { published: 1, archived: 0, cleared: 3 });
+  assert.deepEqual(r.houses.health, { published: 1, archived: 0, cleared: 3, blocked: 0 });
 });
 
 test("a schedule edited between the read and the write is not applied; both houses run; a house without the columns is skipped; counts only", async () => {
@@ -82,7 +82,7 @@ test("a schedule edited between the read and the write is not applied; both hous
   };
   const r = await runScheduledPublishing({ admin: db, now: NOW });
   assert.equal(db.tables.products[0].is_active, false, "the new date wins");
-  assert.deepEqual(r.houses.beauty, { published: 0, archived: 1, cleared: 0 });
+  assert.deepEqual(r.houses.beauty, { published: 0, archived: 1, cleared: 0, blocked: 0 });
   assert.equal(db.tables.beauty_products[0].is_active, false);
   assert.ok(db.tables.beauty_product_versions.length === 1 && db.tables.product_versions.length === 0);
   assert.ok(!JSON.stringify(r).includes("p1"), "no slug or name in the answer");

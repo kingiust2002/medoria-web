@@ -1,4 +1,5 @@
 "use client";
+import { blockedText, PUBLISH_MESSAGES } from "@/lib/operator/publishRules";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -77,7 +78,7 @@ export default function ProductsTable({ data, categories, basePath = "/beauty/op
       setBusyId(null);
       if (res.ok && res.pending) { flash(t(res.message), true); return; }          // sent for approval: the product is unchanged
       if (res.ok) { if (okText) flash(okText, true); router.refresh(); }
-      else flash(t(res.error));
+      else flash(blockedText(res, t));
     });
   }
   function toggleActive(p) {
@@ -87,7 +88,7 @@ export default function ProductsTable({ data, categories, basePath = "/beauty/op
       setBusyId(null);
       if (res.ok && res.pending) { flash(t(res.message), true); return; }
       if (res.ok) { flash(p.is_active === false ? t("فعال شد.") : t("آرشیو شد."), true); router.refresh(); }
-      else flash(t(res.error));
+      else flash(blockedText(res, t));
     });
   }
   function dup(p) {
@@ -112,8 +113,12 @@ export default function ProductsTable({ data, categories, basePath = "/beauty/op
     if (!ids.length) return;
     startTransition(async () => {
       const res = await bulkUpdateProducts(ids, patch);
-      if (res.ok) { flash(t("{okText} ({count} مورد)", { okText, count: res.count }), true); clearSel(); setBulkCat(""); router.refresh(); }
-      else flash(t(res.error));
+      if (res.ok) {
+        const stopped = res.blockedCount ? ` — ${blockedText({ error: t(PUBLISH_MESSAGES.blockedMany, { count: res.blockedCount }), publishBlocked: res.publishBlocked, blockedCount: res.blockedCount }, t)}` : "";
+        flash(`${t("{okText} ({count} مورد)", { okText, count: res.count })}${stopped}`, !res.blockedCount);
+        clearSel(); setBulkCat(""); router.refresh();
+      }
+      else flash(blockedText(res, t));
     });
   }
   function bulkCategory(value) {

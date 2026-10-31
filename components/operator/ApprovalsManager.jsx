@@ -98,7 +98,7 @@ function Card({ r, mode, actions, onResult }) {
       {previewHref(r) && <div><a href={previewHref(r)} target="_blank" rel="noopener noreferrer" className="btn-ghost size-sm" data-testid="request-preview"><Icon name="eye" size={15} /> {t("پیش‌نمایش پیشنهاد روی سایت")}</a></div>}
       {r.reason && <p className="text-xs text-ink-soft break-words">{r.reason}</p>}
       {r.status === "rejected" && r.reviewReason && <p className="text-xs text-warn break-words" data-testid="review-reason">{t("دلیل رد: {reason}", { reason: r.reviewReason })}{r.reviewedBy ? ` — ${r.reviewedBy}` : ""}</p>}
-      {r.status === "failed" && <p className="text-xs text-warn break-words">{r.execError === "stale" ? t("پس از ثبت درخواست، این رکورد تغییر کرده بود؛ تغییر اعمال نشد.") : t("اجرای تغییر ناموفق بود؛ چیزی تغییر نکرد.")}</p>}
+      {r.status === "failed" && <p className="text-xs text-warn break-words">{r.execError === "stale" ? t("پس از ثبت درخواست، این رکورد تغییر کرده بود؛ تغییر اعمال نشد.") : r.execError === "quality" ? t("قوانین کیفیت انتشار رعایت نشده است (یا قوانین خوانده نشد)؛ محصول منتشر نشد و چیزی تغییر نکرد.") : t("اجرای تغییر ناموفق بود؛ چیزی تغییر نکرد.")}</p>}
       {err && <p role="alert" className="text-xs text-warn break-words">{err}</p>}
 
       {mode === "review" && r.status === "pending" && (
