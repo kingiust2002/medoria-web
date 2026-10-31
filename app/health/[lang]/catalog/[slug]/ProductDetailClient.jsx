@@ -19,6 +19,7 @@ import RecentlyViewed from "@/components/product/RecentlyViewed";
 import Icon from "@/components/shared/Icon";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import VariantPicker from "@/components/product/VariantPicker";
+import { usePreview } from "@/components/shared/PreviewContext";
 import { defaultVariant, variantView } from "@/lib/operator/variants";
 
 const BADGE_STYLE = {
@@ -36,8 +37,11 @@ export default function ProductDetailClient({ product: parent, lang, variants = 
   const [related, setRelated] = useState([]);
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const { has, toggle } = useCompare();
-  const { has: hasWish, toggle: toggleWish } = useWishlist();
+  const compare = useCompare();
+  const wishlist = useWishlist();
+  const preview = usePreview();            // a private preview of a draft: nothing is added to the viewer's own compare / wish lists
+  const { has } = compare, toggle = preview ? () => {} : compare.toggle;
+  const { has: hasWish } = wishlist, toggleWish = preview ? () => {} : wishlist.toggle;
 
   useEffect(() => {
     getRelatedProducts(parent).then(setRelated);

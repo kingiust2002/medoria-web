@@ -21,6 +21,8 @@ export default function robots() {
           "/*/wishlist",
           "/*/inquiry",
           "/*/print-catalog",
+          "/health/*/preview/",
+          "/beauty/*/preview/",
         ],
       },
     ],

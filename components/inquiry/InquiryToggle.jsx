@@ -5,12 +5,16 @@ import Link from "next/link";
 import Icon from "@/components/shared/Icon";
 import { useInquiryList } from "@/lib/inquiryList";
 import { copyFor } from "@/lib/inquiry/copy";
+import { usePreview } from "@/components/shared/PreviewContext";
 
 export default function InquiryToggle({ productId, lang, house = "health", className = "" }) {
   const c = copyFor(lang);
-  const { has, add, remove } = useInquiryList(house);
+  const list = useInquiryList(house);
+  const preview = usePreview();                                   // in a private preview nothing is added to the visitor's own list
+  const { has, remove } = list;
+  const add = preview ? () => true : list.add;
   const [full, setFull] = useState(false);
-  const inList = has(productId);
+  const inList = !preview && has(productId);
 
   if (inList) {
     return (

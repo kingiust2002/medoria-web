@@ -41,8 +41,8 @@ function exportedActions(src) {
 
 test("the operator server-action files are the ones we expect (a new file must be added to this review)", () => {
   assert.deepEqual(operatorFiles.sort(), [
-    "lib/beauty/operator/accountActions.js", "lib/beauty/operator/actions.js", "lib/beauty/operator/approvalActions.js", "lib/beauty/operator/auditActions.js", "lib/beauty/operator/contentActions.js", "lib/beauty/operator/importActions.js", "lib/beauty/operator/panelSearchActions.js", "lib/beauty/operator/securityActions.js", "lib/beauty/operator/userActions.js", "lib/beauty/operator/warehouseActions.js",
-    "lib/operator/accountActions.js", "lib/operator/actions.js", "lib/operator/approvalActions.js", "lib/operator/auditActions.js", "lib/operator/categoryTreeActions.js", "lib/operator/contentActions.js", "lib/operator/importActions.js", "lib/operator/panelSearchActions.js", "lib/operator/securityActions.js", "lib/operator/userActions.js", "lib/operator/warehouseActions.js",
+    "lib/beauty/operator/accountActions.js", "lib/beauty/operator/actions.js", "lib/beauty/operator/approvalActions.js", "lib/beauty/operator/auditActions.js", "lib/beauty/operator/contentActions.js", "lib/beauty/operator/importActions.js", "lib/beauty/operator/panelSearchActions.js", "lib/beauty/operator/previewActions.js", "lib/beauty/operator/securityActions.js", "lib/beauty/operator/userActions.js", "lib/beauty/operator/warehouseActions.js",
+    "lib/operator/accountActions.js", "lib/operator/actions.js", "lib/operator/approvalActions.js", "lib/operator/auditActions.js", "lib/operator/categoryTreeActions.js", "lib/operator/contentActions.js", "lib/operator/importActions.js", "lib/operator/panelSearchActions.js", "lib/operator/previewActions.js", "lib/operator/securityActions.js", "lib/operator/userActions.js", "lib/operator/warehouseActions.js",
   ]);
 });
 

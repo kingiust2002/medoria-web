@@ -56,6 +56,14 @@ function Diff({ before, proposed }) {
   );
 }
 
+// a product request can be looked at on the real site (private preview, N5); other requests have no page to show
+const PREVIEWABLE = new Set(["products.create", "products.content", "products.price", "products.stock_flag", "products.publish", "products.archive", "products.restore_version"]);
+const previewHref = (r) => {
+  if (!PREVIEWABLE.has(r.operation) || !["products", "beauty_products"].includes(r.entity)) return null;
+  if (r.operation !== "products.create" && !r.entityId) return null;
+  return `/${r.entity === "beauty_products" ? "beauty" : "health"}/tg/preview/${r.entityId || "new"}?request=${r.id}`;
+};
+
 function Card({ r, mode, actions, onResult }) {
   const t = useT();
   const { lang } = usePanelLang();
@@ -87,6 +95,7 @@ function Card({ r, mode, actions, onResult }) {
         <Badge tone={st.tone}>{t(st.label)}</Badge>
       </div>
       <Diff before={r.before} proposed={r.proposed} />
+      {previewHref(r) && <div><a href={previewHref(r)} target="_blank" rel="noopener noreferrer" className="btn-ghost size-sm" data-testid="request-preview"><Icon name="eye" size={15} /> {t("پیش‌نمایش پیشنهاد روی سایت")}</a></div>}
       {r.reason && <p className="text-xs text-ink-soft break-words">{r.reason}</p>}
       {r.status === "rejected" && r.reviewReason && <p className="text-xs text-warn break-words" data-testid="review-reason">{t("دلیل رد: {reason}", { reason: r.reviewReason })}{r.reviewedBy ? ` — ${r.reviewedBy}` : ""}</p>}
       {r.status === "failed" && <p className="text-xs text-warn break-words">{r.execError === "stale" ? t("پس از ثبت درخواست، این رکورد تغییر کرده بود؛ تغییر اعمال نشد.") : t("اجرای تغییر ناموفق بود؛ چیزی تغییر نکرد.")}</p>}

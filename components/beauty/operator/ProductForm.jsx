@@ -19,6 +19,7 @@ import Trans from "@/components/panel/Trans";
 import { localName } from "@/lib/panel/i18n";
 import { isoToLocal, localToIso } from "@/lib/operator/schedule";
 import { planTranslationFill, cleanTranslationMeta } from "@/lib/operator/translationMeta";
+import { createProductPreview } from "@/lib/beauty/operator/previewActions";
 
 // Category options grouped by world (Sephora-style two-level taxonomy) so a
 // long category list stays scannable in the select.
@@ -98,6 +99,7 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
   );
   const [slugTouched, setSlugTouched] = useState(!!product?.slug);
   const [saving, setSaving] = useState(false);
+  const [previewBusy, setPreviewBusy] = useState(false);
   const [galleryBusy, setGalleryBusy] = useState(false);
   const [err, setErr] = useState("");
   const [translating, setTranslating] = useState(false);
@@ -222,12 +224,9 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
     setExpandLangs(true);
   }
 
-  async function submit(e) {
-    e.preventDefault();
-    setErr("");
-    if (!f.name_fa.trim() && !f.name_en.trim()) { setErr(t("حداقل نام فارسی یا انگلیسی محصول را وارد کنید.")); return; }
-    setSaving(true);
-    const payload = {
+  // what the form holds, as the actions take it (a save adds the version the screen showed; the preview does not)
+  function buildPayload(forSave = false) {
+    return {
       ...f,
       publish_at: localToIso(f.publish_at), unpublish_at: localToIso(f.unpublish_at),
       category_id: f.category_id || null,
@@ -235,11 +234,33 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
       priceOnRequest,
       price: priceOnRequest ? "" : f.price,
       translation_meta: Object.fromEntries([...autoFields].map((k) => [k, "auto"])),
-      ...(editing && expectedRef.current ? { __expectedUpdatedAt: expectedRef.current } : {}),
+      ...(forSave && editing && expectedRef.current ? { __expectedUpdatedAt: expectedRef.current } : {}),
       tags: f.tags.split(/[،,]/),
       gallery_urls: gallery,
       specs,
     };
+  }
+
+  // "preview on the site": the form's CURRENT values (saved or not) on the real public page, in a new tab, for this session only
+  async function openPreview() {
+    if (previewBusy) return;
+    setErr("");
+    const win = window.open("", "_blank");                         // opened inside the click, so a pop-up blocker allows it
+    if (win) win.opener = null;
+    setPreviewBusy(true);
+    let res = null;
+    try { res = await createProductPreview(editing ? product.id : null, buildPayload()); } catch { res = null; }
+    setPreviewBusy(false);
+    if (res?.ok && win) win.location.href = res.path;
+    else { win?.close(); setErr(t(res?.error) || t("ساخت پیش‌نمایش ناموفق بود. دوباره تلاش کنید.")); }
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    setErr("");
+    if (!f.name_fa.trim() && !f.name_en.trim()) { setErr(t("حداقل نام فارسی یا انگلیسی محصول را وارد کنید.")); return; }
+    setSaving(true);
+    const payload = buildPayload(true);
     const res = editing ? await updateProduct(product.id, payload) : await createProduct(payload);
     setSaving(false);
     if (res.ok) {
@@ -303,12 +324,15 @@ export default function ProductForm({ mode, product, categories, initialBrand = 
           <Icon name="award" size={16} className="text-brand-violet shrink-0" /><Trans t={t} k="در حال افزودن محصول برای برند {brand} — فیلد برند از پیش پر شده است." values={{ brand: <b dir="ltr">«{initialBrand}»</b> }} /></div>
       )}
 
-      {editing && product?.id && (
-        <div className="flex flex-wrap gap-2 mb-5" data-testid="form-links">
+      <div className="flex flex-wrap gap-2 mb-5" data-testid="form-links">
+        {editing && product?.id && (<>
           <Link href={`/beauty/operator/products/${product.id}/history`} className="btn-ghost size-sm" data-testid="link-history"><Icon name="clock" size={15} /> {t("تاریخچهٔ نسخه‌ها")}</Link>
           {product.is_active !== false && product.slug && <a href={`/beauty/tg/catalog/${product.slug}`} target="_blank" rel="noopener noreferrer" className="btn-ghost size-sm" data-testid="link-site"><Icon name="eye" size={15} /> {t("مشاهده در سایت")}</a>}
-        </div>
-      )}
+        </>)}
+        <button type="button" onClick={openPreview} disabled={previewBusy} className="btn-ghost size-sm" data-testid="link-preview" title={t("نمایش مقادیر فعلی فرم (حتی ذخیره‌نشده) روی صفحهٔ واقعی سایت؛ فقط برای شما و بدون ثبت بازدید.")}>
+          {previewBusy ? <Spinner /> : <Icon name="eye" size={15} />} {t("پیش‌نمایش روی سایت")}
+        </button>
+      </div>
 
       {draftFound && (
         <div className="mb-5 text-sm rounded-xl px-3 py-2.5 flex flex-wrap items-center gap-2 bg-primary/10 text-primary">
