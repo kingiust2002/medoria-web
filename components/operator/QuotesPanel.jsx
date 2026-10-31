@@ -168,6 +168,11 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
   }
 
   function afterDelete(gone, res) {
+    if (res?.pending) {                       // sent for approval: nothing is deleted yet, the request stays in the list
+      setDeleting(null); setBulkDeleting(false); setSelected(new Set());
+      flash(t(res.message), true);
+      return;
+    }
     const ids = new Set(gone);
     setQuotes((qs) => qs.filter((x) => !ids.has(x.id)));
     setOpenId((cur) => (ids.has(cur) ? null : cur));

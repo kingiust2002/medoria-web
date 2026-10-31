@@ -317,7 +317,8 @@ function DeleteModal({ node, leaves, onClose, onDone, onError }) {
     setBusy(true);
     const res = await deleteCategorySafe(node.id, moveTo || undefined);
     setBusy(false);
-    if (res?.ok) onDone(t("دسته حذف شد."));
+    if (res?.ok && res.pending) onDone(t(res.message));                       // sent for approval: the category is still there
+    else if (res?.ok) onDone(t("دسته حذف شد."));
     else if (res?.needsMove) { setNeedsMove(true); setCount(res.count || 0); }
     else onError(t(res?.error) || t("حذف ناموفق بود."));
   }

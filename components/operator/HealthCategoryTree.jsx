@@ -258,7 +258,8 @@ function DeleteModal({ node, leaves, onClose, onDone }) {
     setBusy(true);
     const result = await deleteHealthCategorySafe(node.id, targetId || undefined);
     setBusy(false);
-    if (result?.ok) onDone(result.moved ? t("دسته حذف شد و {moved} محصول منتقل شد.", { moved: result.moved }) : t("دسته حذف شد."));
+    if (result?.ok && result.pending) onDone(t(result.message));            // sent for approval: the category is still there
+    else if (result?.ok) onDone(result.moved ? t("دسته حذف شد و {moved} محصول منتقل شد.", { moved: result.moved }) : t("دسته حذف شد."));
     else setError(t(result?.error) || t("حذف ناموفق بود."));
   }
 

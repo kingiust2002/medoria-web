@@ -28,9 +28,17 @@ function show(v) {
 function Diff({ before, proposed }) {
   const t = useT();
   const keys = Object.keys(proposed || {}).filter((k) => !k.startsWith("_"));       // _-prefixed keys are the executor's arguments, not for a reviewer
-  if (!keys.length) return null;
+  // what the reviewer is told about the thing itself when the request is not a field change (a deletion: which category, how many products…)
+  const facts = Object.keys(before || {}).filter((k) => !keys.includes(k) && !k.startsWith("_"));
+  if (!keys.length && !facts.length) return null;
   return (
     <div className="overflow-x-auto -mx-1">
+      {facts.length > 0 && (
+        <dl className="text-xs grid gap-1 px-1 pb-2" data-testid="facts">
+          {facts.map((k) => <div key={k} className="flex flex-wrap gap-x-2 min-w-0"><dt className="text-ink-muted">{FIELD_LABELS[k] ? t(FIELD_LABELS[k]) : k}:</dt><dd className="text-ink break-words min-w-0">{show(before[k])}</dd></div>)}
+        </dl>
+      )}
+      {keys.length > 0 && (
       <table className="w-full text-xs min-w-[18rem]">
         <thead><tr className="text-ink-muted text-start"><th className="px-1 py-1 text-start font-medium">{t("فیلد")}</th><th className="px-1 py-1 text-start font-medium">{t("قبلی")}</th><th className="px-1 py-1 text-start font-medium">{t("پیشنهادی")}</th></tr></thead>
         <tbody>
@@ -43,6 +51,7 @@ function Diff({ before, proposed }) {
           ))}
         </tbody>
       </table>
+      )}
     </div>
   );
 }
@@ -97,7 +106,7 @@ function Card({ r, mode, actions, onResult }) {
       {mode === "mine" && r.status === "pending" && (
         <div><button type="button" className="btn-ghost size-sm" disabled={busy} data-testid="cancel" onClick={() => run(() => actions.cancel(r.id), t("درخواست پس گرفته شد."))}>{t("پس گرفتن")}</button></div>
       )}
-      {mode === "mine" && ["rejected", "failed", "superseded", "cancelled"].includes(r.status) && (
+      {mode === "mine" && r.canResubmit !== false && ["rejected", "failed", "superseded", "cancelled"].includes(r.status) && (
         <div><button type="button" className="btn-ghost size-sm" disabled={busy} data-testid="resubmit" onClick={() => run(() => actions.resubmit(r.id), t("دوباره ارسال شد."))}>{t("ارسال دوباره")}</button></div>
       )}
     </li>

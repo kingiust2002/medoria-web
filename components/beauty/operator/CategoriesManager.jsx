@@ -78,6 +78,7 @@ export default function CategoriesManager({ categories }) {
           onClose={() => setDeleting(null)}
           onDone={(moved) => {
             setDeleting(null);
+            if (moved && typeof moved === "object") { flash(t(moved.pending), true); return; }       // sent for approval: the category is still there
             flash(moved > 0 ? t("دسته حذف شد و {moved} محصول منتقل شد.", { moved }) : t("دسته حذف شد."), true);
             router.refresh();
           }}
@@ -105,7 +106,7 @@ function DeleteCategoryModal({ category, categories, onClose, onDone }) {
     setBusy(true);
     const res = await deleteCategorySafe(category.id, count > 0 ? moveTo : undefined);
     setBusy(false);
-    if (res.ok) onDone(res.moved || 0);
+    if (res.ok) onDone(res.pending ? { pending: res.message } : (res.moved || 0));
     else setErr(t(res.error) || t("حذف ناموفق بود."));
   }
 

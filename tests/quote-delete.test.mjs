@@ -139,10 +139,13 @@ test("each panel's deleteQuote is bound to its own session check and its own tab
   const h = health.match(/export async function deleteQuote\(id\) \{([\s\S]*?)\n\}/)?.[1];
   const b = beauty.match(/export async function deleteQuote\(id\) \{([\s\S]*?)\n\}/)?.[1];
   assert.ok(h && b, "deleteQuote is missing in one of the panels");
-  assert.match(h, /getSession,\s*getAdminClient,\s*table: "quote_requests"/);
-  assert.match(b, /getSession,\s*getAdminClient,\s*table: "beauty_quote_requests"/);
+  // each panel passes ITS OWN house, session check and client to the one flow; the flow maps the house to its own table (below)
+  assert.match(h, /quotesDeleteFlow\(\{ a, house: "health", ids: id, single: true, getSession, getAdminClient/);
+  assert.match(b, /quotesDeleteFlow\(\{ a, house: "beauty", ids: id, single: true, getSession, getAdminClient/);
   assert.ok(!h.includes("beauty"), "Health deleteQuote must not mention Beauty");
-  assert.ok(!/table: "quote_requests"/.test(b), "Beauty deleteQuote must not touch the Health table");
+  assert.ok(!b.includes('"health"'), "Beauty deleteQuote must not mention the Health house");
+  const flow = read("lib/operator/destructiveFlow.js");
+  assert.match(flow, /health: \{ categories: "categories", quotes: "quote_requests" \}, beauty: \{ categories: "beauty_categories", quotes: "beauty_quote_requests" \}/);
 
   // the file is a Server Actions module: exports must stay async functions
   assert.match(health, /^"use server";/);
@@ -160,7 +163,7 @@ test("customer requests are deleted only through the shared guarded helper", () 
         const direct = /\.from\(\s*["'`](beauty_)?quote_requests["'`]\s*\)\s*\.delete\(/.test(s);
         const viaHelper = /deleteQuoteGuarded/.test(s);
         if (direct) offenders.push(rel);
-        if (viaHelper && !["lib/operator/quoteDelete.js", "lib/operator/actions.js", "lib/beauty/operator/actions.js"].includes(rel)) offenders.push(rel);
+        if (viaHelper && !["lib/operator/quoteDelete.js", "lib/operator/actions.js", "lib/beauty/operator/actions.js", "lib/operator/destructiveFlow.js", "lib/operator/destructiveApproval.js"].includes(rel)) offenders.push(rel);
       }
     }
   };

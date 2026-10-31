@@ -9,19 +9,21 @@ import { Badge, EmptyState, Field, Input, Select, SectionCard, Spinner, Textarea
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { formatDate, tr } from "@/lib/panel/i18n";
 import { HOUSES, ROLES } from "@/lib/operator/authz";
-import { OPERATION_CHOICES, OPERATION_LABELS } from "@/lib/operator/userLabels";
+import { OPERATION_LABELS } from "@/lib/operator/userLabels";
+import { approvableFor } from "@/lib/operator/authz";
 
 const HOUSE_LABEL = { health: tr("سلامت"), beauty: tr("زیبایی") };
 const STATUS_LABEL = { active: tr("فعال"), disabled: tr("غیرفعال"), blocked: tr("مسدود") };
 const STATUS_TONE = { active: "ok", disabled: "neutral", blocked: "warn" };
-const opsOf = (house) => OPERATION_CHOICES.filter((op) => house === "beauty" || !op.startsWith("brands."));
+// "needs approval" is offered only for operations that can really be approved (lib/operator/authz.js APPROVABLE_OPERATIONS)
+const opsOf = (house) => approvableFor(house);
 
 function emptyForm(actor) {
   return { username: "", displayName: "", role: "viewer", houses: actor.role === "owner" ? [] : [...actor.houses], require2fa: true, status: "active", allowText: "", denyText: "", custom: {}, approval: {} };
 }
 function formFrom(user) {
   const custom = {}, approval = {};
-  for (const h of HOUSES) if (Array.isArray(user.approval?.[h])) { custom[h] = true; approval[h] = [...user.approval[h]]; }
+  for (const h of HOUSES) if (Array.isArray(user.approval?.[h])) { custom[h] = true; approval[h] = user.approval[h].filter((op) => approvableFor(h).includes(op)); }   // an old entry that can no longer be approved is dropped from the form
   return { username: user.username, displayName: user.displayName, role: user.role, houses: [...user.houses], require2fa: user.require2fa, status: user.status, allowText: user.allow.join("\n"), denyText: user.deny.join("\n"), custom, approval };
 }
 
