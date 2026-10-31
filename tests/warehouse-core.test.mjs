@@ -196,7 +196,8 @@ test("reverse, reserve, release: input is cleaned first, then the permission, th
   assert.equal((await actions.reserveStock(ctx, { key: KEY, productId: 7, locationId: 1, qty: "2" })).reservationId, 9);
   assert.equal((await actions.reserveStock(ctx, { key: KEY, productId: 7, locationId: 1, qty: "0" })).error, STOCK_MESSAGES.bad_quantity);
   assert.equal((await actions.releaseReservation(ctx, { key: KEY, reservationId: 9 })).replayed, true);
-  assert.deepEqual(db.rpcLog.map((c) => c[0]), ["health_stock_reverse", "health_stock_reserve", "health_stock_release"]);
+  // a reversal asks the lot-aware function first (migration 45); this database does not have it, so the older one answers
+  assert.deepEqual(db.rpcLog.map((c) => c[0]), ["health_stock_lot_reverse", "health_stock_reverse", "health_stock_reserve", "health_stock_release"]);
 });
 
 test("locations: created with the person's id, edited only at the version the screen showed", async () => {

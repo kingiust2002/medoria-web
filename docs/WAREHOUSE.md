@@ -1,6 +1,6 @@
 # The internal warehouse (stage 4)
 
-Status: **S4a (database + application layer) and S4b (the screens) built and tested; nothing active on any server.**
+Status: **S4a (database + application layer), S4b (the screens), S4c (counts) and N4 (batches, expiry, quarantine — `PANEL_WAREHOUSE_LOTS.md`) built and tested; nothing active on any server.**
 Migration 36 is additive; the menu entry "انبار" appears only for people with `inventory.view`. The plan is `docs/PANEL_PLATFORM_PLAN.md` (decision D7).
 
 ## Rules that cannot be broken from the application
@@ -103,7 +103,7 @@ deleted. Proved on PostgreSQL 16: `tests/warehouse-counts-migration.test.mjs`.
 
 ## Not built yet
 
-* Lots, expiry dates, quarantine, and e-mail / Telegram low-stock alerts (the badge and the filter exist).
+* ~~Lots, expiry dates, quarantine~~ — built in migration 45 (**`PANEL_WAREHOUSE_LOTS.md`**). Still not built: e-mail / Telegram delivery of low-stock and expiry alerts (they are shown in the panel), counting per batch, automatic first-expiry-first-out picking.
 * Blocking the permanent deletion of a product that still has stock (today a ledger row simply outlives the product).
 * Reversal through the approval queue; reservations linked to customer requests.
 

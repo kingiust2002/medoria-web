@@ -75,9 +75,9 @@ async function call(path, init = {}) {
 // `extra` is an optional PostgREST filter such as "&is_active=eq.false".
 // Migration 30's session and second-factor tables have no `id` column. Probe their real keys so a
 // hardened database can return a permission denial instead of an unrelated undefined-column error.
-const PROBE_KEY = { operator_sessions: "sid", operator_totp_state: "panel", operator_recovery_used: "panel", health_stock_balances: "location_id", beauty_stock_balances: "location_id", health_stock_levels: "product_id", beauty_stock_levels: "product_id", health_stock_count_lines: "count_id", beauty_stock_count_lines: "count_id" };
-// The internal warehouse (migrations 36 and 41): never readable by a stranger. A project that has not applied the migration answers "missing", which is also private.
-const WAREHOUSE_TABLES = ["health", "beauty"].flatMap((h) => ["locations", "balances", "movements", "reservations", "levels", "counts", "count_lines"].map((t) => `${h}_stock_${t}`));
+const PROBE_KEY = { operator_sessions: "sid", operator_totp_state: "panel", operator_recovery_used: "panel", health_stock_balances: "location_id", beauty_stock_balances: "location_id", health_stock_levels: "product_id", beauty_stock_levels: "product_id", health_stock_count_lines: "count_id", beauty_stock_count_lines: "count_id", health_stock_lot_balances: "lot_id", beauty_stock_lot_balances: "lot_id", health_stock_movement_lots: "movement_id", beauty_stock_movement_lots: "movement_id" };
+// The internal warehouse (migrations 36, 41 and 45): never readable by a stranger. A project that has not applied the migration answers "missing", which is also private.
+const WAREHOUSE_TABLES = ["health", "beauty"].flatMap((h) => ["locations", "balances", "movements", "reservations", "levels", "counts", "count_lines", "lots", "lot_balances", "movement_lots", "lot_events"].map((t) => `${h}_stock_${t}`));
 const select = (table, extra = "") => call(`/rest/v1/${table}?select=${PROBE_KEY[table] || "id"}&limit=1${extra}`);
 
 const INCONCLUSIVE = { server_error: 1, invalid: 1, network: 1, other: 1 };
