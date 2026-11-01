@@ -82,11 +82,15 @@ export default function WorldGrid({
               // category in the operator panel, then a tile composited from
               // official product shots (scripts/build_category_tiles.mjs), then
               // the department mood shot, then the gradient placeholder.
+              const uploaded = beautyImageUrl(node.image_url);
               const img =
-                beautyImageUrl(node.image_url) ||
+                uploaded ||
                 CATEGORY_IMG[node.slug] ||
                 (isDept ? DEPT_IMG[node.slug] : null) ||
                 null;
+              // The focal point frames only the operator-uploaded image; the
+              // composited fallbacks are already centred.
+              const focus = uploaded ? node.image_focus || undefined : undefined;
               const g = grad || gradFor(i);
               const drills = hasKids(node) && !isDept;
               return (
@@ -108,6 +112,7 @@ export default function WorldGrid({
                           alt=""
                           loading={i < 2 ? "eager" : "lazy"}
                           decoding="async"
+                          style={focus ? { objectPosition: focus } : undefined}
                           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.05]"
                         />
                       ) : (

@@ -5,13 +5,16 @@ import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
 import { Field, Input, PageHeader, Select, Spinner, Toggle } from "@/components/operator/ui";
 import { slugify } from "@/lib/operator/validation";
+import { imageUrl } from "@/lib/supabase";
 import {
   createHealthCategory,
   deleteHealthCategorySafe,
   setHealthCategoryFlags,
   setHealthCategorySubtreeActive,
   updateHealthCategory,
+  uploadHealthCategoryImage,
 } from "@/lib/operator/categoryTreeActions";
+import FocusPointPicker from "@/components/panel/FocusPointPicker";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { useCan } from "@/components/panel/Capabilities";
 import { tr } from "@/lib/panel/i18n";
@@ -138,9 +141,15 @@ export default function HealthCategoryTree({ tree }) {
                     </button>
                   ) : <span className="w-7" />}
 
-                  <span className={`w-8 h-8 rounded-lg grid place-items-center shrink-0 ${depth === 0 ? "bg-brand-violet/10 text-brand-violet" : "bg-line-soft text-ink-muted"}`}>
-                    <Icon name={node.icon || (depth === 0 ? "layers" : "package")} size={16} />
-                  </span>
+                  {node.image_url ? (
+                    <span className="w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-line-soft">
+                      <img src={imageUrl(node.image_url)} alt="" className="w-full h-full object-cover" style={{ objectPosition: node.image_focus || "50% 50%" }} />
+                    </span>
+                  ) : (
+                    <span className={`w-8 h-8 rounded-lg grid place-items-center shrink-0 ${depth === 0 ? "bg-brand-violet/10 text-brand-violet" : "bg-line-soft text-ink-muted"}`}>
+                      <Icon name={node.icon || (depth === 0 ? "layers" : "package")} size={16} />
+                    </span>
+                  )}
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 min-w-0">
@@ -188,13 +197,29 @@ function CategoryModal({ modal, onClose, onDone }) {
     slug: source?.slug || "", name_fa: source?.name_fa || "", name_en: source?.name_en || "",
     name_ru: source?.name_ru || "", name_tg: source?.name_tg || "",
     icon: source?.icon || parent?.icon || "package",
+    image_url: source?.image_url || "", image_focus: source?.image_focus || "",
     sort_order: String(source?.sort_order ?? ((parent?.children?.length || 0) + 1) * 10),
     is_active: source?.is_active !== false, is_featured: Boolean(source?.is_featured),
   });
   const [slugTouched, setSlugTouched] = useState(Boolean(source?.slug));
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+
+  async function uploadImage(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setError("");
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    const result = await uploadHealthCategoryImage(fd);
+    setUploading(false);
+    if (result?.ok) update("image_url", result.path);
+    else setError(t(result?.error) || t("آپلود ناموفق بود."));
+  }
 
   async function submit(event) {
     event.preventDefault();
@@ -229,12 +254,36 @@ function CategoryModal({ modal, onClose, onDone }) {
           <Field label={t("آیکون")}><Select value={form.icon} onChange={(event) => update("icon", event.target.value)}>{ICON_OPTIONS.map((icon) => <option value={icon} key={icon}>{icon}</option>)}</Select></Field>
           <Field label={t("ترتیب نمایش")}><Input type="number" min="0" dir="ltr" value={form.sort_order} onChange={(event) => update("sort_order", event.target.value)} /></Field>
         </div>
+        <div className="mt-4 rounded-xl border border-line bg-canvas-soft p-3.5">
+          <p className="text-xs font-medium text-ink-soft mb-2.5">{t("تصویر دسته (اختیاری)")}</p>
+          <div className="flex flex-wrap items-start gap-4">
+            <span className="w-20 h-20 rounded-xl overflow-hidden bg-line-soft grid place-items-center shrink-0 border border-line">
+              {form.image_url ? <img src={imageUrl(form.image_url)} alt="" className="w-full h-full object-cover" style={{ objectPosition: form.image_focus || "50% 50%" }} /> : <Icon name="image" size={22} className="text-ink-faint" />}
+            </span>
+            <div className="flex-1 min-w-[160px]">
+              <div className="flex flex-wrap gap-2">
+                <label className="btn-ghost size-sm cursor-pointer disabled:opacity-60">
+                  {uploading ? <Spinner size={15} /> : <Icon name="upload" size={15} />} {uploading ? t("در حال آپلود…") : form.image_url ? t("تعویض تصویر") : t("آپلود تصویر")}
+                  <input type="file" data-testid="cat-image-file" accept="image/jpeg,image/png,image/webp,image/avif" className="hidden" onChange={uploadImage} disabled={uploading} />
+                </label>
+                {form.image_url && <button type="button" onClick={() => update("image_url", "")} className="btn-ghost size-sm !text-warn hover:!border-warn/40"><Icon name="trash" size={15} /> {t("حذف")}</button>}
+              </div>
+              <p className="text-[11px] text-ink-faint mt-2">{t("JPG/PNG/WEBP/AVIF، حداکثر ۵ مگابایت.")}</p>
+            </div>
+          </div>
+          {form.image_url && (
+            <div className="mt-3">
+              <p className="text-[11px] text-ink-faint mb-1.5">{t("نقطهٔ کانونی: کدام بخش تصویر هنگام برش به اندازهٔ کادر دیده شود.")}</p>
+              <FocusPointPicker src={imageUrl(form.image_url)} value={form.image_focus} onChange={(v) => update("image_focus", v)} />
+            </div>
+          )}
+        </div>
         <div className="grid sm:grid-cols-2 gap-3 mt-5">
           <div className="rounded-xl border border-line bg-canvas-soft p-3.5"><Toggle checked={form.is_active} onChange={(value) => update("is_active", value)} label={t("فعال در سایت")} /></div>
           <div className="rounded-xl border border-line bg-canvas-soft p-3.5"><Toggle checked={form.is_featured} onChange={(value) => update("is_featured", value)} label={t("دسته ویژه")} /></div>
         </div>
         <div className="flex gap-2 mt-6">
-          <button type="submit" disabled={saving} className="btn-primary size-md flex-1 disabled:opacity-60">{saving ? <Spinner size={17} /> : <Icon name="check" size={17} />}{saving ? t("در حال ذخیره…") : t("ذخیره")}</button>
+          <button type="submit" disabled={saving || uploading} className="btn-primary size-md flex-1 disabled:opacity-60">{saving ? <Spinner size={17} /> : <Icon name="check" size={17} />}{saving ? t("در حال ذخیره…") : t("ذخیره")}</button>
           <button type="button" onClick={onClose} className="btn-ghost size-md">{t("انصراف")}</button>
         </div>
       </form>

@@ -64,7 +64,10 @@ export default async function CategoryGrid({ lang }) {
                 : "lg:col-span-3";
             // Same resolution order the World grid uses, so a department wears
             // the identical photograph in both places.
-            const img = beautyImageUrl(dept.image_url) || CATEGORY_IMG[dept.slug] || DEPT_IMG[dept.slug] || null;
+            const uploaded = beautyImageUrl(dept.image_url);
+            const img = uploaded || CATEGORY_IMG[dept.slug] || DEPT_IMG[dept.slug] || null;
+            // The focal point frames only the operator-uploaded image.
+            const focus = uploaded ? dept.image_focus || undefined : undefined;
             return (
               <StaggerItem key={dept.id} className={span}>
                 <TiltCard className="h-full rounded-2xl" max={feature ? 5 : 8}>
@@ -83,6 +86,7 @@ export default async function CategoryGrid({ lang }) {
                             alt=""
                             loading={i < 2 ? "eager" : "lazy"}
                             decoding="async"
+                            style={focus ? { objectPosition: focus } : undefined}
                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.05]"
                           />
                         ) : (

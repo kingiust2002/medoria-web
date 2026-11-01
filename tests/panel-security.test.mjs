@@ -284,7 +284,7 @@ test("every changing server action writes to the activity log; the few exception
   const files = ["lib/operator/actions.js", "lib/beauty/operator/actions.js", "lib/operator/categoryTreeActions.js", "lib/operator/importActions.js", "lib/beauty/operator/importActions.js"];
   // read-only, or storing a file only (the saved row is logged when the form is saved), or logged elsewhere
   const exempt = new Set([
-    "translateProductFields", "uploadProductImage", "uploadBrandLogo", "uploadCategoryImage",            // no data row changes
+    "translateProductFields", "uploadProductImage", "uploadBrandLogo", "uploadCategoryImage", "uploadHealthCategoryImage", // no data row changes (the saved row is logged when the category is saved)
     "parseSpreadsheet", "downloadTemplateXlsx", "dryRunProductRows", "checkSkusExist", "exportProductsCsv", // read-only
     "commitProductRows",                                                                                  // chunks: finalizeProductBatch logs the import once
     "deleteQuote", "deleteQuotes", "updateQuotesStatus",                                                  // logged inside quoteDelete.js via `audit`

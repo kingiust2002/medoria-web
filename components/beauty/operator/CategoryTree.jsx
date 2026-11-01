@@ -13,6 +13,7 @@ import {
   createCategory, updateCategory, deleteCategorySafe, uploadCategoryImage,
 } from "@/lib/beauty/operator/actions";
 import { beautyImageUrl } from "@/lib/beauty/catalog";
+import FocusPointPicker from "@/components/panel/FocusPointPicker";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { useCan } from "@/components/panel/Capabilities";
 import { tr } from "@/lib/panel/i18n";
@@ -147,7 +148,7 @@ export default function CategoryTree({ tree }) {
 
                   {node.image_url ? (
                     <span className="w-7 h-7 rounded-lg overflow-hidden shrink-0 bg-line-soft">
-                      <img src={beautyImageUrl(node.image_url)} alt="" className="w-full h-full object-cover" />
+                      <img src={beautyImageUrl(node.image_url)} alt="" className="w-full h-full object-cover" style={{ objectPosition: node.image_focus || "50% 50%" }} />
                     </span>
                   ) : (
                     <span className={`grid place-items-center w-7 h-7 rounded-lg shrink-0 ${depth === 0 ? "bg-brand-violet/10 text-brand-violet" : "bg-line-soft text-ink-muted"}`}>
@@ -227,7 +228,7 @@ function CategoryModal({ modal, onClose, onDone, onError }) {
     slug: src?.slug || "",
     name_fa: src?.name_fa || "", name_en: src?.name_en || "",
     name_ru: src?.name_ru || "", name_tg: src?.name_tg || "",
-    icon: src?.icon || "", image_url: src?.image_url || "",
+    icon: src?.icon || "", image_url: src?.image_url || "", image_focus: src?.image_focus || "",
   });
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -284,14 +285,20 @@ function CategoryModal({ modal, onClose, onDone, onError }) {
           <Field label={t("تصویر دسته (اختیاری) — روی صفحهٔ World نمایش داده می‌شود")}>
             <div className="flex items-center gap-3">
               <span className="w-16 h-16 rounded-xl overflow-hidden bg-line-soft grid place-items-center shrink-0">
-                {f.image_url ? <img src={beautyImageUrl(f.image_url)} alt="" className="w-full h-full object-cover" /> : <Icon name="image" size={20} className="text-ink-faint" />}
+                {f.image_url ? <img src={beautyImageUrl(f.image_url)} alt="" className="w-full h-full object-cover" style={{ objectPosition: f.image_focus || "50% 50%" }} /> : <Icon name="image" size={20} className="text-ink-faint" />}
               </span>
               <label className="btn-ghost size-sm cursor-pointer disabled:opacity-60">
                 {uploading ? <Spinner /> : <Icon name="upload" size={15} />} {uploading ? t("در حال آپلود…") : t("آپلود تصویر")}
-                <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" className="hidden" onChange={uploadImage} disabled={uploading} />
+                <input type="file" data-testid="cat-image-file" accept="image/jpeg,image/png,image/webp,image/avif" className="hidden" onChange={uploadImage} disabled={uploading} />
               </label>
-              {f.image_url && <button type="button" onClick={() => setF((s) => ({ ...s, image_url: "" }))} className="btn-ghost size-sm text-warn"><Icon name="trash" size={15} /> {t("حذف")}</button>}
+              {f.image_url && <button type="button" onClick={() => setF((s) => ({ ...s, image_url: "", image_focus: "" }))} className="btn-ghost size-sm text-warn"><Icon name="trash" size={15} /> {t("حذف")}</button>}
             </div>
+            {f.image_url && (
+              <div className="mt-3">
+                <p className="text-[11px] text-ink-faint mb-1.5">{t("نقطهٔ کانونی: کدام بخش تصویر هنگام برش به اندازهٔ کادر دیده شود.")}</p>
+                <FocusPointPicker src={beautyImageUrl(f.image_url)} value={f.image_focus} onChange={(v) => setF((s) => ({ ...s, image_focus: v }))} />
+              </div>
+            )}
           </Field>
         </div>
         <div className="flex items-center justify-end gap-2 p-5 border-t border-line">
