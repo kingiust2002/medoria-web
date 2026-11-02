@@ -26,6 +26,8 @@
 --           public.operator_delete_category_checked(text, bigint, bigint, jsonb), public.operator_delete_brand_checked(bigint, jsonb);
 --           (the application then refuses those deletions; nothing else depends on them)
 
+BEGIN;
+
 -- ── customer requests ────────────────────────────────────────────────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.operator_delete_quotes_checked(p_house text, p_ids bigint[], p_versions jsonb)
 RETURNS jsonb
@@ -117,6 +119,11 @@ BEGIN
   -- 1. lock: the category (blocks any product from being attached to it meanwhile: the foreign key needs a share lock on this row),
   --    the destination (it must still exist until we are done), then every member product in id order
   IF p_house = 'health' THEN
+    -- Legacy category text has no FK and therefore takes no lock on the category.
+    -- Serialize this rare destructive operation with catalogue writers before
+    -- fingerprinting membership, so an in-flight legacy-only insert/update cannot
+    -- be missed between the basis check and the move/delete.
+    LOCK TABLE public.products IN SHARE ROW EXCLUSIVE MODE;
     SELECT slug INTO v_slug FROM public.categories WHERE id = p_id FOR UPDATE;
   ELSE
     SELECT slug INTO v_slug FROM public.beauty_categories WHERE id = p_id FOR UPDATE;
@@ -198,3 +205,5 @@ GRANT EXECUTE ON FUNCTION public.operator_category_basis(text, bigint) TO servic
 GRANT EXECUTE ON FUNCTION public.operator_delete_category_checked(text, bigint, bigint, jsonb) TO service_role;
 GRANT EXECUTE ON FUNCTION public.operator_delete_brand_checked(bigint, jsonb) TO service_role;
 GRANT EXECUTE ON FUNCTION public.operator_brand_basis(bigint) TO service_role;
+
+COMMIT;

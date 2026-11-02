@@ -33,6 +33,39 @@ const approve = (panel, who, req, extra = {}) => {
 };
 const banner = (o = {}) => ({ text: { tg: "Салом" }, tone: "info", is_published: false, ...o });
 const requests = () => db.tables.operator_change_requests;
+
+for (const panel of ["health", "beauty"]) {
+  test(`${panel}: edits to already-published content must respect publication approval`, async () => {
+    const owner = ctxFor(reviewer(5), panel);
+    const made = await content.createContent(owner, "banner", banner({ text: { tg: "Original" }, is_published: true }));
+    const c = ctxFor(editor(panel === "health" ? 1 : 3), panel);
+    const result = await content.updateContent(c, made.row.id, banner({ text: { tg: "Unreviewed replacement" }, is_published: true }), 1);
+    assert.equal(result.pending, true);
+    assert.equal(db.tables.site_content[0].data.text.tg, "Original");
+    assert.ok(requests()[0].proposed.__ops.includes("content.edit"));
+    assert.equal((await approve(panel, reviewer(5), requests()[0])).ok, true);
+    assert.equal(db.tables.site_content[0].data.text.tg, "Unreviewed replacement");
+  });
+
+  test(`${panel}: a denied publication right cannot be bypassed by editing an existing published item`, async () => {
+    const made = await content.createContent(ctxFor(reviewer(5), panel), "banner", banner({ is_published: true }));
+    const row = db.tables.operator_users.find((r) => r.id === id(panel === "health" ? 1 : 3));
+    row.deny_perms = [`${panel}.content.publish`];
+    const result = await content.updateContent(ctxFor(row, panel), made.row.id, banner({ text: { tg: "Denied" }, is_published: true }), 1);
+    assert.equal(result.denied, true);
+    assert.equal(db.tables.site_content[0].data.text.tg, "Салом");
+  });
+}
+
+test("approval of an edited item rechecks the requester's content.edit right", async () => {
+  const made = await content.createContent(ctxFor(reviewer(5)), "banner", banner({ is_published: false }));
+  await content.updateContent(ctxFor(editor(1)), made.row.id, banner({ text: { tg: "Proposed" }, is_published: true }), 1);
+  db.tables.operator_users[0].deny_perms = ["health.content.edit"];
+  invalidateSessionUser();
+  const result = await approve("health", reviewer(2), requests()[0]);
+  assert.equal(result.ok, false);
+  assert.equal(db.tables.site_content[0].is_published, false);
+});
 beforeEach(() => {
   invalidateSessionUser();
   audits = []; purged = []; nextId = 0;
