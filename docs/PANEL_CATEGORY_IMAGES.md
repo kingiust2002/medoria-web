@@ -34,3 +34,11 @@
 * The crop is done in the browser; a browser that cannot draw to a canvas gets the message to upload the original (which the server cleans anyway).
 * Existing pictures already in storage are **not** re-processed; only new uploads are cleaned.
 * Product images in the product form keep their own uploader (no crop dialog there yet); they do get the server-side safety path.
+
+## Round 3 (review R4): the product history keeps its pictures
+A picture named only by an **old version** of a product (`product_versions` / `beauty_product_versions`, migration 38) is now "in use": "revert this change" writes the
+old values back, so removing that file used to leave a reference to a deleted picture. The usage scan (`usageMap`) now also reads, page by page, the whole history of the
+house (before and after of every version, every string at any depth), and every pending change request at any depth (a bulk edit or an import is one request with many rows).
+An unreadable history means "cannot say" and nothing is removed; a history table that does not exist (migration 38 not applied) holds no history. The library shows such a file as
+"used by: old version of a product", so its delete button is hidden. Shared files stay (the list shows every user). Tests: `tests/media-library.test.mjs` (7 new, red before / green after).
+Only the history of products that still exist counts: the history of a permanently deleted product stays in the log (append-only) but can never be reverted, so it does not keep a picture forever.
