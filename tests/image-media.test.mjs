@@ -114,9 +114,9 @@ test("every upload action of both panels goes through the one safe path; no modu
     assert.match(read(f), new RegExp(`storeImage\\(a\\.admin, \\{ bucket: "${bucket}", folder: "${folder}", file: formData\\?\\.get\\?\\.\\("file"\\)`), `${f} ${bucket}/${folder}`);
   }
   const offenders = [];
-  const walk = (d) => { for (const e of fs.readdirSync(path.join(root, d), { withFileTypes: true })) { const rel = path.join(d, e.name); if (e.isDirectory()) walk(rel); else if (/\.(js|mjs)$/.test(e.name) && /\.upload\(/.test(read(rel)) && rel.replace(/\\/g, "/") !== "lib/operator/imageUpload.js") offenders.push(rel); } };
+  const walk = (d) => { for (const e of fs.readdirSync(path.join(root, d), { withFileTypes: true })) { const rel = path.join(d, e.name); if (e.isDirectory()) walk(rel); else if (/\.(js|mjs)$/.test(e.name) && /\.upload\(/.test(read(rel)) && !["lib/operator/imageUpload.js", "lib/operator/documentsCore.js"].includes(rel.replace(/\\/g, "/"))) offenders.push(rel); } };
   walk("lib"); walk("app");
-  assert.deepEqual(offenders, [], "only lib/operator/imageUpload.js may call storage.upload");
+  assert.deepEqual(offenders, [], "only lib/operator/imageUpload.js (images) and documentsCore.js (PDFs: scanned, hashed, served as application/pdf) may call storage.upload");
   // the permission check comes first in each action
   for (const f of ["lib/operator/actions.js", "lib/beauty/operator/actions.js"]) for (const fn of ["uploadProductImage", "uploadCategoryImage"]) {
     const src = read(f); const i = src.indexOf(`export async function ${fn}(`); const body = src.slice(i, src.indexOf("\n}\n", i));

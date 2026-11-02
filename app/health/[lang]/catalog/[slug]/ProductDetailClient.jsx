@@ -1,5 +1,6 @@
 // app/[lang]/catalog/[slug]/ProductDetailClient.jsx — interactive product detail.
 "use client";
+import ProductDocuments from "@/components/product/ProductDocuments";
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { getRelatedProducts } from "@/lib/supabase";
@@ -28,7 +29,7 @@ const BADGE_STYLE = {
   TOP:  "bg-cyan-600 text-white",
 };
 
-export default function ProductDetailClient({ product: parent, lang, variants = [] }) {
+export default function ProductDetailClient({ product: parent, lang, variants = [], documents = [] }) {
   const t = getTranslations(lang);
   // A product with variants: the visitor chooses one and everything about buying (price, SKU, stock, picture, the request) follows it;
   // compare, wish list and "recently viewed" stay on the product itself, because only products are public pages.
@@ -215,6 +216,8 @@ export default function ProductDetailClient({ product: parent, lang, variants = 
                   </div>
                 </div>
               )}
+
+              <ProductDocuments items={documents} lang={lang} />
 
               {/* Brochure */}
               {product.brochure_url && (

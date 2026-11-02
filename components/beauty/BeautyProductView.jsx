@@ -1,6 +1,7 @@
 // components/beauty/BeautyProductView.jsx — the body of a Beauty product page: gallery, brand line, serif name, price-or-request, WhatsApp / Telegram
 // inquiry, specs, related pieces. ONE component for the public page (app/beauty/[lang]/catalog/[slug]) and for the private preview of a draft
 // (app/beauty/[lang]/preview/[id]), so a preview is the real page and cannot drift from it.
+import ProductDocuments from "@/components/product/ProductDocuments";
 import Link from "next/link";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
 import { waLink, tgLink, productInquiryMessage } from "@/lib/whatsapp";
@@ -33,7 +34,7 @@ function Meta({ label, value }) {
 }
 
 // jsonLd: the page's structured data as a safe JSON string (the public page passes it; a preview passes none)
-export default function BeautyProductView({ product, variants = [], related = [], cats = [], lang, jsonLd = null }) {
+export default function BeautyProductView({ product, variants = [], documents = [], related = [], cats = [], lang, jsonLd = null }) {
   const t = getBeautyTranslations(lang);
   const c = COPY[lang] || COPY.en;
   const cat = cats.find((x) => x.id === product.category_id) || null;
@@ -127,6 +128,7 @@ export default function BeautyProductView({ product, variants = [], related = []
               <Meta label={c.category} value={catLabel} />
               {specs && Object.entries(specs).map(([k, v]) => <Meta key={k} label={k} value={String(v ?? "")} />)}
             </div>
+            <ProductDocuments items={documents} lang={lang} />
           </div>
         </div>
 
