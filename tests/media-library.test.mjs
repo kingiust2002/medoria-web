@@ -39,7 +39,8 @@ test("pathOfRef / isAllowedFile: paths and public URLs normalise; only the house
   assert.equal(isAllowedFile("health", "beauty-product-images", "products/a.webp"), false, "another house's bucket");
   assert.equal(isAllowedFile("beauty", "beauty-product-images", "categories/x.png"), true);
   assert.equal(isAllowedFile("beauty", "beauty-brand-logos", "logos/x.png"), true);
-  assert.equal(isAllowedFile("health", "product-images", "categories/x.png"), false, "a folder Health does not use");
+  assert.equal(isAllowedFile("health", "product-images", "categories/x.png"), true, "Health category pictures (N7)");
+  assert.equal(isAllowedFile("health", "product-images", "logos/x.png"), false, "a folder Health does not use");
   for (const bad of ["products/../secrets", "../products/a", "products/a/b.webp", "products/", "products", "", null, "products\\a.webp"]) assert.equal(isAllowedFile("health", "product-images", bad), false, String(bad));
 });
 
@@ -150,4 +151,88 @@ test("the approval executor removes the file only if it is still unused", async 
   assert.equal((await ex({ admin: db, request: { proposed: { _bucket: "product-images", _path: "products/a.webp" } } })).error, "stale");
   assert.equal((await ex({ admin: db, request: { proposed: { _bucket: "product-images", _path: "products/zzz.webp" } } })).error, "notFound");
   assert.equal((await ex({ admin: db, request: { proposed: { _bucket: "x", _path: "y" } } })).error, "failed");
+});
+
+// ── review R4: the product history is still "in use" ────────────────────────────────────────────────────────────────────────
+// "Revert this change" writes a version's OLD values back. An image named only by an old version was treated as unused and removed, and the revert
+// then wrote a reference to a deleted file.
+const OLD = { bucket: "product-images", path: "products/old.webp", at: "2026-09-01T00:00:00Z" };
+const oldVersion = (o = {}) => ({ id: 1, product_id: 1, before: { image_url: "products/old.webp" }, after: { image_url: "products/a.webp" }, ...o });
+
+test("R4 (Health): an image that only an old version of a product names is not removable, and says why", async () => {
+  const db = setup([...FILES, OLD], { product_versions: [oldVersion()] });
+  const res = await deleteMedia(db, "health", { bucket: "product-images", path: "products/old.webp" });
+  assert.equal(res.ok, false); assert.equal(res.inUse, true);
+  assert.deepEqual(res.usedBy.map((u) => [u.kind, u.id]), [["version", 1]]);
+  assert.deepEqual(db.removed, [], "nothing was removed");
+  const listed = (await listMedia(db, "health")).items.find((i) => i.path === "products/old.webp");
+  assert.equal(listed.usedBy[0].kind, "version", "the library shows it as used by an old version, so the delete button is hidden");
+});
+
+test("R4: the history of a product that was permanently deleted can never be reverted, so it does not keep a picture forever", async () => {
+  const db = setup([...FILES, OLD], { product_versions: [oldVersion({ product_id: 404 })] });
+  assert.equal((await deleteMedia(db, "health", { bucket: "product-images", path: "products/old.webp" })).ok, true);
+});
+
+test("R4 (Beauty): same, from its own history table; the Health history is not consulted", async () => {
+  const BF = { bucket: "beauty-product-images", path: "products/old.webp", at: "2026-09-01T00:00:00Z" };
+  const seed = { beauty_products: [{ id: 1, sku: "B-1", image_url: "products/a.webp", gallery_urls: [] }], beauty_categories: [], beauty_brands: [], beauty_product_versions: [oldVersion()], product_versions: [] };
+  const db = setup([BF], seed);
+  assert.equal((await deleteMedia(db, "beauty", { bucket: "beauty-product-images", path: "products/old.webp" })).inUse, true);
+  const health = setup([OLD], { products: [{ id: 7, sku: "G-7", image_url: null, gallery_urls: [] }], product_versions: [oldVersion({ product_id: 7 })], beauty_product_versions: [] });
+  assert.deepEqual((await usageMap(health, "health")).map.get("product-images/products/old.webp").map((u) => u.id), [7]);
+  assert.equal((await usageMap(setup([BF], { ...seed, beauty_product_versions: [], product_versions: [oldVersion()] }), "beauty")).map.has("beauty-product-images/products/old.webp"), false);
+});
+
+test("R4: after the attempted removal the revert still points at a file that exists; once the history is gone the file is free", async () => {
+  const db = setup([...FILES, OLD], { product_versions: [oldVersion()] });
+  await deleteMedia(db, "health", { bucket: "product-images", path: "products/old.webp" });
+  assert.deepEqual(db.removed, []);
+  const revertTo = db.tables.product_versions[0].before.image_url;               // what a revert writes back
+  assert.ok((await listMedia(db, "health")).items.some((i) => i.path === revertTo), "the file a revert would restore is still there");
+  db.tables.product_versions.length = 0;
+  assert.equal((await deleteMedia(db, "health", { bucket: "product-images", path: "products/old.webp" })).ok, true);
+});
+
+test("R4: a file shared by a live product and an old version lists both users; a gallery inside a version counts; unrelated versions do not", async () => {
+  const db = setup(FILES, { product_versions: [
+    { id: 1, product_id: 2, before: { gallery_urls: ["products/b.webp"] }, after: {} },
+    { id: 2, product_id: 2, before: { price: 5 }, after: { price: 6, name_en: "products/never-a-file" } },
+  ] });
+  const by = (await usageMap(db, "health")).map.get("product-images/products/b.webp");
+  assert.deepEqual(by.map((u) => u.kind).sort(), ["product", "version"], "live product G-1 and the old version of product 2");
+  assert.equal((await deleteMedia(db, "health", { bucket: "product-images", path: "products/b.webp" })).inUse, true);
+});
+
+test("R4: the whole history is read page by page: a reference in version 1,500 is found even though the API returns 1,000 rows per request", async () => {
+  const versions = Array.from({ length: 1500 }, (_, i) => ({ id: i + 1, product_id: 1, before: { price: i }, after: i === 1499 ? { image_url: "products/old.webp" } : {} }));
+  const db = createMemoryAdmin({ products: [{ id: 1, sku: "G-1", image_url: null, gallery_urls: [] }], categories: [], product_versions: versions, operator_change_requests: [] }, { maxRows: 1000 });
+  db.storage = { from: () => ({ remove: async () => { throw new Error("must not be called"); } }) };
+  const res = await deleteMedia(db, "health", { bucket: "product-images", path: "products/old.webp" });
+  assert.equal(res.inUse, true, "the reference sat beyond the first API page");
+});
+
+test("R4: an unreadable history means 'cannot say' (nothing removed); a history table that does not exist (migration 38 not applied) holds no history", async () => {
+  const db = setup([...FILES, OLD], { product_versions: [oldVersion()] });
+  for (const code of ["57014", "42703", "XX000"]) {
+    db.fail = (table) => (table === "product_versions" ? { code, message: "x" } : null);
+    assert.equal((await usageMap(db, "health")).ok, false, code);
+    assert.equal((await deleteMedia(db, "health", { bucket: "product-images", path: "products/old.webp" })).error, MEDIA_MESSAGES.unavailable);
+  }
+  db.fail = () => null;
+  assert.deepEqual(db.removed, []);
+  assert.equal((await usageMap(setup(FILES), "health")).ok, true);
+});
+
+test("R4: a bulk edit or an import is ONE pending request with many rows: a picture named deep inside it keeps the file; the file a media-removal request is about to delete does not count", async () => {
+  const requests = [
+    { id: "r1", house: "health", status: "pending", entity: "products", subject: "bulk", proposed: { _rows: [{ sku: "X", image_url: "products/queued-deep.webp" }, { sku: "Y", gallery_urls: ["products/queued-deep2.webp"] }] } },
+    { id: "r2", house: "health", status: "pending", entity: "stock", subject: "x", proposed: { _bucket: "product-images", _path: "products/being-deleted.webp" } },
+  ];
+  const files = [...FILES, ...["queued-deep", "queued-deep2", "being-deleted"].map((n) => ({ bucket: "product-images", path: `products/${n}.webp`, at: "2026-10-05T00:00:00Z" }))];
+  const db = setup(files, { operator_change_requests: requests });
+  const map = (await usageMap(db, "health")).map;
+  assert.equal(map.get("product-images/products/queued-deep.webp")?.[0].kind, "request");
+  assert.equal(map.get("product-images/products/queued-deep2.webp")?.[0].kind, "request");
+  assert.equal(map.has("product-images/products/being-deleted.webp"), false);
 });

@@ -6,6 +6,7 @@
 // `hrefFor` is passed in rather than derived, because each level links somewhere
 // different: a department opens its own page, a group with children opens its
 // page, and a leaf goes straight into the filtered catalog.
+import { focusStyle } from "@/lib/imageFocus";
 import Link from "next/link";
 import Icon from "@/components/shared/Icon";
 import Breadcrumb from "@/components/shared/Breadcrumb";
@@ -108,6 +109,7 @@ export default function WorldGrid({
                           alt=""
                           loading={i < 2 ? "eager" : "lazy"}
                           decoding="async"
+                          style={node.image_url ? { objectPosition: focusStyle(node) } : undefined}
                           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.05]"
                         />
                       ) : (

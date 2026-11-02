@@ -15,6 +15,7 @@ import {
 import { beautyImageUrl } from "@/lib/beauty/catalog";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { useCan } from "@/components/panel/Capabilities";
+import CategoryImageField from "@/components/operator/CategoryImageField";
 import { tr } from "@/lib/panel/i18n";
 import { localName } from "@/lib/panel/i18n";
 
@@ -35,7 +36,7 @@ function flatten(roots) {
   return out;
 }
 
-export default function CategoryTree({ tree }) {
+export default function CategoryTree({ tree, focusAvailable = false }) {
   const t = useT();
   const { lang } = usePanelLang();
   const router = useRouter();
@@ -201,6 +202,7 @@ export default function CategoryTree({ tree }) {
 
       {modal && (
         <CategoryModal
+          focusAvailable={focusAvailable}
           modal={modal}
           onClose={() => setModal(null)}
           onDone={(msg) => { setModal(null); setFlash(msg); router.refresh(); }}
@@ -216,7 +218,7 @@ export default function CategoryTree({ tree }) {
 }
 
 // ── add / edit modal ─────────────────────────────────────────────────────────
-function CategoryModal({ modal, onClose, onDone, onError }) {
+function CategoryModal({ modal, focusAvailable, onClose, onDone, onError }) {
   const t = useT();
   const { lang } = usePanelLang();
   const editing = modal.mode === "edit";
@@ -228,22 +230,10 @@ function CategoryModal({ modal, onClose, onDone, onError }) {
     name_fa: src?.name_fa || "", name_en: src?.name_en || "",
     name_ru: src?.name_ru || "", name_tg: src?.name_tg || "",
     icon: src?.icon || "", image_url: src?.image_url || "",
+    image_focus_x: src?.image_focus_x ?? "", image_focus_y: src?.image_focus_y ?? "",
   });
   const [busy, setBusy] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
-
-  async function uploadImage(e) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setUploading(true);
-    const fd = new FormData(); fd.append("file", file);
-    const res = await uploadCategoryImage(fd);
-    setUploading(false);
-    if (res?.ok) setF((s) => ({ ...s, image_url: res.path }));
-    else onError(t(res?.error) || t("آپلود ناموفق بود."));
-  }
 
   async function save() {
     setBusy(true);
@@ -282,16 +272,11 @@ function CategoryModal({ modal, onClose, onDone, onError }) {
           </div>
           <Field label={t("آیکن (نام Lucide، اختیاری)")}><Input value={f.icon} onChange={set("icon")} placeholder="droplet" dir="ltr" /></Field>
           <Field label={t("تصویر دسته (اختیاری) — روی صفحهٔ World نمایش داده می‌شود")}>
-            <div className="flex items-center gap-3">
-              <span className="w-16 h-16 rounded-xl overflow-hidden bg-line-soft grid place-items-center shrink-0">
-                {f.image_url ? <img src={beautyImageUrl(f.image_url)} alt="" className="w-full h-full object-cover" /> : <Icon name="image" size={20} className="text-ink-faint" />}
-              </span>
-              <label className="btn-ghost size-sm cursor-pointer disabled:opacity-60">
-                {uploading ? <Spinner /> : <Icon name="upload" size={15} />} {uploading ? t("در حال آپلود…") : t("آپلود تصویر")}
-                <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" className="hidden" onChange={uploadImage} disabled={uploading} />
-              </label>
-              {f.image_url && <button type="button" onClick={() => setF((s) => ({ ...s, image_url: "" }))} className="btn-ghost size-sm text-warn"><Icon name="trash" size={15} /> {t("حذف")}</button>}
-            </div>
+            <CategoryImageField
+              value={f.image_url} focus={f.image_focus_x === "" ? null : { x: f.image_focus_x, y: f.image_focus_y }} focusAvailable={focusAvailable}
+              srcOf={(v) => beautyImageUrl(v)} upload={uploadCategoryImage} onError={onError}
+              onChange={({ image_url, focus }) => setF((s) => ({ ...s, image_url, image_focus_x: focus ? focus.x : "", image_focus_y: focus ? focus.y : "" }))}
+            />
           </Field>
         </div>
         <div className="flex items-center justify-end gap-2 p-5 border-t border-line">

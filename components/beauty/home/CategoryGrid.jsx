@@ -11,6 +11,7 @@
 // departments holding 45 groups and 141 subgroups, every one of them live and
 // photographed, so the section reads from the tree and links into it. A card
 // says how many sections are actually behind it instead of promising later.
+import { focusStyle } from "@/lib/imageFocus";
 import { getBeautyTranslations as getTranslations } from "@/components/beauty/i18n";
 import { getBeautyCategoryTree, beautyImageUrl } from "@/lib/beauty/catalog";
 import { nameOf, deptHref, worldsHref, DEPT_IMG, gradFor, copyFor } from "@/lib/beauty/worlds";
@@ -83,6 +84,7 @@ export default async function CategoryGrid({ lang }) {
                             alt=""
                             loading={i < 2 ? "eager" : "lazy"}
                             decoding="async"
+                            style={dept.image_url ? { objectPosition: focusStyle(dept) } : undefined}
                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.05]"
                           />
                         ) : (

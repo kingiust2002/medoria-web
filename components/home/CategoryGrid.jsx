@@ -3,7 +3,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getCategories, getProducts } from "@/lib/supabase";
+import { getCategories, getProducts, imageUrl } from "@/lib/supabase";
+import { focusStyle } from "@/lib/imageFocus";
 import { getTranslations } from "@/lib/i18n";
 import { buildHealthCategoryTree, healthCategoryName, rollupHealthCategoryCounts } from "@/lib/health/categories";
 import Icon from "@/components/shared/Icon";
@@ -73,8 +74,14 @@ export default function CategoryGrid({ lang }) {
                   ) : (
                     <Link href={category.children?.length ? `/health/${lang}/categories/${category.slug}` : `/health/${lang}/catalog?category=${category.slug}`} className="card card-hover overflow-hidden group p-5 text-center block h-full">
                       <div className="relative w-14 h-14 mx-auto mb-3 rounded-2xl bg-brand-violet/[0.08] text-brand-violet flex items-center justify-center transition-all duration-300 group-hover:text-white group-hover:shadow-brand group-hover:-translate-y-0.5">
-                        <span className="absolute inset-0 rounded-2xl bg-brand-gradient opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <HealthCategoryIcon name={iconNames[index]} size={28} strokeWidth={1.6} className="relative" />
+                        {category.image_url ? (
+                          <img src={imageUrl(category.image_url)} alt="" loading="lazy" decoding="async" style={{ objectPosition: focusStyle(category) }} className="absolute inset-0 w-full h-full rounded-2xl object-cover" />
+                        ) : (
+                          <>
+                            <span className="absolute inset-0 rounded-2xl bg-brand-gradient opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <HealthCategoryIcon name={iconNames[index]} size={28} strokeWidth={1.6} className="relative" />
+                          </>
+                        )}
                       </div>
                       <div className="font-semibold text-[13px] md:text-sm text-ink leading-tight mb-1 group-hover:text-brand-violet transition-colors">{healthCategoryName(category, lang)}</div>
                       <div className="text-[11px] text-ink-faint">{labelFor(category.total_count || 0, lang)}</div>
