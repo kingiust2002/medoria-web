@@ -6,12 +6,29 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 
 const script = fileURLToPath(new URL("../scripts/check-rls.mjs", import.meta.url));
 let mode = "closed";
 const writes = [];
 let server;
 let base;
+// These migrations deliberately use natural/composite keys, without `id`.
+// Read their column declarations independently of the checker's key mapping so
+// the mock cannot hide a bad SELECT behind a generic permission denial.
+const keylessColumns = Object.fromEntries(Object.entries({
+  publish_rules: "46_publish_rules.sql",
+  operator_preferences: "50_operator_preferences.sql",
+  operator_table_columns: "55_operator_table_columns.sql",
+  ops_status: "52_ops_status.sql",
+}).map(([table, migration]) => {
+  const sql = readFileSync(new URL(`../migrations/${migration}`, import.meta.url), "utf8");
+  const definition = new RegExp(`CREATE TABLE IF NOT EXISTS public\\.${table} \\(([\\s\\S]*?)\\n\\);`).exec(sql)?.[1];
+  assert.ok(definition, `${table}: fixture must find the real table`);
+  const columns = definition.split("\n").flatMap((line) => /^\s+([a-z_]+)\s+[A-Z]/.exec(line)?.slice(1) || []);
+  assert.ok(columns.length && !columns.includes("id"), `${table}: a keyless fixture is required`);
+  return [table, columns];
+}));
 
 function handle(req, res) {
   const u = new URL(req.url, "http://mock");
@@ -51,6 +68,7 @@ function handle(req, res) {
   // Match migration 30's real schema. SQL resolves selected columns before checking table grants:
   // querying the nonexistent `id` must not be hidden by this fixture's generic 403 response.
   const securityColumns = {
+    ...keylessColumns,
     operator_sessions: ["sid", "panel", "created_at", "expires_at", "revoked_at", "ip_hash"],
     operator_totp_state: ["panel", "last_step", "updated_at"],
     operator_recovery_used: ["panel", "code_hash", "used_at"],
@@ -58,6 +76,8 @@ function handle(req, res) {
   if (securityColumns[table] && u.searchParams.get("select")?.split(",").some((c) => !securityColumns[table].includes(c))) {
     return json(400, { code: "42703", message: "selected column does not exist" });
   }
+  if (mode === "keyless400" && keylessColumns[table]) return json(400, { code: "42703", message: "selected column does not exist" });
+  if (mode === "emptyproducts" && table === "products") return json(200, []);
   // migration 44: a variant is not a public row (the public policy requires variant_of IS NULL); an open project would show them
   if (u.searchParams.get("variant_of") === "not.is.null" && (table === "products" || table === "beauty_products")) return json(200, open ? [{ id: 4 }] : []);
   const archivedOnly = u.searchParams.get("is_active") === "eq.false";
@@ -95,6 +115,35 @@ test("a hardened project passes every check", async () => {
   assert.match(out, /archived \(inactive\) Health products/);
   assert.match(out, /beauty_quote_requests/);
   assert.match(out, /signup is disabled/);
+});
+
+test("keyless private tables use columns from the real migrations and prove actual denials", async () => {
+  mode = "closed";
+  const { code, out } = await run();
+  assert.equal(code, 0, out);
+  for (const table of Object.keys(keylessColumns)) {
+    assert.match(out, new RegExp(`✓ PASS\\s+anon CANNOT read ${table}\\s+— HTTP 403 42501`), out);
+  }
+});
+
+test("a real 400 for a keyless table stays UNKNOWN, never a privacy pass", async () => {
+  mode = "keyless400";
+  const { code, out } = await run();
+  assert.equal(code, 3, out);
+  for (const table of Object.keys(keylessColumns)) {
+    assert.match(out, new RegExp(`\\? UNKNOWN\\s+anon CANNOT read ${table}\\s+— unexpected HTTP 400`), out);
+  }
+});
+
+test("no active Health products stays inconclusive while keyless privacy probes can pass", async () => {
+  mode = "emptyproducts";
+  const { code, out } = await run();
+  assert.equal(code, 3, out);
+  assert.match(out, /\? UNKNOWN\s+anon can read products/);
+  assert.match(out, /57 passed, 0 failed, 1 unknown/);
+  for (const table of Object.keys(keylessColumns)) {
+    assert.match(out, new RegExp(`✓ PASS\\s+anon CANNOT read ${table}`), out);
+  }
 });
 
 test("an open project fails: archived products, customer data and open signup are all reported", async () => {
