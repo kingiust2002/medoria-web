@@ -10,6 +10,7 @@ import { cleanBulkPatch, bulkOpsOf, cleanIds, cleanAllowedColumns, applyBulkChan
 import { submitImport, cleanImportRows, IMPORT_SUBMIT_MESSAGES as M } from "../lib/operator/importSubmit.js";
 import { runApprovedImport } from "../lib/operator/importApproved.js";
 import { makeProductExecutors } from "../lib/operator/approvalExecutors.js";
+import { approve as approveAction } from "../lib/operator/approvalActionsCore.js";
 import { approveRequest } from "../lib/operator/approvals.js";
 import { fileForApproval } from "../lib/operator/approvalFlow.js";
 import { evaluateAll } from "../lib/operator/access.js";
@@ -230,4 +231,18 @@ test("wiring: filing for approval in both houses, the helpers allow people who m
   }
   assert.match(read("lib/operator/approvalActionsCore.js"), /proposed: proposedView\(r\)/);
   assert.match(read("lib/operator/approvalActionsCore.js"), /r\.operation === "products\.import"/);
+});
+
+
+test("approval action preserves partial writes and stale lists instead of reporting an unqualified result", async () => {
+  await fileBulkChange(actx(requesterRow), { house: "health", ids: [1, 2], allowed: { is_active: true } });
+  const ctx = { ...actx(reviewerRow), executors: { "products.bulk": async () => ({ ok: false, error: "failed", done: [1], notDone: [2] }) } };
+  const failed = await approveAction(ctx, reqs()[0].id);
+  assert.equal(failed.ok, false);
+  assert.deepEqual(failed.execution.done, [1]);
+  assert.deepEqual(failed.execution.notDone, [2]);
+  await fileBulkChange(actx(requesterRow), { house: "health", ids: [1, 2], allowed: { is_active: false } });
+  ctx.executors["products.bulk"] = async () => ({ ok: true, count: 1, stale: [2], secret: "never render" });
+  const mixed = await approveAction(ctx, reqs()[1].id);
+  assert.deepEqual(mixed.execution, { count: 1, stale: [2] });
 });

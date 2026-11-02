@@ -12,6 +12,12 @@ import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { formatDate, tr } from "@/lib/panel/i18n";
 import { FIELD_LABELS, OPERATION_LABELS } from "@/lib/operator/userLabels";
 
+const OUTCOME_LABELS = {
+  count: tr("تعداد تغییرکرده"), done: tr("شناسه‌های انجام‌شده"), notDone: tr("شناسه‌های انجام‌نشده"),
+  stale: tr("شناسه‌های تغییرکرده در این فاصله"), staleIds: tr("شناسه‌های تغییرکرده در این فاصله"), failedRows: tr("ردیف‌های ناموفق فایل"),
+  create: tr("تعداد ساخته‌شده"), update: tr("تعداد ویرایش‌شده"), error: tr("تعداد خطا"), skip: tr("تعداد ردشده بدون تغییر"),
+};
+
 const STATUS = {
   pending: { label: tr("منتظر تأیید"), tone: "warn" }, approved: { label: tr("تأیید و اجرا شد"), tone: "ok" }, rejected: { label: tr("رد شد"), tone: "neutral" },
   cancelled: { label: tr("پس گرفته شد"), tone: "neutral" }, superseded: { label: tr("منتفی شد"), tone: "neutral" }, failed: { label: tr("اجرا نشد"), tone: "warn" },
@@ -77,8 +83,8 @@ function Card({ r, mode, actions, onResult }) {
     setBusy(true); setErr("");
     const res = await fn().catch(() => null);
     setBusy(false);
-    if (res?.ok) { setRejecting(false); setReason(""); onResult(res.message ? t(res.message) : okText); }
-    else { setErr(t(res?.error) || t("ذخیره نشد. دوباره تلاش کنید.")); onResult(null, true); }
+    if (res?.ok) { setRejecting(false); setReason(""); onResult(res.message ? t(res.message) : okText, false, res.execution); }
+    else { setErr(t(res?.error) || t("ذخیره نشد. دوباره تلاش کنید.")); onResult(null, true, res?.execution); }
   }
 
   return (
@@ -98,7 +104,7 @@ function Card({ r, mode, actions, onResult }) {
       {previewHref(r) && <div><a href={previewHref(r)} target="_blank" rel="noopener noreferrer" className="btn-ghost size-sm" data-testid="request-preview"><Icon name="eye" size={15} /> {t("پیش‌نمایش پیشنهاد روی سایت")}</a></div>}
       {r.reason && <p className="text-xs text-ink-soft break-words">{r.reason}</p>}
       {r.status === "rejected" && r.reviewReason && <p className="text-xs text-warn break-words" data-testid="review-reason">{t("دلیل رد: {reason}", { reason: r.reviewReason })}{r.reviewedBy ? ` — ${r.reviewedBy}` : ""}</p>}
-      {r.status === "failed" && <p className="text-xs text-warn break-words">{r.execError === "stale" ? t("پس از ثبت درخواست، این رکورد تغییر کرده بود؛ تغییر اعمال نشد.") : r.execError === "quality" ? t("قوانین کیفیت انتشار رعایت نشده است (یا قوانین خوانده نشد)؛ محصول منتشر نشد و چیزی تغییر نکرد.") : t("اجرای تغییر ناموفق بود؛ چیزی تغییر نکرد.")}</p>}
+      {r.status === "failed" && <p className="text-xs text-warn break-words">{r.execError === "stale" ? t("پس از ثبت درخواست، این رکورد تغییر کرده بود؛ تغییر اعمال نشد.") : r.execError === "quality" ? t("قوانین کیفیت انتشار رعایت نشده است (یا قوانین خوانده نشد)؛ محصول منتشر نشد و چیزی تغییر نکرد.") : t("اجرای تغییر کامل نشد؛ ممکن است بخشی ذخیره شده باشد. نتیجه و تاریخچه را بررسی کنید.")}</p>}
       {err && <p role="alert" className="text-xs text-warn break-words">{err}</p>}
 
       {mode === "review" && r.status === "pending" && (
@@ -126,12 +132,17 @@ export default function ApprovalsManager({ toReview, mine, minePaging = null, ba
   const t = useT();
   const router = useRouter();
   const [notice, setNotice] = useState(sent ? t("برای تأیید ارسال شد؛ تا زمان تأیید، چیزی در سایت تغییر نمی‌کند.") : "");
-  const onResult = (message, failed) => { if (message) setNotice(message); router.refresh(); void failed; };
+  const [execution, setExecution] = useState(null);
+  const onResult = (message, failed, result) => { if (message) setNotice(message); setExecution(result || null); router.refresh(); void failed; };
   return (
     <div className="grid gap-5">
       {loadError && <div role="alert" className="card p-4 text-sm text-warn">{t(loadError)}</div>}
       {notice && <div role="status" className="card p-3 text-sm text-ink-soft flex items-start justify-between gap-3"><span className="min-w-0 break-words">{notice}</span><button type="button" onClick={() => setNotice("")} aria-label={t("بستن")} className="text-ink-muted shrink-0"><Icon name="close" size={16} /></button></div>}
 
+      {execution && <div className="card p-3 text-sm" role="status" data-testid="approval-execution">
+        <p className="font-medium">{t("نتیجه")}</p>
+        <dl className="grid gap-1 mt-2">{Object.entries(execution).map(([key, value]) => <div key={key} className="flex flex-wrap gap-x-2 min-w-0"><dt>{t(OUTCOME_LABELS[key])}:</dt><dd className="min-w-0 break-words">{Array.isArray(value) ? value.join(", ") || "—" : value}</dd></div>)}</dl>
+      </div>}
       <SectionCard title={t("منتظر بررسی شما")} icon="check" desc={t("تغییرهایی که همکاران خواسته‌اند؛ تا تأیید نشوند، چیزی در سایت عوض نمی‌شود.")}>
         {toReview.length === 0 ? <EmptyState icon="check" title={t("موردی برای بررسی نیست")} /> : (
           <ul className="grid gap-3" data-testid="to-review">{toReview.map((r) => <Card key={r.id} r={r} mode="review" actions={actions} onResult={onResult} />)}</ul>
