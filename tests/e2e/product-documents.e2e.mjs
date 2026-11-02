@@ -41,7 +41,7 @@ test("Health: upload as a draft → publish → public link works → hide → e
   await addDoc(page, { kind: "datasheet", lang: "en" });
   const row = page.getByTestId("document-row").first();
   await row.waitFor();
-  assert.equal(await page.getByTestId("document-title").count(), 0, "the form closed");
+  await poll(async () => (await page.getByTestId("document-title").count()) === 0, { label: "the upload form closed" });
   assert.match(await row.innerText(), /datasheet 2026/, "the title was taken from the file name");
   assert.match(await row.getByTestId("document-state").innerText(), /پیش‌نویس/);
   let [d] = await docs();
@@ -53,7 +53,9 @@ test("Health: upload as a draft → publish → public link works → hide → e
   // a draft is not on the public page
   const pub = await ctx.newPage();
   await pub.goto(`${BASE}/health/en/catalog/e2e-gloves`, { waitUntil: "networkidle" });
-  assert.equal(await pub.getByTestId("product-documents").count(), 0);
+  // File access is immediate; ISR page metadata may need its background refresh.
+  assert.equal((await fetch(`${BASE}/api/documents/health/${d.id}`)).status, 404, "the draft PDF cannot be downloaded");
+  await poll(async () => { await pub.reload({ waitUntil: "load" }); return (await pub.getByTestId("product-documents").count()) === 0; }, { timeout: 60000, interval: 1500, label: "the public page has no draft document" });
 
   // publish → public section with a link that serves the PDF
   await row.getByTestId("document-publish").click();
@@ -75,6 +77,8 @@ test("Health: upload as a draft → publish → public link works → hide → e
   await poll(async () => (await docs())[0].is_published === false, { label: "hidden" });
   await poll(async () => { await pub.reload({ waitUntil: "load" }); return (await pub.getByTestId("product-documents").count()) === 0; }, { timeout: 60000, interval: 1500, label: "gone from the public page" });
 
+  await poll(async () => /پیش‌نویس/.test(await row.getByTestId("document-state").innerText()), { label: "the hidden state is rendered" });
+
   // edit: kind / title / an expiry date in the past (published again → still not shown) 
   await row.getByTestId("document-edit").click();
   const ef = page.getByTestId("document-edit-form");
@@ -85,7 +89,12 @@ test("Health: upload as a draft → publish → public link works → hide → e
   await poll(async () => (await docs())[0].title === "ISO certificate", { label: "edited" });
   [d] = await docs();
   assert.deepEqual([d.kind, d.valid_until], ["certificate", "2020-01-01"]);
-  assert.match(await page.getByTestId("document-row").first().innerText(), /منقضی/);
+  // The DB write can finish before the action response refreshes the React row.
+  // Wait for the user-visible result; a DB poll alone is not a DOM readiness signal.
+  await poll(async () => (await page.getByTestId("document-edit-form").count()) === 0
+    && /ISO certificate/.test(await row.innerText())
+    && (await row.getByText("منقضی", { exact: true }).count()) === 1,
+  { label: "the edited certificate is rendered as expired" });
 
   // delete: asks first; the row and the file go together
   const row2 = page.getByTestId("document-row").first();
@@ -93,7 +102,7 @@ test("Health: upload as a draft → publish → public link works → hide → e
   assert.equal((await docs()).length, 1, "asking is not deleting");
   await row2.getByTestId("document-delete-confirm").click();
   await poll(async () => (await docs()).length === 0, { label: "row deleted" });
-  assert.equal((await objects()).length, 0, "the file went with it");
+  await poll(async () => (await objects()).length === 0 && (await page.getByTestId("document-row").count()) === 0, { label: "the file is removed and the document row disappears" });
   assert.ok((await state()).operator_audit_log.some((r) => r.action === "document.delete"));
   await ctx.close();
 });
