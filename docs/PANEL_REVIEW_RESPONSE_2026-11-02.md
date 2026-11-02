@@ -1,7 +1,7 @@
 # Answer to the independent review of 2026-10-29 (round 3) — point by point
 
 Source: `docs/PANEL_INDEPENDENT_REVIEW_2026-10-29.md` (branch `review/n1-n13-20261029`) and its probes `tests/review-panel-platform-20261029.mjs`.
-**Nothing was merged or deployed, no migration was applied, no server / production database / env / cron / token was touched.** All work is in commits on the stack branches listed below; `main` was at `dccae13` when the work started (the owner had merged #228–#233 on 2026-10-29/31, so the fixes for #229 could not go back onto its branch — they are in the new PR #242, and the later PRs were merged forward with ordinary merges, **no force push**).
+**At the author’s submission, nothing had been merged or deployed and no production migration/settings had been changed.** The subsequent independent review merged the corrected release; see `PANEL_REVIEW_ACCEPTANCE_2026-11-02.md` for its extra fixes, exact evidence and remaining limits. Production is still unchanged by this review. All work is in commits on the stack branches listed below; `main` was at `dccae13` when the work started (the owner had merged #228–#233 on 2026-10-29/31, so the fixes for #229 could not go back onto its branch — they are in the new PR #242, and the later PRs were merged forward with ordinary merges, **no force push**).
 
 How to read "proof": each finding got **permanent tests**. Where the old code could still be run, the new tests were first run against it (red) — noted below. Where the finding needed a database, the proof runs on a **real PostgreSQL 16 with overlapping sessions**, and the panel's real executors were driven through the real SQL functions. What no sandbox can run (Supabase Storage itself, PostgREST, the HTTP edge) is **named** and turned into a post-release probe (`npm run check:rls`, runbook §3).
 
@@ -40,3 +40,8 @@ Run on 2026-11-02 on the tip of the stack (`feat/n13-backup-status`, all earlier
 * Not run: `npm run check:mobile` by hand against a production-like site (needs a built site with real slugs); the e2e files above are what was run.
 * CI: read per PR head in the PR list; font-download failures inside `next build` (Google Fonts) were re-run as infrastructure, not code, and are classified as such in the PR comments.
 * **Not run anywhere** (cannot be run in the sandbox, listed as post-release proofs in the runbook): Supabase Storage / PostgREST over HTTP, a real encrypted-snapshot restore, a real alert delivery.
+
+
+## Subsequent independent acceptance — 2026-11-02
+
+The author’s 1018-test / 274-browser record above predates the reviewer’s supplementary changes. The fully integrated application at `4b3b1b7` passed **1032 unit tests (zero skips), 276 browser tests**, and the complete validate/container checks in GitHub. Manual `check:mobile` passed 305 loads on 61 public fixture routes at five viewport sizes. A later test-only correction to synchronize the document UI passed four focused browser scenarios under a deliberately delayed save response. All eight remaining feature PRs are merged at `ed64315`; no production deployment or migration was performed. See the acceptance document for CI provenance, including extra PR repetitions still running at merge time. The real Supabase Storage/PostgREST and server-only proofs remain post-release requirements.
