@@ -47,7 +47,7 @@ test("Health: upload as a draft → publish → public link works → hide → e
   let [d] = await docs();
   assert.deepEqual([d.product_id, d.kind, d.lang, d.is_published], [1, "datasheet", "en", false]);
   assert.match(d.file_path, /^documents\/\d+-[a-z0-9]+-datasheet-2026\.pdf$/);
-  assert.deepEqual((await objects()).map((o) => [o.bucket, o.name]), [["product-images", d.file_path]]);
+  assert.deepEqual((await objects()).map((o) => [o.bucket, o.name]), [["product-documents", d.file_path]]);
   assert.equal((await state()).operator_audit_log.filter((r) => r.action === "document.create").length, 1);
 
   // a draft is not on the public page
@@ -64,7 +64,9 @@ test("Health: upload as a draft → publish → public link works → hide → e
   const link = pub.getByTestId("product-document-link").first();
   assert.match(await link.innerText(), /datasheet 2026/); assert.match(await link.innerText(), /Datasheet/); assert.match(await link.innerText(), /English/);
   assert.equal(await link.getAttribute("target"), "_blank"); assert.match(await link.getAttribute("rel"), /noopener/);
-  const res = await fetch(await link.getAttribute("href"));
+  const href = await link.getAttribute("href");
+  assert.match(href, /^\/api\/documents\/health\/\d+$/, "the link is the download route, never a storage address");
+  const res = await fetch(new URL(href, BASE));
   assert.equal(res.status, 200); assert.equal(res.headers.get("content-type"), "application/pdf");
   assert.ok((await res.text()).startsWith("%PDF-"));
 
@@ -134,7 +136,7 @@ test("Beauty: the same flow in its own table and bucket; the public product page
   assert.equal((await docs()).length, 0, "Health's table is untouched");
   const [d] = await docs("beauty_product_documents");
   assert.deepEqual([d.product_id, d.kind, d.is_published], [11, "brochure", false]);
-  assert.deepEqual((await objects()).map((o) => o.bucket), ["beauty-product-images"]);
+  assert.deepEqual((await objects()).map((o) => o.bucket), ["beauty-product-documents"]);
   await page.getByTestId("document-publish").click();
   await poll(async () => (await docs("beauty_product_documents"))[0].is_published === true, { label: "published" });
   const pub = await ctx.newPage();

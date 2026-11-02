@@ -59,7 +59,7 @@ export default async function ProductPage(props) {
   if (!product) notFound();
 
   const variants = await getProductVariants(product.id);        // [] for an ordinary product and before migration 44
-  const documents = publicDocumentItems(await getProductDocuments(product.id), lang, imageUrl);       // published, still valid; [] before migration 48
+  const documents = publicDocumentItems(await getProductDocuments(product.id), lang, (d) => `/api/documents/health/${d.id}`);       // published, still valid; [] before migration 48
   const name = product[`name_${lang}`] || product.name_en;
   const desc = product[`description_${lang}`] || product.description_en || "";
   const productLd = {

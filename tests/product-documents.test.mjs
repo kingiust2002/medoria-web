@@ -80,7 +80,7 @@ function ctxFor(db, panel, { allow = ["documents.create", "documents.edit", "doc
   return {
     logged, filed, revalidated: [],
     ctx: {
-      admin: db, panel, session: { user: { id: "u1", username: "sara" } }, audit: async (...x) => logged.push(x), revalidate: () => filed.push("revalidate"),
+      admin: db, panel, session: { user: { id: "u1", username: "sara" } }, audit: async (...x) => { logged.push(x); return { ok: true }; }, revalidate: () => filed.push("revalidate"),
       require: async (ops) => ([].concat(ops).every((o) => allow.includes(o)) ? null : { ok: false, denied: true, error: "no" }),
       evaluate: async (ops) => { const o = [].concat(ops)[0]; if (!allow.includes(o)) return { mode: "denied", refusal: { ok: false, denied: true, error: "no" } }; return { mode: approval.includes(o) ? "approval" : "direct" }; },
       file: async (spec) => { filed.push(spec); return { ok: true, pending: true, message: "filed" }; },
@@ -90,7 +90,7 @@ function ctxFor(db, panel, { allow = ["documents.create", "documents.edit", "doc
 const add = (c, o = {}) => addDocument(c.ctx, o.product ?? 1, form({ file: o.file ?? file(), title: "Brochure", kind: "brochure", lang: "en", valid_until: "", ...o.fields }));
 
 for (const house of ["health", "beauty"]) {
-  const T = house === "health" ? "product_documents" : "beauty_product_documents", BUCKET = house === "health" ? "product-images" : "beauty-product-images";
+  const T = house === "health" ? "product_documents" : "beauty_product_documents", BUCKET = house === "health" ? "product-documents" : "beauty-product-documents";
 
   test(`${house}: a document is added as a DRAFT — the file goes to the house's own bucket (folder documents/), the row carries its size and SHA-256, the log has the product`, async () => {
     const db = world(house), c = ctxFor(db, house);
@@ -194,7 +194,7 @@ for (const house of ["health", "beauty"]) {
   test(`${house}: the approval executors apply a request only to the version it was filed against; the file goes with the row`, async () => {
     const db = world(house), c = ctxFor(db, house);
     await add(c);
-    const ex = makeDocumentExecutors({ panel: house });
+    const auditLog = []; const ex = makeDocumentExecutors({ panel: house, audit: async (e) => { auditLog.push(e.action); return { ok: true }; } });
     const base = db.tables[T][0].updated_at;
     const req = (op) => ({ id: "r", operation: op, entity_id: 1, base_updated_at: base });
     assert.deepEqual(await ex["documents.publish"]({ admin: db, request: { ...req("documents.publish"), base_updated_at: null } }), { ok: false, error: "stale" });
@@ -234,8 +234,8 @@ test("the operations: creating needs documents.create; publishing and deleting c
   assert.ok(!/documentActions/.test(read("components/beauty/operator/ProductForm.jsx")));
   const core = read("lib/operator/documentsCore.js");
   assert.match(core, /DOC_TABLES\[ctx\.panel\]/); assert.ok(!/from\("product_documents"\)|from\("beauty_product_documents"\)/.test(core), "the table always comes from the house in the context");
-  assert.match(read("lib/operator/approvalActions.js"), /makeDocumentExecutors\(\{ panel: "health" \}\)/);
-  assert.match(read("lib/beauty/operator/approvalActions.js"), /makeDocumentExecutors\(\{ panel: "beauty" \}\)/);
+  assert.match(read("lib/operator/approvalActions.js"), /makeDocumentExecutors\(\{ panel: "health", audit: auditEntry \}\)/);
+  assert.match(read("lib/beauty/operator/approvalActions.js"), /makeDocumentExecutors\(\{ panel: "beauty", audit: auditEntry \}\)/);
 });
 
 // ── the public page ──────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -244,11 +244,11 @@ test("the public list: titles, kinds and details in the visitor's language; link
     { id: 1, kind: "certificate", title: "ISO certificate", lang: "en", valid_until: "2030-05-01", file_path: "documents/a.pdf", file_size: 2_621_440 },
     { id: 2, kind: "brochure", title: "Брошюра", lang: null, valid_until: null, file_path: "documents/b.pdf", file_size: 900 },
     { id: 3, kind: "weird", title: "Odd", file_path: "documents/c.pdf", file_size: 0 },
-    { id: 4, kind: "manual", title: "", file_path: "documents/d.pdf" }, { id: 5, kind: "manual", title: "No file" }, null,
+    { id: 4, kind: "manual", title: "" }, { kind: "manual", title: "No id" }, null,
   ];
-  const urlOf = (p) => `https://cdn/x/${p}`;
+  const urlOf = (d) => `/api/documents/health/${d.id}`;
   const en = publicDocumentItems(rows, "en", urlOf);
-  assert.deepEqual(en.map((d) => [d.id, d.href, d.kindLabel, d.meta]), [[1, "https://cdn/x/documents/a.pdf", "Certificate", "English · valid until 2030-05-01 · 2.5 MB"], [2, "https://cdn/x/documents/b.pdf", "Brochure", "1 KB"], [3, "https://cdn/x/documents/c.pdf", "Document", ""]]);
+  assert.deepEqual(en.map((d) => [d.id, d.href, d.kindLabel, d.meta]), [[1, "/api/documents/health/1", "Certificate", "English · valid until 2030-05-01 · 2.5 MB"], [2, "/api/documents/health/2", "Brochure", "1 KB"], [3, "/api/documents/health/3", "Document", ""]]);
   assert.equal(publicDocumentItems(rows, "tg", urlOf)[0].kindLabel, "Шаҳодатнома");
   assert.equal(publicDocumentItems(rows, "fa", urlOf)[0].meta.startsWith("انگلیسی · اعتبار تا"), true);
   assert.equal(publicDocumentItems(rows, "xx", urlOf)[0].kindLabel, "Certificate", "an unknown language falls back to English");
@@ -260,8 +260,8 @@ test("both public product pages ask the database function only (never the table)
   assert.match(read("lib/supabase.js"), /rpc\("public_product_documents", \{ p_product: id \}, \{ get: true \}\)/);
   assert.match(read("lib/beauty/catalog.js"), /rpc\("public_beauty_product_documents", \{ p_product: id \}, \{ get: true \}\)/);
   for (const f of ["lib/supabase.js", "lib/beauty/catalog.js", "lib/productDocuments.js", "components/product/ProductDocuments.jsx"]) assert.ok(!/from\("(beauty_)?product_documents"\)/.test(read(f)), `${f} must not read the private table`);
-  assert.match(read("app/health/[lang]/catalog/[slug]/page.jsx"), /publicDocumentItems\(await getProductDocuments\(product\.id\), lang, imageUrl\)/);
-  assert.match(read("app/beauty/[lang]/catalog/[slug]/page.jsx"), /publicDocumentItems\(docRows, lang, beautyImageUrl\)/);
+  assert.match(read("app/health/[lang]/catalog/[slug]/page.jsx"), /publicDocumentItems\(await getProductDocuments\(product\.id\), lang, \(d\) => `\/api\/documents\/health\/\$\{d\.id\}`\)/);
+  assert.match(read("app/beauty/[lang]/catalog/[slug]/page.jsx"), /publicDocumentItems\(docRows, lang, \(d\) => `\/api\/documents\/beauty\/\$\{d\.id\}`\)/);
   assert.match(read("app/health/[lang]/catalog/[slug]/ProductDetailClient.jsx"), /<ProductDocuments items=\{documents\} lang=\{lang\} \/>/);
   assert.match(read("components/beauty/BeautyProductView.jsx"), /<ProductDocuments items=\{documents\} lang=\{lang\} \/>/);
   assert.match(read("lib/supabase.js"), /error\.code !== "PGRST202" && error\.code !== "42883"/, "a missing function (migration not applied) is silent");

@@ -97,3 +97,6 @@ Each item is its own PR on top of the previous one, from current `main`. Nothing
 Branch `fix/approved-destructive-atomic` from `main` (`dccae13`; #229–#233 were merged by the owner after the review). Migration 53 (not applied) + the executors of
 `lib/operator/{categoryDelete,destructiveApproval,destructiveFlow}.js` now delete only what the reviewer saw, in one database transaction. Details, tests and limits:
 `docs/PANEL_ATOMIC_DELETES.md`. Verified: 24 SQL tests + 16 real-executor tests on PostgreSQL 16 (overlapping sessions), full unit suite 777/777, lint clean, the related browser files green.
+
+## 2026-11-02 — review round 3, step 3: documents in private storage; deletion under the audit rule (R1, R2) + product history keeps its pictures (R4)
+R4 on `feat/n7-category-brand-images` (usage scan reads every version and every nested pending proposal; `docs/PANEL_CATEGORY_IMAGES.md`). R1/R2 on `feat/n8-product-documents`: migration 54 (private buckets, no storage path in the public list, a visibility function), one serving module with three routes, attempt-first deletion (`docs/PANEL_PRODUCT_DOCUMENTS.md`, "Round 3"). #234 now targets `fix/approved-destructive-atomic` so its diff shows only its own work.

@@ -17,6 +17,16 @@ import { parseFilterExpr, nodeTest } from "../helpers/postgrestFilter.mjs";
 import { productGaps } from "../../lib/operator/completeness.js";
 import { phoneKey } from "../../lib/operator/quoteOps.js";
 const ATOMIC_DELETES = atomicDeleteRpc();
+const PRIVATE_BUCKETS = new Set(["product-documents", "beauty-product-documents"]);
+// public_product_document_visible / public_beauty_product_document_visible (migration 54): published, not expired, active parent that is not a variant
+function documentVisibleRpc(tables, name, body) {
+  const house = name === "public_product_document_visible" ? "health" : name === "public_beauty_product_document_visible" ? "beauty" : null;
+  if (!house) return undefined;
+  const doc = (tables[house === "health" ? "product_documents" : "beauty_product_documents"] || []).find((d) => d.id === body.p_id);
+  const parent = doc && (tables[house === "health" ? "products" : "beauty_products"] || []).find((p) => p.id === doc.product_id);
+  const today = new Date(Date.now() + 5 * 3_600_000).toISOString().slice(0, 10);
+  return Boolean(doc && parent && doc.is_published && (!doc.valid_until || String(doc.valid_until) >= today) && parent.is_active && parent.variant_of == null);
+}
 
 export const ANON_KEY = "anon-test-key";
 export const SERVICE_KEY = "service-test-key";
@@ -137,7 +147,7 @@ function variantsRpc(tables, name, a) {
       .sort((x, y) => (x.variant_sort || 0) - (y.variant_sort || 0) || x.id - y.id)
       .map((v) => ({ id: v.id, sku: v.sku, options: v.variant_options, price: v.price, ...(m[1] ? {} : { currency: v.currency }), unit: v.unit, in_stock: v.in_stock, image_url: v.image_url, sort: v.variant_sort || 0 }));
   }
-  // migration 48: the published, still valid documents of an ACTIVE product that is not a variant (public columns only)
+  // migration 48 / 54: the published, still valid documents of an ACTIVE product that is not a variant (public columns only)
   const d = /^public_(beauty_)?product_documents$/.exec(name);
   if (d) {
     const products = tables[d[1] ? "beauty_products" : "products"] || [], docs = tables[d[1] ? "beauty_product_documents" : "product_documents"] || [];
@@ -146,7 +156,7 @@ function variantsRpc(tables, name, a) {
     const today = new Date(Date.now() + 5 * 3_600_000).toISOString().slice(0, 10);
     return docs.filter((x) => x.product_id === p.id && x.is_published && (!x.valid_until || x.valid_until >= today))
       .sort((x, y) => (x.sort_order || 0) - (y.sort_order || 0) || x.id - y.id)
-      .map((x) => ({ id: x.id, kind: x.kind, title: x.title, lang: x.lang ?? null, valid_until: x.valid_until ?? null, file_path: x.file_path, file_size: x.file_size }));
+      .map((x) => ({ id: x.id, kind: x.kind, title: x.title, lang: x.lang ?? null, valid_until: x.valid_until ?? null, file_size: x.file_size }));          // migration 54: no storage path
   }
   if (name === "public_variant_items") {
     const table = tables.products || [];
@@ -207,6 +217,7 @@ export function createFakeDb(seedFactory) {
     // Public file download (what the browser's <img> asks for): the bytes kept at upload time, with their type
     const pub = req.method === "GET" && url.pathname.match(/^\/storage\/v1\/object\/public\/([\w-]+)\/(.+)$/);
     if (pub) {
+      if (PRIVATE_BUCKETS.has(pub[1])) return respond(res, 400, { statusCode: "404", error: "Bucket not found", message: "Bucket not found" });          // like Supabase: a private bucket has no public address
       const o = (tables.storage_objects || []).find((x) => x.bucket === pub[1] && x.name === decodeURIComponent(pub[2]));
       if (!o?.data) return respond(res, 404, { message: "not found" });
       res.writeHead(200, { "content-type": o.type || "application/octet-stream", "cache-control": "no-store" });
@@ -226,6 +237,12 @@ export function createFakeDb(seedFactory) {
           .map((o) => ({ name: o.name.slice(prefix ? prefix.length + 1 : 0), id: o.id, created_at: o.created_at, metadata: { size: o.size } }));
         rows.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
         return respond(res, 200, rows.slice(Number(body?.offset || 0), Number(body?.offset || 0) + Number(body?.limit || 100)));
+      }
+      if (!st[1] && req.method === "GET" && st[3]) {          // the service-role client's download()
+        const o = objs.find((x) => x.bucket === bucket && x.name === decodeURIComponent(st[3]));
+        if (!o?.data) return respond(res, 400, { statusCode: "404", error: "not_found", message: "Object not found" });
+        res.writeHead(200, { "content-type": o.type || "application/octet-stream" });
+        return res.end(o.data);
       }
       if (!st[1] && req.method === "DELETE") {
         const body = await readBody(req);
@@ -252,6 +269,8 @@ export function createFakeDb(seedFactory) {
         const out = atomic(body || {}, { tables });
         return out.error ? respond(res, 400, out.error) : respond(res, 200, out.data);
       }
+      const visible = documentVisibleRpc(tables, rpc[1], body || {});                // migration 54's visibility functions
+      if (visible !== undefined) return respond(res, 200, visible);
       const variantRpc = variantsRpc(tables, rpc[1], body || {});               // migration 44's public functions
       if (variantRpc !== undefined) return respond(res, 200, variantRpc);
       try {
