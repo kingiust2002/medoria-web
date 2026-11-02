@@ -33,4 +33,10 @@ How to read "proof": each finding got **permanent tests**. Where the old code co
 | No real restore drill / outside alert delivery | Stated: **not proved here.** The temporary-database test (`tests/restore-drill.test.mjs`, a real PostgreSQL, real `pg_dump` / `pg_restore`) is separate from restoring an encrypted production snapshot, which only the owner's server can do. |
 
 ## Verification record (final tip of the stack, `feat/n13-backup-status`)
-See the end of this file (filled in after the last full run).
+Run on 2026-11-02 on the tip of the stack (`feat/n13-backup-status`, all earlier branches merged into it), locally:
+* `npm run lint` — no warnings or errors.
+* `npm test` — **1018 / 1018** (includes the PostgreSQL tests with overlapping sessions; none skipped).
+* `npm run test:e2e` (build + the full browser suite, fake database) — **274 / 274**, 0 failed (this includes the mobile-width checker files `check-mobile` / `check-mobile-fixtures`, which measure every route of both houses at 320–430 px with long unbroken strings; the new screens have their own 320 px assertions).
+* Not run: `npm run check:mobile` by hand against a production-like site (needs a built site with real slugs); the e2e files above are what was run.
+* CI: read per PR head in the PR list; font-download failures inside `next build` (Google Fonts) were re-run as infrastructure, not code, and are classified as such in the PR comments.
+* **Not run anywhere** (cannot be run in the sandbox, listed as post-release proofs in the runbook): Supabase Storage / PostgREST over HTTP, a real encrypted-snapshot restore, a real alert delivery.
