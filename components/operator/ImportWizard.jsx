@@ -72,6 +72,7 @@ export default function ImportWizard({ recentLogs = [] }) {
   const [busy, setBusy] = useState("");        // "" | "dry" | "commit"
   const [progress, setProgress] = useState(null);
   const [dry, setDry] = useState(null);        // { results, counts, createdCategories }
+  const approvalMode = importMode === "approval" || Boolean(dry?.needsApproval);          // the import itself, or a change inside the file (a price, a publication…), needs a reviewer
   const [final, setFinal] = useState(null);    // same shape, after commit
   const [filter, setFilter] = useState("all");
   const [err, setErr] = useState("");
@@ -154,6 +155,7 @@ export default function ImportWizard({ recentLogs = [] }) {
     const sendable = file.rows.map((raw, i) => ({ raw, rowNum: i + 1 })).filter((x) => !dupRows.has(x.rowNum));
     const merged = [];
     const createdCats = new Set();
+    let needsApproval = false, denied = false;          // from the server: what the rows REALLY change (a price, a publication…) against this person's rights
     try {
       for (let i = 0; i < sendable.length; i += DRY_CHUNK) {
         const chunk = sendable.slice(i, i + DRY_CHUNK);
@@ -164,6 +166,7 @@ export default function ImportWizard({ recentLogs = [] }) {
           if (meta) merged.push({ ...out, rowNum: meta.rowNum });
         }
         for (const c of res.createdCategories || []) createdCats.add(c);
+        if (res.authorization && !res.authorization.ok) { if (res.authorization.kind === "denied") denied = true; else needsApproval = true; }
         setProgress({ done: Math.min(i + chunk.length, sendable.length), total: sendable.length });
       }
     } catch {
@@ -176,7 +179,7 @@ export default function ImportWizard({ recentLogs = [] }) {
       merged.push({ rowNum, status: "error", messages: [t("SKU در همین فایل تکراری است — فقط اولین ردیف پردازش می‌شود.")], warnings: [] });
     }
     merged.sort((a, b) => a.rowNum - b.rowNum);
-    setDry({ results: merged, counts: countResults(merged), createdCategories: [...createdCats] });
+    setDry({ results: merged, counts: countResults(merged), createdCategories: [...createdCats], needsApproval, denied });
     setBusy("");
     setProgress(null);
   }
@@ -185,7 +188,8 @@ export default function ImportWizard({ recentLogs = [] }) {
   async function runCommit() {
     if (!file || !dry) return;
     if (strict && dry.counts.error > 0) return;
-    if (importMode === "approval") {
+    if (dry.denied) { setErr(t("این فایل تغییری دارد که اجازهٔ آن را ندارید (قیمت، انتشار، ساخت دسته…)؛ چیزی نوشته نشد.")); return; }
+    if (approvalMode) {
       if (!window.confirm(t("این فایل ({create} ساخت، {update} بروزرسانی) به‌صورت یک درخواست برای تأیید ارسال شود؟ تا تأیید نشود چیزی در کاتالوگ تغییر نمی‌کند.", { create: dry.counts.create, update: dry.counts.update }))) return;
       setBusy("commit"); setErr("");
       const rows = file.rows.map((raw, i) => ({ raw, rowNum: i + 1 })).filter((x) => !dupRows.has(x.rowNum)).map((x) => x.raw);
@@ -426,12 +430,13 @@ export default function ImportWizard({ recentLogs = [] }) {
                     className="btn-primary size-md disabled:opacity-60"
                   >
                     {busy === "commit" ? <Spinner /> : <Icon name="save" size={17} />}
-                    {busy === "commit" ? (importMode === "approval" ? t("در حال ارسال…") : t("در حال ورود…")) : importMode === "approval" ? t("ارسال برای تأیید ({create} ساخت، {update} بروزرسانی)", { create: view.counts.create, update: view.counts.update }) : t("تأیید و ورود ({create} ساخت، {update} بروزرسانی)", { create: view.counts.create, update: view.counts.update })}
+                    {busy === "commit" ? (approvalMode ? t("در حال ارسال…") : t("در حال ورود…")) : approvalMode ? t("ارسال برای تأیید ({create} ساخت، {update} بروزرسانی)", { create: view.counts.create, update: view.counts.update }) : t("تأیید و ورود ({create} ساخت، {update} بروزرسانی)", { create: view.counts.create, update: view.counts.update })}
                   </button>
                 )}
                 {filed && <div role="status" data-testid="import-filed" className="basis-full text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-ok/10 text-ok"><Icon name="check" size={16} /> <span className="min-w-0 break-words">{t(filed.message)}</span></div>}
                 {filed && <button type="button" onClick={reset} className="btn-ghost size-md"><Icon name="refresh" size={16} /> {t("فایل جدید")}</button>}
-                {importMode === "approval" && !final && !filed && <Badge tone="warn">{t("ورود این فایل نیازمند تأیید است")}</Badge>}
+                {approvalMode && !final && !filed && <Badge tone="warn">{t("ورود این فایل نیازمند تأیید است")}</Badge>}
+                {dry?.denied && <Badge tone="warn">{t("این فایل تغییری دارد که اجازهٔ آن را ندارید (قیمت، انتشار، ساخت دسته…)؛ چیزی نوشته نشد.")}</Badge>}
                 {busy === "commit" && progress && <span className="text-xs text-ink-muted tabular">{progress.done}/{progress.total}</span>}
                 {strict && !final && view.counts.error > 0 && <Badge tone="warn">{t("حالت سخت‌گیرانه: اول خطاها را رفع کنید")}</Badge>}
                 <button type="button" onClick={downloadReport} className="btn-ghost size-md"><Icon name="download" size={16} /> {t("دانلود گزارش CSV")}</button>

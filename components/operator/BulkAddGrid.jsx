@@ -201,14 +201,15 @@ export default function BulkAddGrid({ categories }) {
       image_url: r.image_url,
     });
 
-    if (importMode === "approval") {
+    // all the rows as ONE request for a reviewer (the import operation itself needs approval, or a change inside the rows does: a publication, a price…)
+    const fileAll = async () => {
       let res = null;
       try { res = await submitImportForApproval(send.map(rawOf), { mode: "add" }, { fileName: "bulk" }); } catch { res = null; }
       setSaving(false); setProgress(null);
       if (res?.ok) { setFiled(t(res.message)); try { localStorage.removeItem(DRAFT_KEY); } catch { /* no-op */ } setRows([blankRow(defaults), blankRow(defaults), blankRow(defaults)]); }
       else setSummary({ total: 0, create: 0, update: 0, skip: 0, error: 0, connectionError: t(res?.error) || t("ارتباط با سرور برقرار نشد.") });
-      return;
-    }
+    };
+    if (importMode === "approval") { await fileAll(); return; }
     const counts = { total: 0, create: 0, update: 0, skip: 0, error: 0 };
     let connectionError = "";
     for (let i = 0; i < send.length; i += COMMIT_CHUNK_SIZE) {
@@ -219,6 +220,7 @@ export default function BulkAddGrid({ categories }) {
       } catch {
         res = null;
       }
+      if (res?.needsApproval && i === 0) { await fileAll(); return; }          // refused before anything was written: the rows need a reviewer (e.g. they publish) → send them as one request
       if (!res?.ok) {
         connectionError = t(res?.error) || t("ارتباط با سرور برقرار نشد. ردیف‌های باقی‌مانده ذخیره نشدند.");
         break;

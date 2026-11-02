@@ -141,9 +141,10 @@ export default function ProductsTable({ data, categories, views = null, columns 
     if (res.ok && res.pending) { flash(t(res.message), true); clearSel(); setBulkCat(""); return; }      // filed for approval: nothing changed yet
     if (res.ok) {
       const stopped = res.blockedCount ? ` — ${blockedText({ error: t(PUBLISH_MESSAGES.blockedMany, { count: res.blockedCount }), publishBlocked: res.publishBlocked, blockedCount: res.blockedCount }, t)}` : "";
-      flash(`${t("{okText} ({count} مورد)", { okText, count: res.count })}${stopped}`, !res.blockedCount);
+      const stale = res.staleCount ? ` — ${t("{count} محصول در این فاصله توسط دیگری تغییر کرده بود و دست‌نخورده ماند.", { count: res.staleCount })}` : "";          // never overwritten
+      flash(`${t("{okText} ({count} مورد)", { okText, count: res.count })}${stopped}${stale}`, !res.blockedCount && !res.staleCount);
       clearSel(); setBulkCat(""); router.refresh();
-    } else flash(blockedText(res, t));
+    } else flash(res.partial?.done ? t(res.error, res.params) : blockedText(res, t));
   }
   async function runFiltered() {
     const { patch, okText } = confirm;

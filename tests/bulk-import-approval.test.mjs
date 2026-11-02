@@ -141,7 +141,7 @@ test("direct path unchanged: applyBulkChange counts the rows it changed and repo
   assert.equal((await applyBulkChange({ admin: db, house: "health", ids: [3], allowed: { is_active: true } })).quality, true);
   assert.equal((await applyBulkChange({ admin: db, house: "health", ids: [1], allowed: {} })).ok, false);
   db.fail = (t, op) => (t === "products" && op === "update" ? { message: "boom" } : null);
-  assert.ok((await applyBulkChange({ admin: db, house: "health", ids: [2], allowed: { is_active: false } })).dbError);
+  assert.ok((await applyBulkChange({ admin: db, house: "health", ids: [4], allowed: { is_active: false } })).dbError, "a database error is reported (product 4 is live, so the change is real; products that already have the value are not written at all)");
 });
 
 // ── import ────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -220,9 +220,10 @@ test("wiring: filing for approval in both houses, the helpers allow people who m
       const body = s.slice(s.indexOf(`export async function ${fn}(`), s.indexOf("\n}\n", s.indexOf(`export async function ${fn}(`)));
       assert.match(body, new RegExp(`await gate\\(session, "${house}", "products\\.import"\\)`), `${f}:${fn} writes only for a person who may do it directly`);
     }
+    for (const fn of ["dryRunProductRows", "commitProductRows"]) assert.match(s.slice(s.indexOf(`export async function ${fn}(`), s.indexOf("\n}\n", s.indexOf(`export async function ${fn}(`))), /authorize: authorizerFor\(session\)/, `${f}:${fn} hands the engine the signed-in person's authoriser (a missing one writes nothing)`);
     assert.match(s, new RegExp(`submitImportForApproval[\\s\\S]*buildActionCtx\\(\\{ panel: "${house}", getSession, operation: "products\\.import", approvable: true \\}\\)`), f);
   }
-  for (const f of ["lib/operator/approvalActions.js", "lib/beauty/operator/approvalActions.js"]) assert.match(read(f), /importRunner: \(job\) => runApprovedImport\(job, \{ processProductBatch, recordImportLog \}\)/, f);
+  for (const f of ["lib/operator/approvalActions.js", "lib/beauty/operator/approvalActions.js"]) assert.match(read(f), /importRunner: \(job\) => runApprovedImport\(job, \{ processProductBatch, recordImportLog \}, \{ authorize: makeImportAuthorizer\(\{ panel: "(health|beauty)", requester: job\.requester \}\), bases: job\.bases, recordAs: \{ userId: job\.requester\?\.id \?\? null, label: job\.requester\?\.username \|\| "import", requestId: job\.requestId, kind: "approval" \} \}\)/, `${f}: an approved import is judged on the REQUESTER's current rights, with the reviewed versions, and its history names the request`);
   for (const f of ["components/operator/ImportWizard.jsx", "components/beauty/operator/ImportWizard.jsx", "components/operator/BulkAddGrid.jsx", "components/beauty/operator/BulkAddGrid.jsx"]) {
     const s = read(f);
     assert.match(s, /useMode\("products\.import"\)/, f); assert.match(s, /submitImportForApproval\(/, f); assert.match(s, /import-filed/, f);

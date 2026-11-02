@@ -110,3 +110,6 @@ The review noted that N9 stored filters/sort/size but no column choice. Added: t
 
 ## 2026-11-02 — review round 3, step 5: personal settings, the part that needs no decision (N10; migration 56, not applied)
 Rows per page (products, requests) and dashboard blocks per person (`docs/PANEL_PERSONAL_SETTINGS.md`, "Round 3"). Keyboard shortcuts and server-kept language/theme are NOT built: they are written up as owner decisions with a proposal each. Request 10 stays "partial".
+
+## 2026-11-02 — review round 3, step 6: import and bulk judged on what they really change (N12: R5, R6, R7, R11; no migration)
+One shared runner for both houses' imports (`lib/operator/importRun.js`) that asks for the union of the operations the rows really need before it writes, pins each update to its version, writes a history entry per product, and marks generated translations "auto"; bulk edits judged on the resulting row, written per product against its version, with exact partial outcomes (`docs/PANEL_BULK_IMPORT_APPROVAL.md`, "Round 3"). Owner decision recorded: a product manager's new rows are publications unless the file says `is_active=no`.
