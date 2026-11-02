@@ -86,7 +86,38 @@ ping_url() {
   esac
   return 0
 }
+
+# ---- status reports to the panel (optional, off until OPS_REPORT_URL + OPS_REPORT_TOKEN are set in the same file) ----
+# The panel's "System status" screen shows what these scripts REPORT; without a report it says "unknown". The token goes to curl on STDIN (never on the
+# command line, where `ps` could show it) and is never printed. A failing report never changes the result of this script.
+OPS_REPORT_URL=""
+OPS_REPORT_TOKEN=""
+load_ops_config() {
+  [ -f "$ALERT_ENV" ] || return 0
+  local line val
+  line="$(grep -E '^OPS_REPORT_URL=' "$ALERT_ENV" | tail -n 1 || true)"; val="${line#*=}"; val="${val%\"}"; val="${val#\"}"
+  if [[ "$val" =~ ^https://[^[:space:]]+$ ]] || [[ "$val" =~ ^http://(127\.0\.0\.1|localhost)(:[0-9]+)?(/[^[:space:]]*)?$ ]]; then OPS_REPORT_URL="$val"
+  elif [ -n "$val" ]; then log "WARNING: OPS_REPORT_URL in $ALERT_ENV must be an https URL (or http://127.0.0.1); ignored"; fi
+  line="$(grep -E '^OPS_REPORT_TOKEN=' "$ALERT_ENV" | tail -n 1 || true)"; val="${line#*=}"; val="${val%\"}"; val="${val#\"}"
+  if [[ "$val" =~ ^[A-Za-z0-9._~+/=-]{24,200}$ ]]; then OPS_REPORT_TOKEN="$val"
+  elif [ -n "$val" ]; then log "WARNING: OPS_REPORT_TOKEN in $ALERT_ENV is not a valid token; ignored"; fi
+}
+# ops_report KIND STATUS [DETAIL] — kind: backup | backup_check | restore_drill | heartbeat | alert_test; status: pass | fail (alert_test: sent)
+ops_report() {
+  [ -n "$OPS_REPORT_URL" ] && [ -n "$OPS_REPORT_TOKEN" ] || return 0
+  command -v curl >/dev/null 2>&1 || return 0
+  local kind="$1" status="$2" detail="${3:-}" code
+  detail="${detail//[^A-Za-z0-9 ._:,=()\/+-]/ }"; detail="${detail:0:180}"
+  code="$(printf 'header = "Authorization: Bearer %s"\n' "$OPS_REPORT_TOKEN" | curl -sS -m 10 -o /dev/null -w '%{http_code}' -K - -H 'Content-Type: application/json' \
+    --data-raw "{\"kind\":\"$kind\",\"status\":\"$status\",\"detail\":\"$detail\"}" "$OPS_REPORT_URL" 2>/dev/null)" || code="000"
+  case "$code" in
+    2??) log "status report sent ($kind $status)" ;;
+    *)   log "WARNING: status report '$kind $status' failed (http ${code:-000}); this script's result is unaffected" ;;
+  esac
+  return 0
+}
 load_alert_config
+load_ops_config
 
 snapshot_epoch() { # 20260901T023001Z -> epoch seconds
   local n="$1"
@@ -141,8 +172,10 @@ if [ "${1:-}" = "--check" ]; then
   [ -f "$STATUS_FILE" ] && sed 's/^/last-run: /' "$STATUS_FILE"
   if [ "$rc" -eq 0 ]; then
     ping_url "$BACKUP_CHECK_PING_URL" "" "backups fresh: local=$local_newest r2=$r2_newest"
+    ops_report backup_check pass "local=$local_newest r2=$r2_newest"
   else
     ping_url "$BACKUP_CHECK_PING_URL" "/fail" "backup freshness check FAILED: local=${local_newest:-none} r2=${r2_newest:-none} (limit ${MAX_AGE_HOURS}h)"
+    ops_report backup_check fail "stale: local=${local_newest:-none} r2=${r2_newest:-none} limit ${MAX_AGE_HOURS}h"
   fi
   exit "$rc"
 fi
@@ -152,6 +185,7 @@ if [ "${1:-}" = "--alert-test" ] || [ "${1:-}" = "--alert-test-clear" ]; then
   [ -n "$BACKUP_PING_URL" ] || die "BACKUP_PING_URL is not configured in $ALERT_ENV"
   if [ "$1" = "--alert-test" ]; then
     ping_url "$BACKUP_PING_URL" "/fail" "ALERT TEST: deliberate failure signal, not a real backup failure"
+    ops_report alert_test sent "deliberate failure signal sent to the alert service"
     echo "ALERT_TEST=SENT (you should receive an alert within a minute or two; then run --alert-test-clear)"
   else
     ping_url "$BACKUP_PING_URL" "" "ALERT TEST cleared"
@@ -205,6 +239,7 @@ on_exit() {
     write_status FAIL || true
     echo "AUTO_BACKUP=FAIL"
     ping_url "$BACKUP_PING_URL" "/fail" "backup $ts FAILED at step: $step (exit $rc)"
+    ops_report backup fail "$ts failed at step: $step (exit $rc)"
   fi
   exit "$rc"
 }
@@ -333,6 +368,7 @@ step="done"
 write_status PASS
 trap - EXIT
 ping_url "$BACKUP_PING_URL" "" "backup $ts PASS local=PASS offsite_upload=PASS offsite_verify=PASS"
+ops_report backup pass "snapshot $ts local+offsite verified"
 echo "AUTO_BACKUP=PASS"
 echo "LOCAL_BACKUP=PASS"
 echo "NEW_SNAPSHOT=$ts"

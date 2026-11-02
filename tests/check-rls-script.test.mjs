@@ -32,6 +32,17 @@ function handle(req, res) {
   if (u.pathname === "/auth/v1/settings") {
     return json(200, { disable_signup: open ? false : true, phone_autoconfirm: open });
   }
+  // migration 53: the approved-deletion functions are for the service role only
+  if (u.pathname.startsWith("/rest/v1/rpc/")) {
+    if (mode === "fnmissing") return json(404, { code: "PGRST202", message: "Could not find the function in the schema cache" });
+    return open ? json(200, { ok: true }) : json(403, { code: "42501", message: "permission denied for function" });
+  }
+  // migration 54: the document buckets are private — Supabase answers "Bucket not found" for any object address; a public bucket serves (or says "Object not found")
+  if (u.pathname.startsWith("/storage/v1/object/public/")) {
+    if (mode === "bucketpublic") return json(404, { statusCode: "404", error: "not_found", message: "Object not found" });
+    if (open) { res.writeHead(200, { "Content-Type": "application/pdf" }); return res.end("%PDF-1.4 leaked"); }
+    return json(400, { statusCode: "404", error: "Bucket not found", message: "Bucket not found" });
+  }
   if (req.method === "POST") {
     writes.push(u.pathname);
     return open ? json(201, {}) : json(401, { code: "42501", message: "permission denied" });
@@ -185,4 +196,44 @@ test("an insert that gets any non-denial 4xx is UNKNOWN; only 401/403 is 'denied
   assert.equal((await run(["--insert-test"])).code, 0);
   mode = "open";
   assert.equal((await run(["--insert-test"])).code, 1);
+});
+
+// ── round 3: the functions of migration 53 and the private buckets of migration 54 ─────────────────────────────────────────────────────────
+test("hardened: the approved-deletion functions refuse anon and the document buckets answer 'Bucket not found' (all PASS, exit 0)", async () => {
+  mode = "closed";
+  const { code, out } = await run();
+  assert.equal(code, 0, out);
+  for (const fn of ["operator_delete_quotes_checked", "operator_category_basis", "operator_delete_category_checked", "operator_brand_basis", "operator_delete_brand_checked"]) assert.match(out, new RegExp(`✓ PASS\\s+anon CANNOT call ${fn}`), fn);
+  for (const b of ["product-documents", "beauty-product-documents"]) assert.match(out, new RegExp(`✓ PASS\\s+anon CANNOT reach the objects of the private bucket ${b}`), b);
+  assert.match(out, /anon CANNOT read operator_table_columns/);
+});
+
+test("open: a function anon can call and a bucket that serves objects are FAIL (exit 1)", async () => {
+  mode = "open";
+  const { code, out } = await run();
+  assert.equal(code, 1, out);
+  assert.match(out, /✗ FAIL\s+anon CANNOT call operator_delete_quotes_checked/);
+  assert.match(out, /✗ FAIL\s+anon CANNOT call operator_delete_category_checked/);
+  assert.match(out, /✗ FAIL\s+anon CANNOT reach the objects of the private bucket product-documents/);
+});
+
+test("migration 53 not applied: 'function not found' is private (PASS); a bucket that answers 'Object not found' is NOT proof (UNKNOWN, exit 3)", async () => {
+  mode = "fnmissing";
+  const missing = await run();
+  assert.match(missing.out, /✓ PASS\s+anon CANNOT call operator_brand_basis/);
+  mode = "bucketpublic";
+  const pub = await run();
+  assert.match(pub.out, /\? UNKNOWN\s+anon CANNOT reach the objects of the private bucket product-documents/);
+  assert.notEqual(pub.code, 0, "an unproven check never exits 0");
+  mode = "closed";
+});
+
+test("the function probes carry the real argument names (an anon call with wrong names would be 'not found' and prove nothing)", async () => {
+  const fs = await import("node:fs");
+  const src = fs.readFileSync(script, "utf8");
+  const sql = fs.readFileSync(fileURLToPath(new URL("../migrations/53_atomic_approved_deletes.sql", import.meta.url)), "utf8");
+  for (const [fn, args] of [["operator_delete_quotes_checked", ["p_house", "p_ids", "p_versions"]], ["operator_category_basis", ["p_house", "p_id"]], ["operator_delete_category_checked", ["p_house", "p_id", "p_move_to", "p_basis"]], ["operator_brand_basis", ["p_id"]], ["operator_delete_brand_checked", ["p_id", "p_basis"]]]) {
+    const def = new RegExp(`CREATE OR REPLACE FUNCTION public\\.${fn}\\(([^)]*)\\)`).exec(sql)?.[1] || "";
+    for (const a of args) { assert.ok(def.includes(a + " "), `${fn}: migration 53 declares ${a}`); assert.ok(new RegExp(`${fn}: \\{[^}]*${a}`).test(src), `${fn}: the probe sends ${a}`); }
+  }
 });

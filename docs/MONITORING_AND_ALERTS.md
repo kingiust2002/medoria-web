@@ -109,6 +109,10 @@ Anything that does not arrive is a failed test: check the integrations on the ch
 | Heartbeat DOWN, silence | server off, network cut or cron dead | provider's web console, then SSH |
 | Outside monitor DOWN but heartbeat UP | the server is fine but the outside cannot reach it | DNS, certificate, firewall, provider network |
 
+## Seeing it in the panel (optional)
+
+The panel's **System status** screen (`docs/PANEL_SYSTEM_STATUS.md`) shows what these scripts last reported — and says **unknown** for anything it has not heard. To turn reporting on, add `OPS_REPORT_URL` and `OPS_REPORT_TOKEN` to the two env files above (same token as `OPS_REPORT_TOKEN` in the app). The screen never shows an alert as delivered: after `--alert-test`, you press "I received the test alert" yourself.
+
 ## What is and is not covered
 
 - Covered: a failed backup, a backup that silently stops, an old snapshot, a dead server or cron, an unhealthy

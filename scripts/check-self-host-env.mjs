@@ -160,7 +160,8 @@ for (const key of [
 // POST /api/internal/quote-reminders. Unset = the endpoint answers 404 (feature off). A short token
 // is refused (the endpoint itself ignores tokens under 24 characters). The value is never printed.
 // SCHEDULE_TOKEN (docs/SCHEDULED_PUBLISHING.md) is the same kind of token for POST /api/internal/scheduled-publishing.
-for (const name of ["QUOTE_REMINDER_TOKEN", "SCHEDULE_TOKEN"]) {
+// OPS_REPORT_TOKEN (docs/PANEL_SYSTEM_STATUS.md): the same kind of token, for POST /api/internal/ops-report (the server scripts report their results to the panel).
+for (const name of ["QUOTE_REMINDER_TOKEN", "SCHEDULE_TOKEN", "OPS_REPORT_TOKEN"]) {
   const token = values.get(name) || "";
   if (token && token.length < 24) {
     fail(`${name} is shorter than 24 characters: generate one with \`openssl rand -hex 32\``);

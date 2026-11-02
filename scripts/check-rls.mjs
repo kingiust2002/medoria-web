@@ -63,13 +63,13 @@ async function call(path, init = {}) {
   try { body = text ? JSON.parse(text) : null; } catch { parsed = false; }
   if (status >= 500) return { kind: "server_error", status, detail: `HTTP ${status}${body?.code ? ` ${body.code}` : ""}` };
   if (status === 401 || status === 403) return { kind: "denied", status, detail: `HTTP ${status}${body?.code ? ` ${body.code}` : ""}`, body };
-  if (status === 404 && parsed && body?.code === "PGRST205") return { kind: "missing", status, detail: "table not in the API schema" };
+  if (status === 404 && parsed && (body?.code === "PGRST205" || body?.code === "PGRST202")) return { kind: "missing", status, detail: body.code === "PGRST202" ? "function not in the API schema" : "table not in the API schema" };
   if (status >= 200 && status < 300) {
     if (!parsed) return { kind: "invalid", status, detail: `HTTP ${status}, the answer is not JSON` };
     if (Array.isArray(body)) return body.length ? { kind: "rows", status, detail: `HTTP ${status}, ${body.length} row(s)`, body } : { kind: "empty", status, detail: `HTTP ${status}, empty list`, body };
     return { kind: "ok", status, detail: `HTTP ${status}`, body };
   }
-  return { kind: "other", status, detail: `unexpected HTTP ${status}` };
+  return { kind: "other", status, detail: `unexpected HTTP ${status}`, body };
 }
 
 // `extra` is an optional PostgREST filter such as "&is_active=eq.false".
@@ -123,7 +123,7 @@ for (const [table, label] of [["categories", "Health categories"], ["beauty_cate
 }
 
 // 3) customer data and operator logs are private
-for (const table of ["quote_requests", "beauty_quote_requests", "contact_inquiries", "import_logs", "beauty_import_logs", "operator_audit_log", "operator_sessions", "operator_totp_state", "operator_recovery_used", "publish_rules", "operator_saved_views", "operator_preferences", "product_documents", "beauty_product_documents", ...WAREHOUSE_TABLES]) {
+for (const table of ["quote_requests", "beauty_quote_requests", "contact_inquiries", "import_logs", "beauty_import_logs", "operator_audit_log", "operator_sessions", "operator_totp_state", "operator_recovery_used", "publish_rules", "operator_saved_views", "operator_preferences", "operator_table_columns", "ops_status", "product_documents", "beauty_product_documents", ...WAREHOUSE_TABLES]) {
   expectDenied(`anon CANNOT read ${table}`, await select(table));
 }
 
@@ -131,6 +131,33 @@ for (const table of ["quote_requests", "beauty_quote_requests", "contact_inquiri
 // A project that has not applied the migration answers "missing", which is also fine.
 expectDenied("anon CANNOT read the staff columns of site_content", await call("/rest/v1/site_content?select=updated_label&limit=1"));
 expectDenied("anon CANNOT select * from site_content (only the public columns)", await call("/rest/v1/site_content?select=*&limit=1"));
+
+// 3c) the functions of migration 53 (approved deletions) are for the service role only, and the document buckets of migration 54 are PRIVATE.
+// The functions are called with harmless arguments (an id that matches nothing): an anonymous caller who is NOT refused would get an ordinary answer. A project that has
+// not applied the migration answers "function not found" (missing), which is also private.
+const RPC_ARGS = {
+  operator_delete_quotes_checked: { p_house: "health", p_ids: [0], p_versions: {} }, operator_category_basis: { p_house: "health", p_id: 0 },
+  operator_delete_category_checked: { p_house: "health", p_id: 0, p_move_to: null, p_basis: {} }, operator_brand_basis: { p_id: 0 }, operator_delete_brand_checked: { p_id: 0, p_basis: {} },
+};
+for (const [fn, args] of Object.entries(RPC_ARGS)) {
+  const name = `anon CANNOT call ${fn}`;
+  const p = await call(`/rest/v1/rpc/${fn}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(args) });
+  if (p.kind === "denied" || p.kind === "missing") report(name, "PASS", p.detail);
+  else if (p.kind === "ok" || p.kind === "rows" || p.kind === "empty") report(name, "FAIL", `${p.detail}: an anonymous caller got an answer from a service-role function`);
+  else report(name, "UNKNOWN", p.detail);
+}
+// A private bucket has no public address: Supabase answers "Bucket not found" for any object address. The probe asks for an object that does not exist, so a PUBLIC bucket
+// answers "Object not found" (proves nothing about privacy: UNKNOWN) and never 200 — except when something serves the bytes, which only a public bucket would do (FAIL).
+for (const bucket of ["product-documents", "beauty-product-documents"]) {
+  const name = `anon CANNOT reach the objects of the private bucket ${bucket}`;
+  let res = null;
+  try { res = await fetch(`${url}/storage/v1/object/public/${bucket}/documents/__rls_check__.pdf`, { headers, signal: AbortSignal.timeout(TIMEOUT_MS) }); } catch { report(name, "UNKNOWN", "could not reach the API"); continue; }
+  const type = String(res.headers.get("content-type") || "").toLowerCase();
+  const text = await res.text().catch(() => "");
+  if (res.status === 200 && /^(application\/(pdf|octet-stream)|image\/)/.test(type)) report(name, "FAIL", `HTTP 200 ${type}: the bucket serves files to anyone`);
+  else if ((res.status === 400 || res.status === 404) && /bucket not found/i.test(text)) report(name, "PASS", `HTTP ${res.status} Bucket not found`);
+  else report(name, "UNKNOWN", `HTTP ${res.status}: only "Bucket not found" proves the bucket is private (run migration 54 first if it does not exist yet)`);
+}
 
 // 4) Supabase Auth signup must be closed
 {

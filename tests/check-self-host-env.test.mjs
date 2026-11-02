@@ -180,3 +180,13 @@ test("personal accounts: OPERATOR_USERS needs a valid OPERATOR_DATA_KEY; garbage
   assert.equal(flag.code, 1);
   assert.match(flag.stderr, /`on` or `off`/);
 });
+
+test("OPS_REPORT_TOKEN: empty or a long safe token passes; a short or unsafe one fails without printing it", async () => {
+  const site = { NEXT_PUBLIC_SITE_URL: "https://medoriaco.com" };
+  assert.equal((await runChecker({ ...site, OPS_REPORT_TOKEN: "" })).code, 0);
+  assert.equal((await runChecker({ ...site, OPS_REPORT_TOKEN: "b".repeat(64) })).code, 0);
+  const short = await runChecker({ ...site, OPS_REPORT_TOKEN: "shortops123" });
+  assert.equal(short.code, 1);
+  assert.match(short.stderr, /OPS_REPORT_TOKEN is shorter than 24/);
+  assert.ok(!short.stderr.includes("shortops123"));
+});

@@ -1,6 +1,6 @@
 # Panel platform — release runbook (stage S6c)
 
-The one place that says **what to do, in which order, and how to go back** for the multi-user panel work (migrations 30–42). It does not
+The one place that says **what to do, in which order, and how to go back** for the multi-user panel work (migrations 30–56). It does not
 replace `docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md` (the infrastructure truth: VPS, Caddy, Supabase, backups, DNS — read it before touching
 production) — it points into it. Nothing here is automatic: **a merge deploys nothing**, and every step below is done by a person.
 
@@ -31,6 +31,23 @@ first error.
 | 40 translation status | product tables | marks are not remembered; saving works | header |
 | 41 warehouse counts and minimum levels | 36 | the count tab says "unavailable"; stock tab works without minimums | header |
 | 42 site content (banner, FAQ) | 34 | no banner / FAQ on the public pages and the content screen says "unavailable"; the site is unaffected | header |
+| 43 list paging (computed columns, indexes) | product + request tables | the completeness filter says "needs migration 43"; see `docs/PANEL_LIST_PAGING.md` for the rest | header |
+| 44 product variants | product tables | no variants; the variant screens say "unavailable"; products unaffected | header |
+| 45 warehouse lots, expiry, quarantine | 36, 41 | the lot features report that they need the migration; see `docs/PANEL_WAREHOUSE_LOTS.md` | header |
+| 46 publish quality rules | 34 | the rule cannot be saved; with no rule nothing is blocked (as before) | header |
+| 47 category / brand picture focus | category tables | focus points cannot be saved; see `docs/PANEL_CATEGORY_IMAGES.md` | header |
+| 48 product documents | 34, product tables | the documents section says "unavailable"; the public page shows none | header |
+| 49 saved list views | 34 | the lists show no "views" row | header |
+| 50 personal start page and shortcuts | 34 | the settings card says so; no shortcuts | header |
+| 51 contact details and featured products (kinds of site content) | 42 | the two new tabs cannot save; the public pages use the built-in defaults / starred products | header |
+| 52 what the server scripts reported | – | the System status screen says everything is **unknown** (never green) | header |
+| **53 approved deletions that check the reviewed version (quotes, categories, brands)** | the tables it reads (01/10/12/20/32) | **approved and direct deletion of a category / brand and approved deletion of requests are REFUSED** (fail closed, "migration 53 missing" in the log) — nothing is deleted without it | header (drop 5 functions) |
+| **54 private product documents** | 48 + the `storage` schema | uploading a document fails and says so; the public pages list no documents. **Apply BEFORE the application that serves documents is deployed** (the app uploads to the private buckets) | header |
+| 55 my columns of the lists | 34 | no "my columns" chooser; the lists keep their default fields | header |
+| 56 rows per page and dashboard blocks | 50 | the settings card says so; start page and shortcuts keep working | header |
+
+**Which migrations are still pending.** Production is proven only at `5ac0592`, and the independent review (2026-10-29) confirmed: **34–42 are pending as well as 43–56.** Nothing of 34–56 is applied anywhere; each is written, tested on a throw-away PostgreSQL 16 and documented in `migrations/README.md`. (30–33 belong to the earlier work: check them on the target before the release — the System status screen's migrations table does — rather than assuming.) Applying them is one release with this order: **numeric order, 34 → 56, stop on the first error.** The only cross-dependencies that are not simply "lower number first": 41 needs 36; 45 needs 36 + 41; 48 needs 34; **54 needs 48**; 56 needs 50. The files already merged into `main` carry migrations 43–46; 47–56 are on the open PRs (see section 7).
+
 
 Before applying any of them on production: **fresh production backup and the local + R2 chain must PASS** (`scripts/self-host/production-backup.sh`;
 runbook §7). A migration is applied by the person doing the release, never by the application.
@@ -43,17 +60,20 @@ runbook §7). A migration is applied by the person doing the release, never by t
 | `OPERATOR_BOOTSTRAP_USERNAME` | only if the old username is not 3–64 `a-z0-9._-` | rarely |
 | `SCHEDULE_TOKEN` | ≥ 24 chars (`openssl rand -hex 32`): lets the cron apply scheduled publishing | scheduling is wanted |
 | `QUOTE_REMINDER_TOKEN` | same kind: the daily request reminder | reminders are wanted |
+| `OPS_REPORT_TOKEN` | same kind: lets the server's own scripts report backup / restore-drill / heartbeat results to the panel's System status screen (`docs/PANEL_SYSTEM_STATUS.md`); also set `OPS_REPORT_URL` + the same token in the two alert env files on the server | the System status screen should show real reports instead of "unknown" |
 
 `node scripts/check-self-host-env.mjs deploy/.env` checks all of them (and refuses half-configured states) without printing values.
 
 ## 3. Release order (a release that contains migrations)
 1. Merge the reviewed PRs (stack order is in `docs/PANEL_PLATFORM_PLAN.md`). **Nothing is deployed by merging.**
 2. **Backup**: fresh production backup; local + R2 chain PASS.
-3. Apply the release's migrations in order (section 1).
+3. Apply the release's migrations in order (section 1). **54 before the deploy** (the new code uploads documents to the private buckets); after applying 54, if migration 48 was EVER applied and used on that database, follow `docs/PANEL_PRODUCT_DOCUMENTS.md` "Moving files" (the migration prints a WARNING with the number of rows).
 4. Add the new environment values (section 2); run the env checker.
 5. Deploy deliberately (runbook §9): then **`docker compose ps` and a live curl** — "Started" is not proof the container stayed up.
 6. Post-checks:
    * `npm run check:rls` (now also proves anonymous callers cannot read the warehouse tables, including the stock counts and levels) — privacy denials must be proved; retain FAIL/UNKNOWN exit semantics. The current Health positive-read probe is UNKNOWN because there are no active Health products; record it honestly rather than weakening the checker or publishing unwanted data;
+   * `npm run check:rls` now also proves: the five functions of migration 53 refuse an anonymous caller (or are "not found" before the migration), the two document buckets answer "Bucket not found" to an anonymous address, and `operator_table_columns` is private — **these are the real-Storage / real-API proofs the sandbox could not run**; record the output;
+   * a draft document is not served: as an anonymous visitor `curl -s -o /dev/null -w "%{http_code}" https://medoriaco.com/api/documents/health/<id of a DRAFT document>` must print 404, a published one 200 `application/pdf`; hide it in the panel and the same address answers 404 at once;
    * the public pages answer and look as before; no warehouse/schedule data in a public response;
    * the owner logs in; one permission-denied probe (a viewer account cannot open `/operator/users`);
    * after `OPERATOR_USERS=on`: the activity log shows `auth.bootstrap_owner` once.
@@ -86,17 +106,19 @@ much that is.
 * Extra post-checks for the platform rollout, in addition to section 3: with a disposable manager account holding `users.manage` and a **viewer** role,
   confirm it cannot reset the password of a house admin; confirm a stock-count close that cannot post one line leaves the count open and the ledger unchanged.
 
-## 6. Not done / owner decisions
-* No native-speaker review of the Tajik/English panel texts (all new screens' texts included).
-* **Warehouse**: lots, expiry dates, quarantine and e-mail / Telegram low-stock alerts are not built (counts, minimum levels with a badge and a filter,
-  and CSV reports are — `docs/WAREHOUSE.md`).
-* **Lists (S5a)**: the product and quote lists are bounded (2000 / 1500 newest) and say so; full server-side paging and filtering is not built —
-  decide when the catalogue approaches the bound.
-* **Product page quality (S5b)**: the form shows a per-language visitor preview and a checklist of gaps, never blocking. Rules that *block* publishing
-  (which gaps?) and a preview of a draft on the real public page are not built — decisions for the owner.
-* **Site content (S6a)**: banner and FAQ are built (`docs/SITE_CONTENT.md`). Contact details are still environment values inlined at build time
-  (`lib/contact.js`) — making them editable would touch every header, footer and floating button; content publishing has no approval executor yet
-  (a person without `content.publish` simply cannot publish).
-* **Personal settings / pinned shortcuts (S6b)**: not built (language and light / dark mode already exist per person).
-* **Variants** (S5c in the plan): not built; history, revert and the optimistic lock are.
-* CSV import does not set history / translation marks.
+## 6. Not done / owner decisions (reconciled 2026-11-02; the earlier text of this section was out of date and is replaced)
+Built since the first version of this section: server-side paging (N1), the complete approval path (N2), variants (N3), warehouse lots / expiry / quarantine with on-screen alerts (N4), a private preview of a draft on the real page (N5), owner-chosen publish rules (N6), category / brand pictures (N7), product documents (N8), saved views, "my columns" and the all-filtered-results scope (N9), start page / shortcuts / rows per page / dashboard blocks (N10), editable contact details and featured items with approval of publication (N11), import and bulk edits under the same rules (N12), the System status screen and the restore-drill tooling (N13). See `docs/PANEL_PLATFORM_PLAN.md` for the status of each (complete / partial / needs the owner).
+
+Still **not done**, honestly:
+* No native-speaker review of the Tajik/English panel texts (all screens, all new ones included); machine preparation is not a review.
+* **Warehouse**: stock counts stay per product (not per lot); low-stock / expiry alerts are on screen only — Telegram / e-mail delivery is not built.
+* **Variants**: an unsaved variant is not part of a draft preview.
+* **Personal settings**: keyboard-shortcut customisation and server-kept language / light-dark mode are NOT built — they need the owner's decision (`docs/PANEL_PERSONAL_SETTINGS.md`, "Owner decisions").
+* **Contact details**: the gateway's e-mail is not editable; address / hours / social links do not exist on the site; defaults still come from the environment — which company details should exist is an owner decision.
+* **Documents**: the PDF check is a heuristic, not an antivirus; the first Storage proof is the post-release `check:rls` run above.
+* **Backup / monitoring**: the System status screen shows UNKNOWN until the owner applies 52 and sets the token / URL; **no real backup, restore drill, heartbeat or alert delivery was run or proved here** — the restore tool is tested against a throw-away PostgreSQL only (`tests/restore-drill.test.mjs`), not against an encrypted production snapshot.
+* **Bulk / import** are not transactional across chunks (exact done / not-done lists are returned, retries are safe).
+* The `check:mobile` checker is run per release on the built site (this section's date: see `docs/PANEL_REVIEW_RESPONSE_2026-11-02.md` for the last run).
+
+## 7. The stack at the time of writing (2026-11-02)
+`main` = `dccae13` carries #228–#233 (merged by the owner after the first review; the review's fixes for #229 are in #242). Open, in dependency order: **#242** (`fix/approved-destructive-atomic`, base `main`: migration 53) → **#234** (+R4) → **#235** (+R1/R2, migration 54) → **#236** (+columns, migration 55) → **#237** (+rows per page / dashboard, migration 56) → **#238** (+content approval) → **#239** (+R5/R6/R7/R11) → **#240** (+probes, check-rls, the reconciled documents). Merge strictly in this order; each PR's base is the branch before it.
