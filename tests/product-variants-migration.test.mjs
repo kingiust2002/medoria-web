@@ -112,3 +112,22 @@ test("the inquiry list reaches variants through public_variant_items: active var
   const many = Array.from({ length: 40 }, (_, i) => i + 1).join(",");
   assert.ok(Number(val(`SELECT count(*) FROM public.public_variant_items(ARRAY[${many}]::bigint[])`, "anon")) <= 30);
 });
+
+
+test("legacy Health without currency migrates and both public RPCs work; existing currency values stay intact", { skip: SKIP }, () => {
+  const count = val("SELECT count(*) FROM products");
+  must(sql("ALTER TABLE products DROP COLUMN currency CASCADE"));
+  must(pg.psql(pg.M(44), { file: true }));
+  must(pg.psql(pg.M(44), { file: true }));
+  assert.equal(val("SELECT count(*) FROM products"), count);
+  assert.equal(val("SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='products' AND column_name='currency'"), "0", "no invented currency column/backfill");
+  const parent = val("SELECT id FROM products WHERE sku = 'P-1'");
+  const child = val("SELECT id FROM products WHERE sku = 'P-1-A'");
+  assert.equal(val(`SELECT bool_and(currency IS NULL) FROM public_product_variants(${parent})`, "anon"), "t");
+  assert.equal(val(`SELECT currency IS NULL FROM public_variant_items(ARRAY[${child}]::bigint[])`, "anon"), "t");
+  assert.equal(val("SELECT count(*) FROM products WHERE variant_of IS NOT NULL", "anon"), "0");
+  must(sql("ALTER TABLE products ADD COLUMN currency TEXT; UPDATE products SET currency = 'TJS' WHERE sku = 'P-1-A'"));
+  must(pg.psql(pg.M(44), { file: true }));
+  assert.equal(val(`SELECT currency FROM public_product_variants(${parent}) WHERE sku = 'P-1-A'`, "anon"), "TJS");
+  assert.equal(val(`SELECT currency FROM public_variant_items(ARRAY[${child}]::bigint[])`, "anon"), "TJS");
+});
