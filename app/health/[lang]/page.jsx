@@ -11,6 +11,7 @@ import WhyMedoria from "@/components/home/WhyMedoria";
 import Audience from "@/components/home/Audience";
 import Procurement from "@/components/home/Procurement";
 import FinalCTA from "@/components/home/FinalCTA";
+import { getLiveFeatured } from "@/lib/featuredLive";
 
 export async function generateMetadata(props) {
   const params = await props.params;
@@ -33,12 +34,13 @@ export async function generateMetadata(props) {
 export default async function HomePage(props) {
   const params = await props.params;
   const { lang } = params;
+  const live = await getLiveFeatured("health", 6);        // the operators' own featured list; empty = the old rule inside the components
   return (
     <>
-      <Hero lang={lang} />
+      <Hero lang={lang} featured={live.slice(0, 3)} />
       <StatsBar lang={lang} />
       <CategoryGrid lang={lang} />
-      <FeaturedProducts lang={lang} />
+      <FeaturedProducts lang={lang} featured={live} />
       <Showcase lang={lang} />
       <Certifications lang={lang} />
       <WhyMedoria lang={lang} />

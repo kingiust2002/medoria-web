@@ -8,16 +8,19 @@ import ProductCard from "@/components/catalog/ProductCard";
 import Icon from "@/components/shared/Icon";
 import { Reveal } from "@/components/shared/Reveal";
 
-export default function FeaturedProducts({ lang }) {
+export default function FeaturedProducts({ lang, featured = [] }) {
   const t = getTranslations(lang);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const featuredKey = featured.map((p) => p.id).join(",");        // a stable dependency (the prop's array identity is not)
   useEffect(() => {
+    if (featured.length) { setProducts(featured); setLoading(false); return; }   // the operators' own featured list wins
     getProducts({ limit: 6 })
       .then((data) => { setProducts(data); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [featuredKey]);
 
   return (
     // Decorative product-detail preview cards take too much vertical space on

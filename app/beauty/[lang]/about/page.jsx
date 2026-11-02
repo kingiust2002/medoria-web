@@ -4,7 +4,7 @@
 // copper/ivory identity. Static, server-rendered, SEO metadata per locale.
 import Link from "next/link";
 import { LOCALES } from "@/lib/i18n";
-import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
+import { bulkInquiryMessage } from "@/lib/whatsapp";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
 import Icon from "@/components/shared/Icon";
 import TiltCard from "@/components/shared/TiltCard";
@@ -13,6 +13,8 @@ import SplitText from "@/components/shared/SplitText";
 import Image from "next/image";
 import BeautyPageHeader from "@/components/beauty/BeautyPageHeader";
 import { beautyRobots } from "@/lib/beauty/seo";
+import { contactApi } from "@/lib/contactLinks";
+import { getHouseContact } from "@/lib/contactLive";
 
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
@@ -142,6 +144,7 @@ export async function generateMetadata(props) {
 }
 
 export default async function BeautyAboutPage(props) {
+  const { waLink } = contactApi(await getHouseContact("beauty"));
   const params = await props.params;
   const { lang } = params;
   const t = getBeautyTranslations(lang);

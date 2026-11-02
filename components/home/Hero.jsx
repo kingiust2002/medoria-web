@@ -13,15 +13,17 @@ import { motion, useReducedMotion, useMotionValue, useSpring, useTransform } fro
 import { getTranslations, CATEGORIES, getCategoryName } from "@/lib/i18n";
 import { getProducts, imageUrl } from "@/lib/supabase";
 import { priceLabel } from "@/lib/price";
-import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
+import { bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
 import Brand from "@/components/layout/Brand";
+import { useContact } from "@/components/shared/ContactContext";
 
 const HeroScene = dynamic(() => import("@/components/home/HeroScene"), { ssr: false });
 const EASE = [0.2, 0.8, 0.2, 1];
 
-export default function Hero({ lang }) {
+export default function Hero({ lang, featured: operatorFeatured = [] }) {
+  const { waLink } = useContact();
   const t = getTranslations(lang);
   const router = useRouter();
   const reduce = useReducedMotion();
@@ -43,7 +45,9 @@ export default function Hero({ lang }) {
     } catch { /* keep CSS fallback */ }
   }, []);
 
+  const featuredKey = operatorFeatured.map((p) => p.id).join(",");   // a stable dependency (the prop's array identity is not)
   useEffect(() => {
+    if (operatorFeatured.length) { setFeatured(operatorFeatured); return; }      // the operators' own featured list wins
     getProducts()
       .then((p) => {
         const list = Array.isArray(p) ? p : [];
@@ -51,7 +55,8 @@ export default function Hero({ lang }) {
         setFeatured((feat.length ? feat : list).slice(0, 3));
       })
       .catch(() => {});
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [featuredKey]);
   const isDark = mounted && resolvedTheme === "dark";
 
   // ── subtle mouse parallax for the hero card (desktop, motion-safe) ──

@@ -2,14 +2,16 @@
 "use client";
 import { useState, useEffect } from "react";
 import { getTranslations } from "@/lib/i18n";
-import { waLink, tgLink, productInquiryMessage } from "@/lib/whatsapp";
+import { productInquiryMessage } from "@/lib/whatsapp";
 import { imageUrl } from "@/lib/supabase";
 import { priceLabel, isOnRequest, formatPrice } from "@/lib/price";
 import { useCompare } from "@/lib/compare";
 import { usePreview } from "@/components/shared/PreviewContext";
 import Icon from "@/components/shared/Icon";
+import { useContact } from "@/components/shared/ContactContext";
 
 export default function StickyQuotePanel({ product, lang, onQuoteClick, compareId = product.id }) {
+  const { waLink, tgLink } = useContact();
   const t = getTranslations(lang);
   const [show, setShow] = useState(false);
   const compare = useCompare();

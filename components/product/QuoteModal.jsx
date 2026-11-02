@@ -3,14 +3,13 @@
 import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { getTranslations, LANG_META } from "@/lib/i18n";
-import { waLink, tgLink } from "@/lib/whatsapp";
 import { submitQuoteRequest } from "@/lib/actions/quote";
 import { usePreview } from "@/components/shared/PreviewContext";
 import { priceLabel, priceLine, isOnRequest, formatPrice } from "@/lib/price";
 import Icon from "@/components/shared/Icon";
 import MathCaptcha, { captchaErrorText } from "@/components/shared/MathCaptcha";
+import { useContact } from "@/components/shared/ContactContext";
 
-const PHONE = process.env.NEXT_PUBLIC_PHONE || "+992900000000";
 
 const CHANNELS = [
   ["whatsapp", "chat",  "WhatsApp"],
@@ -19,6 +18,8 @@ const CHANNELS = [
 ];
 
 export default function QuoteModal({ product, lang, onClose }) {
+  const { waLink, tgLink, PHONE: _PHONE } = useContact();
+  const PHONE = _PHONE || "+992900000000";
   const t = getTranslations(lang);
   const dir = LANG_META[lang]?.dir || "ltr";
   const reduce = useReducedMotion();

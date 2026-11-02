@@ -5,11 +5,13 @@ import Link from "next/link";
 import { BeautyWordLockup } from "./BeautyBrand";
 import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
 import Icon from "@/components/shared/Icon";
-import { waLink, tgLink, bulkInquiryMessage } from "@/lib/whatsapp";
+import { bulkInquiryMessage } from "@/lib/whatsapp";
 import { getBeautyTranslations } from "./i18n";
-import { EMAIL_BEAUTY } from "@/lib/contact";
+import { contactApi } from "@/lib/contactLinks";
+import { getHouseContact } from "@/lib/contactLive";
 
-export default function BeautyFooter({ lang }) {
+export default async function BeautyFooter({ lang }) {
+  const { waLink, tgLink, email: EMAIL_BEAUTY } = contactApi(await getHouseContact("beauty"));
   const t = getBeautyTranslations(lang);
   const email = EMAIL_BEAUTY;
   const home = `/beauty/${lang}`;

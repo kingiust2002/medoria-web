@@ -9,13 +9,13 @@ import MobilePrefs from "./MobilePrefs";
 import HealthCollectionMegaMenu from "./HealthCollectionMegaMenu";
 import { getTranslations } from "@/lib/i18n";
 import ContactMenu from "@/components/shared/ContactMenu";
-import { EMAIL_HEALTH } from "@/lib/contact";
 import Icon from "@/components/shared/Icon";
 import ThemeToggle from "@/components/shared/ThemeToggle";
 import SearchCommand from "@/components/shared/SearchCommand";
 import { useWishlist } from "@/lib/wishlist";
 import { useInquiryList } from "@/lib/inquiryList";
 import { copyFor } from "@/lib/inquiry/copy";
+import { useContact } from "@/components/shared/ContactContext";
 
 const COLLECTION_COPY = {
   tg: { all: "Дидани ҳама", browseAll: "Дидани тамоми коллексия" },
@@ -27,6 +27,7 @@ const COLLECTION_COPY = {
 const categoryName = (node) => node?.name || node?.slug || "";
 
 export default function Header({ lang, categoryTree = [] }) {
+  const { email: EMAIL_HEALTH } = useContact();
   const t = getTranslations(lang);
   const pathname = usePathname();
   const { count: wishCount } = useWishlist();

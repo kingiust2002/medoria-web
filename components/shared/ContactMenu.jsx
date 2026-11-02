@@ -6,9 +6,10 @@
 //   mode="inline"    mobile drawer: the list expands in place under the button
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
-import { TG_USER, waLink, bulkInquiryMessage } from "@/lib/whatsapp";
+import { bulkInquiryMessage } from "@/lib/whatsapp";
 import { mailtoLink } from "@/lib/contact";
 import Icon from "./Icon";
+import { useContact } from "@/components/shared/ContactContext";
 
 const EMAIL_LABEL = { tg: "Почта", fa: "ایمیل", ru: "Эл. почта", en: "Email" };
 
@@ -21,6 +22,7 @@ export default function ContactMenu({
   mode = "dropdown",
   onNavigate,
 }) {
+  const { waLink, TG_USER } = useContact();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
   const buttonRef = useRef(null);

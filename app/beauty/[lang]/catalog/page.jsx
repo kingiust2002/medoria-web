@@ -8,7 +8,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LOCALES } from "@/lib/i18n";
-import { waLink, tgLink, bulkInquiryMessage } from "@/lib/whatsapp";
+import { bulkInquiryMessage } from "@/lib/whatsapp";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
 import { getBeautyCategoryTree, getBeautyCategoryPath, getBeautyBrands, getBeautyProductsPage } from "@/lib/beauty/catalog";
 import { parsePage } from "@/lib/catalogQuery";
@@ -20,6 +20,8 @@ import TiltCard from "@/components/shared/TiltCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import BeautyPageHeader from "@/components/beauty/BeautyPageHeader";
 import SplitText from "@/components/shared/SplitText";
+import { contactApi } from "@/lib/contactLinks";
+import { getHouseContact } from "@/lib/contactLive";
 
 // Filters come from searchParams; the grid must always reflect the operator's
 // latest saves (revalidatePath from the panel also lands here).
@@ -104,6 +106,7 @@ function Pager({ page, pages, hrefFor, labels }) {
 const str = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 
 export default async function BeautyCatalogPage(props) {
+  const { waLink, tgLink } = contactApi(await getHouseContact("beauty"));
   const searchParams = await props.searchParams;
   const params = await props.params;
   const { lang } = params;

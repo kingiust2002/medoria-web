@@ -11,7 +11,9 @@ import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
 import AiAssistant from "@/components/shared/AiAssistant";
 import SiteBanner from "@/components/shared/SiteBanner";
 import ScrollProgress from "@/components/shared/ScrollProgress";
-import { EMAIL_GENERAL, EMAIL_HEALTH } from "@/lib/contact";
+import { EMAIL_GENERAL } from "@/lib/contact";
+import { getHouseContact } from "@/lib/contactLive";
+import { ContactProvider } from "@/components/shared/ContactContext";
 
 // Next.js 15: preserve cached public Supabase fetch behavior.
 export const fetchCache = "default-cache";
@@ -50,7 +52,8 @@ export default async function LangLayout(props) {
   const dir = LANG_META[lang].dir;
   const t = getTranslations(lang);
 
-  const phone = process.env.NEXT_PUBLIC_PHONE;
+  const contact = await getHouseContact("health");        // the details the operators edit, over the built-in defaults
+  const phone = contact.phone;
   const email = EMAIL_GENERAL;
   const jsonLd = [
     {
@@ -84,6 +87,7 @@ export default async function LangLayout(props) {
   ];
 
   return (
+    <ContactProvider value={contact}>
     <div lang={lang} dir={dir} data-vertical="health" className={dir === "rtl" ? "font-farsi" : "font-sans"}>
       {/* Set html attributes via script to avoid SSR mismatch */}
       <script
@@ -107,8 +111,9 @@ export default async function LangLayout(props) {
         {children}
       </main>
       <Footer lang={lang} />
-      <FloatingWhatsApp lang={lang} email={EMAIL_HEALTH} emailSubject="Medoria Health" />
+      <FloatingWhatsApp lang={lang} email={contact.email} emailSubject="Medoria Health" />
       <AiAssistant lang={lang} />
     </div>
+    </ContactProvider>
   );
 }

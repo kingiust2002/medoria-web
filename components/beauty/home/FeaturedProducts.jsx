@@ -12,6 +12,7 @@ import { Reveal, Stagger, StaggerItem } from "@/components/shared/Reveal";
 import { getBeautyTranslations as getTranslations } from "@/components/beauty/i18n";
 import { getBeautyProducts } from "@/lib/beauty/catalog";
 import BeautyProductCard from "@/components/beauty/catalog/BeautyProductCard";
+import { getLiveFeatured } from "@/lib/featuredLive";
 
 // One tidy grid — two rows of four on desktop. Anything the operator stars
 // beyond this still shows in the full catalog.
@@ -26,7 +27,8 @@ const REQUEST_PRICE = {
 export default async function FeaturedProducts({ lang }) {
   const t = getTranslations(lang);
   const requestLabel = REQUEST_PRICE[lang] || REQUEST_PRICE.en;
-  const products = await getBeautyProducts({ featured: true, limit: LIMIT });
+  const live = await getLiveFeatured("beauty", LIMIT);                       // the operators' own featured list, if any is live
+  const products = live.length ? live : await getBeautyProducts({ featured: true, limit: LIMIT });
 
   return (
     // Decorative product-detail preview cards take too much vertical space on

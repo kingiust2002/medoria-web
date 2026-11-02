@@ -10,10 +10,11 @@ import Image from "next/image";
 import { motion, useReducedMotion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useTheme } from "next-themes";
 import { getBeautyTranslations as getTranslations } from "@/components/beauty/i18n";
-import { waLink, bulkInquiryMessage } from "@/lib/whatsapp";
+import { bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import Aurora from "@/components/shared/Aurora";
 import { BeautyWordLockup } from "@/components/beauty/BeautyBrand";
+import { useContact } from "@/components/shared/ContactContext";
 
 const BeautyHeroScene = dynamic(() => import("@/components/beauty/home/BeautyHeroScene"), { ssr: false });
 const EASE = [0.2, 0.8, 0.2, 1];
@@ -28,6 +29,7 @@ const EASE = [0.2, 0.8, 0.2, 1];
 // list entirely while nothing is starred rather than falling back to listing
 // all seven categories again.
 export default function Hero({ lang, banner, depts = [], featured = [] }) {
+  const { waLink } = useContact();
   const worldsAll = `/beauty/${lang}/worlds`;
   const t = getTranslations(lang);
   const reduce = useReducedMotion();

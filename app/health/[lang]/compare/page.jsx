@@ -5,14 +5,16 @@ import Link from "next/link";
 import { useCompare } from "@/lib/compare";
 import { supabase, imageUrl } from "@/lib/supabase";
 import { getTranslations, getCategoryName } from "@/lib/i18n";
-import { waLink, tgLink, productInquiryMessage } from "@/lib/whatsapp";
+import { productInquiryMessage } from "@/lib/whatsapp";
 import { priceLabel, isOnRequest } from "@/lib/price";
 import Icon from "@/components/shared/Icon";
 import Breadcrumb from "@/components/shared/Breadcrumb";
+import { useContact } from "@/components/shared/ContactContext";
 
 export const dynamic = "force-dynamic";
 
 export default function ComparePage(props) {
+  const { waLink, tgLink } = useContact();
   const params = use(props.params);
   const { lang } = params;
   const t = getTranslations(lang);

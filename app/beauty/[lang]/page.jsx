@@ -22,6 +22,7 @@ import Procurement from "@/components/beauty/home/Procurement";
 import FinalCTA from "@/components/beauty/home/FinalCTA";
 import FilDorThread from "@/components/beauty/home/FilDorThread";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
+import { getLiveFeatured } from "@/lib/featuredLive";
 
 // The home page now reads the catalog (the hero card and the «Featured»
 // section both render starred products), so it can no longer be frozen at
@@ -71,7 +72,8 @@ export default async function BeautyPage(props) {
   // the tree rather than after it, since neither depends on the other.
   const [tree, featuredRows] = await Promise.all([
     getBeautyCategoryTree(),
-    getBeautyProducts({ featured: true, limit: HERO_FEATURED }),
+    // the operators' own featured list (site content) wins; with none live, the products starred with is_featured, as before
+    getLiveFeatured("beauty", HERO_FEATURED).then((live) => (live.length ? live : getBeautyProducts({ featured: true, limit: HERO_FEATURED }))),
   ]);
   const c = copyFor(lang);
   const depts = tree.map((d) => ({

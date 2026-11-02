@@ -10,6 +10,7 @@ import { getCategories, getAllProducts, imageUrl } from "@/lib/supabase";
 import { buildHealthCategoryTree, findHealthCategory, flattenHealthCategoryTree, getHealthDescendantIds, healthCategoryName } from "@/lib/health/categories";
 import { isOnRequest, priceLabel, formatPrice } from "@/lib/price";
 import PrintButton from "./PrintButton";
+import { getHouseContact } from "@/lib/contactLive";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";   // a document made on demand reads the database now, not a 60-second-old copy
@@ -71,8 +72,7 @@ export default async function PrintCatalogPage(props) {
     .sort(([a], [b]) => (a === "other") - (b === "other") || (order.get(a) ?? 0) - (order.get(b) ?? 0))
     .map(([key, list]) => ({ key, title: key === "other" ? c.uncategorized : healthCategoryName(flat.find((n) => n.id === key), lang), list }));
 
-  const phone = process.env.NEXT_PUBLIC_PHONE || "";
-  const email = process.env.NEXT_PUBLIC_EMAIL_HEALTH || process.env.NEXT_PUBLIC_EMAIL || "";
+  const { phone, email } = await getHouseContact("health");           // the details the operators edit, over the environment defaults
   const site = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/+$/, "");
   const nameOf = (p) => p[`name_${lang}`] || p.name_en || p.name_ru || "";
 

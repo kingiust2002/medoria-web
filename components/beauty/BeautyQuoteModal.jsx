@@ -7,14 +7,13 @@
 import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { LANG_META } from "@/lib/i18n";
-import { waLink, tgLink } from "@/lib/whatsapp";
 import { submitBeautyQuoteRequest } from "@/lib/beauty/actions/quote";
 import { usePreview } from "@/components/shared/PreviewContext";
 import { priceLabel, priceLine, isOnRequest, formatPrice } from "@/lib/price";
 import Icon from "@/components/shared/Icon";
 import MathCaptcha, { captchaErrorText } from "@/components/shared/MathCaptcha";
+import { useContact } from "@/components/shared/ContactContext";
 
-const PHONE = process.env.NEXT_PUBLIC_PHONE || "+992900000000";
 
 // Beauty quote-modal copy (canonical wording adapted from the Master Copy Deck
 // §5.12 / partnership tone: "professional inquiry", not "commercial offer").
@@ -60,6 +59,8 @@ const CHANNELS = [
 ];
 
 export default function BeautyQuoteModal({ product, lang, onClose }) {
+  const { waLink, tgLink, PHONE: _PHONE } = useContact();
+  const PHONE = _PHONE || "+992900000000";
   const t = COPY[lang] || COPY.en;
   const dir = LANG_META[lang]?.dir || "ltr";
   const reduce = useReducedMotion();

@@ -5,7 +5,6 @@
 "use client";
 import { useState } from "react";
 import { getBeautyTranslations } from "@/components/beauty/i18n";
-import { WA_NUMBER, TG_USER, waLink, tgLink } from "@/lib/whatsapp";
 import { submitBeautyQuoteRequest } from "@/lib/beauty/actions/quote";
 import MathCaptcha, { captchaErrorText } from "@/components/shared/MathCaptcha";
 import Icon from "@/components/shared/Icon";
@@ -14,11 +13,11 @@ import Breadcrumb from "@/components/shared/Breadcrumb";
 import SplitText from "@/components/shared/SplitText";
 import BeautyPageHeader from "@/components/beauty/BeautyPageHeader";
 import { CONTACT_COPY } from "./copy";
-import { EMAIL_BEAUTY } from "@/lib/contact";
+import { useContact } from "@/components/shared/ContactContext";
 
-const PHONE = process.env.NEXT_PUBLIC_PHONE || "+992900000000";
 
 export default function ContactInner({ lang }) {
+  const { waLink, WA_NUMBER, TG_USER, email: EMAIL_BEAUTY } = useContact();
   const t = getBeautyTranslations(lang);
   const c = CONTACT_COPY[lang] || CONTACT_COPY.en;
   const email = EMAIL_BEAUTY;
@@ -104,6 +103,8 @@ const CHANNEL_ACTIVE = {
 };
 
 function ContactForm({ lang, c }) {
+  const { waLink, tgLink, PHONE: _PHONE } = useContact();
+  const PHONE = _PHONE || "+992900000000";
   const [form, setForm] = useState({ name: "", org: "", phone: "", email: "", subject: "", message: "" });
   const [hp, setHp] = useState("");
   const [captcha, setCaptcha] = useState({ token: "", answer: "" });

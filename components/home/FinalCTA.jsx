@@ -1,11 +1,14 @@
 // components/home/FinalCTA.jsx
 import { getTranslations } from "@/lib/i18n";
-import { waLink, tgLink, bulkInquiryMessage } from "@/lib/whatsapp";
+import { bulkInquiryMessage } from "@/lib/whatsapp";
 import Icon from "@/components/shared/Icon";
 import { Reveal } from "@/components/shared/Reveal";
-import { EMAIL_HEALTH, mailtoLink } from "@/lib/contact";
+import { mailtoLink } from "@/lib/contact";
+import { contactApi } from "@/lib/contactLinks";
+import { getHouseContact } from "@/lib/contactLive";
 
-export default function FinalCTA({ lang }) {
+export default async function FinalCTA({ lang }) {
+  const { waLink, tgLink, email: EMAIL_HEALTH } = contactApi(await getHouseContact("health"));
   const t = getTranslations(lang);
 
   return (
