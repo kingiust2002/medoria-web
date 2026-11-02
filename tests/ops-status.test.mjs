@@ -107,6 +107,14 @@ test("live checks: present / missing / unknown per migration, never 'ok' for som
   assert.equal(st(46), "unknown", "a read that failed for another reason is unknown, not present");
   assert.equal(st(49), "missing", "a table that is not there");
   assert.equal(st(51), "no_probe");
+  assert.equal(st(55), "missing", "migration 55 (table) is not there"); assert.equal(st(56), "missing", "migration 56 adds a COLUMN: the read of it fails when it is absent");
+  assert.equal(st(53), "missing", "migration 53 adds only functions: the call finds none (PGRST202)"); assert.equal(st(54), "missing");
+  // …and present once they exist
+  const withFns = createMemoryAdmin({ operator_table_columns: [], operator_preferences: [{ user_id: "u", house: "health", page_size_products: null }] }, { rpc: { operator_brand_basis: () => ({ data: { found: false }, error: null }), public_product_document_visible: () => ({ data: false, error: null }) } });
+  const ok = await migrationProbes(withFns);
+  assert.deepEqual([53, 54, 55, 56].map((n) => ok.find((x) => x.migration === n).state), ["present", "present", "present", "present"]);
+  const failingFn = createMemoryAdmin({}, { rpc: { operator_brand_basis: () => ({ data: null, error: { code: "XX000", message: "boom" } }) } });
+  assert.equal((await migrationProbes(failingFn)).find((x) => x.migration === 53).state, "unknown", "a function that failed for another reason is unknown, not present");
   assert.deepEqual(res.map((x) => x.migration), [...res.map((x) => x.migration)].sort((a, b) => a - b));
   assert.equal(res.length, MIGRATION_PROBES.length + UNPROBED.length);
   assert.equal((await databaseProbe(createMemoryAdmin({ products: [] }))).state, "ok");

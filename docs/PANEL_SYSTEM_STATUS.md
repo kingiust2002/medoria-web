@@ -54,3 +54,6 @@ Parsed, never sourced; the token goes to curl on **stdin** (never on the command
 * The app shows what was **reported**, and what it can read itself. It cannot see the server's disks, cron, R2, or the external alert service, and cannot prove a backup restorable or an alert delivered.
 * A report is "latest per kind", not a history; the activity log records confirmations.
 * If the scripts or token are not set up, or migration 52 is not applied, the screen says **unknown** (and, for the missing table, says why) — that is the honest state, not a bug.
+
+## Round 3: the migration probes now cover 53–56
+The screen's "migrations" table gained four probes: 53 (a call of `operator_brand_basis` — a function-only migration is detected by calling a harmless function with an id that matches nothing), 54 (`public_product_document_visible`, same way), 55 (`operator_table_columns`), 56 (the column `operator_preferences.page_size_products`). A call that fails for any reason other than "function not found" is reported **unknown**, never present. Tests: `tests/ops-status.test.mjs` (present / missing / unknown for each kind).
