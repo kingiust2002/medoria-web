@@ -189,3 +189,35 @@ test("R5: a direct importer whose file would PUBLISH is switched to 'send for ap
   assert.ok(((await state()).product_versions || []).some((v) => v.product_id === pub.id && v.request_id === req.id), "history names the request");
   await rev.ctx.close();
 });
+
+for (const house of ["health", "beauty"]) {
+  test(`${house}: a newer product survives an old bulk approval and its ID is visible in the result`, async () => {
+    if (house === "beauty") await rest("beauty_products", { method: "POST", body: JSON.stringify([beautyProduct(41), beautyProduct(42)]) });
+    await addUser({ username: "seed.owner", role: "owner", houses: ["health", "beauty"] });
+    await addUser({ username: "pm.asker", role: "product_manager", houses: ["health", "beauty"], approval: PM_POLICY });
+    await addUser({ username: "rev.admin", role: "house_admin", houses: ["health", "beauty"] });
+    const prefix = house === "beauty" ? "/beauty/operator" : "/operator";
+    const table = house === "beauty" ? "beauty_products" : "products";
+    const pm = await pageAs("pm.asker", house);
+    await pm.page.goto(`${BASE}${prefix}/products`, { waitUntil: "networkidle" });
+    await pm.page.locator("input[type=checkbox]").first().check();
+    await pm.page.getByRole("button", { name: /غیرفعال/ }).first().click();
+    await poll(async () => (await reqs()).length === 1, { label: "filed" });
+    await pm.ctx.close();
+    const product = (await state())[table].find((p) => p.is_active);
+    const changed = await rest(`${table}?id=eq.${product.id}`, { method: "PATCH", body: JSON.stringify({ price: 999, updated_at: "2026-11-02T11:00:00.000009+00:00" }) });
+    assert.ok(changed.ok);
+    const rev = await pageAs("rev.admin", house, 320);
+    await rev.page.goto(`${BASE}${prefix}/approvals`, { waitUntil: "networkidle" });
+    await rev.page.getByTestId("approve").first().click();
+    const result = rev.page.getByTestId("approval-execution");
+    await result.waitFor();
+    assert.match(await result.innerText(), /شناسه‌های تغییرکرده در این فاصله/);
+    const row = (await state())[table].find((p) => p.id === product.id);
+    assert.equal(row.price, 999);
+    assert.equal(row.is_active, true);
+    const measure = await rev.page.evaluate(measureInPage);
+    assert.equal(measure.count, 0, JSON.stringify(measure.offenders));
+    await rev.ctx.close();
+  });
+}
