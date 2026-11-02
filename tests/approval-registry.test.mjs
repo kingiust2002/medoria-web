@@ -13,6 +13,7 @@ import { approveRequest, rejectRequest, resubmitRequest, listRequests } from "..
 import { fileForApproval } from "../lib/operator/approvalFlow.js";
 import { makeProductExecutors } from "../lib/operator/approvalExecutors.js";
 import { makeProductPrepare } from "../lib/operator/approvalPrepare.js";
+import { atomicDeleteRpc } from "./helpers/atomicDeleteRpc.mjs";
 import { makeDestructiveExecutors, makeDestructivePrepare } from "../lib/operator/destructiveApproval.js";
 import { categoryDeleteFlow, brandDeleteFlow, quotesDeleteFlow } from "../lib/operator/destructiveFlow.js";
 import { makeWarehouseExecutors } from "../lib/warehouse/actionsCore.js";
@@ -140,6 +141,7 @@ function setup() {
   }, {
     beforeUpdate: { operator_change_requests: trigger },
     defaults: { operator_change_requests: () => ({ id: `00000000-0000-4000-9000-${String(++n).padStart(12, "0")}`, status: "pending", requested_at: ts }) },
+    rpc: atomicDeleteRpc(),
   });
   audits = [];
 }

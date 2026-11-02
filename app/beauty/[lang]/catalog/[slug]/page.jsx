@@ -72,7 +72,7 @@ export default async function BeautyProductPage(props) {
     getBeautyProductVariants(product.id),       // [] for an ordinary product and before migration 44
     getBeautyProductDocuments(product.id),      // published, still valid documents; [] before migration 48
   ]);
-  const documents = publicDocumentItems(docRows, lang, beautyImageUrl);
+  const documents = publicDocumentItems(docRows, lang, (d) => `/api/documents/beauty/${d.id}`);
   const name = product[`name_${lang}`] || product.name_en || product.name_ru;
   const desc = product[`description_${lang}`] || product.description_en;
   const onRequest = isOnRequest(product);

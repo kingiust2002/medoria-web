@@ -6,8 +6,6 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
 import { SectionCard, Field, Input, Select, Badge, Spinner } from "@/components/operator/ui";
-import { imageUrl as healthImageUrl } from "@/lib/supabase";
-import { beautyImageUrl } from "@/lib/beauty/catalog";
 import { useT } from "@/components/panel/PanelI18n";
 import { useCan, useMode } from "@/components/panel/Capabilities";
 import { DOC_KINDS, DOC_KIND_LABELS, DOC_LANGS, DOC_LIMITS } from "@/lib/operator/documents";
@@ -19,7 +17,7 @@ const LANG_NAMES = { tg: "Тоҷикӣ", ru: "Русский", en: "English" }; 
 export default function DocumentsManager({ house = "health", productId, documents, unavailable, actions, approvalsHref }) {
   const t = useT();
   const router = useRouter();
-  const urlOf = house === "beauty" ? beautyImageUrl : healthImageUrl;          // a function cannot be passed from a server page: the house picks its bucket
+  const fileHref = (d) => (house === "beauty" ? `/api/beauty-operator/documents/${d.id}` : `/api/operator/documents/${d.id}`);          // the file is private: this panel route checks the session and the right to see documents
   const canCreate = useCan("documents.create"), canEdit = useCan("documents.edit");
   const modePublish = useMode("documents.publish"), modeDelete = useMode("documents.delete");
   const langName = (l) => (l === "fa" ? t("فارسی") : LANG_NAMES[l]);
@@ -96,7 +94,7 @@ export default function DocumentsManager({ house = "health", productId, document
                   </div>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <a href={urlOf(d.file_path)} target="_blank" rel="noopener noreferrer" className="btn-ghost size-sm"><Icon name="eye" size={14} /> {t("مشاهده")}</a>
+                  <a href={fileHref(d)} target="_blank" rel="noopener noreferrer" className="btn-ghost size-sm"><Icon name="eye" size={14} /> {t("مشاهده")}</a>
                   {canEdit && <button type="button" className="btn-ghost size-sm" data-testid="document-edit" onClick={() => { setEditing(isEditing ? null : d.id); setEf({ title: d.title, kind: d.kind, lang: d.lang || "", valid_until: d.valid_until || "" }); }}>{t("ویرایش")}</button>}
                   {!d.is_published && modePublish !== "denied" && <button type="button" disabled={busy} className="btn-primary size-sm" data-testid="document-publish" onClick={() => run(() => actions.publish(d.id, true, d.version), t("سند روی سایت منتشر شد."))}>{modePublish === "approval" ? t("ارسال برای تأیید انتشار") : t("انتشار")}</button>}
                   {d.is_published && canEdit && <button type="button" disabled={busy} className="btn-ghost size-sm" data-testid="document-hide" onClick={() => run(() => actions.publish(d.id, false, d.version), t("سند از سایت برداشته شد."))}>{t("پنهان‌کردن")}</button>}

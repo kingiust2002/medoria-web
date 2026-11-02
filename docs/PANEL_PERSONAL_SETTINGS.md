@@ -34,3 +34,24 @@ Per **person and house** (Health and Beauty have their own lists). Language and 
 * **Not built:** a default page size per person, a per-person landing "widget" layout on the dashboard, keyboard-shortcut customisation, and storing language / theme on the server (they stay per browser).
 * A pin is a page address, not a saved list view: "my out-of-stock products" as a shortcut would be a follow-up that reuses N9's views.
 * Migration 50 is unapplied. Tajik / English texts need a human read.
+
+## Round 3: the rest of the personal settings that can be built without a decision (migration 56, not applied)
+**Status of request 10 after this round: PARTIAL, honestly.** Built and tested: start page, pinned shortcuts (N10), **rows per page** of the product and request lists, and **the dashboard blocks** each person shows, in their order. Still not built, and why (see "Owner decisions" below).
+
+### Rows per page (per person, per house, per list)
+* Choose 25 (the standard), 50 or 100 for the product list and for the request list on the settings page. Stored on the person's own preferences row (`page_size_products`, `page_size_quotes`; the standard is stored as "nothing chosen").
+* The address stays the whole state of a list: **a size in the address always wins**; when the address names none, the person's size is used. The hrefs of the list leave the size out only when it equals the person's own default, so choosing the standard 25 explicitly still works when 50 is saved (`lib/operator/listSize.js`, `listQuery.js` `overrides`). Another person, the other house and the other list keep the standard.
+
+### Dashboard blocks
+* Four blocks — overview statistics, quick actions, recent requests, recently updated products — each can be shown or hidden and ordered (at least one stays). The two list cards sit side by side when they follow each other. A block the person has no right to see (requests, products) stays hidden whatever is stored; the default dashboard is exactly what it always was (`lib/operator/dashboardBlocks.js`).
+
+### Migration 56 (additive on 50)
+Three nullable columns on `operator_preferences`; the database checks the three sizes and the four block names (1–4, no repeats); the table stays private. Until it is applied the card says so, saves nothing of these, and the start page and shortcuts keep working (the reader falls back to the older columns). Rollback: drop the three columns and the guard function (header of the file).
+
+### Owner decisions — NOT built on purpose
+1. **Keyboard shortcut customisation.** There are no keyboard shortcuts in the panel today (only the pinned links). Defining which keys exist, whether they may clash with the browser and screen readers, and their languages is a design decision, not a preference; nothing was invented. Proposal if wanted: a small, fixed, documented set (search focus, "go to" the pinned shortcuts 1–6) with an on/off switch only.
+2. **Language and light/dark mode kept on the server per person.** Today both are kept by the browser (language in a cookie shared by both panels, mode in the browser) so they follow the device, not the account. Saving them per account needs a rule for which wins when the two disagree (a shared computer, a phone and a desk) and a first-visit flash decision; proposal: keep the device choice and only use the account value on a device that has none. Needs the owner's yes; touches every page's first render.
+3. Per-list *column* choice is a separate feature (N9, "my columns").
+
+### Tests
+`tests/preferences-extras.test.mjs` (6), `tests/preferences-extras-migration.test.mjs` (5, real PostgreSQL), e2e `accounts-personal-extras` (3: sizes saved and used, the explicit size still wins, another person/house unaffected; dashboard hide/reorder; 320 px). The older `personal-preferences.test.mjs` expectations gained the new empty fields; nothing was weakened.
