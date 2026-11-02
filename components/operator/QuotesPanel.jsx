@@ -21,6 +21,7 @@ import { useListNav, useDebouncedQuery } from "@/components/operator/useListNav"
 import { quoteHref } from "@/lib/operator/listQuery";
 import { ScopeNotice, ConfirmFiltered } from "@/components/operator/BulkScope";
 import SavedViews from "@/components/operator/SavedViews";
+import ColumnsChooser, { useColumns } from "@/components/operator/ColumnsChooser";
 
 const digits = (s) => String(s || "").replace(/[^\d]/g, "");
 const isDue = (x, now) => { const f = followUpState(x, now); return f === "overdue" || f === "today"; };
@@ -40,14 +41,16 @@ const BULK_MOVED = { archived: tr("{count} درخواست به آرشیو منت
 
 // `data` is one server-rendered page (lib/operator/data.js getQuotesPage): { params, ok, rows, total, page, pageCount, size, tabCounts, statusCounts,
 // attentionCount, related, customerFile } or { params, ok: false, error }. Tab, text, filters and page live in the address; counts are exact.
-export default function QuotesPanel({ data, actions, now: nowProp, reportHref = null, people = [], views = null, viewActions = null, basePath = "/operator/quotes" }) {
+export default function QuotesPanel({ data, actions, now: nowProp, reportHref = null, people = [], views = null, viewActions = null, columns = null, columnActions = null, defaultSize = 25, basePath = "/operator/quotes" }) {
   const t = useT();
+  const colState = useColumns("quotes", columns);
+  const C = colState;                                                      // C.has(key) / C.order(key): the fields this person chose, in their order
   const { date: fmtDate, lang, num } = usePanelLang();
   const router = useRouter();
   const { params } = data;
   const initial = data.ok ? data.rows : EMPTY_ROWS;
   const [quotes, setQuotes] = useState(initial);
-  const nav = useListNav(basePath, quoteHref, params);
+  const nav = useListNav(basePath, (b, pr, c, r) => quoteHref(b, pr, c, r, { size: defaultSize }), params);
   const search = useDebouncedQuery(params.q, (q) => nav.go({ q }));
   const { tab, status, who, attention } = params;
   // The server page passes its clock, so SSR and hydration agree; every refresh brings a newer one, so "waiting for 24 h"
@@ -253,6 +256,7 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
         <noscript><button type="submit" className="btn-ghost size-sm">{t("اعمال")}</button></noscript>
       </form>
       {viewActions && <SavedViews list="quotes" basePath={basePath} params={params} views={views} actions={viewActions} />}
+      {columnActions && <ColumnsChooser list="quotes" columns={columns} state={colState} actions={columnActions} />}
 
       {!data.ok && (
         <div role="alert" data-testid="list-error" className="mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn">
@@ -300,9 +304,12 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
                 <button onClick={() => setOpenId(open ? null : x.id)} className="min-w-0 flex-1 px-4 py-3.5 flex items-center gap-3 text-start hover:bg-line-soft/40 transition-colors">
                   <span className="hidden sm:grid place-items-center w-10 h-10 rounded-xl bg-brand-violet/10 text-brand-violet shrink-0"><Icon name="user" size={18} /></span>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-ink truncate">{x.name || t("بدون نام")}{x.organization ? <span className="text-ink-faint font-normal"> · {x.organization}</span> : null}</p>
-                    <p className="text-xs text-ink-muted truncate mt-0.5">{x.product_name || t("درخواست عمومی")} · {fmtDate(x.created_at)}</p>
-                    {(isOverdue(x, { now }) || notifyFailed(x) || x.assigned_to || followUpState(x, now)) && (
+                    <p className="font-medium text-ink truncate">{x.name || t("بدون نام")}{C.has("organization") && x.organization ? <span className="text-ink-faint font-normal" data-col="organization"> · {x.organization}</span> : null}</p>
+                    <p className="text-xs text-ink-muted truncate mt-0.5" data-testid="row-meta">{[["product", <span key="p" data-col="product">{x.product_name || t("درخواست عمومی")}</span>], ["date", <span key="d" data-col="date">{fmtDate(x.created_at)}</span>],
+                      ["phone", x.phone ? <span key="ph" dir="ltr" data-col="phone">{x.phone}</span> : null], ["tracking", x.tracking_code ? <span key="tr" dir="ltr" data-col="tracking">{x.tracking_code}</span> : null],
+                      ["quantity", x.quantity != null && x.quantity !== "" ? <span key="q" data-col="quantity">× {x.quantity}</span> : null]]
+                      .filter(([k, el]) => el && C.has(k)).sort((p1, p2) => C.order(p1[0]) - C.order(p2[0])).map(([, el]) => el).flatMap((e, i) => (i ? [" · ", e] : [e]))}</p>
+                    {C.has("flags") && (isOverdue(x, { now }) || notifyFailed(x) || x.assigned_to || followUpState(x, now)) && (
                       <div className="flex flex-wrap items-center gap-1.5 mt-1.5 min-w-0">
                         {isOverdue(x, { now }) && <Badge tone="warn">{(() => { const h = waitingHours(x, now); return h >= 48 ? t("بدون پاسخ {days} روز", { days: Math.floor(h / 24) }) : t("بدون پاسخ {hours} ساعت", { hours: Math.floor(h) }); })()}</Badge>}
                         {notifyFailed(x) && <Badge tone="warn">{t("اعلان تلگرام نرسید")}</Badge>}
@@ -312,7 +319,7 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
                       </div>
                     )}
                   </div>
-                  <Badge tone={QUOTE_STATUS_TONE[x.status] || "neutral"}>{QUOTE_STATUS_FA[x.status] ? t(QUOTE_STATUS_FA[x.status]) : x.status}</Badge>
+                  {C.has("status") && <Badge tone={QUOTE_STATUS_TONE[x.status] || "neutral"} data-col="status">{QUOTE_STATUS_FA[x.status] ? t(QUOTE_STATUS_FA[x.status]) : x.status}</Badge>}
                   <Icon name="chevronDown" size={16} className={`text-ink-faint transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
                 </button>
                 {canDelete && <button type="button" onClick={() => setDeleting(x)} title={t("حذف درخواست")} aria-label={t("حذف درخواست {v}", { v: x.name || "" }).trim()} className="grid place-items-center w-12 shrink-0 border-s border-line text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors"><Icon name="trash" size={17} /></button>}

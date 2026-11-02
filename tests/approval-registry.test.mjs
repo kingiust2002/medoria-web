@@ -13,12 +13,14 @@ import { approveRequest, rejectRequest, resubmitRequest, listRequests } from "..
 import { fileForApproval } from "../lib/operator/approvalFlow.js";
 import { makeProductExecutors } from "../lib/operator/approvalExecutors.js";
 import { makeProductPrepare } from "../lib/operator/approvalPrepare.js";
+import { atomicDeleteRpc } from "./helpers/atomicDeleteRpc.mjs";
 import { makeDestructiveExecutors, makeDestructivePrepare } from "../lib/operator/destructiveApproval.js";
 import { categoryDeleteFlow, brandDeleteFlow, quotesDeleteFlow } from "../lib/operator/destructiveFlow.js";
 import { makeWarehouseExecutors } from "../lib/warehouse/actionsCore.js";
 import { makeCountExecutors } from "../lib/warehouse/countsActions.js";
 import { makeMediaExecutors } from "../lib/operator/mediaLibrary.js";
 import { makeDocumentExecutors } from "../lib/operator/documentsCore.js";
+import { makeContentExecutors } from "../lib/content/actionsCore.js";
 import { rowToUser, invalidateSessionUser } from "../lib/operator/accounts.js";
 import { userResolver } from "../lib/operator/quoteFollowUpCore.js";
 
@@ -67,7 +69,7 @@ test("every approvable operation has an executor in BOTH houses (brands only in 
   const session = { user: { id: "r" } };
   for (const panel of ["health", "beauty"]) {
     const keys = new Set(Object.keys({
-      ...makeProductExecutors({ panel, session, audit: noop }), ...makeWarehouseExecutors({ panel }), ...makeCountExecutors({ panel }), ...makeMediaExecutors({ panel }), ...makeDocumentExecutors({ panel }),
+      ...makeProductExecutors({ panel, session, audit: noop }), ...makeWarehouseExecutors({ panel }), ...makeCountExecutors({ panel }), ...makeMediaExecutors({ panel }), ...makeDocumentExecutors({ panel }), ...makeContentExecutors({ panel }),
       ...makeDestructiveExecutors({ panel, session, audit: noop }),
     }));
     for (const op of approvableFor(panel)) assert.ok(keys.has(EXECUTOR_KEY[op] || op), `${panel}: nothing applies an approved ${op}`);
@@ -88,11 +90,13 @@ test("every approvable operation can be decided by SOMEONE: the owner and the ho
 });
 
 test("every approvable operation is filed by an action, and each is filed with its own name", () => {
-  const files = ["lib/operator/actions.js", "lib/beauty/operator/actions.js", "lib/operator/bulkCore.js", "lib/operator/importSubmit.js", "lib/operator/destructiveFlow.js", "lib/warehouse/actionsCore.js", "lib/warehouse/countsActions.js", "lib/operator/productRestoreCore.js", "lib/operator/categoryTreeActions.js", "lib/operator/importActions.js", "lib/operator/documentsCore.js"];
+  const files = ["lib/operator/actions.js", "lib/beauty/operator/actions.js", "lib/operator/bulkCore.js", "lib/operator/importSubmit.js", "lib/operator/destructiveFlow.js", "lib/warehouse/actionsCore.js", "lib/warehouse/countsActions.js", "lib/operator/productRestoreCore.js", "lib/operator/categoryTreeActions.js", "lib/operator/importActions.js", "lib/operator/documentsCore.js", "lib/content/actionsCore.js"];
   const src = files.map(read).join("\n");
   const named = new Set([...src.matchAll(/(?:authed|buildActionCtx)\((?:\{[^}]*operation: )?"([a-z]+\.[a-z_]+)"[^)]*approvable: true|operation: "([a-z]+\.[a-z_]+)"|evaluate\("([a-z]+\.[a-z_]+)"\)/g)].flatMap((m) => [m[1], m[2], m[3]]).filter(Boolean));
   // quick edits / the publish toggle choose their operation by name at run time; they file under these names
   for (const op of ["products.publish", "products.archive", "products.price", "products.stock_flag", "products.content"]) named.add(op);
+  // a content save files under "content.publish" when it changes publication and under "content.schedule" when it changes only the dates (tests/content-approval.test.mjs files both)
+  for (const op of ["content.publish", "content.schedule"]) named.add(op);
   for (const op of APPROVABLE_OPERATIONS) assert.ok(named.has(op), `no action files ${op}`);
 });
 
@@ -146,6 +150,7 @@ function setup() {
   }, {
     beforeUpdate: { operator_change_requests: trigger },
     defaults: { operator_change_requests: () => ({ id: `00000000-0000-4000-9000-${String(++n).padStart(12, "0")}`, status: "pending", requested_at: ts }) },
+    rpc: atomicDeleteRpc(),
   });
   audits = [];
 }
