@@ -123,7 +123,7 @@ test("house separation: a Beauty request changes only Beauty's table; the execut
   assert.deepEqual(db.tables.products.map((p) => p.is_active), [false, false, false, true], "Health's table was not touched");
   // a tampered request in Health carries a slug and a price: only the allowed columns are applied
   db.tables.operator_change_requests.push({ id: id(900), house: "health", resource: "products", operation: "products.bulk", entity: "products", entity_id: null, subject: "bulk", requested_by: requesterRow.id, requested_at: ts, status: "pending",
-    before: null, proposed: { ids: [1], patch: { is_active: true, slug: "hacked", price: 1, name_en: "X" }, __ops: ["products.bulk", "products.publish"] } });
+    before: null, proposed: { ids: [1], bases: { 1: ts }, patch: { is_active: true, slug: "hacked", price: 1, name_en: "X" }, __ops: ["products.bulk", "products.publish"] } });
   assert.equal((await approve(id(900))).ok, true);
   const p1 = db.tables.products.find((p) => p.id === 1);
   assert.deepEqual([p1.is_active, p1.slug, p1.price, p1.name_en], [true, "p-1", 10, "Product 1"]);

@@ -294,10 +294,10 @@ test("every path that can make a product public goes through the gate — source
     for (const name of ["createProduct", "updateProduct"]) assert.ok(fn(name).indexOf("gateOne(") < fn(name).indexOf("if (needsApproval)"), `${f}:${name}`);
     assert.ok(fn("setProductActive").indexOf("gateOne(") < fn("setProductActive").indexOf("a.needsApproval"));
   }
-  assert.match(read("lib/operator/bulkCore.js"), /gateItems\(\{ admin, house, items: rows\.map\(\(r\) => \(\{ before: r, after: \{ \.\.\.r, \.\.\.allowed \} \}\)\) \}\)/, "planBulkChange judges every row on the row it WILL BE (the stored row with the whole patch laid over it), not on the old row");
-  assert.match(read("lib/operator/bulkCore.js"), /export async function applyBulkChange[\s\S]*planBulkChange\(\{ admin, house, ids, allowed \}\)/, "applyBulkChange writes only what the plan lets through");
+  assert.match(read("lib/operator/bulkCore.js"), /gateItems\(\{ admin, house, items: current\.map\(\(r\) => \(\{ before: r, after: \{ \.\.\.r, \.\.\.allowed \} \}\)\) \}\)/, "planBulkChange excludes stale reviewed versions, then judges every current row on the row it WILL BE (the stored row with the whole patch laid over it), not on the old row");
+  assert.match(read("lib/operator/bulkCore.js"), /export async function applyBulkChange[\s\S]*planBulkChange\(\{ admin, house, ids, allowed, bases \}\)/, "applyBulkChange writes only what the plan lets through");
   assert.match(read("lib/operator/bulkCore.js"), /export async function fileBulkChange[\s\S]*planBulkChange\(\{ admin: a\.admin, house, ids, allowed \}\)/, "and a request that could never be applied is not filed");
-  assert.match(read("lib/operator/approvalExecutors.js"), /applyBulkChange\(\{ admin, house: panel, ids, allowed, record:/, "an approved bulk edit goes through the same function");
+  assert.match(read("lib/operator/approvalExecutors.js"), /applyBulkChange\(\{ admin, house: panel, ids, allowed, bases, record:/, "an approved bulk edit goes through the same function");
   assert.match(read("lib/operator/approvalExecutors.js"), /gateOne\(\{ admin, house: panel, before: cur/);
   assert.match(read("lib/operator/approvalExecutors.js"), /gateOne\(\{ admin, house: panel, before: null, after: fields/);
   assert.match(read("lib/operator/scheduledPublishing.js"), /gateItems\(\{ admin, house: panel/);
