@@ -127,3 +127,12 @@ Still **not done**, honestly:
 **Merged is not deployed.** The last owner-reported production state still leaves **34–56 pending**; apply the exact files from the accepted release, in numeric order, after a fresh verified backup. The corrected migration 53 is transactional and also protects legacy Health category membership. Old bulk approval requests without filed product versions fail as stale and must be refiled. Editing already-public content requires publication permission/approval; a draft-only edit can remain direct when permitted.
 
 The staged order in section 3 still applies: prepare `OPERATOR_DATA_KEY` securely, initially keep `OPERATOR_USERS` off, apply 54 before deploying document serving, then deliberately deploy and verify the real API/storage and owner session before enabling personal accounts. Real restore/alert/heartbeat proofs and the owner decisions in section 6 remain open. No server action was performed by this merge review.
+
+
+## 8. Production migration checkpoint — 2026-11-02
+
+Owner-supplied terminal output: backup `20261102T131300Z` passed local/encrypted-R2 verification; rollback image `rollback-before-20261102T131300Z` was saved. The clean checkout advanced from `5ac0592` to `1f71d28`; npm installation and environment preflight passed. **Migrations 34–43 committed. Migration 44 failed and rolled back because the legacy Health table has no `currency` column; 45–56 were not run. The app container was not deployed by this batch.**
+
+Migration 44 now treats Health currency as optional in both public variant RPCs, returning NULL when the column is absent (the existing application fallback applies), and preserving stored values when present. It does not add a column or rewrite product currency. A real-PostgreSQL regression covers the missing-column schema, repeat application, both RPCs, unchanged row counts and preserved explicit currency. Resume from corrected **44**, then 45–56; require each transaction to pass, reload PostgREST schema, and complete the environment/deployment/post-check sequence above.
+
+The owner’s full npm audit reported 19 moderate findings. Their production/development split has not yet been established; inspect `npm audit --omit=dev` before deployment. Do not run an automatic audit fix on the production checkout.

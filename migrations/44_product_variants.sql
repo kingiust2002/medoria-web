@@ -139,11 +139,14 @@ BEGIN
   CREATE POLICY "beauty_products_public_read" ON public.beauty_products FOR SELECT USING (is_active = true AND variant_of IS NULL);
 END $$;
 
+-- Legacy Health tables can lack currency. Read only that optional JSON key;
+-- return NULL when absent, preserving the application's existing currency fallback.
+-- No column/value is added and an existing currency is returned unchanged.
 -- the product page's way to the variants of ONE active product (only active variants, only public columns)
 CREATE OR REPLACE FUNCTION public.public_product_variants(p_parent BIGINT)
 RETURNS TABLE (id BIGINT, sku TEXT, options JSONB, price NUMERIC, currency TEXT, unit TEXT, in_stock BOOLEAN, image_url TEXT, sort INT)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_catalog AS $$
-  SELECT v.id, v.sku, v.variant_options, v.price, v.currency, v.unit, v.in_stock, v.image_url, v.variant_sort
+  SELECT v.id, v.sku, v.variant_options, v.price, (to_jsonb(v)->>'currency'), v.unit, v.in_stock, v.image_url, v.variant_sort
   FROM public.products v JOIN public.products p ON p.id = v.variant_of
   WHERE v.variant_of = p_parent AND v.is_active = true AND p.is_active = true AND p.variant_of IS NULL
   ORDER BY v.variant_sort, v.id
@@ -163,7 +166,7 @@ CREATE OR REPLACE FUNCTION public.public_variant_items(p_ids BIGINT[])
 RETURNS TABLE (id BIGINT, sku TEXT, name_en TEXT, name_ru TEXT, name_tg TEXT, name_fa TEXT, price NUMERIC, currency TEXT, unit TEXT, in_stock BOOLEAN,
                image_url TEXT, min_order_qty INT, brand TEXT, category TEXT, options JSONB, parent_id BIGINT, parent_slug TEXT)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_catalog AS $$
-  SELECT v.id, v.sku, v.name_en, v.name_ru, v.name_tg, v.name_fa, v.price, v.currency, v.unit, v.in_stock,
+  SELECT v.id, v.sku, v.name_en, v.name_ru, v.name_tg, v.name_fa, v.price, (to_jsonb(v)->>'currency'), v.unit, v.in_stock,
          COALESCE(NULLIF(v.image_url, ''), p.image_url), v.min_order_qty, v.brand, v.category, v.variant_options, p.id, p.slug
   FROM public.products v JOIN public.products p ON p.id = v.variant_of
   WHERE v.id = ANY (p_ids[1:30]) AND v.is_active = true AND p.is_active = true AND p.variant_of IS NULL
