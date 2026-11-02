@@ -32,9 +32,40 @@ const P = (o = {}) => ({ id: 1, sku: "S1", slug: "s1", name_en: "Old", price: 10
 const run = (db, house, rows, options = {}, user_ = user()) => runProductBatch({ admin: db, house, rawRows: rows, options: { mode: "update", authorize: makeImportAuthorizer({ session: session(user_), panel: house }), ...options } });
 
 for (const house of ["health", "beauty"]) {
+  test(`${house}: bulk approval must use the versions captured when the request was filed`, async () => {
+    const db = world(house, { products: [P()] });
+    let request;
+    await fileBulkChange({ admin: db, file: async (spec) => { request = { ...spec, requested_by: user().id, proposed: spec.proposed }; return { ok: true }; } }, { house, ids: [1], allowed: { price: null } });
+    const product = db.tables[PRODUCTS[house]][0];
+    product.price = 25;
+    product.updated_at = "2026-11-02T10:00:00.000009+00:00";
+    const executor = makeProductExecutors({ panel: house, session: session(user({ role: "house_admin" })), audit: async () => ({ ok: true }) });
+    const result = await executor["products.bulk"]({ admin: db, request, requester: user() });
+    assert.equal(result.ok, false);
+    assert.equal(product.price, 25, "a newer price must survive approval of the older request");
+  });
+}
+
+for (const house of ["health", "beauty"]) {
   const prod = PRODUCTS[house], vers = VERS[house];
 
   // ── R5 ────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  test(`${house}: approved imports refuse an existing product absent from the filed version map`, async () => {
+    const db = world(house, { products: [P()] });
+    const result = await runApprovedImport({ rows: [{ sku: "S1", name_en: "Unreviewed overwrite" }], options: { mode: "upsert" } }, {
+      processProductBatch: (rows, options) => runProductBatch({ admin: db, house, rawRows: rows, options }), recordImportLog: async () => {},
+    }, { authorize: async () => ({ ok: true }), bases: {} });
+    assert.deepEqual(result.staleIds, [1]);
+    assert.equal(db.tables[prod][0].name_en, "Old");
+  });
+
+  test(`${house}: old bulk requests without recorded versions fail closed`, async () => {
+    const db = world(house, { products: [P()] });
+    const execute = makeProductExecutors({ panel: house, session: session() })["products.bulk"];
+    assert.deepEqual(await execute({ admin: db, requester: user(), request: { proposed: { ids: [1], patch: { is_active: true } } } }), { ok: false, error: "stale" });
+    assert.equal(db.tables[prod][0].is_active, false);
+  });
+
   test(`${house} R5: the product manager's import may not change a price or publish: the whole file is refused as "needs approval", nothing is written`, async () => {
     const pm = user();
     assert.deepEqual([decide(pm, house, "products.import").mode, decide(pm, house, "products.price").mode, decide(pm, house, "products.publish").mode], ["direct", "approval", "approval"], "the premise: import is direct, price and publication wait for approval");
@@ -245,17 +276,17 @@ for (const house of ["health", "beauty"]) {
 
   test(`${house} R6/R5: the APPROVED bulk edit re-checks the requester, judges the rule on the resulting rows and files its history under the request`, async () => {
     const db = world(house, { products: [P({ id: 1 })], rules: [{ house, blocking: ["category"], version: 1 }] });
-    const req = { id: "00000000-0000-4000-9000-000000000001", operation: "products.bulk", entity: "products", house, resource: "products", status: "pending", requested_by: user().id, proposed: { ids: [1], patch: { is_active: true, category_id: null, category: null }, __ops: ["products.bulk", "products.publish", "products.content"] }, base_updated_at: null };
+    const req = { id: "00000000-0000-4000-9000-000000000001", operation: "products.bulk", entity: "products", house, resource: "products", status: "pending", requested_by: user().id, proposed: { ids: [1], bases: { 1: T }, patch: { is_active: true, category_id: null, category: null }, __ops: ["products.bulk", "products.publish", "products.content"] }, base_updated_at: null };
     const ex = makeProductExecutors({ panel: house, session: session(), audit: async () => ({ ok: true }) })["products.bulk"];
     const quality = await ex({ admin: db, request: req, requester: user() });
     assert.deepEqual(quality, { ok: false, error: "quality" });
-    const lost = await ex({ admin: db, request: { ...req, proposed: { ids: [1], patch: { is_active: true } } }, requester: user({ deny: [`${house}.products.publish`] }) });
+    const lost = await ex({ admin: db, request: { ...req, proposed: { ids: [1], bases: { 1: T }, patch: { is_active: true } } }, requester: user({ deny: [`${house}.products.publish`] }) });
     assert.deepEqual(lost, { ok: false, error: "failed" }, "the requester lost the right to publish");
     assert.equal(db.tables[prod][0].is_active, false);
-    const ok = await ex({ admin: db, request: { ...req, proposed: { ids: [1], patch: { is_active: true } } }, requester: user() });
+    const ok = await ex({ admin: db, request: { ...req, proposed: { ids: [1], bases: { 1: T }, patch: { is_active: true } } }, requester: user() });
     assert.equal(ok.ok, true);
     assert.equal(db.tables[vers][0].request_id, req.id);
-    assert.deepEqual(await ex({ admin: db, request: { ...req, proposed: { ids: [1], patch: { is_active: true } } } }), { ok: false, error: "failed" }, "no requester = nothing to check against = refused");
+    assert.deepEqual(await ex({ admin: db, request: { ...req, proposed: { ids: [1], bases: { 1: T }, patch: { is_active: true } } } }), { ok: false, error: "failed" }, "no requester = nothing to check against = refused");
   });
 }
 
