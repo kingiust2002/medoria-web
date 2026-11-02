@@ -10,7 +10,8 @@ import { createMemoryAdmin } from "./helpers/memoryAdmin.mjs";
 import { cleanContact, cleanContent, pickContact, pickFeaturedIds, CONTENT_MESSAGES as M, CONTENT_KINDS, FEATURED_LIMIT } from "../lib/siteContent.js";
 import { contactApi, defaultContact, waLinkFor, tgLinkFor } from "../lib/contactLinks.js";
 import * as content from "../lib/content/actionsCore.js";
-import { requireAll } from "../lib/operator/access.js";
+import { requireAll, evaluateAll } from "../lib/operator/access.js";
+import { fileForApproval } from "../lib/operator/approvalFlow.js";
 import { rowToUser, invalidateSessionUser } from "../lib/operator/accounts.js";
 
 const read = (f) => fs.readFileSync(new URL(`../${f}`, import.meta.url), "utf8");
@@ -91,7 +92,7 @@ function ctxFor(row, panel = "health") {
   const user = rowToUser(db.tables.operator_users.find((r) => r.id === row.id));
   const session = { sid: "s", uid: user.id, user, username: user.username };
   const audit = async (action, meta = {}) => { audits.push({ action, ...meta }); return { ok: true }; };
-  return { admin: db, session, panel, audit, require: (ops) => requireAll({ session, panel, operations: [].concat(ops), audit }), revalidate: () => purged.push(panel) };
+  return { admin: db, session, panel, audit, require: (ops) => requireAll({ session, panel, operations: [].concat(ops), audit }), evaluate: (ops) => evaluateAll({ session, panel, operations: [].concat(ops), audit }), file: (spec) => fileForApproval({ admin: db, session, audit, panel }, spec), revalidate: () => purged.push(panel) };
 }
 beforeEach(() => {
   invalidateSessionUser();

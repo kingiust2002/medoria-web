@@ -6,7 +6,8 @@ import assert from "node:assert/strict";
 import { createMemoryAdmin } from "./helpers/memoryAdmin.mjs";
 import { cleanContent, cleanLink, CONTENT_MESSAGES, contentStatus, faqJsonLd, LIMITS, pickBanner, pickFaq, pickText } from "../lib/siteContent.js";
 import * as content from "../lib/content/actionsCore.js";
-import { requireAll } from "../lib/operator/access.js";
+import { requireAll, evaluateAll } from "../lib/operator/access.js";
+import { fileForApproval } from "../lib/operator/approvalFlow.js";
 import { rowToUser, invalidateSessionUser } from "../lib/operator/accounts.js";
 
 const NOW = Date.parse("2026-10-01T10:00:00.000Z");
@@ -89,7 +90,7 @@ function ctxFor(row, panel = "health") {
   const user = rowToUser(db.tables.operator_users.find((r) => r.id === row.id));
   const session = { sid: "s", uid: user.id, user, username: user.username };
   const audit = async (action, meta = {}) => { audits.push({ action, ...meta }); return { ok: true }; };
-  return { admin: db, session, panel, audit, require: (ops) => requireAll({ session, panel, operations: [].concat(ops), audit }), revalidate: () => purged.push(panel) };
+  return { admin: db, session, panel, audit, require: (ops) => requireAll({ session, panel, operations: [].concat(ops), audit }), evaluate: (ops) => evaluateAll({ session, panel, operations: [].concat(ops), audit }), file: (spec) => fileForApproval({ admin: db, session, audit, panel }, spec), revalidate: () => purged.push(panel) };
 }
 beforeEach(() => {
   invalidateSessionUser();
@@ -156,7 +157,7 @@ test("optimistic lock: a stale version changes nothing; a row of the other house
   db.tables.operator_users.push(other);
   const beauty = ctxFor(other, "beauty");
   assert.equal((await content.updateContent(beauty, r.row.id, banner(), 2)).error, CONTENT_MESSAGES.unknown, "Health's row is not Beauty's");
-  assert.equal((await content.deleteContent(beauty, r.row.id, 2)).stale, true);
+  assert.equal((await content.deleteContent(beauty, r.row.id, 2)).error, CONTENT_MESSAGES.unknown, "the delete reads the row first (it writes the attempt before it removes anything): the other house's row is unknown, like for an edit");
   assert.equal(db.tables.site_content.length, 1);
 });
 
