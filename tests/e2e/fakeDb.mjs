@@ -9,12 +9,14 @@
 //
 // Every request is recorded with the kind of key it carried ("anon" | "service"), and
 // GET /__state, POST /__reset expose and restore the data for assertions.
+import { atomicDeleteRpc } from "../helpers/atomicDeleteRpc.mjs";
 import http from "node:http";
 import { warehouseRpc, Refusal } from "./fakeWarehouse.mjs";
 import { randomUUID } from "node:crypto";
 import { parseFilterExpr, nodeTest } from "../helpers/postgrestFilter.mjs";
 import { productGaps } from "../../lib/operator/completeness.js";
 import { phoneKey } from "../../lib/operator/quoteOps.js";
+const ATOMIC_DELETES = atomicDeleteRpc();
 
 export const ANON_KEY = "anon-test-key";
 export const SERVICE_KEY = "service-test-key";
@@ -244,6 +246,12 @@ export function createFakeDb(seedFactory) {
       // a STABLE function can be called with GET: the arguments are in the query string (numbers arrive as text)
       const body = req.method === "GET" ? Object.fromEntries([...url.searchParams].map(([k, v]) => [k, /^-?\d+$/.test(v) ? Number(v) : v])) : await readBody(req);
       if (kind !== "service" && /_stock_/.test(rpc[1])) return respond(res, 401, { code: "42501", message: "permission denied for function" });   // like the real grants
+      const atomic = ATOMIC_DELETES[rpc[1]];                                      // migration 53's functions (semantics only; the SQL is tested on a real PostgreSQL)
+      if (atomic) {
+        if (kind !== "service") return respond(res, 401, { code: "42501", message: "permission denied for function" });
+        const out = atomic(body || {}, { tables });
+        return out.error ? respond(res, 400, out.error) : respond(res, 200, out.data);
+      }
       const variantRpc = variantsRpc(tables, rpc[1], body || {});               // migration 44's public functions
       if (variantRpc !== undefined) return respond(res, 200, variantRpc);
       try {
