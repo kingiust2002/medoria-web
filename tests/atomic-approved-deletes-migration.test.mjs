@@ -5,6 +5,7 @@
 //   R10 same count, different products (or any other edit) is not "unchanged": the category / brand survives
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { createCluster, SKIP } from "./helpers/pgCluster.mjs";
 import { SCHEMA } from "./helpers/atomicDeleteSchema.mjs";
 
@@ -18,6 +19,13 @@ const val = (q, role = "service_role") => must(pg.psql(q, role));
 const json = (q) => JSON.parse(val(q));
 const fn = (call) => json(`SELECT ${call}`);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+test("migration 53 wraps function creation and grants in one transaction", () => {
+  const source = fs.readFileSync(new URL("../migrations/53_atomic_approved_deletes.sql", import.meta.url), "utf8");
+  const executable = source.replace(/^\s*--.*$/gm, "").trim();
+  assert.match(executable, /^BEGIN\s*;/i);
+  assert.match(executable, /COMMIT\s*;\s*$/i);
+});
 
 
 test("the functions need the tables; after the tables exist the migration applies and re-applies", { skip: SKIP }, () => {
@@ -193,6 +201,23 @@ test("health: the legacy slug text counts as membership and is moved too", { ski
   const r = fn(`public.operator_delete_category_checked('health', 1, 2, '${JSON.stringify(b)}'::jsonb)`);
   assert.deepEqual([r.ok, r.moved], [true, 2]);
   assert.equal(val("SELECT count(*) FROM products WHERE category_id = 2 AND category = 'two'"), "2");
+});
+
+test("health: an uncommitted legacy-only member must be seen before the reviewed deletion proceeds", { skip: SKIP }, async () => {
+  must(pg.psql("TRUNCATE products, categories RESTART IDENTITY CASCADE; INSERT INTO categories(slug) VALUES ('one'),('two'); INSERT INTO products(sku, category, category_id) VALUES ('FK', 'one', 1)"));
+  const basis = fn("public.operator_category_basis('health', 1)");
+  // No category_id: this writer takes no foreign-key lock on the category.
+  const writer = pg.async("BEGIN; INSERT INTO products(sku, category, category_id) VALUES ('LATE-LEGACY', 'one', NULL); SELECT pg_sleep(1.2); COMMIT;");
+  await sleep(350);
+  const started = Date.now();
+  const deletion = await pg.async(`SELECT public.operator_delete_category_checked('health', 1, 2, '${JSON.stringify(basis)}'::jsonb)`);
+  assert.ok((await writer).ok);
+  assert.ok(deletion.ok, deletion.err);
+  assert.ok(Date.now() - started > 400, "the deletion must wait for the legacy writer, not just FK writers");
+  const result = JSON.parse(deletion.out.split("\n").pop());
+  assert.deepEqual([result.ok, result.reason], [false, "stale"]);
+  assert.equal(val("SELECT count(*) FROM categories WHERE id = 1"), "1");
+  assert.equal(val("SELECT count(*) FROM products WHERE category = 'one'"), "2");
 });
 
 test("a Health sub-category blocks deletion; Beauty brand: the reviewed row is deleted, an edited one survives", { skip: SKIP }, () => {
