@@ -116,7 +116,7 @@ Still **not done**, honestly:
 * **Personal settings**: keyboard-shortcut customisation and server-kept language / light-dark mode are NOT built — they need the owner's decision (`docs/PANEL_PERSONAL_SETTINGS.md`, "Owner decisions").
 * **Contact details**: the gateway's e-mail is not editable; address / hours / social links do not exist on the site; defaults still come from the environment — which company details should exist is an owner decision.
 * **Documents**: the PDF check is a heuristic, not an antivirus; the first Storage proof is the post-release `check:rls` run above.
-* **Backup / monitoring**: the System status screen shows UNKNOWN until the owner applies 52 and sets the token / URL; **no real backup, restore drill, heartbeat or alert delivery was run or proved here** — the restore tool is tested against a throw-away PostgreSQL only (`tests/restore-drill.test.mjs`), not against an encrypted production snapshot.
+* **Backup / monitoring**: the System status screen shows UNKNOWN until migration 52 and the report token / URL are configured. The owner has since supplied a verified production backup (section 9); **a real restore drill, heartbeat and alert delivery remain unproved** — the restore tool is tested against a throw-away PostgreSQL only (`tests/restore-drill.test.mjs`), not against an encrypted production snapshot.
 * **Bulk / import** are not transactional across chunks (exact done / not-done lists are returned, retries are safe).
 * The `check:mobile` checker is run per release on the built site (this section's date: see `docs/PANEL_REVIEW_RESPONSE_2026-11-02.md` for the last run).
 
@@ -136,3 +136,15 @@ Owner-supplied terminal output: backup `20261102T131300Z` passed local/encrypted
 Migration 44 now treats Health currency as optional in both public variant RPCs, returning NULL when the column is absent (the existing application fallback applies), and preserving stored values when present. It does not add a column or rewrite product currency. A real-PostgreSQL regression covers the missing-column schema, repeat application, both RPCs, unchanged row counts and preserved explicit currency. Resume from corrected **44**, then 45–56; require each transaction to pass, reload PostgREST schema, and complete the environment/deployment/post-check sequence above.
 
 The owner’s full npm audit reported 19 moderate findings. Their production/development split has not yet been established; inspect `npm audit --omit=dev` before deployment. Do not run an automatic audit fix on the production checkout.
+
+## 9. Owner-reported deployment checkpoint — 2026-11-02
+
+This supersedes the pending/failed migration state in sections 7–8. Supplied terminal output shows corrected migration 44 and migrations 45–56 committed, following the earlier successful 34–43. The schema reload completed and `npm audit --omit=dev` reported zero vulnerabilities.
+
+Environment preparation passed with `OPERATOR_USERS=off`; the data-encryption key was preserved or generated without displaying its value. Fresh snapshot `20261102T134626Z` passed local backup, encrypted-R2 upload/read-back verification and retention. The saved app environment was byte-compared with the current file (`ENV_BACKUP=PASS`). The three host scripts were installed. The rollback image `rollback-before-20261102T131300Z` remains the pre-release target.
+
+The owner then built and deployed `dd808ed4e9f5808f726156ce947e85403df79233`. The app reported healthy; `/`, `/api/health`, `/health/en` and `/beauty/en` answered 200 and the www redirect answered 308. These are owner-supplied terminal observations, not an independent SSH inspection.
+
+The first post-deploy RLS run was **53 PASS, 0 FAIL, 5 UNKNOWN; exit 3**, not a complete pass. One UNKNOWN is the empty public Health product list. Four private-table probes (`publish_rules`, `operator_preferences`, `operator_table_columns`, `ops_status`) answered HTTP 400: inspection found the checker selected nonexistent `id` columns. The corrected probes select real columns from migrations 46/50/55/52 and retain the same strict denial/FAIL/UNKNOWN rules. Schema-aware regression fixtures reproduce the four UNKNOWN results before the correction, preserve UNKNOWN for genuine 400 errors, and preserve the empty-Health UNKNOWN. **Rerun the corrected checker on the VPS before activating personal accounts; the real API result after correction is still pending.** No migration or container rebuild is needed for this checker-only correction.
+
+Real draft/published/hidden-document delivery, owner bootstrap and limited-account checks, scheduling/reminder calls, monitoring reports, actual restore drill and alert delivery still need their release checks. No account activation or monitoring proof is implied by the successful build.
