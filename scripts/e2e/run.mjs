@@ -65,6 +65,10 @@ if (!process.env.E2E_SKIP_BUILD || !fs.existsSync(path.join(root, DIST))) {
   if (b.status !== 0) { console.error("✗ build failed"); process.exit(b.status || 1); }
 }
 
+// Next keeps its data cache (fetch-cache) ON DISK inside the build directory and serves a stale entry first. A previous run's product data (for example a variant's
+// price) would otherwise be shown to the next run's first requests. Every run starts with an empty data cache, like a fresh CI checkout.
+fs.rmSync(path.join(root, DIST, "cache", "fetch-cache"), { recursive: true, force: true });
+
 const db = createFakeDb(seed);
 await db.start(DB_PORT);
 let app = null;
