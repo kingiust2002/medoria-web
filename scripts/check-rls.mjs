@@ -123,7 +123,7 @@ for (const [table, label] of [["categories", "Health categories"], ["beauty_cate
 }
 
 // 3) customer data and operator logs are private
-for (const table of ["quote_requests", "beauty_quote_requests", "contact_inquiries", "import_logs", "beauty_import_logs", "operator_audit_log", "operator_sessions", "operator_totp_state", "operator_recovery_used", "publish_rules", "operator_saved_views", "product_documents", "beauty_product_documents", ...WAREHOUSE_TABLES]) {
+for (const table of ["quote_requests", "beauty_quote_requests", "contact_inquiries", "import_logs", "beauty_import_logs", "operator_audit_log", "operator_sessions", "operator_totp_state", "operator_recovery_used", "publish_rules", "operator_saved_views", "operator_preferences", "product_documents", "beauty_product_documents", ...WAREHOUSE_TABLES]) {
   expectDenied(`anon CANNOT read ${table}`, await select(table));
 }
 

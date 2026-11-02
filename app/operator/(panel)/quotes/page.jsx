@@ -5,12 +5,15 @@ import { requireHealthSession } from "@/lib/operator/panelGuard";
 import { mayView } from "@/lib/operator/access";
 import { savedViewsOf } from "@/lib/operator/savedViewsPage";
 import { columnsOf } from "@/lib/operator/listColumnsPage";
+import { preferencesOf } from "@/lib/operator/preferencesPage";
+import { defaultSizeOf, withDefaultSize } from "@/lib/operator/listSize";
 
 export const dynamic = "force-dynamic";
 
 export default async function QuotesPage({ searchParams }) {
   const session = await requireHealthSession("quotes.view");
-  const [data, people, views, columns] = await Promise.all([getQuotesPage(await searchParams), getQuoteAssignees(), savedViewsOf(session, "health", "quotes"), columnsOf(session, "health", "quotes")]);
+  const defaultSize = defaultSizeOf(await preferencesOf(session, "health"), "quotes");
+  const [data, people, views, columns] = await Promise.all([getQuotesPage(withDefaultSize(await searchParams, defaultSize)), getQuoteAssignees(), savedViewsOf(session, "health", "quotes"), columnsOf(session, "health", "quotes")]);
   const reportHref = mayView(session, "health", "reports.view") ? "/operator/quotes/report" : null;
-  return <QuotesManager data={data} now={Date.now()} reportHref={reportHref} people={people} views={views} columns={columns} />;
+  return <QuotesManager data={data} now={Date.now()} reportHref={reportHref} people={people} views={views} columns={columns} defaultSize={defaultSize} />;
 }

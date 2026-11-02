@@ -28,7 +28,7 @@ export default function LoginForm() {
         body: JSON.stringify({ username, password, ...(needCode ? (useRecovery ? { recovery: code } : { code }) : {}) }),
       });
       if (res.ok) {
-        router.push("/operator");
+        router.push("/operator?start=1");
         router.refresh();
         return;
       }

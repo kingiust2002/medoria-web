@@ -13,6 +13,10 @@ import { PageHeader, SectionCard } from "@/components/operator/ui";
 import PublishRulesCard from "@/components/operator/PublishRulesCard";
 import { savePublishRulesAction } from "@/lib/beauty/operator/publishRuleActions";
 import { readRules } from "@/lib/operator/publishGate";
+import PreferencesCard from "@/components/operator/PreferencesCard";
+import { savePreferencesAction } from "@/lib/beauty/operator/preferenceActions";
+import { openableTargets } from "@/lib/operator/navAccess";
+import { preferencesOf } from "@/lib/operator/preferencesPage";
 import { mayView } from "@/lib/operator/access";
 import LogoutButton from "@/components/beauty/operator/LogoutButton";
 import { requireBeautySession } from "@/lib/operator/panelGuard";
@@ -50,6 +54,8 @@ export default async function SettingsPage() {
   const seesRules = mayView(session, "beauty", "products.view");
   const rules = seesRules ? await readRules(getAdminClient(), "beauty") : null;
   const canEditRules = mayView(session, "beauty", "products.rules");
+  const prefs = await preferencesOf(session, "beauty");
+  const prefTargets = openableTargets(session, "beauty").map(({ href, label, icon }) => ({ href, label, icon }));
 
   return (
     <>
@@ -62,6 +68,10 @@ export default async function SettingsPage() {
           <AccountSecurity user={session.user} actions={{ changeMyPassword, startMyTwoStep, confirmMyTwoStep, disableMyTwoStep, newMyRecoveryCodes }} />
         </div>
       )}
+
+      <div className="mb-6">
+        <PreferencesCard targets={prefTargets} initial={prefs} save={savePreferencesAction} />
+      </div>
 
       {rules && (
         <div className="mb-6">
