@@ -101,3 +101,6 @@ Branch `fix/approved-destructive-atomic` from `main` (`dccae13`; #229–#233 wer
 
 ## 2026-11-02 — review round 3, step 3: documents in private storage; deletion under the audit rule (R1, R2) + product history keeps its pictures (R4)
 R4 on `feat/n7-category-brand-images` (usage scan reads every version and every nested pending proposal; `docs/PANEL_CATEGORY_IMAGES.md`). R1/R2 on `feat/n8-product-documents`: migration 54 (private buckets, no storage path in the public list, a visibility function), one serving module with three routes, attempt-first deletion (`docs/PANEL_PRODUCT_DOCUMENTS.md`, "Round 3"). #234 now targets `fix/approved-destructive-atomic` so its diff shows only its own work.
+
+## 2026-11-02 — review round 3, step 4: "my columns" on the product and request lists (N9; migration 55, not applied)
+The review noted that N9 stored filters/sort/size but no column choice. Added: the person's own field choice and order for both houses' product lists and the shared request list (`docs/PANEL_SAVED_VIEWS_BULK_SCOPE.md`, "Round 3"). Default = what the screens always showed.

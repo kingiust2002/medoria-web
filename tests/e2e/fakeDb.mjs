@@ -37,6 +37,7 @@ const UNIQUE = {
   products: [["slug"]], beauty_products: [["slug"]], categories: [["slug"]], beauty_categories: [["slug"]],
   operator_users: [["username"]], operator_sessions: [["sid"]], operator_totp_state: [["panel"]], operator_recovery_used: [["panel", "code_hash"]],
   operator_saved_views: [["user_id", "house", "list", "name"]],   // migration 49
+  operator_table_columns: [["user_id", "house", "list"]],           // migration 55
   health_stock_levels: [["product_id"]], beauty_stock_levels: [["product_id"]],
   health_stock_count_lines: [["count_id", "product_id"]], beauty_stock_count_lines: [["count_id", "product_id"]],
   product_documents: [["file_path"], ["product_id", "sha256"]], beauty_product_documents: [["file_path"], ["product_id", "sha256"]],   // migration 48
