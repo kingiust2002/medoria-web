@@ -246,6 +246,42 @@ test("tab, text, status, assignee and 'needs follow-up' filter the whole table, 
   }
 });
 
+test("the customer file reads every related row beyond the API cap in both houses", async () => {
+  for (const house of ["health", "beauty"]) {
+    const table = HOUSE_TABLES[house].quotes;
+    const rows = Array.from({ length: 1100 }, (_, i) => ({ id: i + 1, phone: "123456789", phone_key: "123456789", status: "new", created_at: new Date(NOW - i * 1000).toISOString() }));
+    const db = createMemoryAdmin({ [table]: rows }, { maxRows: 1000 });
+    const result = await readQuotesPage(db, house, parseQuoteParams({}), { now: NOW });
+    assert.equal(result.ok, true);
+    assert.equal(result.customerFile, "full");
+    assert.equal(result.related.length, 1100);
+    assert.equal(new Set(result.related.map((r) => r.id)).size, 1100);
+  }
+});
+
+test("a failed later page of a customer file is an error, never a partial full history", async () => {
+  for (const house of ["health", "beauty"]) {
+    const table = HOUSE_TABLES[house].quotes;
+    const rows = Array.from({ length: 1100 }, (_, i) => ({ id: i + 1, phone: "123456789", phone_key: "123456789", status: "new", created_at: new Date(NOW - i * 1000).toISOString() }));
+    const db = createMemoryAdmin({ [table]: rows }, { maxRows: 1000 });
+    const from = db.from;
+    let relatedReads = 0;
+    db.from = (t) => {
+      const q = from(t), select = q.select;
+      q.select = (cols, opts) => {
+        select(cols, opts);
+        if (t === table && cols === "id,phone,phone_key,status,created_at,product_name,tracking_code" && ++relatedReads === 2) {
+          q.then = (yes, no) => Promise.resolve({ data: null, error: { code: "57014" } }).then(yes, no);
+        }
+        return q;
+      };
+      return q;
+    };
+    const result = await readQuotesPage(db, house, parseQuoteParams({}), { now: NOW });
+    assert.deepEqual(result, { ok: false, error: "unavailable" });
+  }
+});
+
 test("the customer file lists the person's other requests from the whole table, not only the page", async () => {
   const rows = withPhoneKey([
     { ...quote(1), phone: "+992 900 11 22 33" }, { ...quote(2), phone: "992900112233", status: "closed" }, { ...quote(3), phone: "(0372) 21-00-11" },
@@ -457,8 +493,7 @@ test("no reader of a product/request table asks for 'everything' in one plain se
     ["lib/operator/categoryTreeData.js", ['readProductCounts(admin, "health")']],
     ["lib/operator/importActions.js", ['readAll((from, to) => admin.from("products").select("sku")', 'readAll((from, to) => scope(admin.from("products").select("*"))']],
     ["lib/beauty/operator/importActions.js", ['readAll((from, to) => admin.from("beauty_products").select("sku")', 'readAll((from, to) => scope(admin.from("beauty_products").select("*"))']],
-    ["lib/operator/importEngine.js", ['readAll((from, to) => admin.from(table).select(cols)']],
-    ["lib/beauty/operator/importEngine.js", ['readAll((from, to) => admin.from(table).select(cols)']],
+    ["lib/operator/importRun.js", ['readAll((from, to) => admin.from(cfg.table).select(cols)']],          // both houses\' engines are thin wrappers over this one runner
   ]) for (const n of needles) assert.ok(read(f).includes(n), `${f} no longer reads everything in chunks: ${n}`);
   assert.ok(!/from\("products"\)\.select\("id,category_id,category"\)/.test(read("lib/operator/categoryTreeData.js")));
 });

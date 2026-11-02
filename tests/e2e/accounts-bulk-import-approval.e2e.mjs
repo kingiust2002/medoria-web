@@ -140,3 +140,52 @@ test("the filed-for-approval screens fit a 320 px phone", async () => {
   assert.equal(res.count, 0, JSON.stringify(res.offenders?.slice(0, 3)));
   await pm.ctx.close();
 });
+
+// ── review R5: the import operation alone never authorises a publication or a price ──────────────────────────────────────────────────────
+// This person's IMPORT is direct (the default product manager); only the publication and the price need approval.
+test("R5: a direct importer whose file would PUBLISH is switched to 'send for approval'; the same file saved inactive imports directly, with history", async () => {
+  await addUser({ username: "seed.owner", role: "owner", houses: ["health", "beauty"] });
+  await addUser({ username: "pm.direct", role: "product_manager", houses: ["health", "beauty"] });          // role default: import direct, price + publication need approval
+  await addUser({ username: "rev.admin", role: "house_admin", houses: ["health", "beauty"] });
+  const before = (await state()).products.length;
+  const pm = await pageAs("pm.direct");
+  await pm.page.goto(`${BASE}/operator/products/import`, { waitUntil: "networkidle" });
+  const upload = async (csv) => {
+    await pm.page.locator("input[type=file]").first().setInputFiles({ name: "stock.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
+    await pm.page.getByRole("button", { name: /بررسی فایل/ }).click();
+  };
+  await upload("name_en,sku,price\nPublished Mask,PUB-1,5\n");                                  // the template's default is ACTIVE = a publication
+  const send = pm.page.getByRole("button", { name: /ارسال برای تأیید/ });
+  await send.waitFor({ timeout: 30000 });
+  assert.equal((await state()).products.length, before, "the check wrote nothing");
+  pm.page.once("dialog", (dlg) => dlg.accept());
+  await send.click();
+  await pm.page.getByTestId("import-filed").waitFor({ timeout: 30000 });
+  const [req] = await reqs();
+  assert.deepEqual([req.operation, req.status], ["products.import", "pending"]);
+  assert.ok(req.proposed.__ops.includes("products.publish"), "the request names the publication it contains");
+  assert.equal((await state()).products.length, before, "still nothing imported");
+
+  // the same product saved INACTIVE needs only the right to create: it is imported at once
+  await pm.page.reload({ waitUntil: "networkidle" });
+  await upload("name_en,sku,price,is_active\nDraft Mask,DRAFT-1,5,no\n");
+  const go = pm.page.getByRole("button", { name: /تأیید و ورود/ });
+  await go.waitFor({ timeout: 30000 });
+  pm.page.once("dialog", (dlg) => dlg.accept());
+  await go.click();
+  await poll(async () => (await state()).products.some((p) => p.sku === "DRAFT-1"), { label: "draft imported" });
+  const created = (await state()).products.find((p) => p.sku === "DRAFT-1");
+  assert.equal(created.is_active, false);
+  assert.ok(((await state()).product_versions || []).some((v) => v.product_id === created.id && v.kind === "create"), "the new product has its history entry");
+  await pm.ctx.close();
+
+  // the reviewer approves the first file: the published product appears and has history under the request
+  const rev = await pageAs("rev.admin");
+  await rev.page.goto(`${BASE}/operator/approvals`, { waitUntil: "networkidle" });
+  await rev.page.getByTestId("approve").first().click();
+  await poll(async () => (await state()).products.some((p) => p.sku === "PUB-1"), { label: "published product imported on approval" });
+  const pub = (await state()).products.find((p) => p.sku === "PUB-1");
+  assert.equal(pub.is_active, true);
+  assert.ok(((await state()).product_versions || []).some((v) => v.product_id === pub.id && v.request_id === req.id), "history names the request");
+  await rev.ctx.close();
+});

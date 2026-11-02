@@ -294,15 +294,18 @@ test("every path that can make a product public goes through the gate — source
     for (const name of ["createProduct", "updateProduct"]) assert.ok(fn(name).indexOf("gateOne(") < fn(name).indexOf("if (needsApproval)"), `${f}:${name}`);
     assert.ok(fn("setProductActive").indexOf("gateOne(") < fn("setProductActive").indexOf("a.needsApproval"));
   }
-  assert.match(read("lib/operator/bulkCore.js"), /gateBulkPublish\(\{ admin, house, table, ids \}\)/, "applyBulkChange judges every product that would go live");
-  assert.match(read("lib/operator/bulkCore.js"), /gateBulkPublish\(\{ admin: a\.admin, house, table, ids \}\)/, "and a request that could never be applied is not filed");
-  assert.match(read("lib/operator/approvalExecutors.js"), /applyBulkChange\(\{ admin, house: panel, ids, allowed \}\)/, "an approved bulk edit goes through the same function");
+  assert.match(read("lib/operator/bulkCore.js"), /gateItems\(\{ admin, house, items: rows\.map\(\(r\) => \(\{ before: r, after: \{ \.\.\.r, \.\.\.allowed \} \}\)\) \}\)/, "planBulkChange judges every row on the row it WILL BE (the stored row with the whole patch laid over it), not on the old row");
+  assert.match(read("lib/operator/bulkCore.js"), /export async function applyBulkChange[\s\S]*planBulkChange\(\{ admin, house, ids, allowed \}\)/, "applyBulkChange writes only what the plan lets through");
+  assert.match(read("lib/operator/bulkCore.js"), /export async function fileBulkChange[\s\S]*planBulkChange\(\{ admin: a\.admin, house, ids, allowed \}\)/, "and a request that could never be applied is not filed");
+  assert.match(read("lib/operator/approvalExecutors.js"), /applyBulkChange\(\{ admin, house: panel, ids, allowed, record:/, "an approved bulk edit goes through the same function");
   assert.match(read("lib/operator/approvalExecutors.js"), /gateOne\(\{ admin, house: panel, before: cur/);
   assert.match(read("lib/operator/approvalExecutors.js"), /gateOne\(\{ admin, house: panel, before: null, after: fields/);
   assert.match(read("lib/operator/scheduledPublishing.js"), /gateItems\(\{ admin, house: panel/);
   assert.match(read("lib/operator/productRestoreCore.js"), /gateOne\(\{ admin: a\.admin, house: panel, before: current, after: merged/);
-  for (const f of ["lib/operator/importEngine.js", "lib/beauty/operator/importEngine.js"]) assert.match(read(f), /await applyRulesToPlans\(\{ admin, house: "(health|beauty)"/);
-  assert.ok(read("lib/operator/importEngine.js").indexOf("applyRulesToPlans({") < read("lib/operator/importEngine.js").indexOf("if (options.dryRun)"), "the preview shows the same result as the import");
+  // both houses' engines are wrappers over the one shared runner; the rule is applied there, before the preview returns and before anything is written
+  for (const f of ["lib/operator/importEngine.js", "lib/beauty/operator/importEngine.js"]) assert.match(read(f), /runProductBatch\(\{ admin, house: "(health|beauty)"/);
+  assert.match(read("lib/operator/importRun.js"), /await applyRulesToPlans\(\{ admin, house, table: cfg\.table, plans \}\)/);
+  assert.ok(read("lib/operator/importRun.js").indexOf("applyRulesToPlans({") < read("lib/operator/importRun.js").indexOf("if (options.dryRun)"), "the preview shows the same result as the import");
 });
 
 test("no other module writes is_active on a product table: the whitelist of writers is exact", () => {

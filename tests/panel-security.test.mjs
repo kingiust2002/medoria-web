@@ -326,8 +326,8 @@ test("every changing server action writes to the activity log; the few exception
 });
 
 test("every irreversible action writes an ATTEMPT before it and a separate OUTCOME after it; a missing log is a refusal", () => {
-  const order = (body, label) => {
-    const att = body.indexOf("delete_attempt"), del = body.search(/\.delete\(\)/), ok = body.lastIndexOf("succeeded(");
+  const order = (body, label, mark = /\.delete\(\)/) => {
+    const att = body.indexOf("delete_attempt"), del = body.search(mark), ok = body.lastIndexOf("succeeded(");
     assert.ok(att > 0 && del > att, `${label}: the attempt must come before the delete`);
     assert.ok(ok > del, `${label}: the outcome must come after the delete`);
   };
@@ -339,11 +339,13 @@ test("every irreversible action writes an ATTEMPT before it and a separate OUTCO
   // categories and brands are deleted by the shared cores (direct and approved deletions use the same code): the attempt comes first and
   // refuses when the log cannot be written, products are moved only after it, the outcome is written last
   const catCore = read("lib/operator/categoryDelete.js").match(/export async function runCategoryDelete\(([\s\S]*?)\n\}\n/)[1];
-  order(catCore, "runCategoryDelete");
-  assert.ok(catCore.includes("requireAttempt(") && catCore.indexOf("requireAttempt(") < catCore.search(/\.update\(/), "runCategoryDelete must write the attempt before it moves any product");
+  order(catCore, "runCategoryDelete", /operator_delete_category_checked/);
+  assert.ok(catCore.includes("requireAttempt(") && catCore.indexOf("requireAttempt(") < catCore.indexOf("operator_delete_category_checked"), "runCategoryDelete must write the attempt before the database moves any product");
+  assert.ok(!/\.(update|delete)\(/.test(catCore), "runCategoryDelete must not write by itself: the move and the delete are one database transaction (migration 53)");
   const brandCore = read("lib/operator/destructiveApproval.js").match(/export async function runBrandDelete\(([\s\S]*?)\n\}\n/)[1];
-  order(brandCore, "runBrandDelete");
-  assert.ok(brandCore.includes("requireAttempt("), "runBrandDelete must refuse when the attempt cannot be written");
+  order(brandCore, "runBrandDelete", /operator_delete_brand_checked/);
+  assert.ok(brandCore.includes("requireAttempt(") && brandCore.indexOf("requireAttempt(") < brandCore.indexOf("operator_delete_brand_checked"), "runBrandDelete must refuse when the attempt cannot be written");
+  assert.ok(!/\.delete\(\)/.test(brandCore), "runBrandDelete deletes only through the checked database function");
   for (const [f, fn, via] of [["lib/beauty/operator/actions.js", "deleteCategorySafe", "categoryDeleteFlow("], ["lib/beauty/operator/actions.js", "deleteBrand", "brandDeleteFlow("], ["lib/operator/categoryTreeActions.js", "deleteHealthCategorySafe", "categoryDeleteFlow("], ["lib/operator/importActions.js", "deleteCategorySafe", "categoryDeleteFlow("]]) {
     const body = read(f).match(new RegExp(`export async function ${fn}\\(([\\s\\S]*?)\\n\\}\\n`))[1];
     assert.ok(body.includes(via), `${f}:${fn} must delete through the shared flow`);

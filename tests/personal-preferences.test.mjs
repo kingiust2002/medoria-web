@@ -7,6 +7,7 @@ import fs from "node:fs";
 import { createMemoryAdmin } from "./helpers/memoryAdmin.mjs";
 import { openableTargets, menuHrefs, SHORTCUT_LIMIT } from "../lib/operator/navAccess.js";
 import { cleanPreferences, effectivePreferences, PREF_MESSAGES } from "../lib/operator/preferences.js";
+const NONE_SIZES = { products: null, quotes: null };       // round 3 (migration 56): nobody has chosen a page size yet
 import { readPreferences, savePreferences } from "../lib/operator/preferencesCore.js";
 
 const read = (f) => fs.readFileSync(new URL(`../${f}`, import.meta.url), "utf8");
@@ -62,9 +63,9 @@ test("cleaning: only openable addresses, no repeats, at most six, dashboard mean
 
 test("reading drops what the person can no longer open", () => {
   const row = { start_page: "/operator/users", shortcuts: ["/operator/warehouse", "/operator/users", "/operator/products/new", "/beauty/operator/quotes"] };
-  assert.deepEqual(effectivePreferences(wh, "health", row), { startPage: null, shortcuts: ["/operator/warehouse"] });
-  assert.deepEqual(effectivePreferences(owner, "health", row), { startPage: "/operator/users", shortcuts: ["/operator/warehouse", "/operator/users", "/operator/products/new"] });
-  assert.deepEqual(effectivePreferences(owner, "health", null), { startPage: null, shortcuts: [] });
+  assert.deepEqual(effectivePreferences(wh, "health", row), { startPage: null, shortcuts: ["/operator/warehouse"], pageSizes: NONE_SIZES, dashboard: null });
+  assert.deepEqual(effectivePreferences(owner, "health", row), { startPage: "/operator/users", shortcuts: ["/operator/warehouse", "/operator/users", "/operator/products/new"], pageSizes: NONE_SIZES, dashboard: null });
+  assert.deepEqual(effectivePreferences(owner, "health", null), { startPage: null, shortcuts: [], pageSizes: NONE_SIZES, dashboard: null });
 });
 
 const mkDb = () => createMemoryAdmin({ operator_preferences: [] }, { unique: { operator_preferences: [["user_id", "house"]] } });
@@ -78,7 +79,7 @@ test("save and read: own row per person and house, saving again replaces it", as
   assert.deepEqual(db.tables.operator_preferences[0], { user_id: "o", house: "health", start_page: null, shortcuts: ["/operator/media", "/operator/quotes"], ...("updated_at" in db.tables.operator_preferences[0] ? { updated_at: db.tables.operator_preferences[0].updated_at } : {}) });
   assert.equal((await savePreferences(ctx(db, owner, "beauty"), { shortcuts: ["/beauty/operator/brands"] })).ok, true);
   assert.equal(db.tables.operator_preferences.length, 2);
-  assert.deepEqual(await readPreferences(db, owner, "health"), { ok: true, personal: true, startPage: null, shortcuts: ["/operator/media", "/operator/quotes"] });
+  assert.deepEqual(await readPreferences(db, owner, "health"), { ok: true, personal: true, extras: true, startPage: null, shortcuts: ["/operator/media", "/operator/quotes"], pageSizes: NONE_SIZES, dashboard: null });
   assert.deepEqual((await readPreferences(db, owner, "beauty")).shortcuts, ["/beauty/operator/brands"]);
   const other = await readPreferences(db, viewer, "health");
   assert.deepEqual([other.startPage, other.shortcuts], [null, []], "another person sees nothing of it");

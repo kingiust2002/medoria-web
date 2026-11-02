@@ -20,13 +20,17 @@ import { useListNav, useDebouncedQuery } from "@/components/operator/useListNav"
 import { productHref } from "@/lib/operator/listQuery";
 import { ScopeNotice, ConfirmFiltered } from "@/components/operator/BulkScope";
 import SavedViews from "@/components/operator/SavedViews";
+import ColumnsChooser, { useColumns } from "@/components/operator/ColumnsChooser";
+import { saveListColumns, resetListColumns } from "@/lib/beauty/operator/listColumnActions";
+
+const columnActions = { save: saveListColumns, reset: resetListColumns };
 import { saveListView, deleteListView } from "@/lib/beauty/operator/savedViewActions";
 
 const viewActions = { save: saveListView, remove: deleteListView };
 import { describeProductFilters } from "@/lib/operator/bulkScope";
 
 // `data` is one server-rendered page: { params, ok, rows, total, page, pageCount, size } or { params, ok: false, error } (lib/beauty/operator/data.js getBeautyProductsPage).
-export default function ProductsTable({ data, categories, views = null, basePath = "/beauty/operator/products" }) {
+export default function ProductsTable({ data, categories, views = null, columns = null, defaultSize = 25, basePath = "/beauty/operator/products" }) {
   const t = useT();
   const { lang, date: fmtDate, num } = usePanelLang();
   const router = useRouter();
@@ -46,9 +50,11 @@ export default function ProductsTable({ data, categories, views = null, basePath
   const modeOfPatch = (patch) => ("is_active" in patch ? (patch.is_active ? bulkPublish : bulkArchive) : patch.requestPrice ? bulkPrice : bulkContent);
   const askNote = (mode) => (mode === "approval" ? <span className="text-[11px] text-warn" data-testid="needs-approval">{t("نیازمند تأیید")}</span> : null);
 
+  const colState = useColumns("products", columns);
+  const C = colState;                                                      // C.has(key) / C.order(key): the fields this person chose, in their order
   const { params } = data;
   const products = data.ok ? data.rows : [];
-  const nav = useListNav(basePath, productHref, params);
+  const nav = useListNav(basePath, (b, pr, c, r) => productHref(b, pr, c, r, { size: defaultSize }), params);
   const search = useDebouncedQuery(params.q, (q) => nav.go({ q }));
   const { world, cat, stock, status, complete, sort } = params;
 
@@ -135,9 +141,10 @@ export default function ProductsTable({ data, categories, views = null, basePath
     if (res.ok && res.pending) { flash(t(res.message), true); clearSel(); setBulkCat(""); return; }      // filed for approval: nothing changed yet
     if (res.ok) {
       const stopped = res.blockedCount ? ` — ${blockedText({ error: t(PUBLISH_MESSAGES.blockedMany, { count: res.blockedCount }), publishBlocked: res.publishBlocked, blockedCount: res.blockedCount }, t)}` : "";
-      flash(`${t("{okText} ({count} مورد)", { okText, count: res.count })}${stopped}`, !res.blockedCount);
+      const stale = res.staleCount ? ` — ${t("{count} محصول در این فاصله توسط دیگری تغییر کرده بود و دست‌نخورده ماند.", { count: res.staleCount })}` : "";          // never overwritten
+      flash(`${t("{okText} ({count} مورد)", { okText, count: res.count })}${stopped}${stale}`, !res.blockedCount && !res.staleCount);
       clearSel(); setBulkCat(""); router.refresh();
-    } else flash(blockedText(res, t));
+    } else flash(res.partial?.done ? t(res.error, res.params) : blockedText(res, t));
   }
   async function runFiltered() {
     const { patch, okText } = confirm;
@@ -184,6 +191,7 @@ export default function ProductsTable({ data, categories, views = null, basePath
         <noscript><button type="submit" className="btn-ghost size-sm">{t("اعمال")}</button></noscript>
       </form>
       <SavedViews list="products" basePath={basePath} params={params} views={views} actions={viewActions} />
+      <ColumnsChooser list="products" columns={columns} state={colState} actions={columnActions} />
 
       {!data.ok && (
         <div role="alert" data-testid="list-error" className="mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn">
@@ -235,22 +243,24 @@ export default function ProductsTable({ data, categories, views = null, basePath
               const checked = selected.has(p.id);
               return (
                 <div key={p.id} className={`px-3 sm:px-4 py-3 flex items-center gap-3 transition-colors ${checked ? "bg-brand-violet/[0.06]" : "hover:bg-line-soft/50"}`}>
-                  {canBulk && <input type="checkbox" checked={checked} onChange={() => toggleSel(p.id)} className="w-4 h-4 accent-brand-violet shrink-0" />}
-                  <span className="img-ph w-12 h-12 rounded-xl overflow-hidden shrink-0 grid place-items-center text-ink-faint">
+                  {canBulk && <input type="checkbox" checked={checked} onChange={() => toggleSel(p.id)} className="w-4 h-4 accent-brand-violet shrink-0" style={{ order: -4 }} />}
+                  <span className="img-ph w-12 h-12 rounded-xl overflow-hidden shrink-0 grid place-items-center text-ink-faint" style={{ order: -3 }}>
                     {img ? <img src={img} alt="" className="w-full h-full object-cover" /> : <Icon name="image" size={18} />}
                   </span>
 
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1" style={{ order: -2 }}>
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-ink truncate">{productDisplayName(p, lang)}</p>
                       {p.badge && <span className="tag bg-line-soft text-ink-muted shrink-0">{p.badge}</span>}
                       {p.variant_of != null && <span className="tag bg-brand-violet/10 text-brand-violet shrink-0" data-testid="variant-tag">{t("تنوع")}</span>}
                       {(data.variantCounts?.[p.id] || 0) > 0 && <span className="tag bg-brand-violet/10 text-brand-violet shrink-0" data-testid="variant-count">{t("{count} تنوع", { count: num(data.variantCounts[p.id]) })}</span>}
                     </div>
-                    <p className="text-xs text-ink-muted truncate mt-0.5"><span className="tabular">{p.sku || "—"}</span> · {nameOf(p)}</p>
+                    <p className="text-xs text-ink-muted truncate mt-0.5" data-testid="row-meta">{[["sku", <span key="sku" className="tabular" data-col="sku">{p.sku || "—"}</span>], ["category", <span key="cat" data-col="category">{nameOf(p)}</span>], ["updated", <span key="upd" data-col="updated">{fmtDate(p.updated_at)}</span>]]
+                      .filter(([k]) => C.has(k)).sort((a, b) => C.order(a[0]) - C.order(b[0])).map(([, el]) => el).flatMap((x, i) => (i ? [" · ", x] : [x]))}</p>
                   </div>
 
                   {/* inline price */}
+                  {C.has("price") && <div className="shrink-0" style={{ order: C.order("price") }} data-col="price">
                   {editing ? (
                     <div className="flex items-center gap-1 shrink-0">
                       <input autoFocus type="number" step="0.01" min="0" value={editPrice.val} dir="ltr"
@@ -268,25 +278,25 @@ export default function ProductsTable({ data, categories, views = null, basePath
                       title={t("ویرایش قیمت")}>
                       {priceText(p, t)}
                     </button>
-                  )}
+                  )}</div>}
 
                   {/* inline toggles */}
-                  {canStock && <button onClick={() => runQuick(p, { in_stock: !p.in_stock })} disabled={isBusy}
+                  {canStock && C.has("stock") && <button onClick={() => runQuick(p, { in_stock: !p.in_stock })} disabled={isBusy} style={{ order: C.order("stock") }} data-col="stock"
                     className={`hidden sm:grid place-items-center w-8 h-8 rounded-lg transition-colors disabled:opacity-50 ${p.in_stock ? "text-ok bg-ok/10" : "text-ink-faint hover:bg-line-soft"}`}
                     title={p.in_stock ? t("موجود (کلیک=ناموجود)") : t("ناموجود (کلیک=موجود)")}>
                     <Icon name={p.in_stock ? "badgeCheck" : "package"} size={16} />
                   </button>}
-                  {canContent && <button onClick={() => runQuick(p, { is_featured: !p.is_featured })} disabled={isBusy}
+                  {canContent && C.has("featured") && <button onClick={() => runQuick(p, { is_featured: !p.is_featured })} disabled={isBusy} style={{ order: C.order("featured") }} data-col="featured"
                     className={`hidden sm:grid place-items-center w-8 h-8 rounded-lg transition-colors disabled:opacity-50 ${p.is_featured ? "text-accent-gold bg-accent-gold/10" : "text-ink-faint hover:bg-line-soft"}`}
                     title={p.is_featured ? t("ویژه — در صفحه‌ی اصلی نمایش داده می‌شود (کلیک=عادی)") : t("عادی (کلیک=ویژه: نمایش در صفحه‌ی اصلی)")}>
                     <Icon name="star" size={16} fill={p.is_featured ? "currentColor" : "none"} />
                   </button>}
 
-                  {isIncomplete(p) && <Badge tone="warn" className="hidden md:inline-flex" title={gapSummary(p, 6, t)}>{t("ناقص: {count}", { count: productGaps(p).length })}</Badge>}
-                  <Badge tone={active ? "ok" : "muted"} className="hidden md:inline-flex">{active ? t("فعال") : t("غیرفعال")}</Badge>
-                  {(p.publish_at || p.unpublish_at) && <Badge tone="violet" className="hidden md:inline-flex" title={[p.publish_at && `${t("انتشار خودکار")}: ${fmtDate(p.publish_at)}`, p.unpublish_at && `${t("آرشیو خودکار")}: ${fmtDate(p.unpublish_at)}`].filter(Boolean).join(" · ")} data-testid="badge-scheduled">{t("زمان‌بندی‌شده")}</Badge>}
+                  {C.has("gaps") && isIncomplete(p) && <Badge tone="warn" className="hidden md:inline-flex" style={{ order: C.order("gaps") }} data-col="gaps" title={gapSummary(p, 6, t)}>{t("ناقص: {count}", { count: productGaps(p).length })}</Badge>}
+                  {C.has("status") && <Badge tone={active ? "ok" : "muted"} className="hidden md:inline-flex" style={{ order: C.order("status") }} data-col="status">{active ? t("فعال") : t("غیرفعال")}</Badge>}
+                  {C.has("schedule") && (p.publish_at || p.unpublish_at) && <Badge tone="violet" className="hidden md:inline-flex" style={{ order: C.order("schedule") }} data-col="schedule" title={[p.publish_at && `${t("انتشار خودکار")}: ${fmtDate(p.publish_at)}`, p.unpublish_at && `${t("آرشیو خودکار")}: ${fmtDate(p.unpublish_at)}`].filter(Boolean).join(" · ")} data-testid="badge-scheduled">{t("زمان‌بندی‌شده")}</Badge>}
 
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0" style={{ order: 99 }}>
                     <Link href={`/beauty/operator/products/${p.id}/edit`} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-brand-violet/10 hover:text-brand-violet transition-colors" title={t("ویرایش")}><Icon name={canContent || canPrice ? "edit" : "eye"} size={16} /></Link>
                     {canCreate && <button onClick={() => dup(p)} disabled={isBusy} className="grid place-items-center w-9 h-9 rounded-lg text-ink-muted hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50" title={t("تکثیر")}><Icon name="copy" size={16} /></button>}
                     {(active ? canArchive : canPublish) && <button onClick={() => toggleActive(p)} disabled={isBusy} className={`grid place-items-center w-9 h-9 rounded-lg transition-colors disabled:opacity-50 ${active ? "text-ink-muted hover:bg-warn/10 hover:text-warn" : "text-ink-muted hover:bg-ok/10 hover:text-ok"}`} title={active ? t("آرشیو (غیرفعال)") : t("فعال‌سازی")}>

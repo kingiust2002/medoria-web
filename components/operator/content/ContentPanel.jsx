@@ -69,7 +69,7 @@ function ContentModal({ kind, row, actions, onClose, onDone, productName = "" })
     const payload = { text: f.text, label: f.label, link: f.link, tone: f.tone, q: f.q, a: f.a, phone: f.phone, whatsapp: f.whatsapp, telegram: f.telegram, email: f.email, sku: f.sku, sort_order: f.sort_order, is_published: f.is_published, publish_at, unpublish_at };
     start(async () => {
       const res = row ? await actions.updateContent(row.id, payload, row.version) : await actions.createContent(kind, payload);
-      if (res.ok) { onDone(); return; }
+      if (res.ok) { onDone(res); return; }
       setErr(t(res.error, res.params));
       if (res.stale) setStale(true);
     });
@@ -178,11 +178,11 @@ export default function ContentPanel({ data, actions, house }) {
     );
   }
 
-  const done = () => { setModal(null); setMsg({ text: t("ذخیره شد."), ok: true }); router.refresh(); };
+  const done = (res) => { setModal(null); setMsg({ text: res?.pending ? t(res.message) : t("ذخیره شد."), ok: true }); router.refresh(); };          // pending = the change waits for a reviewer: say so in the words of the approval flow
   function remove(r) {
     start(async () => {
       const res = await actions.deleteContent(r.id, r.version);
-      if (res.ok) { setMsg({ text: t("حذف شد."), ok: true }); router.refresh(); } else setMsg({ text: t(res.error, res.params), ok: false });
+      if (res.ok) { setMsg({ text: res.pending ? t(res.message) : t("حذف شد."), ok: true }); router.refresh(); } else setMsg({ text: t(res.error, res.params), ok: false });
     });
   }
   const products = data?.products || {};
