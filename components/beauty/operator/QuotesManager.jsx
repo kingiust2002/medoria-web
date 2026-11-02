@@ -10,6 +10,6 @@ const viewActions = { save: saveListView, remove: deleteListView };
 const columnActions = { save: saveListColumns, reset: resetListColumns };
 const actions = { updateQuoteStatus, updateQuoteNotes, assignQuote, deleteQuote, updateQuotesStatus, updateFilteredQuotesStatus, deleteQuotes, setQuoteFollowUp, retryQuoteNotice };
 
-export default function QuotesManager({ data, now, reportHref, people, views, columns }) {
-  return <QuotesPanel data={data} actions={actions} now={now} reportHref={reportHref} people={people} views={views} viewActions={viewActions} columns={columns} columnActions={columnActions} basePath="/beauty/operator/quotes" />;
+export default function QuotesManager({ data, now, reportHref, people, views, columns, defaultSize }) {
+  return <QuotesPanel data={data} actions={actions} now={now} reportHref={reportHref} people={people} views={views} viewActions={viewActions} columns={columns} columnActions={columnActions} defaultSize={defaultSize} basePath="/beauty/operator/quotes" />;
 }

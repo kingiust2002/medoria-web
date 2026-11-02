@@ -1,4 +1,5 @@
 // app/operator/(panel)/page.jsx — dashboard.
+import { Fragment } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { preferencesOf } from "@/lib/operator/preferencesPage";
@@ -14,6 +15,7 @@ import {
 import { getPanel } from "@/lib/panel/server";
 import { tr, formatDate } from "@/lib/panel/i18n";
 import Trans from "@/components/panel/Trans";
+import { effectiveDash, groupDash } from "@/lib/operator/dashboardBlocks";
 
 export const dynamic = "force-dynamic";
 
@@ -33,34 +35,15 @@ export default async function DashboardPage({ searchParams }) {
   const { t, lang } = await getPanel();
   const session = await requireHealthSession();
   // right after a login the person's own start page opens, if they chose one (the menu's Dashboard link never redirects)
-  if ((await searchParams)?.start === "1") {
-    const prefs = await preferencesOf(session, "health");
-    if (prefs.startPage) redirect(prefs.startPage);
-  }
+  const prefs = await preferencesOf(session, "health");
+  if ((await searchParams)?.start === "1" && prefs.startPage) redirect(prefs.startPage);
+  const order = effectiveDash(prefs.dashboard);                    // the blocks this person shows, in their order
   const configured = isAdminConfigured();
   const { access, stats, recentProducts, recentQuotes } = await getDashboardData();
 
-  return (
-    <>
-      <PageHeader title={t("داشبورد")} subtitle={t("نمای کلی فروشگاه و استعلام‌ها")}>
-        {access.create && (
-          <Link href="/operator/products/new" className="btn-primary size-md">
-            <Icon name="plus" size={18} /> {t("افزودن محصول")}</Link>
-        )}
-      </PageHeader>
-
-      {!configured && (
-        <div className="card p-4 mb-6 flex items-start gap-3 border-warn/30 bg-warn/5">
-          <span className="text-warn shrink-0 mt-0.5"><Icon name="alertTriangle" size={18} /></span>
-          <div className="text-sm text-ink-soft">
-            <p className="font-semibold text-ink">{t("اتصال به پایگاه داده کامل نیست")}</p>
-            <p className="text-ink-muted mt-1 leading-relaxed"><Trans t={t} k="متغیر {name} تنظیم نشده است. بدون آن، پنل نمی‌تواند داده‌ها را بخواند یا ذخیره کند. راهنما در صفحه «تنظیمات»." values={{ name: <code className="text-xs bg-line-soft px-1.5 py-0.5 rounded">SUPABASE_SERVICE_ROLE_KEY</code> }} /></p>
-          </div>
-        </div>
-      )}
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
+  const blocks = {
+    stats: (
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6" data-dash="stats">
         {access.products && <StatCard icon="package"  tone="violet" label={t("کل محصولات")}        value={stats?.total ?? "—"} />}
         {access.products && <StatCard icon="badgeCheck" tone="ok"   label={t("محصولات فعال")}       value={stats?.active ?? "—"} />}
         {access.products && <StatCard icon="dollar"   tone="warn"   label={t("بدون قیمت (استعلام)")} value={stats?.noPrice ?? "—"} />}
@@ -71,19 +54,17 @@ export default async function DashboardPage({ searchParams }) {
         {access.quotes && <StatCard icon="alertTriangle" tone="warn" label={t("بدون پاسخ بیش از ۲۴ ساعت")} value={stats?.overdueQuotes ?? "—"} />}
         {access.quotes && <StatCard icon="send"     tone="warn"   label={t("اعلان تلگرام نرسیده")}   value={stats?.notifyFailures ?? "—"} />}
       </div>
-
-      {/* Quick actions */}
-      <div className="flex flex-wrap gap-2 mb-8">
+    ),
+    actions: (
+      <div className="flex flex-wrap gap-2 mb-8" data-dash="actions">
         {QUICK.filter((q) => (q.href.endsWith("/new") ? access.create : q.href.endsWith("/products") ? access.products : q.href.endsWith("/quotes") ? access.quotes : true)).map((q) => (
           <Link key={q.href} href={q.href} className={`${q.primary ? "btn-primary" : "btn-ghost"} size-sm`}>
             <Icon name={q.icon} size={16} /> {t(q.label)}
           </Link>
         ))}
       </div>
-
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Recent quotes */}
-        {access.quotes && <SectionCard title={t("استعلام‌های اخیر")} icon="quote">
+    ),
+    quotes: access.quotes && <div className="min-w-0 [&>*]:h-full" data-dash="quotes"><SectionCard title={t("استعلام‌های اخیر")} icon="quote">
           {recentQuotes?.length ? (
             <ul className="flex flex-col divide-y divide-line">
               {recentQuotes.map((q) => (
@@ -101,10 +82,8 @@ export default async function DashboardPage({ searchParams }) {
           )}
           <Link href="/operator/quotes" className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-violet mt-4 hover:gap-2.5 transition-all">{t("مشاهده همه")} <Icon name="chevronLeft" size={14} className="ltr:-scale-x-100" />
           </Link>
-        </SectionCard>}
-
-        {/* Recently updated products */}
-        {access.products && <SectionCard title={t("محصولات اخیراً به‌روزشده")} icon="refresh">
+        </SectionCard></div>,
+    products: access.products && <div className="min-w-0 [&>*]:h-full" data-dash="products"><SectionCard title={t("محصولات اخیراً به‌روزشده")} icon="refresh">
           {recentProducts?.length ? (
             <ul className="flex flex-col divide-y divide-line">
               {recentProducts.map((p) => {
@@ -129,8 +108,31 @@ export default async function DashboardPage({ searchParams }) {
               <Link href="/operator/products/new" className="btn-primary size-sm"><Icon name="plus" size={16} /> {t("افزودن محصول")}</Link>
             </EmptyState>
           )}
-        </SectionCard>}
-      </div>
+        </SectionCard></div>,
+  };
+
+  return (
+    <>
+      <PageHeader title={t("داشبورد")} subtitle={t("نمای کلی فروشگاه و استعلام‌ها")}>
+        {access.create && (
+          <Link href="/operator/products/new" className="btn-primary size-md">
+            <Icon name="plus" size={18} /> {t("افزودن محصول")}</Link>
+        )}
+      </PageHeader>
+
+      {!configured && (
+        <div className="card p-4 mb-6 flex items-start gap-3 border-warn/30 bg-warn/5">
+          <span className="text-warn shrink-0 mt-0.5"><Icon name="alertTriangle" size={18} /></span>
+          <div className="text-sm text-ink-soft">
+            <p className="font-semibold text-ink">{t("اتصال به پایگاه داده کامل نیست")}</p>
+            <p className="text-ink-muted mt-1 leading-relaxed"><Trans t={t} k="متغیر {name} تنظیم نشده است. بدون آن، پنل نمی‌تواند داده‌ها را بخواند یا ذخیره کند. راهنما در صفحه «تنظیمات»." values={{ name: <code className="text-xs bg-line-soft px-1.5 py-0.5 rounded">SUPABASE_SERVICE_ROLE_KEY</code> }} /></p>
+          </div>
+        </div>
+      )}
+
+      {groupDash(order).map((g) => (g.cards
+        ? <div key={g.cards.join()} className="grid lg:grid-cols-2 gap-6 mb-6">{g.cards.map((k) => <Fragment key={k}>{blocks[k]}</Fragment>)}</div>
+        : <Fragment key={g.key}>{blocks[g.key]}</Fragment>))}
     </>
   );
 }

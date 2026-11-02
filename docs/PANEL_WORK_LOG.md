@@ -105,3 +105,6 @@ R4 on `feat/n7-category-brand-images` (usage scan reads every version and every 
 
 ## 2026-11-02 — review round 3, step 4: "my columns" on the product and request lists (N9; migration 55, not applied)
 The review noted that N9 stored filters/sort/size but no column choice. Added: the person's own field choice and order for both houses' product lists and the shared request list (`docs/PANEL_SAVED_VIEWS_BULK_SCOPE.md`, "Round 3"). Default = what the screens always showed.
+
+## 2026-11-02 — review round 3, step 5: personal settings, the part that needs no decision (N10; migration 56, not applied)
+Rows per page (products, requests) and dashboard blocks per person (`docs/PANEL_PERSONAL_SETTINGS.md`, "Round 3"). Keyboard shortcuts and server-kept language/theme are NOT built: they are written up as owner decisions with a proposal each. Request 10 stays "partial".

@@ -41,7 +41,7 @@ const BULK_MOVED = { archived: tr("{count} درخواست به آرشیو منت
 
 // `data` is one server-rendered page (lib/operator/data.js getQuotesPage): { params, ok, rows, total, page, pageCount, size, tabCounts, statusCounts,
 // attentionCount, related, customerFile } or { params, ok: false, error }. Tab, text, filters and page live in the address; counts are exact.
-export default function QuotesPanel({ data, actions, now: nowProp, reportHref = null, people = [], views = null, viewActions = null, columns = null, columnActions = null, basePath = "/operator/quotes" }) {
+export default function QuotesPanel({ data, actions, now: nowProp, reportHref = null, people = [], views = null, viewActions = null, columns = null, columnActions = null, defaultSize = 25, basePath = "/operator/quotes" }) {
   const t = useT();
   const colState = useColumns("quotes", columns);
   const C = colState;                                                      // C.has(key) / C.order(key): the fields this person chose, in their order
@@ -50,7 +50,7 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
   const { params } = data;
   const initial = data.ok ? data.rows : EMPTY_ROWS;
   const [quotes, setQuotes] = useState(initial);
-  const nav = useListNav(basePath, quoteHref, params);
+  const nav = useListNav(basePath, (b, pr, c, r) => quoteHref(b, pr, c, r, { size: defaultSize }), params);
   const search = useDebouncedQuery(params.q, (q) => nav.go({ q }));
   const { tab, status, who, attention } = params;
   // The server page passes its clock, so SSR and hydration agree; every refresh brings a newer one, so "waiting for 24 h"

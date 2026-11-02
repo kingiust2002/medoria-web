@@ -29,7 +29,7 @@ const viewActions = { save: saveListView, remove: deleteListView };
 import { describeProductFilters } from "@/lib/operator/bulkScope";
 
 // `data` is one server-rendered page: { params, ok, rows, total, page, pageCount, size } or { params, ok: false, error } (lib/operator/data.js getProductsPage).
-export default function ProductsTable({ data, categories, views = null, columns = null, basePath = "/operator/products" }) {
+export default function ProductsTable({ data, categories, views = null, columns = null, defaultSize = 25, basePath = "/operator/products" }) {
   const t = useT();
   const { lang, date: fmtDate, num } = usePanelLang();
   const router = useRouter();
@@ -48,7 +48,7 @@ export default function ProductsTable({ data, categories, views = null, columns 
   const C = colState;                                                      // C.has(key) / C.order(key): the fields this person chose, in their order
   const { params } = data;
   const products = data.ok ? data.rows : [];
-  const nav = useListNav(basePath, productHref, params);
+  const nav = useListNav(basePath, (b, pr, c, r) => productHref(b, pr, c, r, { size: defaultSize }), params);
   const search = useDebouncedQuery(params.q, (q) => nav.go({ q }));
   const { cat, stock, status, complete, sort } = params;
 
