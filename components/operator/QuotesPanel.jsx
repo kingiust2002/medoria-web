@@ -19,6 +19,9 @@ import { tr } from "@/lib/panel/i18n";
 import ListPager from "@/components/operator/ListPager";
 import { useListNav, useDebouncedQuery } from "@/components/operator/useListNav";
 import { quoteHref } from "@/lib/operator/listQuery";
+import { ScopeNotice, ConfirmFiltered } from "@/components/operator/BulkScope";
+import SavedViews from "@/components/operator/SavedViews";
+import ColumnsChooser, { useColumns } from "@/components/operator/ColumnsChooser";
 
 const digits = (s) => String(s || "").replace(/[^\d]/g, "");
 const isDue = (x, now) => { const f = followUpState(x, now); return f === "overdue" || f === "today"; };
@@ -33,12 +36,15 @@ const TABS = [
 // A row that changed on this screen leaves the tab / status it no longer belongs to at once; the server list catches up with the refresh.
 const inTab = (x, tab) => (tab === "all" ? true : tab === "active" ? x.status !== "archived" && x.status !== "spam" : x.status === tab);
 const MOVED = { archived: tr("درخواست به آرشیو منتقل شد."), spam: tr("درخواست به اسپم منتقل شد."), new: tr("درخواست بازگردانی شد.") };
+const BULK_WORDS = { archived: tr("انتقال به آرشیو"), spam: tr("انتقال به اسپم"), new: tr("بازگردانی به «جدید»") };
 const BULK_MOVED = { archived: tr("{count} درخواست به آرشیو منتقل شد."), spam: tr("{count} درخواست به اسپم منتقل شد."), new: tr("{count} درخواست بازگردانی شد.") };
 
 // `data` is one server-rendered page (lib/operator/data.js getQuotesPage): { params, ok, rows, total, page, pageCount, size, tabCounts, statusCounts,
 // attentionCount, related, customerFile } or { params, ok: false, error }. Tab, text, filters and page live in the address; counts are exact.
-export default function QuotesPanel({ data, actions, now: nowProp, reportHref = null, people = [], basePath = "/operator/quotes" }) {
+export default function QuotesPanel({ data, actions, now: nowProp, reportHref = null, people = [], views = null, viewActions = null, columns = null, columnActions = null, basePath = "/operator/quotes" }) {
   const t = useT();
+  const colState = useColumns("quotes", columns);
+  const C = colState;                                                      // C.has(key) / C.order(key): the fields this person chose, in their order
   const { date: fmtDate, lang, num } = usePanelLang();
   const router = useRouter();
   const { params } = data;
@@ -58,6 +64,9 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
   // what this person may offer on screen (the server asks again on every action)
   const canStatus = useCan("quotes.status"), canAssign = useCan("quotes.assign"), canDelete = useCan("quotes.delete");
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [scopeAll, setScopeAll] = useState(false);          // "all filtered results" (status changes only — deletion stays on the ticked rows)
+  const [confirm, setConfirm] = useState(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
   const [selected, setSelected] = useState(() => new Set());
   const [pending, startTransition] = useTransition();
   const allRef = useRef(null);
@@ -101,6 +110,8 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
 
   function flash(text, ok = false) { setMsg({ text, ok }); setTimeout(() => setMsg(null), 4500); }
   function patch(id, fields) { setQuotes((qs) => qs.map((x) => (x.id === id ? { ...x, ...fields } : x))); }
+  const listKey = data.ok ? `${data.page}|${JSON.stringify(params)}` : "";
+  useEffect(() => { setScopeAll(false); setConfirm(null); }, [listKey]);
   function goTab(id) { setSelected(new Set()); setOpenId(null); nav.go({ tab: id, status: "", who: "", attention: false }, { replace: false }); }
   function toggle(id) { setSelected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; }); }
   function toggleAll() { setSelected(allChecked ? new Set() : new Set(rows.map((x) => x.id))); }
@@ -153,6 +164,7 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
   }
 
   function bulkStatus(val) {
+    if (scopeAll) { setConfirm({ val, what: t(BULK_WORDS[val]) }); return; }
     const ids = selectedRows.map((x) => x.id);
     ids.forEach((id) => inflight.current.add(id));
     startTransition(async () => {
@@ -165,6 +177,17 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
       flash(t(BULK_MOVED[val] || "{count} درخواست تغییر کرد.", { count: res.count }) + (res.missing ? " " + t("({missing} مورد دیگر پیدا نشد.)", { missing: res.missing }) : ""), true);
       router.refresh();
     });
+  }
+
+  async function runFiltered() {
+    const { val } = confirm;
+    setConfirmBusy(true);
+    const res = await actions.updateFilteredQuotesStatus(Object.fromEntries(Object.entries(params).filter(([k]) => !["page", "size"].includes(k))), val, data.total).catch(() => null);
+    setConfirmBusy(false); setConfirm(null);
+    if (!res) { flash(t("ارتباط با سرور برقرار نشد.")); return; }
+    setScopeAll(false); setSelected(new Set());
+    if (res.ok) flash(t(BULK_MOVED[val] || "{count} درخواست تغییر کرد.", { count: res.count }), true); else flash(t(res.error));
+    router.refresh();
   }
 
   function afterDelete(gone, res) {
@@ -232,6 +255,8 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
         )}
         <noscript><button type="submit" className="btn-ghost size-sm">{t("اعمال")}</button></noscript>
       </form>
+      {viewActions && <SavedViews list="quotes" basePath={basePath} params={params} views={views} actions={viewActions} />}
+      {columnActions && <ColumnsChooser list="quotes" columns={columns} state={colState} actions={columnActions} />}
 
       {!data.ok && (
         <div role="alert" data-testid="list-error" className="mb-4 text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-warn/10 text-warn">
@@ -241,14 +266,15 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
 
       {selectedRows.length > 0 && (
         <div role="region" aria-label={t("عملیات گروهی")} className="card-flat p-3 mb-4 flex flex-wrap items-center gap-2 border border-brand-violet/30">
-          <span className="text-sm font-medium text-ink">{t("{length} مورد انتخاب شده", { length: selectedRows.length })}</span>
+          <span className="text-sm font-medium text-ink">{t("{length} مورد انتخاب شده", { length: scopeAll ? data.total : selectedRows.length })}</span>
           <div className="flex flex-wrap items-center gap-2 ms-auto">
             {canStatus && tab !== "archived" && <button type="button" disabled={pending} onClick={() => bulkStatus("archived")} className="btn-ghost size-sm disabled:opacity-60"><Icon name="archive" size={15} /> {t("آرشیو")}</button>}
             {canStatus && tab !== "spam" && <button type="button" disabled={pending} onClick={() => bulkStatus("spam")} className="btn-ghost size-sm disabled:opacity-60"><Icon name="alertTriangle" size={15} /> {t("اسپم")}</button>}
             {canStatus && (tab === "archived" || tab === "spam" || tab === "all") && <button type="button" disabled={pending} onClick={() => bulkStatus("new")} className="btn-ghost size-sm disabled:opacity-60"><Icon name="refresh" size={15} /> {t("بازگردانی به «جدید»")}</button>}
-            {canDelete && <button type="button" disabled={pending} onClick={() => setBulkDeleting(true)} className="btn-ghost size-sm !text-warn hover:!border-warn/40 disabled:opacity-60"><Icon name="trash" size={15} /> {t("حذف")}</button>}
-            <button type="button" onClick={() => setSelected(new Set())} className="btn-ghost size-sm">{t("لغو انتخاب")}</button>
+            {canDelete && !scopeAll && <button type="button" disabled={pending} onClick={() => setBulkDeleting(true)} className="btn-ghost size-sm !text-warn hover:!border-warn/40 disabled:opacity-60"><Icon name="trash" size={15} /> {t("حذف")}</button>}
+            <button type="button" onClick={() => { setSelected(new Set()); setScopeAll(false); }} className="btn-ghost size-sm">{t("لغو انتخاب")}</button>
           </div>
+          {canStatus && allChecked && <ScopeNotice pageCount={rows.length} total={data.total} all={scopeAll} onAll={() => setScopeAll(true)} onPage={() => setScopeAll(false)} num={num} />}
         </div>
       )}
 
@@ -278,9 +304,12 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
                 <button onClick={() => setOpenId(open ? null : x.id)} className="min-w-0 flex-1 px-4 py-3.5 flex items-center gap-3 text-start hover:bg-line-soft/40 transition-colors">
                   <span className="hidden sm:grid place-items-center w-10 h-10 rounded-xl bg-brand-violet/10 text-brand-violet shrink-0"><Icon name="user" size={18} /></span>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-ink truncate">{x.name || t("بدون نام")}{x.organization ? <span className="text-ink-faint font-normal"> · {x.organization}</span> : null}</p>
-                    <p className="text-xs text-ink-muted truncate mt-0.5">{x.product_name || t("درخواست عمومی")} · {fmtDate(x.created_at)}</p>
-                    {(isOverdue(x, { now }) || notifyFailed(x) || x.assigned_to || followUpState(x, now)) && (
+                    <p className="font-medium text-ink truncate">{x.name || t("بدون نام")}{C.has("organization") && x.organization ? <span className="text-ink-faint font-normal" data-col="organization"> · {x.organization}</span> : null}</p>
+                    <p className="text-xs text-ink-muted truncate mt-0.5" data-testid="row-meta">{[["product", <span key="p" data-col="product">{x.product_name || t("درخواست عمومی")}</span>], ["date", <span key="d" data-col="date">{fmtDate(x.created_at)}</span>],
+                      ["phone", x.phone ? <span key="ph" dir="ltr" data-col="phone">{x.phone}</span> : null], ["tracking", x.tracking_code ? <span key="tr" dir="ltr" data-col="tracking">{x.tracking_code}</span> : null],
+                      ["quantity", x.quantity != null && x.quantity !== "" ? <span key="q" data-col="quantity">× {x.quantity}</span> : null]]
+                      .filter(([k, el]) => el && C.has(k)).sort((p1, p2) => C.order(p1[0]) - C.order(p2[0])).map(([, el]) => el).flatMap((e, i) => (i ? [" · ", e] : [e]))}</p>
+                    {C.has("flags") && (isOverdue(x, { now }) || notifyFailed(x) || x.assigned_to || followUpState(x, now)) && (
                       <div className="flex flex-wrap items-center gap-1.5 mt-1.5 min-w-0">
                         {isOverdue(x, { now }) && <Badge tone="warn">{(() => { const h = waitingHours(x, now); return h >= 48 ? t("بدون پاسخ {days} روز", { days: Math.floor(h / 24) }) : t("بدون پاسخ {hours} ساعت", { hours: Math.floor(h) }); })()}</Badge>}
                         {notifyFailed(x) && <Badge tone="warn">{t("اعلان تلگرام نرسید")}</Badge>}
@@ -290,7 +319,7 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
                       </div>
                     )}
                   </div>
-                  <Badge tone={QUOTE_STATUS_TONE[x.status] || "neutral"}>{QUOTE_STATUS_FA[x.status] ? t(QUOTE_STATUS_FA[x.status]) : x.status}</Badge>
+                  {C.has("status") && <Badge tone={QUOTE_STATUS_TONE[x.status] || "neutral"} data-col="status">{QUOTE_STATUS_FA[x.status] ? t(QUOTE_STATUS_FA[x.status]) : x.status}</Badge>}
                   <Icon name="chevronDown" size={16} className={`text-ink-faint transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
                 </button>
                 {canDelete && <button type="button" onClick={() => setDeleting(x)} title={t("حذف درخواست")} aria-label={t("حذف درخواست {v}", { v: x.name || "" }).trim()} className="grid place-items-center w-12 shrink-0 border-s border-line text-ink-muted hover:bg-warn/10 hover:text-warn transition-colors"><Icon name="trash" size={17} /></button>}
@@ -371,6 +400,7 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
           onDone={(res) => afterDelete(res.ok ? res.deletedIds : selectedRows.map((x) => x.id), res)}
         />
       )}
+      {confirm && <ConfirmFiltered total={data.total} filters={t("زبانهٔ «{tab}» و فیلترهای فعلی", { tab: t(TABS.find((x) => x.id === tab)?.label || "") })} what={confirm.what} busy={confirmBusy} onConfirm={runFiltered} onCancel={() => setConfirm(null)} num={num} />}
     </>
   );
 }

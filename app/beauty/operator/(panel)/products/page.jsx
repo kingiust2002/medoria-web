@@ -2,13 +2,15 @@
 import { getBeautyProductsPage, getAdminBeautyCategories } from "@/lib/beauty/operator/data";
 import ProductsTable from "@/components/beauty/operator/ProductsTable";
 import { requireBeautySession } from "@/lib/operator/panelGuard";
+import { savedViewsOf } from "@/lib/operator/savedViewsPage";
+import { columnsOf } from "@/lib/operator/listColumnsPage";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProductsPage(props) {
-  await requireBeautySession("products.view");
+  const session = await requireBeautySession("products.view");
   const sp = { ...(await props.searchParams) };
   if (!sp.q && typeof sp.brand === "string") sp.q = sp.brand;           // a link from the brands screen
-  const [data, categories] = await Promise.all([getBeautyProductsPage(sp), getAdminBeautyCategories()]);
-  return <ProductsTable data={data} categories={categories} />;
+  const [data, categories, views, columns] = await Promise.all([getBeautyProductsPage(sp), getAdminBeautyCategories(), savedViewsOf(session, "beauty", "products"), columnsOf(session, "beauty", "products")]);
+  return <ProductsTable data={data} categories={categories} views={views} columns={columns} />;
 }
