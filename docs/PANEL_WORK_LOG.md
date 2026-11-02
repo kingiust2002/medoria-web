@@ -114,3 +114,12 @@ Rows per page (products, requests) and dashboard blocks per person (`docs/PANEL_
 
 ## 2026-11-02 — review round 3, step 6: import and bulk judged on what they really change (N12: R5, R6, R7, R11; no migration)
 One shared runner for both houses' imports (`lib/operator/importRun.js`) that asks for the union of the operations the rows really need before it writes, pins each update to its version, writes a history entry per product, and marks generated translations "auto"; bulk edits judged on the resulting row, written per product against its version, with exact partial outcomes (`docs/PANEL_BULK_IMPORT_APPROVAL.md`, "Round 3"). Owner decision recorded: a product manager's new rows are publications unless the file says `is_active=no`.
+
+
+## Independent acceptance, supplemental fixes and merges — 2026-11-02
+
+The independent reviewer reproduced and fixed: migration 53 transaction/legacy-category writer locking (#242), publication approval for edits of already-public material (#238), filing-time version pins for bulk approvals and approved imports (#239), and truthful partial-outcome display (#239). A document browser-test readiness race was reproduced by delaying the completed save response; the test now waits for actual UI state and separately proves immediate draft-download refusal (#235, test-only).
+
+The eight remaining feature PRs were merged in order: **#242, #234, #235, #236, #237, #238, #239, #240**, ending at `ed64315`. Full integrated GitHub evidence: **1032/1032 unit tests, 276/276 browser tests, zero skips/failures**, complete validate/container checks. Manual mobile checker: **305/305 loads** (61 public fixture routes, five viewports); focused outcome browser tests 8/8, delayed-response documents 4/4. See `PANEL_REVIEW_ACCEPTANCE_2026-11-02.md` for the tested commit, the test-only final difference, the non-passing local full-unit environment limitation, and PR CI repetitions still running when merged.
+
+No server/production database/env/cron/token operation was performed. Migrations 34–56 and all real delivery/restore/storage/owner-session checks remain the separate production rollout. Personal-settings decisions and other explicitly listed scope limits remain open. This entry supplements the author’s original record; it does not attribute the independent reviewer’s executions to the author.

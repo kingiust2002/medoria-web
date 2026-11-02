@@ -120,5 +120,10 @@ Still **not done**, honestly:
 * **Bulk / import** are not transactional across chunks (exact done / not-done lists are returned, retries are safe).
 * The `check:mobile` checker is run per release on the built site (this section's date: see `docs/PANEL_REVIEW_RESPONSE_2026-11-02.md` for the last run).
 
-## 7. The stack at the time of writing (2026-11-02)
-`main` = `dccae13` carries #228–#233 (merged by the owner after the first review; the review's fixes for #229 are in #242). Open, in dependency order: **#242** (`fix/approved-destructive-atomic`, base `main`: migration 53) → **#234** (+R4) → **#235** (+R1/R2, migration 54) → **#236** (+columns, migration 55) → **#237** (+rows per page / dashboard, migration 56) → **#238** (+content approval) → **#239** (+R5/R6/R7/R11) → **#240** (+probes, check-rls, the reconciled documents). Merge strictly in this order; each PR's base is the branch before it.
+## 7. Merged release state (2026-11-02)
+
+#228–#233 were already merged before this acceptance. The independent review then merged **#242 → #234 → #235 → #236 → #237 → #238 → #239 → #240** normally, ending the feature release at `ed64315`. Exact merge commits, supplemental corrections, test provenance and limits are in `PANEL_REVIEW_ACCEPTANCE_2026-11-02.md`.
+
+**Merged is not deployed.** The last owner-reported production state still leaves **34–56 pending**; apply the exact files from the accepted release, in numeric order, after a fresh verified backup. The corrected migration 53 is transactional and also protects legacy Health category membership. Old bulk approval requests without filed product versions fail as stale and must be refiled. Editing already-public content requires publication permission/approval; a draft-only edit can remain direct when permitted.
+
+The staged order in section 3 still applies: prepare `OPERATOR_DATA_KEY` securely, initially keep `OPERATOR_USERS` off, apply 54 before deploying document serving, then deliberately deploy and verify the real API/storage and owner session before enabling personal accounts. Real restore/alert/heartbeat proofs and the owner decisions in section 6 remain open. No server action was performed by this merge review.

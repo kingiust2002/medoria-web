@@ -204,3 +204,9 @@ One PR per item, each on top of the previous one (merge in this order; **a merge
 **Reading this table (round 3, 2026-11-02).** "Complete in code and tests" means: written, covered by permanent tests (unit, PostgreSQL where it matters, browser) and documented — **not deployed, no migration applied anywhere**. Items that need the owner are marked **owner decision** and were NOT built or invented. Row 10 is the only request that is partial. The 13 requests are therefore **not all finished**: 12 are complete in code, 1 is partial, and several of the 12 carry listed owner decisions or server-side proofs only the owner can run.
 
 **Round 3 — independent review of 2026-10-29.** Point-by-point answers (R1–R11 and the scope notes): `docs/PANEL_REVIEW_RESPONSE_2026-11-02.md`. #228–#233 were merged by the owner (2026-10-29 / 2026-10-31); the fixes for #229 are in the new #242; all later PRs carry their own fixes; the order is in `docs/PANEL_RELEASE_RUNBOOK.md` §7.
+
+## 8. Independent acceptance and merge record — 2026-11-02
+
+The remaining feature stack **#242, #234–#240 is merged**, ending at `ed64315`. See `PANEL_REVIEW_ACCEPTANCE_2026-11-02.md` for the merge table, reviewer amendments, exact test provenance and limits. The final integrated application passed 1032 unit tests, 276 browser tests and 305 manual mobile page loads; the later test-only document synchronization correction has separate focused evidence. Production code matches the integrated tested application.
+
+The section 7 feature scopes and owner decisions still stand: row 10 is partial, translations need a native reader, and real backup/restore/alerts/Storage/API proofs are not supplied by a merge. **No deployment, production migration, env or cron change was performed.** Follow `PANEL_RELEASE_RUNBOOK.md` for the separate server rollout, starting with a fresh verified backup and migrations 34–56.
