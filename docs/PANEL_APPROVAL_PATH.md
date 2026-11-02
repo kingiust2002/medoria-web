@@ -49,3 +49,9 @@ What a request stores: the operation, the thing, the old and the proposed values
 ## Not covered (stated)
 
 Content/banner publication under approval is not built and is **not offered** as an approval option. (Bulk edit/import under approval: N12, `PANEL_BULK_IMPORT_APPROVAL.md`. Document publication: N8.)
+
+## Round 3 (independent review, 2026-10-29): what changed in the approval path
+* **Destructive approvals are atomic and version-pinned** (R3, R9, R10, migration 53): a request for deleting customer requests, a category or a brand carries the basis the reviewer saw; the database re-checks it under lock and deletes (and moves the category's products) in one transaction or not at all (`docs/PANEL_ATOMIC_DELETES.md`). Requests filed by older code have no basis and are refused as stale (ask again).
+* **More operations can be approved:** `documents.publish` / `documents.delete` (already), and now `content.publish`, `content.schedule`, `content.delete` (`docs/PANEL_CONTACT_FEATURED.md`, "Round 3"). Every approvable operation still has a filing action, a reviewer who can decide it and an executor in both houses (`tests/approval-registry.test.mjs`).
+* **Bulk edits and imports are checked against what they really change** (R5): the operations a file needs are derived from its rows; on approval the **requester's current rights** are re-checked (`approveRequest` passes `requester` to the executor) — the reviewer's rights are never borrowed (`docs/PANEL_BULK_IMPORT_APPROVAL.md`, "Round 3").
+* **Hard deletes follow the attempt-first rule everywhere they exist:** products, requests, categories, brands (earlier), documents and site content (now) — direct and approved.
