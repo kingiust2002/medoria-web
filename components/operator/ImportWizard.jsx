@@ -16,11 +16,12 @@ import {
   IMPORT_COLUMNS, IMPORT_COLUMN_KEYS, MAX_ROWS_PER_FILE,
   normalizeRow, findInFileDuplicates,
 } from "@/lib/operator/importCore";
-import { dryRunProductRows, commitProductRows, finalizeProductBatch, exportProductsCsv, parseSpreadsheet, downloadTemplateXlsx } from "@/lib/operator/importActions";
+import { dryRunProductRows, commitProductRows, finalizeProductBatch, submitImportForApproval, exportProductsCsv, parseSpreadsheet, downloadTemplateXlsx } from "@/lib/operator/importActions";
 
 const UPLOAD_ACCEPT = ".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel";
 import { PageHeader, SectionCard, Badge, Spinner } from "@/components/operator/ui";
 import { useT } from "@/components/panel/PanelI18n";
+import { useMode } from "@/components/panel/Capabilities";
 import { tr } from "@/lib/panel/i18n";
 
 // a row the publish rule stopped is saved (or would be) as an inactive draft; say why, in the person's language
@@ -61,6 +62,8 @@ function downloadBase64(name, b64, mime) {
 export default function ImportWizard({ recentLogs = [] }) {
   const t = useT();
   const router = useRouter();
+  const importMode = useMode("products.import");        // "approval": the file is read and checked as usual, but the write is ONE request for a reviewer
+  const [filed, setFiled] = useState(null);                // the answer of the server when the file was sent for approval
   const fileRef = useRef(null);
   const [file, setFile] = useState(null);     // { name, rows, unknownHeaders, truncated }
   const [mode, setMode] = useState("add");
@@ -69,6 +72,7 @@ export default function ImportWizard({ recentLogs = [] }) {
   const [busy, setBusy] = useState("");        // "" | "dry" | "commit"
   const [progress, setProgress] = useState(null);
   const [dry, setDry] = useState(null);        // { results, counts, createdCategories }
+  const approvalMode = importMode === "approval" || Boolean(dry?.needsApproval);          // the import itself, or a change inside the file (a price, a publication…), needs a reviewer
   const [final, setFinal] = useState(null);    // same shape, after commit
   const [filter, setFilter] = useState("all");
   const [err, setErr] = useState("");
@@ -151,6 +155,7 @@ export default function ImportWizard({ recentLogs = [] }) {
     const sendable = file.rows.map((raw, i) => ({ raw, rowNum: i + 1 })).filter((x) => !dupRows.has(x.rowNum));
     const merged = [];
     const createdCats = new Set();
+    let needsApproval = false, denied = false;          // from the server: what the rows REALLY change (a price, a publication…) against this person's rights
     try {
       for (let i = 0; i < sendable.length; i += DRY_CHUNK) {
         const chunk = sendable.slice(i, i + DRY_CHUNK);
@@ -161,6 +166,7 @@ export default function ImportWizard({ recentLogs = [] }) {
           if (meta) merged.push({ ...out, rowNum: meta.rowNum });
         }
         for (const c of res.createdCategories || []) createdCats.add(c);
+        if (res.authorization && !res.authorization.ok) { if (res.authorization.kind === "denied") denied = true; else needsApproval = true; }
         setProgress({ done: Math.min(i + chunk.length, sendable.length), total: sendable.length });
       }
     } catch {
@@ -173,7 +179,7 @@ export default function ImportWizard({ recentLogs = [] }) {
       merged.push({ rowNum, status: "error", messages: [t("SKU در همین فایل تکراری است — فقط اولین ردیف پردازش می‌شود.")], warnings: [] });
     }
     merged.sort((a, b) => a.rowNum - b.rowNum);
-    setDry({ results: merged, counts: countResults(merged), createdCategories: [...createdCats] });
+    setDry({ results: merged, counts: countResults(merged), createdCategories: [...createdCats], needsApproval, denied });
     setBusy("");
     setProgress(null);
   }
@@ -182,6 +188,17 @@ export default function ImportWizard({ recentLogs = [] }) {
   async function runCommit() {
     if (!file || !dry) return;
     if (strict && dry.counts.error > 0) return;
+    if (dry.denied) { setErr(t("این فایل تغییری دارد که اجازهٔ آن را ندارید (قیمت، انتشار، ساخت دسته…)؛ چیزی نوشته نشد.")); return; }
+    if (approvalMode) {
+      if (!window.confirm(t("این فایل ({create} ساخت، {update} بروزرسانی) به‌صورت یک درخواست برای تأیید ارسال شود؟ تا تأیید نشود چیزی در کاتالوگ تغییر نمی‌کند.", { create: dry.counts.create, update: dry.counts.update }))) return;
+      setBusy("commit"); setErr("");
+      const rows = file.rows.map((raw, i) => ({ raw, rowNum: i + 1 })).filter((x) => !dupRows.has(x.rowNum)).map((x) => x.raw);
+      let res = null;
+      try { res = await submitImportForApproval(rows, { mode, autoCreateCategories: autoCreate, autoTranslate, strict }, { fileName: file.name }); } catch { res = null; }
+      setBusy("");
+      if (res?.ok) setFiled({ message: res.message, duplicate: Boolean(res.duplicate) }); else setErr(t(res?.error) || t("ارتباط با سرور برقرار نشد."));
+      return;
+    }
     if (!window.confirm(t("ورود {create} ساخت و {update} بروزرسانی انجام شود؟", { create: dry.counts.create, update: dry.counts.update }))) return;
     setBusy("commit");
     setErr("");
@@ -236,7 +253,7 @@ export default function ImportWizard({ recentLogs = [] }) {
   }
 
   function reset() {
-    setFile(null); setDry(null); setFinal(null); setErr(""); setFilter("all");
+    setFile(null); setDry(null); setFinal(null); setFiled(null); setErr(""); setFilter("all");
   }
 
   const view = final || dry;
@@ -405,7 +422,7 @@ export default function ImportWizard({ recentLogs = [] }) {
               </div>
 
               <div className="flex flex-wrap items-center gap-2 mt-4">
-                {!final && (
+                {!final && !filed && (
                   <button
                     type="button"
                     onClick={runCommit}
@@ -413,9 +430,13 @@ export default function ImportWizard({ recentLogs = [] }) {
                     className="btn-primary size-md disabled:opacity-60"
                   >
                     {busy === "commit" ? <Spinner /> : <Icon name="save" size={17} />}
-                    {busy === "commit" ? t("در حال ورود…") : t("تأیید و ورود ({create} ساخت، {update} بروزرسانی)", { create: view.counts.create, update: view.counts.update })}
+                    {busy === "commit" ? (approvalMode ? t("در حال ارسال…") : t("در حال ورود…")) : approvalMode ? t("ارسال برای تأیید ({create} ساخت، {update} بروزرسانی)", { create: view.counts.create, update: view.counts.update }) : t("تأیید و ورود ({create} ساخت، {update} بروزرسانی)", { create: view.counts.create, update: view.counts.update })}
                   </button>
                 )}
+                {filed && <div role="status" data-testid="import-filed" className="basis-full text-sm rounded-xl px-3 py-2.5 flex items-center gap-2 bg-ok/10 text-ok"><Icon name="check" size={16} /> <span className="min-w-0 break-words">{t(filed.message)}</span></div>}
+                {filed && <button type="button" onClick={reset} className="btn-ghost size-md"><Icon name="refresh" size={16} /> {t("فایل جدید")}</button>}
+                {approvalMode && !final && !filed && <Badge tone="warn">{t("ورود این فایل نیازمند تأیید است")}</Badge>}
+                {dry?.denied && <Badge tone="warn">{t("این فایل تغییری دارد که اجازهٔ آن را ندارید (قیمت، انتشار، ساخت دسته…)؛ چیزی نوشته نشد.")}</Badge>}
                 {busy === "commit" && progress && <span className="text-xs text-ink-muted tabular">{progress.done}/{progress.total}</span>}
                 {strict && !final && view.counts.error > 0 && <Badge tone="warn">{t("حالت سخت‌گیرانه: اول خطاها را رفع کنید")}</Badge>}
                 <button type="button" onClick={downloadReport} className="btn-ghost size-md"><Icon name="download" size={16} /> {t("دانلود گزارش CSV")}</button>

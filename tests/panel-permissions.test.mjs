@@ -56,7 +56,7 @@ test("every operator server action asks for a permission right after the session
         continue;
       }
       checked++;
-      const permAt = a.head.search(/await authed\((?!\))|await authedManager\(\)|await gate\(session, "(health|beauty)", |await buildActionCtx\(\{ panel: "(health|beauty)", getSession, operation: "/);
+      const permAt = a.head.search(/await authed\((?!\))|await authedManager\(\)|await gate\(session, "(health|beauty)", |await gateAsk\(session, "(health|beauty)", |await buildActionCtx\(\{ panel: "(health|beauty)", getSession, operation: "/);
       assert.ok(permAt >= 0, `${f}:${a.name} has a session check but no permission check`);
       const dbAt = a.head.search(/admin\.from\(|a\.admin|\.from\(|getAdminClient\(\)\.from/);
       assert.ok(dbAt < 0 || permAt < dbAt, `${f}:${a.name} touches the database before checking the permission`);

@@ -166,7 +166,7 @@ test("withdraw: only the requester, only while pending", async () => {
 });
 
 test("an operation without an executor is refused at approval, not half-done; unknown ids are 'not found'", async () => {
-  const { request } = await submitChange(db, { actor: requester(), panel: "health", spec: { ...priceSpec(), operation: "products.bulk", ops: ["products.bulk"] } });
+  const { request } = await submitChange(db, { actor: requester(), panel: "health", spec: { ...priceSpec(), operation: "categories.delete", ops: ["categories.delete"] } });      // nothing in the product executors applies a category deletion
   const res = await approveRequest(db, { reviewer: reviewer(), panel: "health", id: request.id, executors: executors() });
   assert.equal(res.error, "unsupported");
   assert.equal(db.tables.operator_change_requests[0].status, "pending", "still pending, nothing claimed");

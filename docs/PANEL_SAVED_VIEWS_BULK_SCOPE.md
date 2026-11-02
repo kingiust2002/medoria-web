@@ -28,7 +28,7 @@ Ticking the select-all box ticks the rows **on the current page**. When more row
 | The **server resolves the ids itself** by running the same filtered query the list runs (`productScope` is the list's own function; requests use `applyQuoteFilters` + the tab). The browser sends the filters and the number it saw, **never ids** | `lib/operator/bulkScope.js` |
 | If the count now is **not the count the screen showed**, nothing is applied ("the list changed, refresh") | `scopeChanged` |
 | Ceiling **2,000** rows; above it, nothing is applied and the person is told to narrow the filter. An empty result and a failing read are refusals too | `SCOPE_MAX` |
-| After that the ids go through the **ordinary bulk runner**: the same session check, the same right (`products.bulk`, `quotes.status`), the same publish quality rules (N6), the same history entry, the same "a person whose policy says *needs approval* cannot do it in bulk" rule | `bulkUpdateFilteredProducts`, `updateFilteredQuotesStatus` |
+| After that the ids go through the **ordinary bulk runner**: the same session check, the same right (`products.bulk`, `quotes.status`), the same publish quality rules (N6), the same history entry, and — since N12 — a person whose policy says *needs approval* files it as ONE request instead (`PANEL_BULK_IMPORT_APPROVAL.md`) | `bulkUpdateFilteredProducts`, `updateFilteredQuotesStatus` |
 | Requests: **archive / spam / restore** only. **Deleting** requests stays on the ticked rows of the page | `QuotesPanel` |
 | A selection never survives a change of page, filter or tab | the list key resets it |
 

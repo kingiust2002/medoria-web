@@ -493,8 +493,7 @@ test("no reader of a product/request table asks for 'everything' in one plain se
     ["lib/operator/categoryTreeData.js", ['readProductCounts(admin, "health")']],
     ["lib/operator/importActions.js", ['readAll((from, to) => admin.from("products").select("sku")', 'readAll((from, to) => scope(admin.from("products").select("*"))']],
     ["lib/beauty/operator/importActions.js", ['readAll((from, to) => admin.from("beauty_products").select("sku")', 'readAll((from, to) => scope(admin.from("beauty_products").select("*"))']],
-    ["lib/operator/importEngine.js", ['readAll((from, to) => admin.from(table).select(cols)']],
-    ["lib/beauty/operator/importEngine.js", ['readAll((from, to) => admin.from(table).select(cols)']],
+    ["lib/operator/importRun.js", ['readAll((from, to) => admin.from(cfg.table).select(cols)']],          // both houses\' engines are thin wrappers over this one runner
   ]) for (const n of needles) assert.ok(read(f).includes(n), `${f} no longer reads everything in chunks: ${n}`);
   assert.ok(!/from\("products"\)\.select\("id,category_id,category"\)/.test(read("lib/operator/categoryTreeData.js")));
 });
