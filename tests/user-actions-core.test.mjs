@@ -30,7 +30,9 @@ const setup = (rows, sessions = []) => {
   db = createMemoryAdmin({ operator_users: rows, operator_sessions: sessions }, { unique: { operator_users: [["username"]] }, beforeUpdate, defaults: { operator_users: () => ({ id: `00000000-0000-4000-8000-${String(Math.floor(Math.random() * 1e12)).padStart(12, "0")}`, version: 1, authz_version: 1, status: "active" }) } });
   logs = [];
 };
-const ctx = (actorRow) => ({ admin: db, session: { sid: "s", uid: actorRow.id, user: rowToUser(actorRow) }, panel: "health", audit: async (action, meta) => { logs.push({ action, ...meta }); } });
+const ctx = (actorRow) => ({ admin: db, session: { sid: "s", uid: actorRow.id, user: rowToUser(actorRow) }, panel: "health", audit: async (action, meta) => { logs.push({ action, ...meta }); return { ok: true }; }, reauthenticate: async (i) => (i?.password === MANAGER_PASSWORD ? { ok: true } : { ok: false, error: "wrongPassword" }) });
+const MANAGER_PASSWORD = "manager-pass";
+const RE = { password: MANAGER_PASSWORD };
 const owner = row(1, { username: "boss", role: "owner", houses: ["health", "beauty"] });
 const manager = row(2, { username: "mgr", role: "house_admin", houses: ["health"], allow_perms: ["users.manage"] });
 beforeEach(() => invalidateSessionUser());
@@ -60,13 +62,14 @@ test("temporary passwords pass the policy and differ every time; every operation
 
 test("create: the person can sign in with the one-time password, which is never stored or logged; the log names both", async () => {
   setup([owner]);
-  const res = await createPerson(ctx(owner), { username: "Alice", displayName: "Alice A", role: "product_manager", houses: ["health"], require2fa: false });
+  const res = await createPerson(ctx(owner), { username: "Alice", displayName: "Alice A", role: "product_manager", houses: ["health"], require2fa: false }, RE);
   assert.equal(res.ok, true, JSON.stringify(res));
   assert.equal(res.user.username, "alice");
   assert.equal(passwordProblem(res.tempPassword), null);
   assert.equal((await verifyLogin(db, { username: "alice", password: res.tempPassword, panel: "health" })).ok, true);
   assert.equal(db.tables.operator_users.find((r) => r.username === "alice").must_change_password, true);
-  const l = logs.find((x) => x.action === "user.create");
+  assert.deepEqual(logs.filter((x) => x.action === "user.create").map((x) => x.result), ["attempt", "success"], "the attempt is on record BEFORE the outcome");
+  const l = logs.find((x) => x.action === "user.create" && x.result === "success");
   assert.deepEqual([l.result, l.targetUserId, l.detail.role], ["success", res.user.id, "product_manager"]);
   assert.ok(!JSON.stringify(logs).includes(res.tempPassword), "the password reached the log");
 });
@@ -90,7 +93,7 @@ test("update: power change ends sessions and says so; a stale form conflicts; hi
   const other = row(4, { username: "elsewhere", houses: ["beauty"] });
   setup([owner, manager, target, other], [{ sid: "a", panel: "health", user_id: target.id, revoked_at: null }]);
   const c = ctx(manager);
-  const ok = await updatePerson(c, target.id, { role: "quote_manager" }, 1);
+  const ok = await updatePerson(c, target.id, { role: "quote_manager" }, 1, RE);
   assert.equal(ok.ok, true);
   assert.equal(ok.sessionsEnded, true);
   assert.ok(db.tables.operator_sessions[0].revoked_at);
@@ -125,7 +128,7 @@ test("password reset: not your own, not an owner's unless you are an owner, ends
   assert.match((await resetPersonPassword(ctx(owner), owner.id)).error, /تنظیمات/, "own password goes through settings");
   const mgrOnOwner = await resetPersonPassword(ctx(manager), owner.id);
   assert.equal(mgrOnOwner.ok, false);
-  const ok = await resetPersonPassword(ctx(manager), t.id);
+  const ok = await resetPersonPassword(ctx(manager), t.id, RE);
   assert.equal(ok.ok, true);
   assert.equal(passwordProblem(ok.tempPassword), null);
   assert.equal((await verifyLogin(db, { username: "target", password: ok.tempPassword, panel: "health" })).ok, true);
@@ -184,8 +187,8 @@ test("R2: viewer + users.manage cannot reset the password of, or end the session
   // a peer (same or less power) is still theirs, and an owner can reset anybody
   const peer = row(9, { username: "viewer2", role: "viewer" });
   db.tables.operator_users.push(peer);
-  assert.equal((await resetPersonPassword(ctx(weak), peer.id)).ok, true);
-  assert.equal((await resetPersonPassword(ctx(owner), strong.id)).ok, true);
+  assert.equal((await resetPersonPassword(ctx(weak), peer.id, RE)).ok, true);
+  assert.equal((await resetPersonPassword(ctx(owner), strong.id, RE)).ok, true);
 });
 
 test("R2: a target that differs only by execution mode (direct where the manager needs approval) is not the manager's to reset", async () => {

@@ -6,7 +6,7 @@ import { getAdminClient } from "@/lib/operator/supabaseAdmin";
 import { listPeople } from "@/lib/operator/userActionsCore";
 import { mayGlobal } from "@/lib/operator/access";
 import UsersManager from "@/components/operator/UsersManager";
-import { createPerson, updatePerson, resetPersonPassword, endPersonSessions } from "@/lib/operator/userActions";
+import { createPerson, updatePerson, archivePerson, restorePerson, resetPersonPassword, resetPersonTwoFactor, endPersonSessions, personResponsibilities, transferPersonResponsibilities } from "@/lib/operator/userActions";
 
 export const dynamic = "force-dynamic";
 
@@ -22,9 +22,9 @@ export default async function UsersPage() {
         users={people.ok ? people.users : []}
         loadError={people.ok ? "" : people.error}
         canManage={mayGlobal(session, "health", "users.manage")}
-        actor={{ id: actor.id, role: actor.role, houses: actor.houses }}
+        actor={{ id: actor.id, role: actor.role, houses: actor.houses, hasTotp: Boolean(actor.hasTotp) }}
         panel="health"
-        actions={{ createPerson, updatePerson, resetPersonPassword, endPersonSessions }}
+        actions={{ createPerson, updatePerson, archivePerson, restorePerson, resetPersonPassword, resetPersonTwoFactor, endPersonSessions, personResponsibilities, transferPersonResponsibilities }}
       />
     </>
   );

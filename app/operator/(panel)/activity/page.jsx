@@ -29,7 +29,7 @@ export default async function ActivityPage({ searchParams }) {
 
       <form method="get" className="card p-4 mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5 items-end" data-testid="audit-filters">
         <label className="block text-xs text-ink-soft">{t("شخص")}
-          <select name="who" defaultValue={filters.who || ""} className="input w-full mt-1"><option value="">{t("همه")}</option>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+          <select name="who" defaultValue={filters.who || ""} className="input w-full mt-1"><option value="">{t("همه")}</option>{people.map((p) => <option key={p.id} value={p.id}>{p.name}{p.archived ? ` · ${t("بایگانی‌شده")}` : ""}</option>)}</select>
         </label>
         <label className="block text-xs text-ink-soft">{t("نتیجه")}
           <select name="result" defaultValue={filters.result || ""} className="input w-full mt-1"><option value="">{t("همه")}</option>{RESULTS.map((r) => <option key={r} value={r}>{t(RESULT_LABEL[r])}</option>)}</select>
@@ -50,7 +50,7 @@ export default async function ActivityPage({ searchParams }) {
         </div>
       </form>
 
-      <ActivityList rows={view.rows} names={view.names} query={filters} hasMore={view.hasMore} page={view.page} basePath="/operator/activity" />
+      <ActivityList rows={view.rows} names={view.names} archived={view.archived} query={filters} hasMore={view.hasMore} page={view.page} basePath="/operator/activity" />
     </>
   );
 }

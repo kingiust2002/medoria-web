@@ -316,6 +316,7 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
                         {followUpState(x, now) === "overdue" && <Badge tone="warn" data-testid="badge-followup-overdue">{t("پیگیری عقب‌افتاده")}</Badge>}
                         {followUpState(x, now) === "today" && <Badge tone="violet" data-testid="badge-followup-today">{t("پیگیری امروز")}</Badge>}
                         {x.assigned_to && <Badge tone="neutral" className="max-w-full truncate">{t("مسئول: {assigned_to}", { assigned_to: x.assigned_to })}</Badge>}
+                        {x.assigned_to && x.assigned_archived && <Badge tone="warn" data-testid="badge-assignee-archived">{t("مسئول بایگانی‌شده")}</Badge>}
                       </div>
                     )}
                   </div>
@@ -329,7 +330,7 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
                   <div className="px-4 pb-4 border-t border-line">
                     <div className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm py-3.5">
                       <Detail label={t("کد پیگیری")} value={x.tracking_code} ltr />
-                      <Detail label={t("مسئول")} value={x.assigned_to} />
+                      <Detail label={t("مسئول")} value={x.assigned_archived ? `${x.assigned_to} (${t("بایگانی‌شده")})` : x.assigned_to} />
                       <Detail label={t("پیگیری")} value={x.follow_up_at ? String(x.follow_up_at).slice(0, 10) : ""} ltr />
                       <Detail label={t("تلفن")} value={x.phone} ltr />
                       <Detail label={t("کانال ترجیحی")} value={CONTACT_FA[x.preferred_contact] ? t(CONTACT_FA[x.preferred_contact]) : x.preferred_contact} />

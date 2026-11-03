@@ -91,6 +91,7 @@ export default function ProductHistory({ product, versions, unavailable, actions
                   <Badge tone={KIND_TONE[v.kind] || "neutral"}>{t(KIND[v.kind] || v.kind)}</Badge>
                   <span className="text-sm text-ink-soft">{fmtDate(v.created_at)}</span>
                   <span className="text-sm text-ink-muted min-w-0 break-words">{v.actor_label || ""}</span>
+                  {v.actor_archived && <Badge tone="neutral" data-testid="archived-mark">{t("بایگانی‌شده")}</Badge>}
                   {can && <button type="button" className="btn-ghost size-sm ms-auto" onClick={() => setConfirm({ version: v, plan })} data-testid="revert-open">{t("برگرداندن این تغییر")}</button>}
                 </div>
                 <ul className="flex flex-col gap-1">
