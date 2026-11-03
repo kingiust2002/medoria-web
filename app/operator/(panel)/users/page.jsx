@@ -22,7 +22,7 @@ export default async function UsersPage() {
         users={people.ok ? people.users : []}
         loadError={people.ok ? "" : people.error}
         canManage={mayGlobal(session, "health", "users.manage")}
-        actor={{ id: actor.id, role: actor.role, houses: actor.houses, hasTotp: Boolean(actor.hasTotp) }}
+        actor={{ id: actor.id, role: actor.role, houses: actor.houses, hasTotp: Boolean(actor.hasTotp), allow: actor.allow, deny: actor.deny, approval: actor.approval }}
         panel="health"
         actions={{ createPerson, updatePerson, archivePerson, restorePerson, resetPersonPassword, resetPersonTwoFactor, endPersonSessions, personResponsibilities, transferPersonResponsibilities }}
       />

@@ -135,3 +135,12 @@ No server/production database/env/cron/token operation was performed. Migrations
   honestly (the create test now expects attempt + success; the approvals test also covers an ARCHIVED requester).
 * **Not proven:** anything on the live site; a real run of the emergency script against the production database; human review of the 53 new Tajik/English texts.
 * Owner report of 2026-11-03 recorded in `PANEL_RELEASE_RUNBOOK.md` §10.
+
+## 2026-11-03 — user management, PR 2: the tick-box access editor (no migration)
+
+* **Built:** `accessCatalog.js` + `AccessEditor.jsx` (houses, role presets, grouped ticks with the real effective state, direct / needs approval only where an approval path exists,
+  reset to role defaults, the summary before saving, disabled-with-reason for what a limited manager cannot hand out); a new permission `products.price` (implied by edit, so no existing
+  account changes); strict validation of the lists and approval policies a request carries; permission codes in the history.
+* **Proved:** `tests/access-catalog.test.mjs` (every permission has a tick; ticks ⇄ lists identity for every role/house set), `tests/user-access-tamper.test.mjs`,
+  `tests/e2e/accounts-access-editor.e2e.mjs`; existing pins that spoke of the typed patterns were updated.
+* **Not proven:** the live site; forged HTTP server-action requests (tampering is tested at the function level); human review of the 60 new Tajik/English texts.

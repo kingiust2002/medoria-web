@@ -45,7 +45,9 @@ test("the owner creates a person through the screen: one-time password, hash onl
   await dialog.getByLabel("سلامت").check();
   await dialog.getByRole("switch").first().click();                 // two-step not required for this test person
   await dialog.getByTestId("reauth-password").fill(PW);              // creating an account asks the manager to prove who they are again
-  await dialog.getByRole("button", { name: "ساخت کاربر" }).click();
+  await dialog.getByTestId("person-submit").click();                   // first the review: what this person will be able to do
+  await dialog.getByTestId("access-summary").waitFor();
+  await dialog.getByTestId("person-submit").click();                   // then the confirmation
   const pw = (await page.getByTestId("temp-password").innerText()).trim();
   assert.equal(pw.length, 20);
 

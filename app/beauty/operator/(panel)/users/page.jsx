@@ -22,7 +22,7 @@ export default async function BeautyUsersPage() {
         users={people.ok ? people.users : []}
         loadError={people.ok ? "" : people.error}
         canManage={mayGlobal(session, "beauty", "users.manage")}
-        actor={{ id: actor.id, role: actor.role, houses: actor.houses, hasTotp: Boolean(actor.hasTotp) }}
+        actor={{ id: actor.id, role: actor.role, houses: actor.houses, hasTotp: Boolean(actor.hasTotp), allow: actor.allow, deny: actor.deny, approval: actor.approval }}
         panel="beauty"
         actions={{ createPerson, updatePerson, archivePerson, restorePerson, resetPersonPassword, resetPersonTwoFactor, endPersonSessions, personResponsibilities, transferPersonResponsibilities }}
       />

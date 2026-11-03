@@ -5,12 +5,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/shared/Icon";
-import { Badge, EmptyState, Field, Input, Select, SectionCard, Spinner, Textarea, Toggle } from "@/components/operator/ui";
+import { Badge, EmptyState, Field, Input, Select, SectionCard, Spinner, Toggle } from "@/components/operator/ui";
 import { useT, usePanelLang } from "@/components/panel/PanelI18n";
 import { formatDate, tr } from "@/lib/panel/i18n";
 import { HOUSES, ROLES } from "@/lib/operator/authz";
 import { OPERATION_LABELS } from "@/lib/operator/userLabels";
-import { approvableFor } from "@/lib/operator/authz";
+import { approvableFor, can } from "@/lib/operator/authz";
+import { diffAccess, listsFromTicks, roleDefaults, ticksOf } from "@/lib/operator/accessCatalog";
+import { sensitivityOf } from "@/lib/operator/authz";
+import AccessEditor, { AccessSummary } from "@/components/operator/AccessEditor";
 import { ArchiveDialog, ConfirmWithReauth, ReauthFields, StatusHelp, emptyReauth, reauthPayload } from "@/components/operator/UserDialogs";
 
 const HOUSE_LABEL = { health: tr("سلامت"), beauty: tr("زیبایی") };
@@ -23,12 +26,13 @@ const isCurrent = (u) => u.status !== "archived";
 const opsOf = (house) => approvableFor(house);
 
 function emptyForm(actor) {
-  return { username: "", displayName: "", role: "viewer", houses: actor.role === "owner" ? [] : [...actor.houses], require2fa: true, status: "active", allowText: "", denyText: "", custom: {}, approval: {} };
+  const houses = actor.role === "owner" ? [] : [...actor.houses];
+  return { username: "", displayName: "", role: "viewer", houses, require2fa: true, status: "active", ticks: [...roleDefaults({ role: "viewer", houses })], custom: {}, approval: {} };
 }
 function formFrom(user) {
   const custom = {}, approval = {};
   for (const h of HOUSES) if (Array.isArray(user.approval?.[h])) { custom[h] = true; approval[h] = user.approval[h].filter((op) => approvableFor(h).includes(op)); }   // an old entry that can no longer be approved is dropped from the form
-  return { username: user.username, displayName: user.displayName, role: user.role, houses: [...user.houses], require2fa: user.require2fa, status: user.status, allowText: user.allow.join("\n"), denyText: user.deny.join("\n"), custom, approval };
+  return { username: user.username, displayName: user.displayName, role: user.role, houses: [...user.houses], require2fa: user.require2fa, status: user.status, ticks: [...ticksOf(user)], custom, approval };
 }
 
 export default function UsersManager({ users, loadError, canManage, actor, panel, actions }) {
@@ -204,20 +208,51 @@ function PersonDialog({ mode, user, actor, panel, onClose, onSave }) {
   const [err, setErr] = useState("");
   const grantable = isOwner ? HOUSES : actor.houses;
   const roles = Object.keys(ROLES).filter((r) => isOwner || r !== "owner");
+  const [step, setStep] = useState("edit");          // "edit" → "summary" (what is added / removed, before it is saved) → saved
+  const [diff, setDiff] = useState(null);
+  const actorUser = { ...actor, status: "active" };
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
-  const toggleHouse = (h) => set("houses", f.houses.includes(h) ? f.houses.filter((x) => x !== h) : [...f.houses, h]);
+  const lockedOwner = f.role === "owner";
+  // a role is a ready-made set of ticks: choosing one resets the ticks (and the approval choices) to that role's defaults
+  const setRole = (role) => setF((p) => ({ ...p, role, ticks: [...roleDefaults({ role, houses: p.houses })], custom: {}, approval: {} }));
+  const toggleHouse = (h) => setF((p) => {
+    const on = p.houses.includes(h);
+    const houses = HOUSES.filter((x) => (x === h ? !on : p.houses.includes(x)));          // always Health, then Beauty
+    const gained = on ? [] : [...roleDefaults({ role: p.role, houses: [h] })].filter((x) => x.startsWith(`${h}.`));
+    return { ...p, houses, ticks: [...p.ticks.filter((x) => x.startsWith("users.") || houses.some((hh) => x.startsWith(`${hh}.`))), ...gained] };
+  });
+  const resetToRole = () => setF((p) => ({ ...p, ticks: [...roleDefaults({ role: p.role, houses: p.houses })], custom: {}, approval: {} }));
+  // a role the manager could not hand out (it gives more than they hold) is shown, disabled
+  const roleExceeds = (r) => !isOwner && [...roleDefaults({ role: r, houses: actor.houses })].some((p) => !can(actorUser, p));
+
+  function build() {
+    const approval = {};
+    for (const h of f.houses) if (f.custom[h]) approval[h] = f.approval[h] || [];
+    const lists = listsFromTicks({ role: f.role, houses: f.houses, ticks: new Set(f.ticks) });
+    return { approval, ...lists };
+  }
 
   async function submit(e) {
     e.preventDefault();
     if (busy) return;
+    const built = build();
+    if (!self && step === "edit") {
+      const before = editing ? user : { role: "viewer", houses: [], allow: [], deny: [], approval: {} };
+      const d = diffAccess(before, { role: f.role, houses: f.houses, allow: built.allow, deny: built.deny, approval: built.approval });
+      if (!d.empty || !editing || restoring) {
+        // ask for the password up front when the server will (the server decides for real; this only saves a round trip)
+        const nextUser = { ...(editing ? user : {}), role: f.role, houses: f.houses, allow: built.allow, deny: built.deny, approval: built.approval, require2fa: f.require2fa, status: restoring ? "active" : (editing ? f.status : "active") };
+        if (sensitivityOf(editing ? user : null, nextUser).length) setAskReauth(true);
+        setDiff(d); setStep("summary"); return;       // show what will change BEFORE it is saved
+      }
+    }
     setErr(""); setBusy(true);
-    const approval = {};
-    for (const h of f.houses) if (f.custom[h]) approval[h] = f.approval[h] || [];
-    const payload = { displayName: f.displayName, require2fa: f.require2fa, allowText: f.allowText, denyText: f.denyText, approval };
+    const { approval, allow, deny } = built;
+    const payload = { displayName: f.displayName, require2fa: f.require2fa, allow, deny, approval };
     if (!self) { payload.role = f.role; payload.houses = f.houses; payload.status = f.status; }
     if (!editing) { payload.username = f.username; delete payload.status; }
     if (restoring) { delete payload.status; delete payload.displayName; }
-    if (self) { delete payload.allowText; delete payload.denyText; delete payload.approval; delete payload.require2fa; }
+    if (self) { delete payload.allow; delete payload.deny; delete payload.approval; delete payload.require2fa; }
     const out = await onSave(payload, reauthPayload(reauth));
     setBusy(false);
     if (out) {
@@ -236,6 +271,7 @@ function PersonDialog({ mode, user, actor, panel, onClose, onSave }) {
           <button type="button" onClick={onClose} disabled={busy} aria-label={t("بستن")} className="grid place-items-center w-9 h-9 rounded-lg hover:bg-line-soft text-ink-muted"><Icon name="close" size={18} /></button>
         </div>
 
+        <fieldset disabled={step === "summary"} hidden={step === "summary"} className="grid gap-4 min-w-0 border-0 p-0 m-0">
         {restoring && <p className="text-sm text-ink-soft leading-relaxed" data-testid="restore-note">{t("نقش، بخش‌ها، مجوزها و الزام ورود دومرحله‌ای را همین حالا بازبینی کنید. نشست‌های قبلی او معتبر نمی‌شود و در اولین ورود باید رمز تازه بگذارد.")}</p>}
         {!editing && <Field label={t("نام کاربری")} required hint={t("حروف انگلیسی کوچک، عدد، نقطه، خط تیره یا زیرخط؛ حداقل ۳ نویسه")}><Input dir="ltr" value={f.username} onChange={(e) => set("username", e.target.value)} autoComplete="off" required /></Field>}
         {!restoring && <Field label={t("نام نمایشی")} required><Input value={f.displayName} onChange={(e) => set("displayName", e.target.value)} maxLength={80} required /></Field>}
@@ -243,8 +279,8 @@ function PersonDialog({ mode, user, actor, panel, onClose, onSave }) {
         {!self && (
           <>
             <Field label={t("نقش")}>
-              <Select value={f.role} onChange={(e) => set("role", e.target.value)}>
-                {roles.map((r) => <option key={r} value={r}>{t(ROLES[r].label)}</option>)}
+              <Select value={f.role} onChange={(e) => setRole(e.target.value)} data-testid="role-select">
+                {roles.map((r) => <option key={r} value={r} disabled={roleExceeds(r) && r !== f.role}>{t(ROLES[r].label)}{roleExceeds(r) && r !== f.role ? " — " + t("بیش از دسترسی شما") : ""}</option>)}
               </Select>
             </Field>
             <fieldset className="grid gap-2">
@@ -263,37 +299,23 @@ function PersonDialog({ mode, user, actor, panel, onClose, onSave }) {
               </Field>
             )}
             <Toggle checked={f.require2fa} onChange={(v) => set("require2fa", v)} label={t("ورود دومرحله‌ای الزامی باشد")} desc={t("بدون آن، ورود این کاربر ممکن نیست تا خودش آن را راه‌اندازی کند.")} />
-            <details className="rounded-xl border border-line p-3">
-              <summary className="cursor-pointer text-sm font-medium text-ink-soft">{t("تنظیمات پیشرفتهٔ دسترسی")}</summary>
-              <div className="grid gap-3 mt-3">
-                <Field label={t("مجوزهای اضافه")} hint={t("هر خط یک مجوز؛ مثلاً health.quotes.edit یا beauty.products.*")}><Textarea dir="ltr" rows={3} value={f.allowText} onChange={(e) => set("allowText", e.target.value)} /></Field>
-                <Field label={t("مجوزهای ممنوع")} hint={t("ممنوع بر همه چیز، حتی بر نقش، غلبه می‌کند.")}><Textarea dir="ltr" rows={3} value={f.denyText} onChange={(e) => set("denyText", e.target.value)} /></Field>
-                {f.houses.map((h) => (
-                  <div key={h} className="grid gap-2">
-                    <p className="text-[13px] font-medium text-ink-soft">{t("کارهایی که در بخش «{house}» باید تأیید شوند", { house: t(HOUSE_LABEL[h]) })}</p>
-                    <Toggle checked={!f.custom[h]} onChange={(v) => set("custom", { ...f.custom, [h]: !v })} label={t("پیش‌فرض نقش")} />
-                    {f.custom[h] && (
-                      <div className="grid sm:grid-cols-2 gap-1.5">
-                        {opsOf(h).map((op) => (
-                          <label key={op} className="flex items-center gap-2 text-xs text-ink-soft">
-                            <input type="checkbox" checked={(f.approval[h] || []).includes(op)} onChange={(e) => set("approval", { ...f.approval, [h]: e.target.checked ? [...(f.approval[h] || []), op] : (f.approval[h] || []).filter((x) => x !== op) })} /> {t(OPERATION_LABELS[op] || op)}
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </details>
+            <AccessEditor
+              role={f.role} houses={f.houses} ticks={f.ticks} onTicks={(ticks) => set("ticks", ticks)} custom={f.custom} approval={f.approval}
+              onApproval={(house, list) => setF((p) => ({ ...p, custom: { ...p.custom, [house]: true }, approval: { ...p.approval, [house]: list } }))}
+              actor={actorUser} locked={lockedOwner} onReset={resetToRole}
+            />
           </>
         )}
         {self && <p className="text-xs text-ink-muted">{t("نقش، بخش‌ها و دسترسی‌های خودتان را نمی‌توانید تغییر دهید؛ فقط نام نمایشی.")}</p>}
 
+        </fieldset>
+        {step === "summary" && diff && <AccessSummary diff={diff} creating={!editing} restoring={restoring} />}
+
         {askReauth && <ReauthFields value={reauth} onChange={setReauth} needCode={needCode} />}
         {err && <div role="alert" className="text-sm text-warn break-words" data-testid="dialog-error">{err}</div>}
         <div className="flex flex-wrap gap-2 justify-end">
-          <button type="button" className="btn-ghost size-md" onClick={onClose} disabled={busy}>{t("انصراف")}</button>
-          <button type="submit" className="btn-primary size-md" disabled={busy}>{busy ? <Spinner /> : <Icon name="check" size={16} />} {restoring ? t("بازگردانی از بایگانی") : editing ? t("ذخیره") : t("ساخت کاربر")}</button>
+          <button type="button" className="btn-ghost size-md" onClick={step === "summary" ? () => setStep("edit") : onClose} disabled={busy} data-testid={step === "summary" ? "summary-back" : undefined}>{step === "summary" ? t("بازگشت و ویرایش") : t("انصراف")}</button>
+          <button type="submit" className="btn-primary size-md" disabled={busy} data-testid="person-submit">{busy ? <Spinner /> : <Icon name="check" size={16} />} {step === "summary" ? (restoring ? t("تأیید و بازگردانی") : editing ? t("تأیید و ذخیره") : t("تأیید و ساخت کاربر")) : (!self && (restoring || !editing)) ? t("بررسی تغییرها") : editing ? t("ذخیره") : t("ساخت کاربر")}</button>
         </div>
       </form>
     </div>
