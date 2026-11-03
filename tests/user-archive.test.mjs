@@ -352,3 +352,70 @@ test("ending sessions stays possible when the log is down (closing a door must b
   assert.equal((await endPersonSessions(ctx(boss), id(4))).ok, true);
   assert.deepEqual(outcomes("user.sessions_ended"), ["success"]);
 });
+
+// ── review R1: the account that was CHECKED is the account that is changed ─────────────────────────────────────────────
+// Between the permission check and the write sits the manager's re-authentication (a human typing a password and a code). Whatever changes the
+// target in that gap — role, houses, permissions, status — must make the operation fail, never run against the new state.
+const meanwhile = (mutate) => ({ ...ctx(manager), reauthenticate: async (i) => {
+  const r = i?.password === PASSWORD ? { ok: true } : { ok: false, error: "wrongPassword" };
+  mutate();                                                   // the owner promotes the employee while the manager types the proof
+  return r;
+} });
+const promote = (n) => () => { const r = stored(n); r.role = "owner"; r.houses = ["health", "beauty"]; r.version += 1; };
+
+test("R1: a limited manager's password reset is refused when the target became an owner during the re-authentication — no temporary password, nothing changed", async () => {
+  setup([boss, boss2, manager, staff]);
+  const hash = stored(4).password_hash;
+  const r = await resetPersonPassword(meanwhile(promote(4)), id(4), RE);
+  assert.equal(r.ok, false);
+  assert.equal(r.tempPassword, undefined, "no temporary password for an account that is now an owner");
+  assert.equal(stored(4).password_hash, hash, "the hash is untouched");
+  assert.equal(stored(4).role, "owner");
+  assert.ok(!outcomes("user.password_reset").includes("success"));
+});
+
+test("R1: the same for the second-factor recovery, archive, restore and ordinary changes — each is bound to the version that was checked", async () => {
+  // recovery (an owner is the actor, so the change that matters is ANY change of the target: the confirmation was for a different account state)
+  setup([boss, boss2, manager, enrolled()]);
+  const bossCtx = { ...ctx(boss), reauthenticate: async () => { stored(4).houses = ["health", "beauty"]; stored(4).version += 1; return { ok: true }; } };
+  const seed = stored(4).totp_secret_enc;
+  assert.equal((await resetPersonTwoFactor(bossCtx, id(4), RE)).ok, false);
+  assert.equal(stored(4).totp_secret_enc, seed, "the second factor was not removed from an account that changed meanwhile");
+  // archive
+  setup([boss, boss2, manager, staff]);
+  assert.equal((await archivePerson(meanwhile(promote(4)), id(4), undefined, RE)).ok, false);
+  assert.equal(stored(4).status, "active");
+  // update: the manager only closes a door, but the screen's version is old (no version sent at all)
+  setup([boss, boss2, manager, staff]);
+  const u = await updatePerson(meanwhile(promote(4)), id(4), { allowText: "health.quotes.edit" }, undefined, RE);      // more power: asks for the proof, the promotion happens during it
+  assert.equal(u.ok, false);
+  assert.deepEqual(stored(4).allow_perms, []);
+  // restore
+  setup([boss, boss2, manager, row(4, { username: "sara", status: "archived", archived_at: "2026-10-01T00:00:00Z" })]);
+  const rr = await restorePerson(meanwhile(() => { stored(4).role = "owner"; stored(4).houses = ["health", "beauty"]; stored(4).version += 1; }), id(4), {}, undefined, RE);
+  assert.equal(rr.ok, false);
+  assert.equal(stored(4).status, "archived");
+});
+
+test("R1: if the MANAGER lost their authority during the re-authentication, nothing is done", async () => {
+  setup([boss, boss2, manager, staff]);
+  const c = { ...ctx(manager), reauthenticate: async () => { stored(3).allow_perms = []; stored(3).authz_version += 1; stored(3).version += 1; return { ok: true }; } };
+  const hash = stored(4).password_hash;
+  assert.equal((await resetPersonPassword(c, id(4), RE)).ok, false);
+  assert.equal(stored(4).password_hash, hash);
+  assert.equal((await archivePerson(c, id(4), undefined, RE)).ok, false);
+  assert.equal(stored(4).status, "active");
+});
+
+test("R1: ending sessions re-reads the target right before it acts", async () => {
+  setup([boss, boss2, manager, staff], { sessions: [sessionOf(id(4), "x")] });
+  // the target becomes an owner after the first check: the manager must not end an owner's sessions
+  const c = ctx(manager);
+  let reads = 0;
+  const realFrom = db.from.bind(db);
+  db.from = (t) => { if (t === "operator_users") { reads++; if (reads === 3) promote(4)(); } return realFrom(t); };   // read 3 = the one right before the revocation
+  const res = await endPersonSessions(c, id(4));
+  db.from = realFrom;
+  assert.equal(res.ok, false);
+  assert.equal(db.tables.operator_sessions[0].revoked_at, null);
+});
