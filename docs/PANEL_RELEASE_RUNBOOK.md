@@ -45,6 +45,7 @@ first error.
 | **54 private product documents** | 48 + the `storage` schema | uploading a document fails and says so; the public pages list no documents. **Apply BEFORE the application that serves documents is deployed** (the app uploads to the private buckets) | header |
 | 55 my columns of the lists | 34 | no "my columns" chooser; the lists keep their default fields | header |
 | 56 rows per page and dashboard blocks | 50 | the settings card says so; start page and shortcuts keep working | header |
+| **57 archive of accounts** | 34 | the "Archive user" button is refused by the database (status check) and says so; every other account feature works as before. **Apply BEFORE deploying the release that has the archive button** | header (rollback: restore archived accounts first) |
 
 **Which migrations are still pending.** Production is proven only at `5ac0592`, and the independent review (2026-10-29) confirmed: **34–42 are pending as well as 43–56.** Nothing of 34–56 is applied anywhere; each is written, tested on a throw-away PostgreSQL 16 and documented in `migrations/README.md`. (30–33 belong to the earlier work: check them on the target before the release — the System status screen's migrations table does — rather than assuming.) Applying them is one release with this order: **numeric order, 34 → 56, stop on the first error.** The only cross-dependencies that are not simply "lower number first": 41 needs 36; 45 needs 36 + 41; 48 needs 34; **54 needs 48**; 56 needs 50. The files already merged into `main` carry migrations 43–46; 47–56 are on the open PRs (see section 7).
 
@@ -148,3 +149,22 @@ The owner then built and deployed `dd808ed4e9f5808f726156ce947e85403df79233`. Th
 The first post-deploy RLS run was **53 PASS, 0 FAIL, 5 UNKNOWN; exit 3**, not a complete pass. One UNKNOWN is the empty public Health product list. Four private-table probes (`publish_rules`, `operator_preferences`, `operator_table_columns`, `ops_status`) answered HTTP 400: inspection found the checker selected nonexistent `id` columns. The corrected probes select real columns from migrations 46/50/55/52 and retain the same strict denial/FAIL/UNKNOWN rules. Schema-aware regression fixtures reproduce the four UNKNOWN results before the correction, preserve UNKNOWN for genuine 400 errors, and preserve the empty-Health UNKNOWN. **Rerun the corrected checker on the VPS before activating personal accounts; the real API result after correction is still pending.** No migration or container rebuild is needed for this checker-only correction.
 
 Real draft/published/hidden-document delivery, owner bootstrap and limited-account checks, scheduling/reminder calls, monitoring reports, actual restore drill and alert delivery still need their release checks. No account activation or monitoring proof is implied by the successful build.
+
+## 10. Owner report («گزارش مالک») — 2026-11-03
+
+Owner-supplied observations, recorded as reported (not independently verified by the author):
+
+* **Personal accounts are enabled** (`OPERATOR_USERS=on`); the owner bootstrap happened and people sign in with their own accounts.
+* Fresh backup **`20261103T072609Z`** was taken and verified (local + encrypted R2).
+* Post-deploy row-level-security check: **57 PASS, 0 FAIL, 1 UNKNOWN** — the single UNKNOWN is the empty public Health product list (nothing to probe), not a failure.
+* The owner confirmed the SSH connection to the **new** system (the VPS that replaced the one lost in September).
+* Migrations 34–56 are committed in production per section 9. **Migration 57 (archive of accounts) is NOT applied yet** — apply it after the next verified backup, before deploying the archive release.
+
+**Still needing the owner's own confirmation (nothing below is claimed done):**
+
+1. Live test of a *limited* user with two-step login and a recovery code (sign in, work, end the session, recovery code once).
+2. Live test of private documents: a draft stays closed, a published one opens, a hidden one closes again.
+3. A real backup-restore drill (`scripts/self-host/restore-drill.sh`) and external alerts for backups and site monitoring.
+4. Human review of the Tajik and English texts (machine-written; lower urgency).
+
+This is a delivery record, not a security audit: it does not claim the panel has no holes.

@@ -88,5 +88,5 @@ Not tested: a real Telegram delivery of the new notice text and of a reminder (n
 
 - 24 hours is a constant (`OVERDUE_HOURS` in `lib/operator/quoteOps.js`); the reminder looks back 30 days.
 - The reminder does not repeat per request: each run says "N are waiting"; how often it nags is the cron schedule.
-- The assignee is a label, not an account (shared login). Real per-person accounts are a different, larger change and are not part of this.
+- The assignee is a label; when it is the display name of an active person of the house the request also remembers the real person (`assigned_user_id`, migration 37). Archived people are never offered as a new assignee and their name cannot be typed in either; requests still in their hands keep the name and show an "archived" mark until a manager moves the open ones on purpose (docs/OPERATOR_ACCOUNTS.md).
 - The code is not shown to visitors (see above).
