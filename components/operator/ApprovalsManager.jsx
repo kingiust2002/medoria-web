@@ -93,7 +93,7 @@ function Card({ r, mode, actions, onResult }) {
         <div className="min-w-0">
           <p className="font-semibold text-ink break-words">{t(OPERATION_LABELS[r.operation] || r.operation)}{r.subject ? <span className="text-ink-muted font-normal"> · {r.subject}</span> : null}</p>
           <p className="text-[11px] text-ink-faint mt-0.5">
-            {mode === "review" ? t("از طرف {name}", { name: r.requestedBy || "—" }) + " · " : ""}
+            {mode === "review" ? t("از طرف {name}", { name: r.requestedBy || "—" }) : ""}{mode === "review" && r.requestedByArchived ? <span className="ms-1.5 inline-block rounded-full border border-line px-1.5 text-[10px] leading-4 text-ink-muted" data-testid="archived-mark">{t("بایگانی‌شده")}</span> : null}{mode === "review" ? " · " : ""}
             {formatDate(lang, r.requestedAt, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
             {r.resubmitted ? " · " + t("ارسال دوباره") : ""}
           </p>

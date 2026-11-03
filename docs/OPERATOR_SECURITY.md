@@ -14,9 +14,9 @@ own session list, own log, own two-step login):
 
 ## Honest limits
 
-- Each panel has **one shared account**. The log and the session list can say "a session logged in from network
-  `ab12cd`", never "Mr. X did this". The log does not guess who someone is, and nothing here can tell apart two people who
-  share the password. If you need that, the next step is one account per person (not built).
+- **Personal accounts** (docs/OPERATOR_ACCOUNTS.md): with `OPERATOR_USERS=on` (the owner reports it is on in production, 2026-11-03) every person
+  has their own login and the log names the person. The old single shared env login exists only while the flag is off or before the first owner
+  exists; a log line from that mode still says only "a session from network `ab12cd`" and cannot tell two people who share the password apart.
 - The log holds actions, table names, record numbers and counts only (price changes include the new price, which is public).
   Customer names, phone numbers, message texts and e-mail addresses are never stored there; the code drops anything that
   looks like them even under an allowed field. The "network" hint is a keyed hash of the address, not the address.

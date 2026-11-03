@@ -24,7 +24,12 @@ function summary(row, t) {
 }
 const show = (v) => (v === null || v === undefined || v === "" ? "—" : Array.isArray(v) ? v.join(", ") : typeof v === "boolean" ? (v ? "✓" : "✗") : String(v));
 
-export default async function ActivityList({ rows, names = {}, query = {}, hasMore = false, page = 1, basePath }) {
+// the small mark next to the name of a person who has left (the name itself is never changed)
+function ArchivedMark({ label }) {
+  return <span className="ms-1.5 align-middle inline-block rounded-full border border-line px-1.5 text-[10px] leading-4 text-ink-muted" data-testid="archived-mark">{label}</span>;
+}
+
+export default async function ActivityList({ rows, names = {}, archived = {}, query = {}, hasMore = false, page = 1, basePath }) {
   const { t, lang } = await getPanel();
   const link = (p) => `${basePath}?${new URLSearchParams({ ...Object.fromEntries(Object.entries(query).filter(([k, v]) => v && k !== "page")), page: String(p) })}`;
   if (!rows.length) return <p className="text-sm text-ink-muted">{t("هنوز موردی ثبت نشده است (یا مایگریشن ۳۰ اجرا نشده).")}</p>;
@@ -42,7 +47,9 @@ export default async function ActivityList({ rows, names = {}, query = {}, hasMo
             {(r.user_id || r.target_user_id) && (
               <p className="text-xs text-ink-soft mt-1 break-words" data-testid="audit-who">
                 {r.user_id ? t("توسط {name}", { name: names[r.user_id] || t("کاربر حذف‌شده") }) : null}
+                {r.user_id && archived[r.user_id] ? <ArchivedMark label={t("بایگانی‌شده")} /> : null}
                 {r.target_user_id ? ` · ${t("برای {name}", { name: names[r.target_user_id] || t("کاربر حذف‌شده") })}` : null}
+                {r.target_user_id && archived[r.target_user_id] ? <ArchivedMark label={t("بایگانی‌شده")} /> : null}
               </p>
             )}
             <div className="text-xs text-ink-faint mt-1 flex flex-wrap gap-x-3 gap-y-0.5" dir="ltr">

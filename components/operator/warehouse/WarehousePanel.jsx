@@ -357,7 +357,7 @@ export default function WarehousePanel({ data, actions, base }) {
                   <Badge tone={KIND_TONE[m.kind] || "neutral"}>{t(KIND_LABEL[m.kind] || m.kind)}</Badge>
                   <div className="min-w-0 flex-1 basis-44">
                     <p className="text-sm text-ink truncate"><span dir="ltr">{m.sku}</span> · <span dir="ltr">{code(m.locationId)}</span>{m.lotCode && <> · <span dir="ltr" data-testid="wh-movement-lot">{m.lotCode}</span></>}</p>
-                    <p className="text-xs text-ink-muted break-words">{[m.reason, m.reference, m.who].filter(Boolean).join(" · ")} · {fmtDate(m.at)}</p>
+                    <p className="text-xs text-ink-muted break-words">{[m.reason, m.reference, m.who].filter(Boolean).join(" · ")}{m.whoArchived && <span className="ms-1.5 inline-block rounded-full border border-line px-1.5 text-[10px] leading-4" data-testid="archived-mark">{t("بایگانی‌شده")}</span>} · {fmtDate(m.at)}</p>
                   </div>
                   <div className="tabular text-sm shrink-0" dir="ltr"><b className={m.delta > 0 ? "text-ok" : "text-warn"}>{m.delta > 0 ? "+" : ""}{fmt(m.delta)}</b> <span className="text-ink-faint text-xs">→ {fmt(m.balanceAfter)}</span></div>
                   {m.canReverse && canOp.adjust && <button type="button" className="btn-ghost size-sm" onClick={() => open("reverse", { movement: m })}>{t("برگشت")}</button>}

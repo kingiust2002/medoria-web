@@ -21,7 +21,7 @@ unless the status says "live" (the owner deploys; a merge is not a deployment).
 
 | Area | State |
 | --- | --- |
-| Login | One shared account per panel from environment variables (`OPERATOR_*`, `BEAUTY_OPERATOR_*`), scrypt hash, signed cookie + session registry (`operator_sessions`), optional TOTP from env, recovery-code hashes from env (`scripts/operator-2fa.mjs`), login throttle, idle logout 20 min, logout confirmed by the server |
+| Login | *Historical (before personal accounts, docs/OPERATOR_ACCOUNTS.md; the owner reports `OPERATOR_USERS=on` in production since 2026-11-03):* one shared account per panel from environment variables (`OPERATOR_*`, `BEAUTY_OPERATOR_*`), scrypt hash, signed cookie + session registry (`operator_sessions`), optional TOTP from env, recovery-code hashes from env (`scripts/operator-2fa.mjs`), login throttle, idle logout 20 min, logout confirmed by the server |
 | Sessions | Registry with revocation ("end other / all sessions"), fail-closed on database outage (#185, merged) |
 | Page/reader guards | Every panel page and service-role reader checks the session itself (#203, merged); every server action opens with a session check (test-pinned in #204) |
 | Audit log | `operator_audit_log` (migration 30): panel, action, entity, ids, count, small whitelisted detail, session id, keyed IP hash. **No user id, no result, no before/after.** |

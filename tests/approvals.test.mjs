@@ -129,8 +129,8 @@ test("STALE: the record changed after the request was prepared → the approval 
   assert.equal(product(7).price, 12);
 });
 
-test("the requester's account is re-read at approval: disabled, moved out of the house or stripped of the right → nothing is executed", async () => {
-  for (const mutate of [(r) => { r.status = "disabled"; }, (r) => { r.houses = ["beauty"]; }, (r) => { r.deny_perms = ["health.products.edit"]; }]) {
+test("the requester's account is re-read at approval: disabled, ARCHIVED, moved out of the house or stripped of the right → nothing is executed", async () => {
+  for (const mutate of [(r) => { r.status = "disabled"; }, (r) => { r.status = "archived"; r.archived_at = "2026-10-05T00:00:00Z"; }, (r) => { r.houses = ["beauty"]; }, (r) => { r.deny_perms = ["health.products.edit"]; }]) {
     setup();
     const { request } = await submitChange(db, { actor: requester(), panel: "health", spec: priceSpec(12) });
     mutate(db.tables.operator_users.find((x) => x.id === requesterRow.id));

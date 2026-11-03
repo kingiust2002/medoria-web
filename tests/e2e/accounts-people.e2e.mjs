@@ -44,6 +44,7 @@ test("the owner creates a person through the screen: one-time password, hash onl
   await dialog.locator("select").first().selectOption("product_manager");
   await dialog.getByLabel("سلامت").check();
   await dialog.getByRole("switch").first().click();                 // two-step not required for this test person
+  await dialog.getByTestId("reauth-password").fill(PW);              // creating an account asks the manager to prove who they are again
   await dialog.getByRole("button", { name: "ساخت کاربر" }).click();
   const pw = (await page.getByTestId("temp-password").innerText()).trim();
   assert.equal(pw.length, 20);
@@ -53,8 +54,9 @@ test("the owner creates a person through the screen: one-time password, hash onl
   assert.ok(created);
   assert.deepEqual([created.role, created.houses, created.must_change_password], ["product_manager", ["health"], true]);
   assert.ok(!JSON.stringify(st).includes(pw), "the temporary password is stored or logged in clear");
-  const entry = st.operator_audit_log.find((r) => r.action === "user.create");
+  const entry = st.operator_audit_log.find((r) => r.action === "user.create" && r.result === "success");
   assert.deepEqual([entry.result, entry.target_user_id], ["success", created.id]);
+  assert.ok(st.operator_audit_log.some((r) => r.action === "user.create" && r.result === "attempt"), "the attempt was written first");
   assert.ok(entry.user_id, "and it names who did it");
 
   const signedIn = await login("new.colleague", "health", pw);
@@ -98,18 +100,25 @@ test("reset password through the screen: a new one-time password, the old one st
   assert.equal(old.status, 200);
   const owner = await login("the.owner");
   const { ctx, page } = await pageAs(owner.cookie);
-  page.on("dialog", (d) => d.accept());
   await page.goto(`${BASE}/operator/users`, { waitUntil: "networkidle" });
   const card = page.getByTestId("person").filter({ hasText: "to.reset" });
   await card.getByRole("button", { name: /رمز موقت/ }).click();
+  const confirm = page.getByRole("dialog");
+  await confirm.getByTestId("reauth-password").fill("not-my-password");          // a wrong proof is refused and nothing changes
+  await confirm.getByTestId("dialog-confirm").click();
+  await confirm.getByTestId("dialog-error").waitFor();
+  assert.equal((await login("to.reset", "health", PW)).status, 200, "still the old password");
+  await confirm.getByTestId("reauth-password").fill(PW);
+  await confirm.getByTestId("dialog-confirm").click();
   const pw = (await page.getByTestId("temp-password").innerText()).trim();
   assert.notEqual(pw, PW);
   assert.equal((await login("to.reset", "health", PW)).status, 401, "the old password is dead");
   assert.equal((await login("to.reset", "health", pw)).status, 200);
   assert.equal((await withCookie("/operator/products", old.cookie)).status === 200, false, "the old session ended");
-  const log = (await state()).operator_audit_log.filter((r) => r.action === "user.password_reset");
+  const log = (await state()).operator_audit_log.filter((r) => r.action === "user.password_reset" && r.result === "success");
   assert.equal(log.length, 1);
   assert.equal(log[0].target_user_id, target.id);
+  assert.ok((await state()).operator_audit_log.some((r) => r.action === "user.reauth_failed" && r.target_user_id === target.id), "the wrong proof is on record");
   assert.ok(!JSON.stringify(await state()).includes(pw));
   await ctx.close();
 });

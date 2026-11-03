@@ -123,3 +123,22 @@ The independent reviewer reproduced and fixed: migration 53 transaction/legacy-c
 The eight remaining feature PRs were merged in order: **#242, #234, #235, #236, #237, #238, #239, #240**, ending at `ed64315`. Full integrated GitHub evidence: **1032/1032 unit tests, 276/276 browser tests, zero skips/failures**, complete validate/container checks. Manual mobile checker: **305/305 loads** (61 public fixture routes, five viewports); focused outcome browser tests 8/8, delayed-response documents 4/4. See `PANEL_REVIEW_ACCEPTANCE_2026-11-02.md` for the tested commit, the test-only final difference, the non-passing local full-unit environment limitation, and PR CI repetitions still running when merged.
 
 No server/production database/env/cron/token operation was performed. Migrations 34–56 and all real delivery/restore/storage/owner-session checks remain the separate production rollout. Personal-settings decisions and other explicitly listed scope limits remain open. This entry supplements the author’s original record; it does not attribute the independent reviewer’s executions to the author.
+
+## 2026-11-03 — user management, PR 1: archive, re-authentication, reliable history, recovery (migration 57, not applied)
+
+* **Built:** status "archived" with database guards (migration 57); `archivePerson` / `restorePerson` / `resetPersonTwoFactor` / `transferResponsibilities`;
+  the manager's password (+ second factor) for sensitive changes; attempt-first history for sensitive changes (no entry, no change); the "archived" mark in
+  the activity log, approvals, customer requests, warehouse movements and product history; archived people never offered as assignee; an
+  owner-only server procedure for an owner who lost their own access (`scripts/self-host/owner-recovery.mjs`).
+* **Proved:** `tests/user-archive.test.mjs`, `tests/operator-users-archive-migration.test.mjs` and `tests/owner-recovery.test.mjs` on real PostgreSQL (including two
+  owners archived at the same moment and a login racing the archive), `tests/e2e/accounts-people-archive.e2e.mjs` in a real browser. Existing pins were updated
+  honestly (the create test now expects attempt + success; the approvals test also covers an ARCHIVED requester).
+* **Not proven:** anything on the live site; a real run of the emergency script against the production database; human review of the 53 new Tajik/English texts.
+* Owner report of 2026-11-03 recorded in `PANEL_RELEASE_RUNBOOK.md` §10.
+
+### 2026-11-03 — independent review of PR 1 (#246): R1, R3, R4, R5, R6 and two small items
+
+* **R1** every sensitive write is bound to the account state that was checked: `setPassword` / `resetTwoFactor` / archive / restore / update take the version the permission check was made against (a screen that sent none is pinned to the version read at the start), the manager is re-read after the re-authentication (still active, same `authz_version`), and ending sessions re-reads the target right before it acts. A role/house/permission change during the proof now makes the operation fail instead of handing over a temporary password.
+* **R3** `archivedLabelCheck` reads every person of the house page by page and **throws** on a failed read; the assignment path turns that into a refusal. **R4** the responsibilities count is an exact head count; the transfer moves ids in chunks of 200, reports the exact number and says how many were moved when it fails part-way.
+* **R5** `migrations/rollback/57_operator_users_archive_rollback.sql` (the old instruction's first step was refused by the new guard); proved on PostgreSQL with archived accounts and old sessions. **R6** migration 57 is declared a **prerequisite** of the archive release (the account queries read the new columns); a System status probe lists it; the earlier "only the archive button fails" claim is withdrawn.
+* Small: the owner-report wording (the "new system" is the owner's second Windows computer, the VPS did not change); the real-PostgreSQL tests of `owner-recovery.test.mjs` now skip where PostgreSQL is missing.

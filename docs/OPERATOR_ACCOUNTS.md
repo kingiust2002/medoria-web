@@ -1,7 +1,9 @@
 # Personal accounts for the operator panels
 
-Status: **S2b — built, switched off by default.** Nothing here changes behaviour until the owner sets `OPERATOR_USERS=on` on the
-server (see "Release order"). The staged plan is `docs/PANEL_PLATFORM_PLAN.md`.
+Status (2026-11-03): **personal accounts are enabled in production** (`OPERATOR_USERS=on`, owner-reported — docs/PANEL_RELEASE_RUNBOOK.md §10); the
+code still keeps the flag: with it off the panels fall back to the old single env login. This page also covers the user-management
+round of 2026-11-03: archive and restore of people, the manager's re-authentication, a reliable history for sensitive changes and safe
+recovery of a lost second factor (sections below, **migration 57**). The staged plan is `docs/PANEL_PLATFORM_PLAN.md`.
 
 ## What exists
 
@@ -131,11 +133,114 @@ refuses, and without a provider (tests, a page outside the layout) nothing is hi
   contain every hash it read and nothing else); the loser re-reads and decides on the latest list, so a spent code can never be restored by a stale writer.
   Proved on real PostgreSQL with two overlapping sessions (`tests/operator-users-migration.test.mjs`).
 
-## What does NOT exist yet (do not switch the flag on before these ship)
+## Known limits (re-checked 2026-11-03)
 
-* Approvals exist only for products (see above); categories, brands, media, requests and the warehouse still refuse "needs approval".
-* Screens that are not wired to the capabilities yet (they still show a button and answer with the refusal on click): the media uploader, the import / bulk-entry wizards (their *pages* are closed to people without the right), the legacy list views, and the brand product roster's inner controls.
-* Not deployed anywhere: **apply migrations 34 and 35 before the release, and keep `OPERATOR_USERS` empty until the owner is ready**.
+* "Needs approval" is offered **only** for the operations in `authz.APPROVABLE_OPERATIONS` (a filing action, a reviewer and an executor exist in both houses; `tests/approval-registry.test.mjs`). Any other operation has no approval mode: an account change that asks for one is refused, and an old stored entry is treated as closed.
+* (Older note — verify against docs/PANEL_RELEASE_RUNBOOK.md §6 before relying on it.) Screens that are not wired to the capabilities yet (they still show a button and answer with the refusal on click): the media uploader, the import / bulk-entry wizards (their *pages* are closed to people without the right), the legacy list views, and the brand product roster's inner controls.
+* The owner has not yet confirmed, live: a limited user with two-step login and a recovery code; the archive buttons below (migration 57 is not applied yet).
+
+## Archive and restore of people (migration 57)
+
+Three different ways to take somebody out — the screen shows the difference next to the buttons:
+
+| | Sign-in and work | Sessions | Account and name | Way back |
+| --- | --- | --- | --- | --- |
+| **Archive** (left the team) | closed | all ended at once | kept (id, username, name in the history, warehouse, approvals, requests); the username is **never given to somebody else** | "Restore from archive" |
+| **Blocked** (suspected misuse) | closed | ended | kept, visible with a warning | change the status |
+| **Disabled** (leave, assignment) | closed | ended | kept | change the status |
+
+* **Archive** (`archivePerson`): needs `users.manage`, the manager's password again, and writes the history (below). Refused for yourself, for the last
+  active owner (also when two owners are archived at the same moment — the database serialises it under a row lock, proved on real PostgreSQL),
+  for an owner unless the manager is an owner, and for anybody above the manager's own authority. The database ends the person's sessions
+  **in the same transaction** and bumps `authz_version`, so even a copied cookie is dead; a trigger on `operator_sessions` also refuses a session
+  for an account that is not active (a login that raced the archive cannot leave an open session behind).
+* **The list** shows the **current** people by default with filters *current / archived / all* (counts included); an archived card carries the
+  badge and the date. An archived account accepts no edit, no password reset, no second archive, nothing but **restore**.
+* **Restore** (`restorePerson`): the manager reviews role, houses, extra/forbidden permissions, approval policy and the second-factor requirement
+  in the same dialog, proves who they are, and the account becomes active with exactly that. The usual ceiling applies to the new state (no more
+  than the manager holds, no owner for a non-owner, no house outside the manager's). **Old sessions never come back** (they were revoked and
+  `authz_version` moves again) and the person must choose a new password at the first sign-in (the database forces `must_change_password`).
+* **Names stay, with a small "archived" mark**: activity log (actor and target), approvals (requester), customer requests (assignee),
+  warehouse movements and product history. Warehouse/history rows keep the name that was written at the time. (Lot events, stock counts and
+  reservations keep their text labels without the mark.)
+* **Responsibilities** (`responsibilitiesOf`, `transferResponsibilities`): archiving moves nothing by itself. The dialog counts the open customer
+  requests (`new / contacted / in_progress / quoted`) assigned to the person in that house; the manager may move them to an active person of
+  the same house (needs `quotes.assign`); closed requests keep their history. Archived people are never offered as a new assignee, and typing
+  their name as a new assignee is refused too.
+* **Pending approvals of an archived requester** are not executed: `approvals.approveRequest` re-reads the requester at the moment of approval
+  and supersedes the request unless the account is `active` (test: `tests/approvals.test.mjs`).
+
+## Re-authentication of the manager
+
+These changes require the manager's **own password** (and a **second-factor code** when they have one) — checked on the server for every call,
+whatever the screen did (`confirmManager` in `userActionsCore.js`; per-manager rate limit 8 / 15 min; a wrong proof is itself written to the
+history as `user.reauth_failed` and changes nothing): creating an account, any change that gives **more power** (`authz.sensitivityOf`: more
+permissions, a house added, a stricter approval list relaxed, a status from blocked/disabled to active), changing the second-factor rule,
+archive, restore, a temporary password, the owner's second-factor recovery. A change that only takes power away (fewer permissions, blocking,
+disabling) and ending sessions do **not** ask again: closing a door must stay easy. A TOTP time step is accepted once, so a code just used for
+signing in cannot be reused for the proof within the same 30 seconds.
+
+## A reliable history for sensitive changes
+
+Create, role / houses / permissions / approval policy / second-factor rule, status, archive, restore, password reset and second-factor recovery
+use `lib/operator/userAudit.js` — the same rule as permanent deletes: an **attempt** entry is written first and **if it cannot be written the
+change is not made** (`auditFailed`, with a plain message); the real **outcome** (`success`, `failure` or `rejected` with a short reason code) follows
+as a second entry. If only the outcome entry fails, the change stands, the attempt is on record and the screen says so (`auditWarning`). Entries name the
+acting person, the target person and short facts (role, houses, status, field names) — never a password, temporary password, seed, recovery code or hash
+(`sanitizeDetail` lets only a fixed list of keys through). A display-name-only edit is not a change of power and is logged as before. Ending someone's
+sessions is logged best effort and works while the log is down. Actions: `user.create`, `user.update`, `user.status`, `user.archive`, `user.restore`,
+`user.password_reset`, `user.twofa_reset`, `user.responsibilities_transferred`, `user.sessions_ended`, `user.reauth_failed`, `user.emergency_recovery`.
+
+## Safe recovery — somebody lost the phone and the recovery codes
+
+An **owner** (never a manager) can, after re-authentication, use "Recover two-step login" on a person's card (never on themself):
+one update removes the seed and every recovery code, requires the second factor again, replaces the password with a new temporary one
+(so an old, possibly leaked, password dies too), forces its change, bumps `authz_version` and ends every session. The person signs in with
+the temporary password and sees **only the security screen** until they have chosen a new password **and enrolled a new second factor**
+(`access.restrictedReason`); nothing is skipped and no code can be guessed in its place. Give the temporary password only after you have
+confirmed who is asking. Tests: `tests/user-archive.test.mjs`, `tests/e2e/accounts-people-archive.e2e.mjs`.
+
+## Emergency: an owner lost their own access
+
+The panel cannot help an owner who has lost **their own** password and second factor (a manager cannot touch an owner; an owner cannot do it to
+themself). The procedure runs **on the server** and needs only Node, the repository checkout and the database container — not the panel, not
+the service-role key.
+
+1. Read the state (no secrets): `node scripts/self-host/owner-recovery.mjs --list | docker exec -i supabase-db psql -U postgres -d postgres`
+   — shows each owner's status, whether a second factor is set and how many recovery codes are left.
+2. Dry run (changes nothing, prints no SQL): `node scripts/self-host/owner-recovery.mjs --username <owner>`.
+3. Apply: `node scripts/self-host/owner-recovery.mjs --username <owner> --apply | docker exec -i supabase-db psql -U postgres -d postgres -v ON_ERROR_STOP=1`.
+   stdout (the SQL, which holds only the **hash**) goes straight into `psql`; the **one-time password appears once on your terminal** (stderr).
+   Do not save either. Without Node on the host: `docker run --rm -v "$PWD":/app -w /app node:22.23.1-bookworm-slim node scripts/self-host/owner-recovery.mjs ...`.
+4. The SQL is **one transaction**: it writes an *attempt* line to the activity log of both panels (no line → nothing changes), requires exactly one
+   **active owner** with that username (a manager, an archived or a disabled account is refused), sets the one-time password, clears the seed and
+   all recovery codes, requires the second factor, forces a password change, bumps `authz_version`, ends the sessions, writes the *success* lines
+   (`user.emergency_recovery`, method `server_recovery`, no actor — it was done on the server).
+5. Sign in with the one-time password, choose a new password, enrol a **new** second factor (and store the new recovery codes). Check
+   the activity log shows `user.emergency_recovery` in both panels.
+6. If the *only* owner is locked out and also the database user is unavailable, use the backups (`docs/PRODUCTION_MIGRATION_AND_OPERATIONS.md`);
+   this script is not a way around them.
+
+Tested on real PostgreSQL (`tests/owner-recovery.test.mjs`): the hash works and the old password does not, seed and codes are gone, sessions are
+ended, both log lines exist, a manager / archived / disabled / unknown account is refused with nothing changed, a missing log table rolls everything
+back, the username cannot inject SQL. **Not proven live:** a real run against the production database container — the owner should rehearse
+it on a restore-drill copy first (`scripts/self-host/restore-drill.sh --keep`).
+
+## Applying migration 57 — order and rollback
+
+**This release needs migration 57 — apply it BEFORE deploying.** The application now reads the four archive columns in every account query; on a database
+without 57 even the ordinary sign-in answers "unavailable" (not only the archive button), and the System status screen lists 57 as missing. The **previous** release
+keeps working on a database that already has 57 (it ignores the new status and columns), so applying 57 first is also what makes a rollback of the application safe.
+
+Order: fresh verified backup (local + encrypted R2 PASS) → apply `migrations/57_operator_users_archive.sql` (needs 34; one transaction; idempotent; self-checking) →
+deploy the release → try with a throw-away test person (archive, check they cannot sign in, restore).
+
+Rollback of the migration (only after the archive release is no longer deployed): `migrations/rollback/57_operator_users_archive_rollback.sql`, one transaction. The order
+inside matters — the new guard forbids leaving "archived" in any way except a restore, so the script first removes the session trigger and puts migration 34's guard
+back, then turns archived accounts into **disabled** ones (never active; `authz_version` moves so no old cookie matches), restores the three-value status check and
+drops the stamp check, the index and the four columns. Accounts, ids, usernames, names and the links of old records stay. Proved on PostgreSQL
+(`tests/operator-users-archive-rollback.test.mjs`): with archived accounts and old sessions in the database, nobody ends up active, the old guard works, it can run twice,
+and 57 can be applied again afterwards. A person who should be active after the rollback is set active the ordinary way.
 
 ## Environment
 
@@ -162,6 +267,9 @@ immediately after the bootstrap.
 
 ## Tests
 
+Archive / re-authentication / reliable history / recovery: `tests/user-archive.test.mjs` (19), `tests/operator-users-archive-migration.test.mjs`
+(real PostgreSQL, incl. overlapping sessions), `tests/operator-users-archive-rollback.test.mjs` (real PostgreSQL), `tests/owner-recovery.test.mjs` (real PostgreSQL), `tests/e2e/accounts-people-archive.e2e.mjs` (browser, 320 px,
+three languages). Earlier:
 `tests/authz.test.mjs`, `tests/operator-accounts.test.mjs`, `tests/session-gate.test.mjs`, `tests/operator-passwords-secrets.test.mjs`,
 `tests/operator-users-migration.test.mjs` (real PostgreSQL 16), `tests/e2e/accounts.e2e.mjs` (real browser stack, the app started with
 the feature on).

@@ -45,6 +45,7 @@ first error.
 | **54 private product documents** | 48 + the `storage` schema | uploading a document fails and says so; the public pages list no documents. **Apply BEFORE the application that serves documents is deployed** (the app uploads to the private buckets) | header |
 | 55 my columns of the lists | 34 | no "my columns" chooser; the lists keep their default fields | header |
 | 56 rows per page and dashboard blocks | 50 | the settings card says so; start page and shortcuts keep working | header |
+| **57 archive of accounts** | 34 | **none: the archive release reads the new columns, so without 57 sign-in itself is unavailable — a PREREQUISITE, apply it BEFORE deploying** (the previous release works on a database that has 57). The System status screen lists it as missing | `migrations/rollback/57_operator_users_archive_rollback.sql` (tested on PostgreSQL; archived accounts become disabled, never active) |
 
 **Which migrations are still pending.** Production is proven only at `5ac0592`, and the independent review (2026-10-29) confirmed: **34–42 are pending as well as 43–56.** Nothing of 34–56 is applied anywhere; each is written, tested on a throw-away PostgreSQL 16 and documented in `migrations/README.md`. (30–33 belong to the earlier work: check them on the target before the release — the System status screen's migrations table does — rather than assuming.) Applying them is one release with this order: **numeric order, 34 → 56, stop on the first error.** The only cross-dependencies that are not simply "lower number first": 41 needs 36; 45 needs 36 + 41; 48 needs 34; **54 needs 48**; 56 needs 50. The files already merged into `main` carry migrations 43–46; 47–56 are on the open PRs (see section 7).
 
@@ -148,3 +149,31 @@ The owner then built and deployed `dd808ed4e9f5808f726156ce947e85403df79233`. Th
 The first post-deploy RLS run was **53 PASS, 0 FAIL, 5 UNKNOWN; exit 3**, not a complete pass. One UNKNOWN is the empty public Health product list. Four private-table probes (`publish_rules`, `operator_preferences`, `operator_table_columns`, `ops_status`) answered HTTP 400: inspection found the checker selected nonexistent `id` columns. The corrected probes select real columns from migrations 46/50/55/52 and retain the same strict denial/FAIL/UNKNOWN rules. Schema-aware regression fixtures reproduce the four UNKNOWN results before the correction, preserve UNKNOWN for genuine 400 errors, and preserve the empty-Health UNKNOWN. **Rerun the corrected checker on the VPS before activating personal accounts; the real API result after correction is still pending.** No migration or container rebuild is needed for this checker-only correction.
 
 Real draft/published/hidden-document delivery, owner bootstrap and limited-account checks, scheduling/reminder calls, monitoring reports, actual restore drill and alert delivery still need their release checks. No account activation or monitoring proof is implied by the successful build.
+
+## 10. Owner report («گزارش مالک») — 2026-11-03
+
+Owner-supplied observations, recorded as reported (not independently verified by the author):
+
+* **Personal accounts are enabled** (`OPERATOR_USERS=on`); the owner bootstrap happened and people sign in with their own accounts.
+* Fresh backup **`20261103T072609Z`** was taken and verified (local + encrypted R2).
+* Post-deploy row-level-security check: **57 PASS, 0 FAIL, 1 UNKNOWN** — the single UNKNOWN is the empty public Health product list (nothing to probe), not a failure.
+* The owner confirmed the SSH connection of the **new system** — the second (Windows) computer. The production VPS did **not** change (still the one named in `CLAUDE.md`); an earlier version of this line wrongly read "new system" as a new VPS.
+* Migrations 34–56 are committed in production per section 9. **Migration 57 (archive of accounts) is NOT applied yet** — apply it after the next verified backup, before deploying the archive release.
+
+**Still needing the owner's own confirmation (nothing below is claimed done):**
+
+1. Live test of a *limited* user with two-step login and a recovery code (sign in, work, end the session, recovery code once).
+2. Live test of private documents: a draft stays closed, a published one opens, a hidden one closes again.
+3. A real backup-restore drill (`scripts/self-host/restore-drill.sh`) and external alerts for backups and site monitoring.
+4. Human review of the Tajik and English texts (machine-written; lower urgency).
+
+This is a delivery record, not a security audit: it does not claim the panel has no holes.
+
+## 11. Verification record — user-management PR 1 (#246), after the independent review
+
+* **Code commit verified:** `9aafd0e` (the commits after it on the branch change documents only). Review fixes R1 (writes bound to the checked account state), R3 (fail-closed, complete archived-name check), R4 (exact counts, chunked transfer), R5 (tested rollback script), R6 (57 declared a prerequisite) and the two small items are in it.
+* **Tests at that commit:** `npm run lint` clean; `node --test tests/*.test.mjs` **1081 pass, 0 fail**, including the real-PostgreSQL files `operator-users-archive-migration`, `operator-users-archive-rollback` and `owner-recovery`; the new review tests were shown to fail on the previous code before the fixes.
+* **CI at that commit:** `validate`, `browser-flows` and `Vercel Preview Comments` all success. `validate` first failed once inside `next build` — the Google Fonts download of `next/font` (`app/layout.jsx`, "Cannot read properties of null") — which this PR does not touch (no change to `app/layout.jsx`, `package.json` or the Next config); the same job was re-run unchanged and passed.
+* **Browser suite:** full run on the combined tree (PR 1 + PR 2): **288 pass, 0 fail** (see §12 of the PR 2 branch).
+* **Migration 57 is a PREREQUISITE of this release.** The account queries read the four new columns, so on a database without migration 57 even the ordinary sign-in is unavailable. Order: fresh verified backup → apply `migrations/57_operator_users_archive.sql` → deploy. The previous release keeps working on a database that has 57. Rollback: `migrations/rollback/57_operator_users_archive_rollback.sql`. Not applied anywhere; not deployed; nothing on the server was touched.
+* **Not verified:** anything on the live site; a real run of `scripts/self-host/owner-recovery.mjs` against the production database container; human review of the Tajik/English texts; `npm run check:mobile` on the public routes (it did not complete in the sandbox; this PR changes no public page).
