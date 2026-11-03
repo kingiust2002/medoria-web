@@ -45,7 +45,7 @@ first error.
 | **54 private product documents** | 48 + the `storage` schema | uploading a document fails and says so; the public pages list no documents. **Apply BEFORE the application that serves documents is deployed** (the app uploads to the private buckets) | header |
 | 55 my columns of the lists | 34 | no "my columns" chooser; the lists keep their default fields | header |
 | 56 rows per page and dashboard blocks | 50 | the settings card says so; start page and shortcuts keep working | header |
-| **57 archive of accounts** | 34 | the "Archive user" button is refused by the database (status check) and says so; every other account feature works as before. **Apply BEFORE deploying the release that has the archive button** | header (rollback: restore archived accounts first) |
+| **57 archive of accounts** | 34 | **none: the archive release reads the new columns, so without 57 sign-in itself is unavailable — a PREREQUISITE, apply it BEFORE deploying** (the previous release works on a database that has 57). The System status screen lists it as missing | `migrations/rollback/57_operator_users_archive_rollback.sql` (tested on PostgreSQL; archived accounts become disabled, never active) |
 
 **Which migrations are still pending.** Production is proven only at `5ac0592`, and the independent review (2026-10-29) confirmed: **34–42 are pending as well as 43–56.** Nothing of 34–56 is applied anywhere; each is written, tested on a throw-away PostgreSQL 16 and documented in `migrations/README.md`. (30–33 belong to the earlier work: check them on the target before the release — the System status screen's migrations table does — rather than assuming.) Applying them is one release with this order: **numeric order, 34 → 56, stop on the first error.** The only cross-dependencies that are not simply "lower number first": 41 needs 36; 45 needs 36 + 41; 48 needs 34; **54 needs 48**; 56 needs 50. The files already merged into `main` carry migrations 43–46; 47–56 are on the open PRs (see section 7).
 
@@ -157,7 +157,7 @@ Owner-supplied observations, recorded as reported (not independently verified by
 * **Personal accounts are enabled** (`OPERATOR_USERS=on`); the owner bootstrap happened and people sign in with their own accounts.
 * Fresh backup **`20261103T072609Z`** was taken and verified (local + encrypted R2).
 * Post-deploy row-level-security check: **57 PASS, 0 FAIL, 1 UNKNOWN** — the single UNKNOWN is the empty public Health product list (nothing to probe), not a failure.
-* The owner confirmed the SSH connection to the **new** system (the VPS that replaced the one lost in September).
+* The owner confirmed the SSH connection of the **new system** — the second (Windows) computer. The production VPS did **not** change (still the one named in `CLAUDE.md`); an earlier version of this line wrongly read "new system" as a new VPS.
 * Migrations 34–56 are committed in production per section 9. **Migration 57 (archive of accounts) is NOT applied yet** — apply it after the next verified backup, before deploying the archive release.
 
 **Still needing the owner's own confirmation (nothing below is claimed done):**

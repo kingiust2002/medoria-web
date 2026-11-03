@@ -228,14 +228,19 @@ it on a restore-drill copy first (`scripts/self-host/restore-drill.sh --keep`).
 
 ## Applying migration 57 — order and rollback
 
-Order: fresh verified backup (local + encrypted R2 PASS) → apply `migrations/57_operator_users_archive.sql` (needs 34; one transaction; idempotent;
-self-checking) → deploy the release → try with a throw-away test person (archive, check they cannot sign in, restore). Applying it before the
-release is harmless: the previous application ignores the new status and columns. Applying the release **before** 57 only makes the "Archive"
-button answer with a failure (the database's status check refuses it); nothing else is affected.
+**This release needs migration 57 — apply it BEFORE deploying.** The application now reads the four archive columns in every account query; on a database
+without 57 even the ordinary sign-in answers "unavailable" (not only the archive button), and the System status screen lists 57 as missing. The **previous** release
+keeps working on a database that already has 57 (it ignores the new status and columns), so applying 57 first is also what makes a rollback of the application safe.
 
-Rollback (header of the migration): restore every archived account first (`UPDATE operator_users SET status = 'disabled' WHERE status = 'archived'`),
-then restore the three-value status check, drop the session trigger and function, re-create the migration-34 guard, drop the four columns.
-History and links of old records are never touched: ids, usernames and names stay in every table that refers to them.
+Order: fresh verified backup (local + encrypted R2 PASS) → apply `migrations/57_operator_users_archive.sql` (needs 34; one transaction; idempotent; self-checking) →
+deploy the release → try with a throw-away test person (archive, check they cannot sign in, restore).
+
+Rollback of the migration (only after the archive release is no longer deployed): `migrations/rollback/57_operator_users_archive_rollback.sql`, one transaction. The order
+inside matters — the new guard forbids leaving "archived" in any way except a restore, so the script first removes the session trigger and puts migration 34's guard
+back, then turns archived accounts into **disabled** ones (never active; `authz_version` moves so no old cookie matches), restores the three-value status check and
+drops the stamp check, the index and the four columns. Accounts, ids, usernames, names and the links of old records stay. Proved on PostgreSQL
+(`tests/operator-users-archive-rollback.test.mjs`): with archived accounts and old sessions in the database, nobody ends up active, the old guard works, it can run twice,
+and 57 can be applied again afterwards. A person who should be active after the rollback is set active the ordinary way.
 
 ## Environment
 
@@ -263,7 +268,7 @@ immediately after the bootstrap.
 ## Tests
 
 Archive / re-authentication / reliable history / recovery: `tests/user-archive.test.mjs` (19), `tests/operator-users-archive-migration.test.mjs`
-(real PostgreSQL, incl. overlapping sessions), `tests/owner-recovery.test.mjs` (real PostgreSQL), `tests/e2e/accounts-people-archive.e2e.mjs` (browser, 320 px,
+(real PostgreSQL, incl. overlapping sessions), `tests/operator-users-archive-rollback.test.mjs` (real PostgreSQL), `tests/owner-recovery.test.mjs` (real PostgreSQL), `tests/e2e/accounts-people-archive.e2e.mjs` (browser, 320 px,
 three languages). Earlier:
 `tests/authz.test.mjs`, `tests/operator-accounts.test.mjs`, `tests/session-gate.test.mjs`, `tests/operator-passwords-secrets.test.mjs`,
 `tests/operator-users-migration.test.mjs` (real PostgreSQL 16), `tests/e2e/accounts.e2e.mjs` (real browser stack, the app started with

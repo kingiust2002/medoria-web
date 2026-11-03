@@ -419,3 +419,50 @@ test("R1: ending sessions re-reads the target right before it acts", async () =>
   assert.equal(res.ok, false);
   assert.equal(db.tables.operator_sessions[0].revoked_at, null);
 });
+
+// ── review R3 / R4: complete and certain, beyond the API's 1,000-row cut ─────────────────────────────────────────────
+import { createMemoryAdmin as bigDb } from "./helpers/memoryAdmin.mjs";
+const manyPeople = () => [boss, boss2, manager, ...Array.from({ length: 1200 }, (_, i) => row(100 + i, { username: `p${i}`, display_name: `Person ${String(i).padStart(4, "0")}` })), row(9999, { username: "zed", display_name: "Zed Last", status: "archived", archived_at: "2026-10-01T00:00:00Z" })];
+
+test("R3: the archived-name check sees an archived person beyond the first 1,000 rows, and a failed read refuses the assignment instead of allowing it", async () => {
+  db = bigDb({ operator_users: manyPeople() }, { maxRows: 1000 });
+  assert.equal(await archivedLabelCheck("health")(db, "zed last"), true, "the last of 1,200 people is still found");
+  assert.equal(await archivedLabelCheck("health")(db, "Person 0007"), false);
+  db.fail = (table) => (table === "operator_users" ? { code: "XX000", message: "down" } : null);
+  await assert.rejects(() => archivedLabelCheck("health")(db, "Zed Last"), /could not be read/);
+  // …and the assignment path turns that into a refusal, nothing is assigned
+  db = bigDb({ operator_users: manyPeople(), quote_requests: [{ id: 1, status: "new", assigned_to: null, assigned_user_id: null }] }, { maxRows: 1000 });
+  db.fail = (table) => (table === "operator_users" ? { code: "XX000", message: "down" } : null);
+  const out = await assignQuoteGuarded({ getSession: async () => ({ user: {} }), getAdminClient: () => db, table: "quote_requests", id: 1, assignee: "Zed Last", audit: async () => ({ ok: true }), resolveUser: async () => null, isArchivedLabel: archivedLabelCheck("health") });
+  assert.equal(out.ok, false);
+  assert.equal(db.tables.quote_requests[0].assigned_to, null, "the check could not run, so nothing was assigned");
+});
+
+const manyQuotes = (n, who) => Array.from({ length: n }, (_, i) => ({ id: i + 1, status: i % 5 === 4 ? "closed" : "new", assigned_to: "Sara", assigned_user_id: who }));
+test("R4: the count, the transfer and the history are exact with more than 1,000 open requests", async () => {
+  const quotes = manyQuotes(1500, id(4));                    // 1,200 open + 300 closed
+  db = bigDb({ operator_users: [boss, boss2, manager, staff].map((r) => ({ ...r })), operator_sessions: [], quote_requests: quotes, beauty_quote_requests: [] }, { maxRows: 1000, unique: { operator_users: [["username"]] } });
+  logs = []; invalidateSessionUser();
+  const c = ctx(boss);
+  assert.equal((await responsibilitiesOf(c, id(4))).quotes, 1200, "the number shown before the transfer is the real one");
+  const r = await transferResponsibilities(c, id(4), id(3));
+  assert.deepEqual([r.ok, r.count], [true, 1200]);
+  assert.equal(db.tables.quote_requests.filter((q) => q.assigned_user_id === id(3)).length, 1200);
+  assert.equal(db.tables.quote_requests.filter((q) => q.assigned_user_id === id(4)).length, 300, "only the closed ones stay with the old name");
+  assert.equal((await responsibilitiesOf(c, id(4))).quotes, 0);
+  const done = logs.find((l) => l.action === "user.responsibilities_transferred" && l.result === "success");
+  assert.equal(done.detail.moved, 1200, "the history says how many, exactly");
+});
+
+test("R4: a failure part-way through the transfer is reported with how many were moved, never as success", async () => {
+  db = bigDb({ operator_users: [boss, boss2, manager, staff].map((r) => ({ ...r })), operator_sessions: [], quote_requests: manyQuotes(700, id(4)).map((q) => ({ ...q, status: "new" })), beauty_quote_requests: [] }, { maxRows: 1000, unique: { operator_users: [["username"]] } });
+  logs = []; invalidateSessionUser();
+  let updates = 0;
+  db.fail = (table, op) => (table === "quote_requests" && op === "update" && ++updates === 3 ? { code: "XX000", message: "down" } : null);
+  const r = await transferResponsibilities(ctx(boss), id(4), id(3));
+  assert.equal(r.ok, false);
+  assert.equal(r.partial, 400, "two chunks of 200 were moved before the failure");
+  const failed = logs.find((l) => l.action === "user.responsibilities_transferred" && l.result === "failure");
+  assert.equal(failed.detail.moved, 400);
+  assert.ok(!logs.some((l) => l.action === "user.responsibilities_transferred" && l.result === "success"));
+});
