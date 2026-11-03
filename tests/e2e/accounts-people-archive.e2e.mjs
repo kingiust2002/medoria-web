@@ -101,7 +101,9 @@ test("1+2+3: archive with an open session — the person is out at once, the rec
   await create.getByLabel(/نام نمایشی/).fill("Somebody Else");
   await create.getByLabel("سلامت").check();
   await create.getByTestId("reauth-password").fill(PW);
-  await create.getByRole("button", { name: "ساخت کاربر" }).click();
+  await create.getByTestId("person-submit").click();
+  await create.getByTestId("access-summary").waitFor();
+  await create.getByTestId("person-submit").click();
   await create.getByTestId("dialog-error").waitFor();
   assert.equal((await state()).operator_users.filter((u) => u.username === "leaver").length, 1);
   await ctx.close();
@@ -118,7 +120,9 @@ test("4: restore — the manager reviews the role, a fresh login follows the CUR
   assert.equal(await dialog.getByTestId("restore-note").count(), 1);
   await dialog.locator("select").first().selectOption("viewer");                  // reviewed: fewer rights than before
   await dialog.getByTestId("reauth-password").fill(PW);
-  await dialog.getByRole("button", { name: "بازگردانی از بایگانی" }).click();
+  await dialog.getByTestId("person-submit").click();
+  await dialog.getByTestId("access-summary").waitFor();              // the review before the restore
+  await dialog.getByTestId("person-submit").click();
   await dialog.waitFor({ state: "hidden" });
   const back = await userRow("leaver");
   assert.deepEqual([back.status, back.role, back.must_change_password], ["active", "viewer", true]);

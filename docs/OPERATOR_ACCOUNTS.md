@@ -55,8 +55,8 @@ as it is in the database right now (not from the cookie, and not from what the s
 `/operator/users` and `/beauty/operator/users` (permission `users.view` to open, `users.manage` to change). An owner sees everybody;
 anybody else sees only people who share a house with them (a person of another house is not even confirmed to exist).
 
-* **Create**: username, display name, role, houses, "two-step sign-in required", advanced (extra and forbidden permissions as typed
-  patterns, per-house approval policy). The server generates a **20-character temporary password**, shows it **once** and stores
+* **Create**: username, display name, role, houses, "two-step sign-in required" and the **access editor** (tick-boxes, see "The access editor" below;
+  the typed patterns of the first version are gone from the screen, the server still accepts them). The server generates a **20-character temporary password**, shows it **once** and stores
   only its hash; the person must change it at the first sign-in. Nobody can give a house they are not in, a permission they do not
   hold, or create/touch an owner unless they are an owner (`authz.checkUserChange`, the same function the tests exercise).
 * **Change**: role, houses, status (active / disabled / blocked), two-step requirement, permissions, approval policy, display name.
@@ -226,6 +226,54 @@ ended, both log lines exist, a manager / archived / disabled / unknown account i
 back, the username cannot inject SQL. **Not proven live:** a real run against the production database container — the owner should rehearse
 it on a restore-drill copy first (`scripts/self-host/restore-drill.sh --keep`).
 
+## The access editor (tick-boxes) — PR 2 of the user-management round, no migration
+
+`components/operator/AccessEditor.jsx` on top of `lib/operator/accessCatalog.js` (pure; the same functions run in the browser, on the server and in the tests).
+
+* **House first, role second, then per person.** Choose Health, Beauty or both (the editor shows one section per chosen house; Beauty additionally has *brands*).
+  Choosing a **role** resets the ticks to that role's defaults ("Reset to role defaults" does the same later). A role that gives more than the manager holds is
+  shown but disabled ("more than you hold").
+* **Groups** — products, categories, brands, images and media, product documents, customer requests (with the customer file), warehouse, site content,
+  reports, activity history, approval queue, and users. Every permission of the model has exactly one tick (`uncoveredPermissions()` is empty — a test pins it),
+  with plain titles: view, create, edit, **edit price**, archive, delete, publish, export, approve changes, and the house's own words (receive, issue, count, quarantine…).
+  **Only capabilities that exist are offered.** Eleven permissions of the model have no action, page or reader behind them yet — `categories.publish/export`,
+  `brands.publish/export`, `documents.archive`, `quotes.archive`, `customers.edit/merge/export`, `inventory.report`, `reports.export` (`accessCatalog.UNBUILT`). A tick that
+  changes nothing would be a promise the system cannot keep, so they are not shown, never appear in a summary and are never stored by the editor. A test checks that every
+  offered tick has a code path and that every permission on that list still has none (the day one is built the test says "move it out of UNBUILT").
+  **The customer file is a real right**: `customers.view` decides whether the other requests of the same customer (phone numbers, tracking codes, products, dates) are
+  read and sent to the browser at all, in both houses. With `quotes.view` on and `customers.view` off the page gets no file and the screen shows none
+  (`readQuotesPage` is closed by default; `tests/customer-file-access.test.mjs`).
+* **The real effective state.** A tick means "can do it now": role + extra grants − forbidden ones. Each tick says **from role**, **added** or **closed** (the role
+  gives it, this person's is unticked). Unticking a role right stores a `deny` (a deny beats the role, even an owner's); ticking something the role lacks stores
+  an `allow`; ticks equal to the role store nothing (`listsFromTicks`). A property test proves ticks → lists → effective permissions is the identity for every role and house set.
+* **Edit price is a tick of its own** (new permission `<house>.products.price`, operation `products.price`). It is **implied by edit** for every account that exists:
+  anybody who could edit a product keeps changing its price until someone closes it, and without the right to edit there is no price right. No stored account loses anything.
+* **Direct or needs approval** appears next to a group **only for the operations in `authz.APPROVABLE_OPERATIONS`** (a filing action, a reviewer and an executor exist in
+  both houses) and only while the underlying permission is ticked; the ones without an approval path simply have no such choice, and a request that lists one is refused.
+* **Before saving** a summary lists the permissions **added** and **removed**, houses, the role change and every operation that moves between *direct* and *needs approval*.
+  Nothing is saved until it is confirmed; "Back" returns to the editor. The manager's password is asked for in that step when the change gives more power.
+* **A limited manager** sees every tick they cannot hand out disabled **with the reason** ("you do not hold this yourself", "only an owner gives user management"), and *direct*
+  is disabled where they themself need approval. This is a convenience: the server enforces it again (below).
+* **Open sessions.** Any change of role, houses, permissions or status bumps `authz_version` and ends the person's sessions; a change of the approval list refreshes it.
+* **Server enforcement is unchanged and exhaustive** (`authz.checkUserChange`, called by `createUser` / `updateUser` / `restoreUser` and re-run in the core before anything is
+  written): delegation ceiling for permissions and for execution modes, only an owner touches an owner or hands out user management, houses a manager is not in, nobody edits
+  their own power, the last active owner stays, unsupported approval modes, unknown or oversized lists. The request body is validated as a whole — an unknown permission, a
+  list over 200 entries or an approval policy with an unknown house/operation is **refused, never trimmed** into something else. Every action re-checks the operation at the moment of use,
+  so a stale screen, a direct URL, a bulk operation, an import or an export is refused the same way (`tests/panel-permissions.test.mjs`, `tests/access.test.mjs`).
+* **History.** The attempt and outcome entries of an access change carry short codes of what changed: `perms_added`, `perms_removed` (`health_products_price`), `modes_changed`
+  (`health_products_price`) — safe codes only, no free text.
+
+**How the seven acceptance scenarios are proved** — (1)(2) archive and restore: `tests/e2e/accounts-people-archive.e2e.mjs`, `tests/user-archive.test.mjs`, real PostgreSQL;
+(3) a Health-only person has no Beauty and the reverse: `tests/e2e/accounts-access-editor.e2e.mjs` D (pages, login, editor sections) and `tests/access.test.mjs`;
+(4) removing price/publish/delete/export closes the operation: e2e B (price, from a stale screen and through the editor, session ended), `accounts-permissions.e2e.mjs` (delete, stale screen),
+`tests/access-catalog.test.mjs` (the identity of ticks and permissions, publish/delete/export are ordinary ticks of the same mechanism);
+(5) needs-approval cannot apply directly and the public data waits: e2e C; (6) tampering: `tests/user-access-tamper.test.mjs` (core level — see the limit below);
+(7) three languages, direction and 320 px: e2e F and the archive e2e 8.
+
+**Limits, stated plainly.** Tampering is tested by calling the server-side functions with bodies the screen never sends, not by forging a Next.js server-action HTTP request.
+Publish/delete/export closing is proved end to end for *delete* (stale screen) and *price* (stale screen and editor); for publish and export it rests on the shared
+mechanism (the same tick → permission → `decide` path, pinned by unit tests), not on a separate browser test each. Nothing here was run on the live site.
+
 ## Applying migration 57 — order and rollback
 
 **This release needs migration 57 — apply it BEFORE deploying.** The application now reads the four archive columns in every account query; on a database
@@ -267,6 +315,7 @@ immediately after the bootstrap.
 
 ## Tests
 
+Access editor: `tests/access-catalog.test.mjs` (8), `tests/user-access-tamper.test.mjs` (9), `tests/e2e/accounts-access-editor.e2e.mjs` (6).
 Archive / re-authentication / reliable history / recovery: `tests/user-archive.test.mjs` (19), `tests/operator-users-archive-migration.test.mjs`
 (real PostgreSQL, incl. overlapping sessions), `tests/operator-users-archive-rollback.test.mjs` (real PostgreSQL), `tests/owner-recovery.test.mjs` (real PostgreSQL), `tests/e2e/accounts-people-archive.e2e.mjs` (browser, 320 px,
 three languages). Earlier:

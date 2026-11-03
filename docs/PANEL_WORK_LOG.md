@@ -142,3 +142,16 @@ No server/production database/env/cron/token operation was performed. Migrations
 * **R3** `archivedLabelCheck` reads every person of the house page by page and **throws** on a failed read; the assignment path turns that into a refusal. **R4** the responsibilities count is an exact head count; the transfer moves ids in chunks of 200, reports the exact number and says how many were moved when it fails part-way.
 * **R5** `migrations/rollback/57_operator_users_archive_rollback.sql` (the old instruction's first step was refused by the new guard); proved on PostgreSQL with archived accounts and old sessions. **R6** migration 57 is declared a **prerequisite** of the archive release (the account queries read the new columns); a System status probe lists it; the earlier "only the archive button fails" claim is withdrawn.
 * Small: the owner-report wording (the "new system" is the owner's second Windows computer, the VPS did not change); the real-PostgreSQL tests of `owner-recovery.test.mjs` now skip where PostgreSQL is missing.
+
+## 2026-11-03 — user management, PR 2: the tick-box access editor (no migration)
+
+* **Built:** `accessCatalog.js` + `AccessEditor.jsx` (houses, role presets, grouped ticks with the real effective state, direct / needs approval only where an approval path exists,
+  reset to role defaults, the summary before saving, disabled-with-reason for what a limited manager cannot hand out); a new permission `products.price` (implied by edit, so no existing
+  account changes); strict validation of the lists and approval policies a request carries; permission codes in the history.
+* **Proved:** `tests/access-catalog.test.mjs` (every permission has a tick; ticks ⇄ lists identity for every role/house set), `tests/user-access-tamper.test.mjs`,
+  `tests/e2e/accounts-access-editor.e2e.mjs`; existing pins that spoke of the typed patterns were updated.
+* **Not proven:** the live site; forged HTTP server-action requests (tampering is tested at the function level); human review of the 60 new Tajik/English texts.
+
+### 2026-11-03 — independent review of PR 2 (#247): R2
+
+* **R2** `customers.view` now really gates the customer file (other requests of the same customer) in both houses — it is not read and not sent without the right (`readQuotesPage` defaults to "off"; the two page loaders pass the person's right; the screen hides the card). Capabilities with no code path behind them (eleven permissions, listed in `accessCatalog.UNBUILT`) are no longer offered by the editor or shown in summaries; a test keeps the list honest in both directions. No new module was built.
