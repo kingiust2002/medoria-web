@@ -397,7 +397,16 @@ export function createFakeDb(seedFactory) {
           const wasOwner = row.role === "owner" && row.status === "active";
           const stays = next.role === "owner" && next.status === "active" && next.houses.length === 2;
           if (wasOwner && !stays && !tables[t].some((r) => r !== row && r.role === "owner" && r.status === "active" && r.houses.length === 2)) {
-            return respond(res, 400, { code: "P0001", message: "the last active owner cannot be disabled, blocked, demoted or lose a house" });
+            return respond(res, 400, { code: "P0001", message: "the last active owner cannot be disabled, blocked, archived, demoted or lose a house" });
+          }
+          // migration 57: an archived account changes in one way only (restore); entering / leaving the archive moves authz_version and ends the sessions
+          if (row.status === "archived" && next.status !== "active" && next.status !== "archived") return respond(res, 400, { code: "P0001", message: "an archived account can only be restored to active" });
+          if (row.status === "archived" && next.status === "archived" && ["username", "display_name", "role", "houses", "allow_perms", "deny_perms", "approval", "require_2fa", "password_hash"].some((c) => c in patch && JSON.stringify(patch[c]) !== JSON.stringify(row[c]))) return respond(res, 400, { code: "P0001", message: "an archived account cannot be changed; restore it first" });
+          if (next.status === "archived" && row.status !== "archived") {
+            patch.authz_version = Math.max(patch.authz_version ?? 0, row.authz_version + 1); patch.archived_at = now();
+            for (const sess of tables.operator_sessions || []) if (sess.user_id === row.id && !sess.revoked_at) sess.revoked_at = now();
+          } else if (row.status === "archived" && next.status === "active") {
+            patch.authz_version = Math.max(patch.authz_version ?? 0, row.authz_version + 1); patch.must_change_password = true; patch.restored_at = now();
           }
         }
         for (const row of hit) {

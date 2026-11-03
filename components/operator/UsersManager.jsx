@@ -101,7 +101,7 @@ export default function UsersManager({ users, loadError, canManage, actor, panel
                 <p className="text-[11px] text-ink-faint mt-2">{u.lastLoginAt ? t("آخرین ورود: {date}", { date: formatDate(lang, u.lastLoginAt, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) }) : t("هنوز وارد نشده")}</p>
               </div>
               {canManage && (
-                <div className="flex flex-wrap gap-2 shrink-0">
+                <div className="flex flex-wrap gap-2 min-w-0 max-w-full">
                   {u.status === "archived" ? (
                     <button type="button" className="btn-ghost size-xs" onClick={() => setDialog({ mode: "restore", user: u })} data-testid="restore-open"><Icon name="refresh" size={14} /> {t("بازگردانی از بایگانی")}</button>
                   ) : (
