@@ -177,3 +177,11 @@ This is a delivery record, not a security audit: it does not claim the panel has
 * **Browser suite:** full run on the combined tree (PR 1 + PR 2): **288 pass, 0 fail** (see §12 of the PR 2 branch).
 * **Migration 57 is a PREREQUISITE of this release.** The account queries read the four new columns, so on a database without migration 57 even the ordinary sign-in is unavailable. Order: fresh verified backup → apply `migrations/57_operator_users_archive.sql` → deploy. The previous release keeps working on a database that has 57. Rollback: `migrations/rollback/57_operator_users_archive_rollback.sql`. Not applied anywhere; not deployed; nothing on the server was touched.
 * **Not verified:** anything on the live site; a real run of `scripts/self-host/owner-recovery.mjs` against the production database container; human review of the Tajik/English texts; `npm run check:mobile` on the public routes (it did not complete in the sandbox; this PR changes no public page).
+
+## 12. Verification record — user-management PR 2 (#247), after the independent review
+
+* **Code commit verified:** `e37798e` (PR 1's fixes merged in, plus review R2); the commits after it change documents only. R2: `customers.view` gates the customer file in both houses, and the eleven permissions with no code path (`accessCatalog.UNBUILT`) are not offered by the editor.
+* **Tests at that commit:** `npm run lint` clean; `node --test tests/*.test.mjs` **1103 pass, 0 fail** (new: `customer-file-access`, the code-path tests of `access-catalog`; the R2 tests were shown to fail on the previous reader). Full browser suite (`npm run test:e2e`, fresh build): **288 pass, 0 fail**.
+* **CI at that commit:** `validate`, `browser-flows` and `Vercel Preview Comments` all success.
+* **No new migration in this PR.** It sits on #246 and therefore inherits the **prerequisite**: migration 57 must be applied BEFORE deploying (see §11). Merge #246 first.
+* **Not verified:** anything on the live site; forged HTTP server-action requests (tampering is tested by calling the server-side functions with bodies the screen never sends); human review of the Tajik/English texts.
