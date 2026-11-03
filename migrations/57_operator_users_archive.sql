@@ -23,15 +23,12 @@
 --
 -- Needs 34. One transaction, idempotent, self-check at the end (rolls back on any mismatch).
 --
--- Apply order: 34 → … → 57 (nothing between 35 and 56 touches operator_users). The application of this release needs 57 for the archive
--- buttons; without it "archive" is refused by the database (status check) and everything else keeps working.
--- Rollback (only after the application of this release is no longer deployed):
---   1. restore every archived account first:  UPDATE operator_users SET status = 'disabled' WHERE status = 'archived';   (the old guard allows it)
---   2. ALTER TABLE operator_users DROP CONSTRAINT operator_users_status_check;
---      ALTER TABLE operator_users ADD CONSTRAINT operator_users_status_check CHECK (status IN ('active', 'disabled', 'blocked'));
---   3. DROP TRIGGER operator_sessions_active_user ON operator_sessions; DROP FUNCTION operator_sessions_active_user();
---   4. re-run the function body of migration 34 (CREATE OR REPLACE FUNCTION operator_users_guard …)
---   5. ALTER TABLE operator_users DROP COLUMN archived_at, DROP COLUMN archived_by, DROP COLUMN restored_at, DROP COLUMN restored_by;
+-- Apply order: 34 → … → 57 (nothing between 35 and 56 touches operator_users). **This release of the application NEEDS migration 57**: its account queries
+-- read the four new columns, so on a database without 57 even the ordinary sign-in answers "unavailable" (the System status screen lists 57 as missing).
+-- Apply 57 BEFORE deploying the release. The PREVIOUS release keeps working on a database that has 57 (it ignores the new status and columns), which is what
+-- makes rolling the application back safe.
+-- Rollback: migrations/rollback/57_operator_users_archive_rollback.sql (one transaction; tested on PostgreSQL with archived accounts and old sessions). It turns
+-- archived accounts into DISABLED ones (never active), restores migration 34's guard and the three-value status check, drops the trigger and the four columns.
 
 BEGIN;
 

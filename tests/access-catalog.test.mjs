@@ -11,9 +11,12 @@ import {
 } from "../lib/operator/accessCatalog.js";
 import { OPERATION_LABELS } from "../lib/operator/userLabels.js";
 import { isValidPattern } from "../lib/operator/authz.js";
+import { UNBUILT, isBuilt } from "../lib/operator/accessCatalog.js";
+import fs from "node:fs";
+import path from "node:path";
 
 const U = (o) => ({ id: "u", status: "active", role: "viewer", houses: ["health"], allow: [], deny: [], approval: {}, ...o });
-const scopeOf = (houses) => ALL_PERMISSIONS.filter((p) => p.startsWith("users.") || houses.some((h) => p.startsWith(`${h}.`)));
+const scopeOf = (houses) => ALL_PERMISSIONS.filter((p) => isBuilt(p) && (p.startsWith("users.") || houses.some((h) => p.startsWith(`${h}.`))));
 
 test("every permission of the model has exactly one tick (nothing hidden, nothing invented)", () => {
   assert.deepEqual(uncoveredPermissions(), []);
@@ -23,7 +26,7 @@ test("every permission of the model has exactly one tick (nothing hidden, nothin
     assert.equal(seen.has(i.permission), false, `${i.permission} appears twice`);
     seen.set(i.permission, g.id);
   }
-  assert.equal(seen.size + GLOBAL_ITEMS.length, ALL_PERMISSIONS.length);
+  assert.equal(seen.size + GLOBAL_ITEMS.length, ALL_PERMISSIONS.filter(isBuilt).length);
   assert.ok(!catalogFor("health").some((g) => g.id === "brands"), "Health has no brands");
   assert.ok(catalogFor("beauty").some((g) => g.id === "brands"));
   assert.deepEqual(GROUPS.map((g) => g.id).slice(0, 8), ["products", "categories", "brands", "media", "documents", "quotes", "inventory", "content"]);
@@ -64,7 +67,7 @@ test("round trip: any set of ticks becomes allow/deny lists that give EXACTLY th
       for (const h of houses) if (!ticks.has(`${h}.products.edit`)) ticks.delete(`${h}.products.price`);       // a price right needs the right to edit
       const { allow, deny } = listsFromTicks({ role, houses, ticks });
       for (const x of [...allow, ...deny]) assert.ok(isValidPattern(x), x);
-      const got = effectivePermissions(U({ role, houses, allow, deny }));
+      const got = new Set([...effectivePermissions(U({ role, houses, allow, deny }))].filter(isBuilt));
       assert.deepEqual([...got].sort(), [...ticks].sort(), `${role} ${houses}: ticks must equal what the person can do`);
     }
     // nothing is stored when the ticks equal the role
@@ -82,7 +85,7 @@ test("an existing account (wildcards, typed patterns) opens as ticks, and saving
   for (const a of accounts) {
     const ticks = ticksOf(a);
     const { allow, deny } = listsFromTicks({ role: a.role, houses: a.houses, ticks });
-    assert.deepEqual([...effectivePermissions({ ...a, allow, deny })].sort(), [...ticks].sort());
+    assert.deepEqual([...effectivePermissions({ ...a, allow, deny })].filter(isBuilt).sort(), [...ticks].filter(isBuilt).sort());
   }
 });
 
@@ -128,4 +131,40 @@ test("the summary before saving: permissions added / removed, houses, role, dire
   assert.equal(diffAccess(before, { ...before, role: "viewer" }).roleChanged, true);
   assert.equal(codeOf("health.products.price"), "health_products_price");
   assert.match(codeOf("beauty.inventory.quarantine"), /^[a-z_]{1,40}$/, "fits the history's safe-code rule");
+});
+
+// ── review R2: a tick must do something ─────────────────────────────────────────────────────────────────────────────────
+function sourceFiles(dir, out = []) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) { if (!["node_modules", ".next", ".next-e2e"].includes(e.name)) sourceFiles(p, out); }
+    else if (/\.(js|jsx)$/.test(e.name)) out.push(p);
+  }
+  return out;
+}
+const ROOT = new URL("..", import.meta.url).pathname;
+const SKIP_FILES = new Set(["lib/operator/authz.js", "lib/operator/accessCatalog.js", "lib/operator/userLabels.js"]);
+const SOURCES = ["app", "lib", "components"].flatMap((d) => sourceFiles(path.join(ROOT, d))).filter((f) => !SKIP_FILES.has(path.relative(ROOT, f))).map((f) => fs.readFileSync(f, "utf8"));
+const opPermissions = new Set(Object.values(OPERATIONS));
+const AUTHZ_TEXT = fs.readFileSync(path.join(ROOT, "lib/operator/authz.js"), "utf8");
+// does the application ask for this permission anywhere? by an operation, by the approval rule (`<resource>.approve`), or by naming it
+const hasCodePath = (rel) => opPermissions.has(rel) || (rel.endsWith(".approve") && AUTHZ_TEXT.includes("${house}.${resource}.approve"))      // canReview(): the one place that asks for `<resource>.approve`
+  || SOURCES.some((s) => new RegExp(`["'\`]${rel.replace(".", "\\.")}["'\`]`).test(s));
+
+test("every tick the editor offers has a real code path behind it; every permission it does not offer has none (so nothing is promised that cannot happen)", () => {
+  for (const h of HOUSES) for (const g of catalogFor(h)) for (const i of g.items) assert.ok(hasCodePath(i.rel), `${i.permission} is offered but nothing in the application asks for it`);
+  for (const i of GLOBAL_ITEMS) assert.ok(hasCodePath(i.rel), i.permission);
+  for (const rel of UNBUILT) assert.equal(hasCodePath(rel), false, `${rel} now has a code path: move it out of UNBUILT so the editor offers it`);
+  // and the model itself still names them (an old role or stored grant may), they just are not ticks
+  for (const rel of UNBUILT) assert.ok(ALL_PERMISSIONS.some((p) => p.endsWith(`.${rel}`)), rel);
+});
+
+test("the not-yet-built permissions never appear in a summary and are not stored by the editor", () => {
+  const before = U({ role: "viewer", houses: ["health"] }), after = U({ role: "house_admin", houses: ["health"] });
+  const d = diffAccess(before, after);
+  assert.ok(d.added.length > 0 && d.added.every(isBuilt), "a role change lists only permissions that do something");
+  assert.ok(!d.added.some((p) => p.includes("customers.merge") || p.includes("customers.edit")));
+  const ticks = ticksOf(after);
+  const { allow, deny } = listsFromTicks({ role: "house_admin", houses: ["health"], ticks: new Set([...ticks].filter(isBuilt)) });
+  assert.deepEqual([allow, deny], [[], []], "ticks equal to the role store nothing, and unbuilt permissions are not stored either way");
 });

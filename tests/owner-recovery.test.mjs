@@ -58,7 +58,7 @@ test("the script: a dry run prints no SQL; --apply prints SQL on stdout and the 
   assert.equal(spawnSync("node", ["scripts/self-host/owner-recovery.mjs", "--username", "no spaces allowed", "--apply"], { encoding: "utf8" }).status, 2);
 });
 
-test("a real recovery: new password works, old one does not, seed and codes gone, second factor required again, sessions ended, both logs written", () => {
+test("a real recovery: new password works, old one does not, seed and codes gone, second factor required again, sessions ended, both logs written", { skip: SKIP }, () => {
   must(psql(owner("boss")));
   must(psql(owner("boss2")));
   const bossId = val("SELECT id FROM operator_users WHERE username = 'boss'");
@@ -83,7 +83,7 @@ test("a real recovery: new password works, old one does not, seed and codes gone
   assert.equal(actorOf({ user }, "health"), null);
 });
 
-test("it refuses everything that is not an ACTIVE owner, and then changes nothing", () => {
+test("it refuses everything that is not an ACTIVE owner, and then changes nothing", { skip: SKIP }, () => {
   must(psql(`INSERT INTO operator_users(username, display_name, password_hash, role, houses, totp_secret_enc) VALUES ('just.a.manager', 'm', '${OLD}', 'house_admin', ARRAY['health'], 'v1.a.b.c')`));
   must(psql("UPDATE operator_users SET status = 'archived' WHERE username = 'boss2'"));        // allowed: boss is still an active owner
   const snapshot = () => val("SELECT md5(string_agg(to_jsonb(u)::text, '|' ORDER BY username)) FROM operator_users u") + val("SELECT count(*) FROM operator_audit_log");
@@ -96,7 +96,7 @@ test("it refuses everything that is not an ACTIVE owner, and then changes nothin
   assert.equal(snapshot(), before, "nothing changed and nothing was logged");
 });
 
-test("if the activity log cannot be written, nothing happens at all (one transaction)", () => {
+test("if the activity log cannot be written, nothing happens at all (one transaction)", { skip: SKIP }, () => {
   must(psql("UPDATE operator_users SET status = 'active' WHERE username = 'boss2'"));
   const before = val("SELECT password_hash FROM operator_users WHERE username = 'boss2'");
   must(psql("ALTER TABLE operator_audit_log RENAME TO operator_audit_log_away"));
@@ -107,7 +107,7 @@ test("if the activity log cannot be written, nothing happens at all (one transac
   assert.equal(val("SELECT (totp_secret_enc IS NOT NULL)::text FROM operator_users WHERE username = 'boss2'"), "true");
 });
 
-test("the read-only owner list works and shows no secret", () => {
+test("the read-only owner list works and shows no secret", { skip: SKIP }, () => {
   const out = val(OWNER_CHECK_SQL.replace(/;$/, ""));
   assert.match(out, /boss/);
   assert.ok(!/scrypt|v1\./.test(out));

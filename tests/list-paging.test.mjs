@@ -251,7 +251,7 @@ test("the customer file reads every related row beyond the API cap in both house
     const table = HOUSE_TABLES[house].quotes;
     const rows = Array.from({ length: 1100 }, (_, i) => ({ id: i + 1, phone: "123456789", phone_key: "123456789", status: "new", created_at: new Date(NOW - i * 1000).toISOString() }));
     const db = createMemoryAdmin({ [table]: rows }, { maxRows: 1000 });
-    const result = await readQuotesPage(db, house, parseQuoteParams({}), { now: NOW });
+    const result = await readQuotesPage(db, house, parseQuoteParams({}), { now: NOW, customerFile: true });
     assert.equal(result.ok, true);
     assert.equal(result.customerFile, "full");
     assert.equal(result.related.length, 1100);
@@ -277,7 +277,7 @@ test("a failed later page of a customer file is an error, never a partial full h
       };
       return q;
     };
-    const result = await readQuotesPage(db, house, parseQuoteParams({}), { now: NOW });
+    const result = await readQuotesPage(db, house, parseQuoteParams({}), { now: NOW, customerFile: true });
     assert.deepEqual(result, { ok: false, error: "unavailable" });
   }
 });
@@ -288,12 +288,12 @@ test("the customer file lists the person's other requests from the whole table, 
     ...makeQuotes(1800).slice(10).map((x, k) => ({ ...x, id: 100 + k })),
   ]);
   const db = createMemoryAdmin({ quote_requests: rows }, { maxRows: 1000 });
-  const r = await readQuotesPage(db, "health", parseQuoteParams({ tab: "all", q: "MH-0001" }), { now: NOW });
+  const r = await readQuotesPage(db, "health", parseQuoteParams({ tab: "all", q: "MH-0001" }), { now: NOW, customerFile: true });
   assert.equal(r.customerFile, "full");
   const hist = r.related.filter((x) => x.phone_key === phoneKey("+992 900 11 22 33")).map((x) => x.id).sort();
   assert.ok(hist.includes(1) && hist.includes(2), "the request on another page of the table is found by phone key");
   const noKey = createMemoryAdmin({ quote_requests: makeQuotes(30) }, { maxRows: 1000 });       // before migration 43: no phone_key column
-  assert.equal((await readQuotesPage(noKey, "health", parseQuoteParams({}), { now: NOW })).customerFile, "page_only");
+  assert.equal((await readQuotesPage(noKey, "health", parseQuoteParams({}), { now: NOW, customerFile: true })).customerFile, "page_only");
 });
 
 test("a failed count or read makes the whole answer an error (never a zero)", async () => {

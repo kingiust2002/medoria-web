@@ -366,7 +366,7 @@ export default function QuotesPanel({ data, actions, now: nowProp, reportHref = 
                       {x.phone && <a href={`tel:${x.phone}`} className="btn-ghost size-sm"><Icon name="phone" size={15} /> {t("تماس")}</a>}
                     </div>
 
-                    <CustomerFile history={customerHistory(data.ok ? data.related : quotes, x)} fmtDate={fmtDate} />
+                    <CustomerFile history={customerHistory(data.ok ? (data.customerFile === "off" ? [] : data.related) : quotes, x)} fmtDate={fmtDate} />
                     {notifyFailed(x) && canStatus && <RetryNotice quote={x} now={now} saving={savingId === x.id && pending} onRetry={() => retryNotice(x.id)} />}
                     {canStatus && <FollowUpBox quote={x} saving={savingId === x.id && pending} onSave={(d) => saveFollowUp(x.id, d)} />}
                     {canAssign && <AssigneeBox quote={x} saving={savingId === x.id && pending} suggestions={assignees} onSave={(v) => saveAssignee(x.id, v)} />}

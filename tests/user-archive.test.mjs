@@ -352,3 +352,117 @@ test("ending sessions stays possible when the log is down (closing a door must b
   assert.equal((await endPersonSessions(ctx(boss), id(4))).ok, true);
   assert.deepEqual(outcomes("user.sessions_ended"), ["success"]);
 });
+
+// ── review R1: the account that was CHECKED is the account that is changed ─────────────────────────────────────────────
+// Between the permission check and the write sits the manager's re-authentication (a human typing a password and a code). Whatever changes the
+// target in that gap — role, houses, permissions, status — must make the operation fail, never run against the new state.
+const meanwhile = (mutate) => ({ ...ctx(manager), reauthenticate: async (i) => {
+  const r = i?.password === PASSWORD ? { ok: true } : { ok: false, error: "wrongPassword" };
+  mutate();                                                   // the owner promotes the employee while the manager types the proof
+  return r;
+} });
+const promote = (n) => () => { const r = stored(n); r.role = "owner"; r.houses = ["health", "beauty"]; r.version += 1; };
+
+test("R1: a limited manager's password reset is refused when the target became an owner during the re-authentication — no temporary password, nothing changed", async () => {
+  setup([boss, boss2, manager, staff]);
+  const hash = stored(4).password_hash;
+  const r = await resetPersonPassword(meanwhile(promote(4)), id(4), RE);
+  assert.equal(r.ok, false);
+  assert.equal(r.tempPassword, undefined, "no temporary password for an account that is now an owner");
+  assert.equal(stored(4).password_hash, hash, "the hash is untouched");
+  assert.equal(stored(4).role, "owner");
+  assert.ok(!outcomes("user.password_reset").includes("success"));
+});
+
+test("R1: the same for the second-factor recovery, archive, restore and ordinary changes — each is bound to the version that was checked", async () => {
+  // recovery (an owner is the actor, so the change that matters is ANY change of the target: the confirmation was for a different account state)
+  setup([boss, boss2, manager, enrolled()]);
+  const bossCtx = { ...ctx(boss), reauthenticate: async () => { stored(4).houses = ["health", "beauty"]; stored(4).version += 1; return { ok: true }; } };
+  const seed = stored(4).totp_secret_enc;
+  assert.equal((await resetPersonTwoFactor(bossCtx, id(4), RE)).ok, false);
+  assert.equal(stored(4).totp_secret_enc, seed, "the second factor was not removed from an account that changed meanwhile");
+  // archive
+  setup([boss, boss2, manager, staff]);
+  assert.equal((await archivePerson(meanwhile(promote(4)), id(4), undefined, RE)).ok, false);
+  assert.equal(stored(4).status, "active");
+  // update: the manager only closes a door, but the screen's version is old (no version sent at all)
+  setup([boss, boss2, manager, staff]);
+  const u = await updatePerson(meanwhile(promote(4)), id(4), { allowText: "health.quotes.edit" }, undefined, RE);      // more power: asks for the proof, the promotion happens during it
+  assert.equal(u.ok, false);
+  assert.deepEqual(stored(4).allow_perms, []);
+  // restore
+  setup([boss, boss2, manager, row(4, { username: "sara", status: "archived", archived_at: "2026-10-01T00:00:00Z" })]);
+  const rr = await restorePerson(meanwhile(() => { stored(4).role = "owner"; stored(4).houses = ["health", "beauty"]; stored(4).version += 1; }), id(4), {}, undefined, RE);
+  assert.equal(rr.ok, false);
+  assert.equal(stored(4).status, "archived");
+});
+
+test("R1: if the MANAGER lost their authority during the re-authentication, nothing is done", async () => {
+  setup([boss, boss2, manager, staff]);
+  const c = { ...ctx(manager), reauthenticate: async () => { stored(3).allow_perms = []; stored(3).authz_version += 1; stored(3).version += 1; return { ok: true }; } };
+  const hash = stored(4).password_hash;
+  assert.equal((await resetPersonPassword(c, id(4), RE)).ok, false);
+  assert.equal(stored(4).password_hash, hash);
+  assert.equal((await archivePerson(c, id(4), undefined, RE)).ok, false);
+  assert.equal(stored(4).status, "active");
+});
+
+test("R1: ending sessions re-reads the target right before it acts", async () => {
+  setup([boss, boss2, manager, staff], { sessions: [sessionOf(id(4), "x")] });
+  // the target becomes an owner after the first check: the manager must not end an owner's sessions
+  const c = ctx(manager);
+  let reads = 0;
+  const realFrom = db.from.bind(db);
+  db.from = (t) => { if (t === "operator_users") { reads++; if (reads === 3) promote(4)(); } return realFrom(t); };   // read 3 = the one right before the revocation
+  const res = await endPersonSessions(c, id(4));
+  db.from = realFrom;
+  assert.equal(res.ok, false);
+  assert.equal(db.tables.operator_sessions[0].revoked_at, null);
+});
+
+// ── review R3 / R4: complete and certain, beyond the API's 1,000-row cut ─────────────────────────────────────────────
+import { createMemoryAdmin as bigDb } from "./helpers/memoryAdmin.mjs";
+const manyPeople = () => [boss, boss2, manager, ...Array.from({ length: 1200 }, (_, i) => row(100 + i, { username: `p${i}`, display_name: `Person ${String(i).padStart(4, "0")}` })), row(9999, { username: "zed", display_name: "Zed Last", status: "archived", archived_at: "2026-10-01T00:00:00Z" })];
+
+test("R3: the archived-name check sees an archived person beyond the first 1,000 rows, and a failed read refuses the assignment instead of allowing it", async () => {
+  db = bigDb({ operator_users: manyPeople() }, { maxRows: 1000 });
+  assert.equal(await archivedLabelCheck("health")(db, "zed last"), true, "the last of 1,200 people is still found");
+  assert.equal(await archivedLabelCheck("health")(db, "Person 0007"), false);
+  db.fail = (table) => (table === "operator_users" ? { code: "XX000", message: "down" } : null);
+  await assert.rejects(() => archivedLabelCheck("health")(db, "Zed Last"), /could not be read/);
+  // …and the assignment path turns that into a refusal, nothing is assigned
+  db = bigDb({ operator_users: manyPeople(), quote_requests: [{ id: 1, status: "new", assigned_to: null, assigned_user_id: null }] }, { maxRows: 1000 });
+  db.fail = (table) => (table === "operator_users" ? { code: "XX000", message: "down" } : null);
+  const out = await assignQuoteGuarded({ getSession: async () => ({ user: {} }), getAdminClient: () => db, table: "quote_requests", id: 1, assignee: "Zed Last", audit: async () => ({ ok: true }), resolveUser: async () => null, isArchivedLabel: archivedLabelCheck("health") });
+  assert.equal(out.ok, false);
+  assert.equal(db.tables.quote_requests[0].assigned_to, null, "the check could not run, so nothing was assigned");
+});
+
+const manyQuotes = (n, who) => Array.from({ length: n }, (_, i) => ({ id: i + 1, status: i % 5 === 4 ? "closed" : "new", assigned_to: "Sara", assigned_user_id: who }));
+test("R4: the count, the transfer and the history are exact with more than 1,000 open requests", async () => {
+  const quotes = manyQuotes(1500, id(4));                    // 1,200 open + 300 closed
+  db = bigDb({ operator_users: [boss, boss2, manager, staff].map((r) => ({ ...r })), operator_sessions: [], quote_requests: quotes, beauty_quote_requests: [] }, { maxRows: 1000, unique: { operator_users: [["username"]] } });
+  logs = []; invalidateSessionUser();
+  const c = ctx(boss);
+  assert.equal((await responsibilitiesOf(c, id(4))).quotes, 1200, "the number shown before the transfer is the real one");
+  const r = await transferResponsibilities(c, id(4), id(3));
+  assert.deepEqual([r.ok, r.count], [true, 1200]);
+  assert.equal(db.tables.quote_requests.filter((q) => q.assigned_user_id === id(3)).length, 1200);
+  assert.equal(db.tables.quote_requests.filter((q) => q.assigned_user_id === id(4)).length, 300, "only the closed ones stay with the old name");
+  assert.equal((await responsibilitiesOf(c, id(4))).quotes, 0);
+  const done = logs.find((l) => l.action === "user.responsibilities_transferred" && l.result === "success");
+  assert.equal(done.detail.moved, 1200, "the history says how many, exactly");
+});
+
+test("R4: a failure part-way through the transfer is reported with how many were moved, never as success", async () => {
+  db = bigDb({ operator_users: [boss, boss2, manager, staff].map((r) => ({ ...r })), operator_sessions: [], quote_requests: manyQuotes(700, id(4)).map((q) => ({ ...q, status: "new" })), beauty_quote_requests: [] }, { maxRows: 1000, unique: { operator_users: [["username"]] } });
+  logs = []; invalidateSessionUser();
+  let updates = 0;
+  db.fail = (table, op) => (table === "quote_requests" && op === "update" && ++updates === 3 ? { code: "XX000", message: "down" } : null);
+  const r = await transferResponsibilities(ctx(boss), id(4), id(3));
+  assert.equal(r.ok, false);
+  assert.equal(r.partial, 400, "two chunks of 200 were moved before the failure");
+  const failed = logs.find((l) => l.action === "user.responsibilities_transferred" && l.result === "failure");
+  assert.equal(failed.detail.moved, 400);
+  assert.ok(!logs.some((l) => l.action === "user.responsibilities_transferred" && l.result === "success"));
+});

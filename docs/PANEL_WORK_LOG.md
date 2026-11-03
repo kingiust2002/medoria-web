@@ -136,6 +136,13 @@ No server/production database/env/cron/token operation was performed. Migrations
 * **Not proven:** anything on the live site; a real run of the emergency script against the production database; human review of the 53 new Tajik/English texts.
 * Owner report of 2026-11-03 recorded in `PANEL_RELEASE_RUNBOOK.md` §10.
 
+### 2026-11-03 — independent review of PR 1 (#246): R1, R3, R4, R5, R6 and two small items
+
+* **R1** every sensitive write is bound to the account state that was checked: `setPassword` / `resetTwoFactor` / archive / restore / update take the version the permission check was made against (a screen that sent none is pinned to the version read at the start), the manager is re-read after the re-authentication (still active, same `authz_version`), and ending sessions re-reads the target right before it acts. A role/house/permission change during the proof now makes the operation fail instead of handing over a temporary password.
+* **R3** `archivedLabelCheck` reads every person of the house page by page and **throws** on a failed read; the assignment path turns that into a refusal. **R4** the responsibilities count is an exact head count; the transfer moves ids in chunks of 200, reports the exact number and says how many were moved when it fails part-way.
+* **R5** `migrations/rollback/57_operator_users_archive_rollback.sql` (the old instruction's first step was refused by the new guard); proved on PostgreSQL with archived accounts and old sessions. **R6** migration 57 is declared a **prerequisite** of the archive release (the account queries read the new columns); a System status probe lists it; the earlier "only the archive button fails" claim is withdrawn.
+* Small: the owner-report wording (the "new system" is the owner's second Windows computer, the VPS did not change); the real-PostgreSQL tests of `owner-recovery.test.mjs` now skip where PostgreSQL is missing.
+
 ## 2026-11-03 — user management, PR 2: the tick-box access editor (no migration)
 
 * **Built:** `accessCatalog.js` + `AccessEditor.jsx` (houses, role presets, grouped ticks with the real effective state, direct / needs approval only where an approval path exists,
@@ -144,3 +151,7 @@ No server/production database/env/cron/token operation was performed. Migrations
 * **Proved:** `tests/access-catalog.test.mjs` (every permission has a tick; ticks ⇄ lists identity for every role/house set), `tests/user-access-tamper.test.mjs`,
   `tests/e2e/accounts-access-editor.e2e.mjs`; existing pins that spoke of the typed patterns were updated.
 * **Not proven:** the live site; forged HTTP server-action requests (tampering is tested at the function level); human review of the 60 new Tajik/English texts.
+
+### 2026-11-03 — independent review of PR 2 (#247): R2
+
+* **R2** `customers.view` now really gates the customer file (other requests of the same customer) in both houses — it is not read and not sent without the right (`readQuotesPage` defaults to "off"; the two page loaders pass the person's right; the screen hides the card). Capabilities with no code path behind them (eleven permissions, listed in `accessCatalog.UNBUILT`) are no longer offered by the editor or shown in summaries; a test keeps the list honest in both directions. No new module was built.

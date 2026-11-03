@@ -236,6 +236,13 @@ it on a restore-drill copy first (`scripts/self-host/restore-drill.sh --keep`).
 * **Groups** — products, categories, brands, images and media, product documents, customer requests (with the customer file), warehouse, site content,
   reports, activity history, approval queue, and users. Every permission of the model has exactly one tick (`uncoveredPermissions()` is empty — a test pins it),
   with plain titles: view, create, edit, **edit price**, archive, delete, publish, export, approve changes, and the house's own words (receive, issue, count, quarantine…).
+  **Only capabilities that exist are offered.** Eleven permissions of the model have no action, page or reader behind them yet — `categories.publish/export`,
+  `brands.publish/export`, `documents.archive`, `quotes.archive`, `customers.edit/merge/export`, `inventory.report`, `reports.export` (`accessCatalog.UNBUILT`). A tick that
+  changes nothing would be a promise the system cannot keep, so they are not shown, never appear in a summary and are never stored by the editor. A test checks that every
+  offered tick has a code path and that every permission on that list still has none (the day one is built the test says "move it out of UNBUILT").
+  **The customer file is a real right**: `customers.view` decides whether the other requests of the same customer (phone numbers, tracking codes, products, dates) are
+  read and sent to the browser at all, in both houses. With `quotes.view` on and `customers.view` off the page gets no file and the screen shows none
+  (`readQuotesPage` is closed by default; `tests/customer-file-access.test.mjs`).
 * **The real effective state.** A tick means "can do it now": role + extra grants − forbidden ones. Each tick says **from role**, **added** or **closed** (the role
   gives it, this person's is unticked). Unticking a role right stores a `deny` (a deny beats the role, even an owner's); ticking something the role lacks stores
   an `allow`; ticks equal to the role store nothing (`listsFromTicks`). A property test proves ticks → lists → effective permissions is the identity for every role and house set.
@@ -269,14 +276,19 @@ mechanism (the same tick → permission → `decide` path, pinned by unit tests)
 
 ## Applying migration 57 — order and rollback
 
-Order: fresh verified backup (local + encrypted R2 PASS) → apply `migrations/57_operator_users_archive.sql` (needs 34; one transaction; idempotent;
-self-checking) → deploy the release → try with a throw-away test person (archive, check they cannot sign in, restore). Applying it before the
-release is harmless: the previous application ignores the new status and columns. Applying the release **before** 57 only makes the "Archive"
-button answer with a failure (the database's status check refuses it); nothing else is affected.
+**This release needs migration 57 — apply it BEFORE deploying.** The application now reads the four archive columns in every account query; on a database
+without 57 even the ordinary sign-in answers "unavailable" (not only the archive button), and the System status screen lists 57 as missing. The **previous** release
+keeps working on a database that already has 57 (it ignores the new status and columns), so applying 57 first is also what makes a rollback of the application safe.
 
-Rollback (header of the migration): restore every archived account first (`UPDATE operator_users SET status = 'disabled' WHERE status = 'archived'`),
-then restore the three-value status check, drop the session trigger and function, re-create the migration-34 guard, drop the four columns.
-History and links of old records are never touched: ids, usernames and names stay in every table that refers to them.
+Order: fresh verified backup (local + encrypted R2 PASS) → apply `migrations/57_operator_users_archive.sql` (needs 34; one transaction; idempotent; self-checking) →
+deploy the release → try with a throw-away test person (archive, check they cannot sign in, restore).
+
+Rollback of the migration (only after the archive release is no longer deployed): `migrations/rollback/57_operator_users_archive_rollback.sql`, one transaction. The order
+inside matters — the new guard forbids leaving "archived" in any way except a restore, so the script first removes the session trigger and puts migration 34's guard
+back, then turns archived accounts into **disabled** ones (never active; `authz_version` moves so no old cookie matches), restores the three-value status check and
+drops the stamp check, the index and the four columns. Accounts, ids, usernames, names and the links of old records stay. Proved on PostgreSQL
+(`tests/operator-users-archive-rollback.test.mjs`): with archived accounts and old sessions in the database, nobody ends up active, the old guard works, it can run twice,
+and 57 can be applied again afterwards. A person who should be active after the rollback is set active the ordinary way.
 
 ## Environment
 
@@ -305,7 +317,7 @@ immediately after the bootstrap.
 
 Access editor: `tests/access-catalog.test.mjs` (8), `tests/user-access-tamper.test.mjs` (9), `tests/e2e/accounts-access-editor.e2e.mjs` (6).
 Archive / re-authentication / reliable history / recovery: `tests/user-archive.test.mjs` (19), `tests/operator-users-archive-migration.test.mjs`
-(real PostgreSQL, incl. overlapping sessions), `tests/owner-recovery.test.mjs` (real PostgreSQL), `tests/e2e/accounts-people-archive.e2e.mjs` (browser, 320 px,
+(real PostgreSQL, incl. overlapping sessions), `tests/operator-users-archive-rollback.test.mjs` (real PostgreSQL), `tests/owner-recovery.test.mjs` (real PostgreSQL), `tests/e2e/accounts-people-archive.e2e.mjs` (browser, 320 px,
 three languages). Earlier:
 `tests/authz.test.mjs`, `tests/operator-accounts.test.mjs`, `tests/session-gate.test.mjs`, `tests/operator-passwords-secrets.test.mjs`,
 `tests/operator-users-migration.test.mjs` (real PostgreSQL 16), `tests/e2e/accounts.e2e.mjs` (real browser stack, the app started with
