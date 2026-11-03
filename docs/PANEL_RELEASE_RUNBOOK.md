@@ -168,3 +168,12 @@ Owner-supplied observations, recorded as reported (not independently verified by
 4. Human review of the Tajik and English texts (machine-written; lower urgency).
 
 This is a delivery record, not a security audit: it does not claim the panel has no holes.
+
+## 11. Verification record — user-management PR 1 (#246), after the independent review
+
+* **Code commit verified:** `9aafd0e` (the commits after it on the branch change documents only). Review fixes R1 (writes bound to the checked account state), R3 (fail-closed, complete archived-name check), R4 (exact counts, chunked transfer), R5 (tested rollback script), R6 (57 declared a prerequisite) and the two small items are in it.
+* **Tests at that commit:** `npm run lint` clean; `node --test tests/*.test.mjs` **1081 pass, 0 fail**, including the real-PostgreSQL files `operator-users-archive-migration`, `operator-users-archive-rollback` and `owner-recovery`; the new review tests were shown to fail on the previous code before the fixes.
+* **CI at that commit:** `validate`, `browser-flows` and `Vercel Preview Comments` all success. `validate` first failed once inside `next build` — the Google Fonts download of `next/font` (`app/layout.jsx`, "Cannot read properties of null") — which this PR does not touch (no change to `app/layout.jsx`, `package.json` or the Next config); the same job was re-run unchanged and passed.
+* **Browser suite:** full run on the combined tree (PR 1 + PR 2): **288 pass, 0 fail** (see §12 of the PR 2 branch).
+* **Migration 57 is a PREREQUISITE of this release.** The account queries read the four new columns, so on a database without migration 57 even the ordinary sign-in is unavailable. Order: fresh verified backup → apply `migrations/57_operator_users_archive.sql` → deploy. The previous release keeps working on a database that has 57. Rollback: `migrations/rollback/57_operator_users_archive_rollback.sql`. Not applied anywhere; not deployed; nothing on the server was touched.
+* **Not verified:** anything on the live site; a real run of `scripts/self-host/owner-recovery.mjs` against the production database container; human review of the Tajik/English texts; `npm run check:mobile` on the public routes (it did not complete in the sandbox; this PR changes no public page).
