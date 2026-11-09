@@ -1,0 +1,274 @@
+[
+  {
+    "id": "guerlain-cream",
+    "name": "Guerlain · Orchidée Impériale Black",
+    "category": "Skincare",
+    "sourcePage": "https://www.guerlain.com/us/en-us/p/orchidee-imperiale-black-the-cream-P062364.html",
+    "sourceImage": "https://www.guerlain.com/dw/image/v2/BDCZ_PRD/on/demandware.static/-/Sites-GSA_master_catalog/default/dwbdf57d15/01-ProductsViewer/P062364/P062364_G062364_E01_hi-res.jpg?sw=2000&sh=2000&fmt=png-alpha",
+    "nativeImagePixels": [
+      2000,
+      2000
+    ],
+    "nativeVisiblePixels": [
+      1416,
+      935
+    ],
+    "sha256Original": "19e3251240e95571b09da3e76c4eb23f3bb7e0a8fc5e6120ddcb923201c36ea1"
+  },
+  {
+    "id": "chanel-cream",
+    "name": "Chanel · Sublimage La Crème",
+    "category": "Skincare",
+    "sourcePage": "https://www.chanel.com/us/skincare/p/147550/sublimage-la-creme-texture-universelle-ultimate-cream-rejuvenates-and-smooths/",
+    "sourceImage": "https://www.chanel.com/images/f_png,w_2000/1-7oz--packshot-default-147550-9541430378526.jpg",
+    "nativeImagePixels": [
+      2000,
+      2000
+    ],
+    "nativeVisiblePixels": [
+      469,
+      394
+    ],
+    "sha256Original": "07b7df07373d3facb1191e084f57bcfaa424171f8844af18521385fdaea1765f"
+  },
+  {
+    "id": "dior-serum",
+    "name": "Dior · Prestige La Micro-Huile de Rose",
+    "category": "Skincare",
+    "sourcePage": "https://www.dior.com/en_us/beauty/products/dior-prestige-la-micro-huile-de-rose-activated-serum-C099700024.html",
+    "sourceImage": "https://www.dior.com/dw/image/v2/BGXS_PRD/on/demandware.static/-/Sites-master_dior/default/dw5ad884b4/Y0997186/Y0997186_C099700024_E01_ZHC.jpg?sw=2000&sh=2000&fmt=png-alpha",
+    "nativeImagePixels": [
+      2000,
+      2000
+    ],
+    "nativeVisiblePixels": [
+      374,
+      1176
+    ],
+    "sha256Original": "12862e699b8c2868130a97cde7028c4e87326bb7821ee43356f95f949c4ae7dc"
+  },
+  {
+    "id": "dior-foundation",
+    "name": "Dior · Forever Skin Glow",
+    "category": "Complexion",
+    "sourcePage": "https://www.dior.com/en_us/beauty/products/dior-forever-skin-glow-Y0000149.html",
+    "sourceImage": "https://www.dior.com/on/demandware.static/-/Sites-master_dior/default/dwef55aeca/Y0000149/Y0000149_E000001136_E01_GHC.jpg?sw=2000&sh=2000&fmt=png-alpha",
+    "nativeImagePixels": [
+      1850,
+      2000
+    ],
+    "nativeVisiblePixels": [
+      544,
+      1574
+    ],
+    "sha256Original": "154e6310736fe90f8b4d49d1f1b3bc08101379bf81fe239268ed56c4011a4ab3"
+  },
+  {
+    "id": "chanel-foundation",
+    "name": "Chanel · Les Beiges",
+    "category": "Complexion",
+    "sourcePage": "https://www.chanel.com/us/makeup/p/184724/les-beiges-healthy-glow-foundation-hydration-and-longwear/",
+    "sourceImage": "https://www.chanel.com/images/f_png,w_2000/les-beiges-healthy-glow-foundation-hydration-and-longwear-b20-1fl-oz--packshot-default-184724-9564847276062.jpg",
+    "nativeImagePixels": [
+      2000,
+      2000
+    ],
+    "nativeVisiblePixels": [
+      474,
+      599
+    ],
+    "sha256Original": "e8cacbfd86c15707a56b4436f1f2196db882b8b9dfab2c0538aa31966752decc"
+  },
+  {
+    "id": "architecture-radiance-hydrating-foundation-broad-spectrum-spf-50",
+    "name": "Tom Ford · Architecture Radiance",
+    "category": "Complexion",
+    "sourcePage": "https://www.tomfordbeauty.com/products/architecture-radiance-hydrating-foundation-broad-spectrum-spf-50",
+    "sourceImage": "https://cdn.shopify.com/s/files/1/0761/9690/5173/files/tf_sku_TCT101_3000x3000_0.png?v=1794254168",
+    "nativeImagePixels": [
+      3000,
+      3000
+    ],
+    "nativeVisiblePixels": [
+      652,
+      2400
+    ],
+    "sha256Original": "ebcf91c740a29747f5d94a6b1bf5a346f713052ef79ffda5d99ecfb3b6d189ba"
+  },
+  {
+    "id": "runway-eye-color-quad-poudre",
+    "name": "Tom Ford · Runway Eye Color Quad Poudre",
+    "category": "Eyes",
+    "sourcePage": "https://www.tomfordbeauty.com/products/runway-eye-color-quad-poudre",
+    "sourceImage": "https://cdn.shopify.com/s/files/1/0761/9690/5173/files/tf_sku_T1QZ01_3000x3000_0.png?v=1794254161",
+    "nativeImagePixels": [
+      3000,
+      3000
+    ],
+    "nativeVisiblePixels": [
+      1812,
+      2317
+    ],
+    "sha256Original": "d1f34b36f46d19c312b6a793cee3b20748539e336a3531f5ae4d54cee5048c50"
+  },
+  {
+    "id": "soleil-neige-eye-color-quad-lumiere",
+    "name": "Tom Ford · Soleil Neige Eye Color Quad Lumière",
+    "category": "Eyes",
+    "sourcePage": "https://www.tomfordbeauty.com/products/soleil-neige-eye-color-quad-lumiere",
+    "sourceImage": "https://cdn.shopify.com/s/files/1/0761/9690/5173/files/tf_sku_T3SG01_3000x3000_0.png?v=1794232423",
+    "nativeImagePixels": [
+      3000,
+      3000
+    ],
+    "nativeVisiblePixels": [
+      1849,
+      2363
+    ],
+    "sha256Original": "a28d21759804c8ebfac2d6248a08b7c53c5e4131cea5a4a2330bd7710999a5eb"
+  },
+  {
+    "id": "chanel-mascara",
+    "name": "Chanel · Noir Allure",
+    "category": "Eyes",
+    "sourcePage": "https://www.chanel.com/us/makeup/p/190010/noir-allure-mascara/",
+    "sourceImage": "https://www.chanel.com/images/f_png,w_2000/noir-allure-mascara-10-noir-0-21oz--packshot-default-190010-9556363542558.jpg",
+    "nativeImagePixels": [
+      2000,
+      2000
+    ],
+    "nativeVisiblePixels": [
+      268,
+      737
+    ],
+    "sha256Original": "921889bab12c001f16e6fc773bd5546cccff262291e4666d3c811c50b114380d"
+  },
+  {
+    "id": "guerlain-rouge",
+    "name": "Guerlain · Rouge G decorative case and lipstick",
+    "category": "Lips",
+    "sourcePage": "https://www.guerlain.com/us/en-us/p/rouge-g-the-customizable-ultra-care-lipstick-S000050.html",
+    "sourceImage": "https://www.guerlain.com/dw/image/v2/BDCZ_PRD/on/demandware.static/-/Library-Sites-Guerlain_SharedLibrary/default/dw0b26b848/02-Menu/Makeup/2026/XMAS26_ROUGE-G_BUNDLES_S000050.png?sw=2000&sh=2000&fmt=png-alpha",
+    "nativeImagePixels": [
+      2000,
+      2000
+    ],
+    "nativeVisiblePixels": [
+      1015,
+      1425
+    ],
+    "sha256Original": "02fdfe55c37486f338780abf058b9d094e2c526d1798762b556c74f4b659e0ef"
+  },
+  {
+    "id": "hermes-cap",
+    "name": "Hermès · Rouge Hermès limited-edition cap",
+    "category": "Lips",
+    "sourcePage": "https://www.hermes.com/us/en/product/satin-lipstick-limited-edition-rose-epice-V60842SV021/",
+    "sourceImage": "https://assets.hermes.com/is/image/hermesproduct/60842SV021_front_wm_101?wid=2400&hei=3000&fit=fit,1&fmt=png-alpha",
+    "nativeImagePixels": [
+      2400,
+      3000
+    ],
+    "nativeVisiblePixels": [
+      447,
+      1432
+    ],
+    "sha256Original": "6401700fbd4c9516385801d9ed2e7f33765eba143a25b513092d84810dc57691"
+  },
+  {
+    "id": "hermes-lip",
+    "name": "Hermès · Rouge Hermès Rose Épicé limited edition",
+    "category": "Lips",
+    "sourcePage": "https://www.hermes.com/us/en/product/satin-lipstick-limited-edition-rose-epice-V60842SV021/",
+    "sourceImage": "https://assets.hermes.com/is/image/hermesproduct/60842SV021_front_wm_101?wid=2400&hei=3000&fit=fit,1&fmt=png-alpha",
+    "nativeImagePixels": [
+      2400,
+      3000
+    ],
+    "nativeVisiblePixels": [
+      441,
+      1683
+    ],
+    "sha256Original": "6401700fbd4c9516385801d9ed2e7f33765eba143a25b513092d84810dc57691"
+  },
+  {
+    "id": "dior-oil",
+    "name": "Dior · Addict Lip Glow Oil bottle",
+    "category": "Lips",
+    "sourcePage": "https://www.dior.com/en_us/beauty/products/dior-addict-lip-glow-oil-Y0000163.html",
+    "sourceImage": "https://www.dior.com/on/demandware.static/-/Sites-master_dior/default/dw18ddfaa4/Y0000163/Y0000163_E000001060_E01_GHC.jpg?sw=2000&sh=2000&fmt=png-alpha",
+    "nativeImagePixels": [
+      1850,
+      2000
+    ],
+    "nativeVisiblePixels": [
+      481,
+      1320
+    ],
+    "sha256Original": "b93e0765ec5cc71f56969a466d81c50fd9d9e44ce97339c3fa91b5dd9f5cb0ae"
+  },
+  {
+    "id": "dior-oil-wand",
+    "name": "Dior · Addict Lip Glow Oil applicator",
+    "category": "Lips",
+    "sourcePage": "https://www.dior.com/en_us/beauty/products/dior-addict-lip-glow-oil-Y0000163.html",
+    "sourceImage": "https://www.dior.com/on/demandware.static/-/Sites-master_dior/default/dw18ddfaa4/Y0000163/Y0000163_E000001060_E01_GHC.jpg?sw=2000&sh=2000&fmt=png-alpha",
+    "nativeImagePixels": [
+      1850,
+      2000
+    ],
+    "nativeVisiblePixels": [
+      479,
+      1219
+    ],
+    "sha256Original": "b93e0765ec5cc71f56969a466d81c50fd9d9e44ce97339c3fa91b5dd9f5cb0ae"
+  },
+  {
+    "id": "hermes-brush",
+    "name": "Hermès · Le Voyageur travel brush",
+    "category": "Tools",
+    "sourcePage": "https://www.hermes.com/us/en/product/travel-makeup-brush-le-voyageur-V605480V0/",
+    "sourceImage": "https://assets.hermes.com/is/image/hermesproduct/605480V0_front_wm_101?wid=2400&hei=3000&fit=fit,1&fmt=png-alpha",
+    "nativeImagePixels": [
+      2400,
+      3000
+    ],
+    "nativeVisiblePixels": [
+      775,
+      1432
+    ],
+    "sha256Original": "d3987e1e10c5ee71a7e24ff5ccef07b2936dd4ce01959a004d9c9a1308e365c1"
+  },
+  {
+    "id": "shade-and-illuminate-foundation-brush-2-5",
+    "name": "Tom Ford · Shade and Illuminate Foundation Brush 2.5",
+    "category": "Tools",
+    "sourcePage": "https://www.tomfordbeauty.com/products/shade-and-illuminate-foundation-brush-2-5",
+    "sourceImage": "https://cdn.shopify.com/s/files/1/0761/9690/5173/files/tfb_sku_T7YE01_2000x2000_0.png?v=1794215141",
+    "nativeImagePixels": [
+      2000,
+      2000
+    ],
+    "nativeVisiblePixels": [
+      344,
+      1608
+    ],
+    "sha256Original": "1c02bf2a674b59532efb227a65b5502b467b7491ee79913f18d58f5c262b83c4"
+  },
+  {
+    "id": "cheek-brush-06",
+    "name": "Tom Ford · Cheek Brush 06",
+    "category": "Tools",
+    "sourcePage": "https://www.tomfordbeauty.com/products/cheek-brush-06",
+    "sourceImage": "https://cdn.shopify.com/s/files/1/0761/9690/5173/files/tf_sku_T6C801_2000x2000_0.png?v=1794215188",
+    "nativeImagePixels": [
+      2000,
+      2000
+    ],
+    "nativeVisiblePixels": [
+      304,
+      1604
+    ],
+    "sha256Original": "398f6a097811f611e8996958dce76c3a3be44e9f9dfc51f3932d4ca522e27f7f"
+  }
+]
